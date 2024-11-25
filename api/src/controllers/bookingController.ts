@@ -87,9 +87,9 @@ export const notify = async (driver: env.User, bookingId: string, user: env.User
       to: user.email,
       subject: message,
       html: `<p>
-    ${i18n.t('HELLO')}${user.fullName},<br><br>
-    ${message}<br><br>
-    ${helper.joinURL(env.BACKEND_HOST, `update-booking?b=${bookingId}`)}<br><br>
+    ${i18n.t('HELLO')}${user.fullName},<br>
+    ${message}<br>
+    <a class="button" href="${helper.joinURL(env.BACKEND_HOST, `update-booking?b=${bookingId}`)}">${i18n.t('UPDATE_BOOKING')}</a><br>
     ${i18n.t('REGARDS')}<br>
     </p>`,
     }
@@ -162,7 +162,7 @@ export const confirm = async (user: env.User, supplier: env.User, booking: env.B
       + `<br><br>${i18n.t('BOOKING_CONFIRMED_PART8')}<br><br>`
       + `${i18n.t('BOOKING_CONFIRMED_PART9')}${car.supplier.fullName}${i18n.t('BOOKING_CONFIRMED_PART10')}${dropOffLocationName}${i18n.t('BOOKING_CONFIRMED_PART11')}`
       + `${to} ${i18n.t('BOOKING_CONFIRMED_PART12')}`
-      + `<br><br>${i18n.t('BOOKING_CONFIRMED_PART13')}<br><br>${i18n.t('BOOKING_CONFIRMED_PART14')}${env.FRONTEND_HOST}<br><br>
+      + `<br><br>${i18n.t('BOOKING_CONFIRMED_PART13')}<br><br>${i18n.t('BOOKING_CONFIRMED_PART14')}<a href="${env.FRONTEND_HOST}">Plany.tn</a><br><br>
         ${i18n.t('REGARDS')}<br>
         </p>`,
   }
@@ -217,8 +217,8 @@ export const checkout = async (req: Request, res: Response) => {
         subject: i18n.t('ACCOUNT_ACTIVATION_SUBJECT'),
         html: `<p>
         ${i18n.t('HELLO')}${user.fullName},<br><br>
-        ${i18n.t('ACCOUNT_ACTIVATION_LINK')}<br><br>
-        ${helper.joinURL(env.FRONTEND_HOST, 'activate')}/?u=${encodeURIComponent(user.id)}&e=${encodeURIComponent(user.email)}&t=${encodeURIComponent(token.token)}<br><br>
+        ${i18n.t('ACCOUNT_ACTIVATION_LINK')}<br>
+        <a class="button" href="${helper.joinURL(env.FRONTEND_HOST, 'activate')}/?u=${encodeURIComponent(user.id)}&e=${encodeURIComponent(user.email)}&t=${encodeURIComponent(token.token)}">${i18n.t('CLICK_HERE')}</a><br>
         ${i18n.t('REGARDS')}<br>
         </p>`,
       }
@@ -380,8 +380,8 @@ const notifyDriver = async (booking: env.Booking) => {
       subject: message,
       html: `<p>
     ${i18n.t('HELLO')}${driver.fullName},<br><br>
-    ${message}<br><br>
-    ${helper.joinURL(env.FRONTEND_HOST, `booking?b=${booking._id}`)}<br><br>
+    ${message}<br>
+    <a class="button" href="${helper.joinURL(env.FRONTEND_HOST, `booking?b=${booking._id}`)}">${i18n.t('BOOKING_UPDATED_NOTIFICATION_PART3')}</a><br>
     ${i18n.t('REGARDS')}<br>
     </p>`,
     }

@@ -207,7 +207,6 @@ const CarList = ({
   }
 
   useEffect(() => {
-    console.log('useEffect triggered with:', { from, to })
     if (suppliers) {
       if (suppliers.length > 0) {
         fetchData(page, suppliers, pickupLocation, carSpecs, _carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats)

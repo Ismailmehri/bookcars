@@ -90,7 +90,6 @@ const Search = () => {
           startDate: from,
           endDate: to
         }
-        console.log('Payload envoyé :', payload)
         const _suppliers = await SupplierService.getFrontendSuppliers(payload)
         setSuppliers(_suppliers)
       }

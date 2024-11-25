@@ -333,11 +333,11 @@ const Header = ({
                 </Badge>
               </IconButton>
             )}
-            {isLoaded && !loading && (
+            { /* isLoaded && !loading && (
               <Button variant="contained" startIcon={<LanguageIcon />} onClick={handleLangMenuOpen} disableElevation fullWidth className="btn-primary">
                 {lang?.label}
               </Button>
-            )}
+            ) */ }
             {isSignedIn && user && (
               <IconButton edge="end" aria-label="account" aria-controls={menuId} aria-haspopup="true" onClick={handleAccountMenuOpen} color="inherit">
                 <Avatar record={user} type={user.type} size="small" readonly />

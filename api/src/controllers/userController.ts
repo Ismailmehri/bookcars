@@ -100,8 +100,8 @@ const _signup = async (req: Request, res: Response, userType: bookcarsTypes.User
       html:
         `<p>
     ${i18n.t('HELLO')}${user.fullName},<br><br>
-    ${i18n.t('ACCOUNT_ACTIVATION_LINK')}<br><br>
-    http${env.HTTPS ? 's' : ''}://${req.headers.host}/api/confirm-email/${user.email}/${token.token}<br><br>
+    ${i18n.t('ACCOUNT_ACTIVATION_LINK')}<br>
+    <a class="button" href="http${env.HTTPS ? 's' : ''}://${req.headers.host}/api/confirm-email/${user.email}/${token.token}">${i18n.t('CLICK_HERE')}</a><br>
     ${i18n.t('REGARDS')}<br>
     </p>`,
     }
@@ -225,10 +225,10 @@ export const create = async (req: Request, res: Response) => {
         `<p>
         ${i18n.t('HELLO')}${user.fullName},<br><br>
         ${i18n.t('ACCOUNT_ACTIVATION_LINK')}<br><br>
-        ${helper.joinURL(
+        <a class="button" href="${helper.joinURL(
           user.type === bookcarsTypes.UserType.User ? env.FRONTEND_HOST : env.BACKEND_HOST,
           'activate',
-        )}/?u=${encodeURIComponent(user.id)}&e=${encodeURIComponent(user.email)}&t=${encodeURIComponent(token.token)}<br><br>
+        )}/?u=${encodeURIComponent(user.id)}&e=${encodeURIComponent(user.email)}&t=${encodeURIComponent(token.token)}">${i18n.t('CLICK_HERE')}</a><br>
         ${i18n.t('REGARDS')}<br>
         </p>`,
     }
@@ -364,12 +364,13 @@ export const resend = async (req: Request, res: Response) => {
         subject: reset ? i18n.t('PASSWORD_RESET_SUBJECT') : i18n.t('ACCOUNT_ACTIVATION_SUBJECT'),
         html:
           `<p>
-          ${i18n.t('HELLO')}${user.fullName},<br><br>  
-          ${reset ? i18n.t('PASSWORD_RESET_LINK') : i18n.t('ACCOUNT_ACTIVATION_LINK')}<br><br>  
-          ${helper.joinURL(
+          ${i18n.t('HELLO')}${user.fullName},<br>
+          ${reset ? i18n.t('PASSWORD_RESET_LINK') : i18n.t('ACCOUNT_ACTIVATION_LINK')}<br> 
+          <a class="button" href="${helper.joinURL(
             user.type === bookcarsTypes.UserType.User ? env.FRONTEND_HOST : env.BACKEND_HOST,
             reset ? 'reset-password' : 'activate',
-          )}/?u=${encodeURIComponent(user.id)}&e=${encodeURIComponent(user.email)}&t=${encodeURIComponent(token.token)}<br><br>
+          )}/?u=${encodeURIComponent(user.id)}&e=${encodeURIComponent(user.email)}&t=${encodeURIComponent(token.token)}">${i18n.t('CLICK_HERE')}</a>
+          <br>
           ${i18n.t('REGARDS')}<br>
           </p>`,
       }
@@ -897,7 +898,7 @@ export const resendLink = async (req: Request, res: Response) => {
         `<p>
         ${i18n.t('HELLO')}${user.fullName},<br><br>
         ${i18n.t('ACCOUNT_ACTIVATION_LINK')}<br><br>
-        http${env.HTTPS ? 's' : ''}://${req.headers.host}/api/confirm-email/${user.email}/${token.token}<br><br>
+        <a class="button" href="http${env.HTTPS ? 's' : ''}://${req.headers.host}/api/confirm-email/${user.email}/${token.token}">${i18n.t('CLICK_HERE')}</a><br>
         ${i18n.t('REGARDS')}<br>
         </p>`,
     }

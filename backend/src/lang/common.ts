@@ -82,6 +82,9 @@ const strings = new LocalizedStrings({
     NAME: 'Nom',
     LONGITUDE: 'Longitude',
     LATITUDE: 'Latitude',
+    ERROR_DESCRIPTION: 'Un problème est survenu. Veuillez réessayer plus tard.',
+    NO_MATCH: 'Page non trouvée',
+    NO_MATCH_DESCRIPTION: 'La page que vous cherchez n\'existe pas ou a été déplacée.',
   },
   en: {
     GENERIC_ERROR: 'An unhandled error occurred.',
@@ -162,6 +165,9 @@ const strings = new LocalizedStrings({
     NAME: 'Name',
     LONGITUDE: 'Longitude',
     LATITUDE: 'Latitude',
+    ERROR_DESCRIPTION: 'Something went wrong. Please try again later.',
+    NO_MATCH: 'Page not found',
+    NO_MATCH_DESCRIPTION: 'The page you are looking for does not exist or has been moved.'
   },
 })
 

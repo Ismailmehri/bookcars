@@ -33,3 +33,42 @@ div.social-login img.social {
   max-height: 40px;
   cursor: pointer;
 }
+
+/* Conteneur des boutons sociaux */
+div.social-login div.login-buttons {
+  display: flex; /* Flexbox pour la disposition */
+  flex-direction: column; /* Forcer une disposition verticale */
+  gap: 15px; /* Espacement entre les boutons */
+  margin: 20px 0;
+  align-items: center; /* Centrer les boutons horizontalement */
+}
+
+/* Style des boutons sociaux */
+div.social-login div.social-button {
+  display: inline-flex; /* Aligner logo et texte horizontalement */
+  align-items: center; /* Centrer verticalement */
+  justify-content: center; /* Centrer le contenu */
+  padding: 8px 50px; /* Espacement intérieur */
+  border-radius: 8px; /* Coins arrondis */
+  background-color: #fff; /* Fond blanc */
+  border: 1px solid #ddd; /* Bordure fine */
+  cursor: pointer; /* Curseur clic */
+  font-size: 1rem; /* Taille de texte légèrement augmentée */
+  font-weight: 500; /* Texte légèrement en gras */
+  color: #333; /* Couleur du texte */
+  transition: all 0.3s ease; /* Douce transition */
+  width: 100%; /* Prendre toute la largeur disponible */
+  max-width: 400px; /* Largeur maximale pour éviter des boutons trop larges */
+}
+
+div.social-login div.social-button:hover {
+  background-color: #f7f7f7; /* Fond légèrement grisé au survol */
+  border-color: #ccc; /* Bordure plus foncée au survol */
+}
+
+/* Logo à gauche dans le bouton */
+div.social-login div.social-button img.social-logo {
+  width: 24px; /* Taille fixe pour le logo */
+  height: 24px; /* Taille fixe pour le logo */
+  margin-right: 12px; /* Espacement entre le logo et le texte */
+}

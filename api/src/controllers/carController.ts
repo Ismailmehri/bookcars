@@ -633,8 +633,10 @@ export const getFrontendCars = async (req: Request, res: Response) => {
     const { body }: { body: bookcarsTypes.GetCarsPayload } = req
     const page = Number.parseInt(req.params.page, 10)
     const size = Number.parseInt(req.params.size, 10)
-    const suppliers = body.suppliers!.map((id) => new mongoose.Types.ObjectId(id))
+
+    const suppliers = body.suppliers?.map((id) => new mongoose.Types.ObjectId(id)) || []
     const pickupLocation = new mongoose.Types.ObjectId(body.pickupLocation)
+
     const {
       carType,
       gearbox,
@@ -646,17 +648,23 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       multimedia,
       rating,
       seats,
-    } = body
+      startDate,
+      endDate } = body
 
+      const startDateObj = new Date(startDate || Date.now())
+      const endDateObj = new Date(endDate || Date.now())
+          // Filtre de base pour les voitures disponibles
     const $match: mongoose.FilterQuery<bookcarsTypes.Car> = {
       $and: [
         { supplier: { $in: suppliers } },
         { locations: pickupLocation },
-        { available: true }, { type: { $in: carType } },
+        { available: true },
+        { type: { $in: carType } },
         { gearbox: { $in: gearbox } },
       ],
     }
 
+    // Ajouter les conditions supplémentaires
     if (fuelPolicy) {
       $match.$and!.push({ fuelPolicy: { $in: fuelPolicy } })
     }
@@ -711,60 +719,88 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       }
     }
 
-    const data = await Car.aggregate(
-      [
-        { $match },
-        {
-          $lookup: {
-            from: 'User',
-            let: { userId: '$supplier' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: { $eq: ['$_id', '$$userId'] },
+    if (carType?.length) $match.type = { $in: carType }
+    if (gearbox?.length) $match.gearbox = { $in: gearbox }
+
+    const pipeline: mongoose.PipelineStage[] = [
+      { $match },
+      {
+        $lookup: {
+          from: 'User',
+          let: { userId: '$supplier' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$_id', '$$userId'] },
+              },
+            },
+          ],
+          as: 'supplier',
+        },
+      },
+      { $unwind: { path: '$supplier', preserveNullAndEmptyArrays: false } },
+      {
+        $lookup: {
+          from: 'Booking',
+          let: { carId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$car', '$$carId'] },
+                    { $ne: ['$status', 'cancelled'] },
+                    { $lt: ['$from', endDateObj] },
+                    { $gt: ['$to', startDateObj] },
+                  ],
                 },
               },
-            ],
-            as: 'supplier',
-          },
+            },
+          ],
+          as: 'conflictingBookings',
         },
-        { $unwind: { path: '$supplier', preserveNullAndEmptyArrays: false } },
-        // {
-        //   $lookup: {
-        //     from: 'Location',
-        //     let: { locations: '$locations' },
-        //     pipeline: [
-        //       {
-        //         $match: {
-        //           $expr: { $in: ['$_id', '$$locations'] },
-        //         },
-        //       },
-        //     ],
-        //     as: 'locations',
-        //   },
-        // },
-        {
-          $facet: {
-            resultData: [{ $sort: { price: 1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
-            pageInfo: [
-              {
-                $count: 'totalRecords',
-              },
-            ],
-          },
+      },
+      {
+        $addFields: {
+          hasConflict: { $gt: [{ $size: '$conflictingBookings' }, 0] },
         },
-      ],
-      { collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 } },
-    )
+      },
+      {
+        $match: { hasConflict: false },
+      },
+      {
+        $facet: {
+          resultData: [
+            { $sort: { price: 1, _id: 1 } },
+            { $skip: (page - 1) * size },
+            { $limit: size },
+          ],
+          pageInfo: [
+            { $count: 'totalRecords' },
+          ],
+        },
+      },
+    ]
 
-    for (const car of data[0].resultData) {
-      const { _id, fullName, avatar } = car.supplier
-      car.supplier = { _id, fullName, avatar }
-    }
+    const data = await Car.aggregate(pipeline, {
+      collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 },
+    })
 
-    return res.json(data)
-  } catch (err) {
-    logger.error(`[car.getFrontendCars] ${i18n.t('DB_ERROR')} ${req.query.s}`, err)
-    return res.status(400).send(i18n.t('DB_ERROR') + err)
+    const formattedData = data.map((aggregationResult) => ({
+      pageInfo: aggregationResult.pageInfo || [],
+      resultData: aggregationResult.resultData.map((car: bookcarsTypes.Car) => ({
+        ...car,
+        supplier: {
+          _id: car.supplier._id,
+          fullName: car.supplier.fullName,
+          avatar: car.supplier.avatar,
+        },
+      })),
+    }))
+
+    return res.json(formattedData)
+  } catch (err: any) {
+    logger.error(`[car.getFrontendCars] Error: ${err.message}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err.message)
   }
 }

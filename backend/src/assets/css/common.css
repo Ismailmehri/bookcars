@@ -3,19 +3,30 @@
   margin-left: 0 !important;
 }
 
-.btn-primary {
-  background-color: #121212 !important;
-  color: #fff !important;
-  opacity: 0.9;
+/* Style pour le bouton Sign Up (secondaire) */
+div.signin div.signin-buttons .btn-secondary {
+  background-color: transparent;
+  color: #1976d2;
+  border: 1px solid #1976d2;
 }
 
-.btn-secondary {
-  background-color: #999 !important;
-  color: #fff !important;
+div.signin div.signin-buttons .btn-secondary:hover {
+  background-color: #e3f2fd;
+  color: #115293;
+  border-color: #115293;
 }
 
-.btn-primary:hover,
-.btn-secondary:hover,
+/* Style pour le bouton Sign In (principal) */
+div.signin div.signin-buttons .btn-primary {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+}
+
+div.signin div.signin-buttons .btn-primary:hover {
+  background-color: #115293;
+}
+
 .btn-orange:hover {
   opacity: 1;
 }

@@ -87,14 +87,17 @@ const Search = () => {
           multimedia,
           rating,
           seats,
+          startDate: from,
+          endDate: to
         }
+        console.log('Payload envoyé :', payload)
         const _suppliers = await SupplierService.getFrontendSuppliers(payload)
         setSuppliers(_suppliers)
       }
     }
 
     updateSuppliers()
-  }, [pickupLocation, carSpecs, carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats])
+  }, [pickupLocation, carSpecs, carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats, from, to])
 
   const handleCarFilterSubmit = async (filter: bookcarsTypes.CarFilter) => {
     if (suppliers.length < allSuppliers.length) {
@@ -205,6 +208,8 @@ const Search = () => {
         multimedia,
         rating,
         seats,
+        startDate: from,
+        endDate: to
       }
       const _suppliers = await SupplierService.getFrontendSuppliers(payload)
       const _supplierIds = bookcarsHelper.flattenSuppliers(_suppliers)

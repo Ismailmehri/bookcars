@@ -163,7 +163,7 @@ const ResetPassword = () => {
                   }
                 </FormHelperText>
               </FormControl>
-              <div className="buttons">
+              <div className="reset-password-buttons">
                 <Button type="submit" className="btn-primary btn-margin btn-margin-bottom" size="small" variant="contained">
                   {commonStrings.UPDATE}
                 </Button>

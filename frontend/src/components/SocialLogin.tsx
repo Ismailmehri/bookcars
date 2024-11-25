@@ -98,7 +98,10 @@ const SocialLogin = ({
             }}
             className="social"
           >
-            <img alt="Facebook" src={FacebookIcon} className="social" />
+            <div className="social-button">
+              <img alt="Facebook" src={FacebookIcon} className="social-logo" />
+              <span>Connexion avec Facebook</span>
+            </div>
           </LoginSocialFacebook>
         )}
 
@@ -116,7 +119,10 @@ const SocialLogin = ({
             }}
             className="social"
           >
-            <img alt="Apple" src={AppleIcon} className="social" />
+            <div className="social-button">
+              <img alt="Apple" src={AppleIcon} className="social-logo" />
+              <span>Connexion avec Apple</span>
+            </div>
           </LoginSocialApple>
         )}
 
@@ -132,11 +138,16 @@ const SocialLogin = ({
             onReject={(err: any) => {
               loginError(err)
             }}
-            className="social"
           >
-            <img alt="Google" src={GoogleIcon} className="social" />
+            <div className="social-button">
+              <img src={GoogleIcon} alt="Google" className="social-logo" />
+              <span>Connexion avec Google</span>
+            </div>
           </LoginSocialGoogle>
         )}
+      </div>
+      <div className="separator">
+        <hr />
       </div>
     </div>
   )

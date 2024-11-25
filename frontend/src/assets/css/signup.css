@@ -32,6 +32,22 @@ div.signup div.signup-tos {
   }
 }
 
+div.signup div.signup-buttons {
+  display: flex; /* Alignement horizontal */
+  gap: 10px; /* Espacement entre les boutons */
+  justify-content: center; /* Centrer les boutons horizontalement */
+  margin-top: 20px;
+}
+div.signup div.signup-buttons a,
+div.signup div.signup-buttons button {
+  border-radius: 8px; /* Coins légèrement arrondis */
+  font-size: 0.875rem; /* Taille de texte légèrement réduite */
+  font-weight: 500; /* Mettre en valeur le texte */
+  padding: 8px 16px; /* Espacement cohérent */
+  transition: background-color 0.3s ease, color 0.3s ease; /* Douce transition au survol */
+  width: 135px;
+}
+
 /* Device width is greater than or equal to 960px */
 
 @media only screen and (width >=960px) {

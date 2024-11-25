@@ -395,7 +395,7 @@ const SignUp = () => {
 
                   <SocialLogin />
 
-                  <div className="buttons">
+                  <div className="signup-buttons">
                     <Button type="submit" variant="contained" className="btn-primary btn-margin-bottom" size="small">
                       {strings.SIGN_UP}
                     </Button>

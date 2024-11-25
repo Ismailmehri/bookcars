@@ -149,7 +149,7 @@ const CarList = ({
     _ranges?: string[],
     _multimedia?: string[],
     _rating?: number,
-    _seats?: number,
+    _seats?: number
   ) => {
     try {
       setLoading(true)
@@ -166,6 +166,8 @@ const CarList = ({
         multimedia: _multimedia,
         rating: _rating,
         seats: _seats,
+        startDate: from,
+        endDate: to
       }
 
       const data = await CarService.getCars(payload, _page, env.CARS_PAGE_SIZE)
@@ -205,6 +207,7 @@ const CarList = ({
   }
 
   useEffect(() => {
+    console.log('useEffect triggered with:', { from, to })
     if (suppliers) {
       if (suppliers.length > 0) {
         fetchData(page, suppliers, pickupLocation, carSpecs, _carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats)

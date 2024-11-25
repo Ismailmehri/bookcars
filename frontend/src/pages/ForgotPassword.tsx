@@ -144,7 +144,7 @@ const ForgotPassword = () => {
 
                 <SocialLogin />
 
-                <div className="buttons">
+                <div className="forgot-password-buttons">
                   <Button type="submit" className="btn-primary btn-margin btn-margin-bottom" size="small" variant="contained">
                     {strings.RESET}
                   </Button>

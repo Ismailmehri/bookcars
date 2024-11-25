@@ -209,19 +209,21 @@ export interface CarSpecs {
 }
 
 export interface GetCarsPayload {
-  suppliers?: string[]
-  carSpecs?: CarSpecs
-  carType?: string[]
-  gearbox?: string[]
-  mileage?: string[]
-  fuelPolicy?: string[]
-  deposit?: number
-  availability?: string[]
-  pickupLocation?: string
-  ranges?: string[]
-  multimedia?: string[]
-  rating?: number
-  seats?: number
+  suppliers?: string[];
+  carSpecs?: CarSpecs;
+  carType?: string[];
+  gearbox?: string[];
+  mileage?: string[];
+  fuelPolicy?: string[];
+  deposit?: number;
+  availability?: string[];
+  pickupLocation?: string;
+  ranges?: string[];
+  multimedia?: string[];
+  rating?: number;
+  seats?: number;
+  startDate?: Date; 
+  endDate?: Date;
 }
 
 export interface SignUpPayload {

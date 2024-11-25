@@ -78,7 +78,7 @@ interface MapProps {
 
 const Map = ({
   title,
-  position = new L.LatLng(31.792305849269, -7.080168000000015),
+  position = new L.LatLng(33.8251045, 4.5304893),
   initialZoom,
   locations,
   parkingSpots,

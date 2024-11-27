@@ -171,11 +171,19 @@ div.booking .btn-cancel {
 }
 
 div.booking .btn-checkout {
-  background: #232323;
+  background: #1976d2;
 }
 
 div.booking .btn-cancel {
-  background: #999;
+  color: #1976d2;
+  background: #fff;
+  border-color: #1976d2;
+  border: 1px solid #1976d2;
+}
+
+div.booking .btn-checkout:hover,
+div.booking .btn-cancel:hover {
+  opacity: 0.85;
 }
 
 /* Device width is less than or equal to 960px */

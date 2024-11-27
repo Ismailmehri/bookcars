@@ -102,7 +102,7 @@ const Checkout = () => {
   const [addiontalDriverEmailValid, setAddiontalDriverEmailValid] = useState(true)
   const [addiontalDriverPhoneValid, setAddiontalDriverPhoneValid] = useState(true)
   const [addiontalDriverBirthDateValid, setAddiontalDriverBirthDateValid] = useState(true)
-  const [payLater, setPayLater] = useState(false)
+  const [payLater, setPayLater] = useState(true)
   const [recaptchaError, setRecaptchaError] = useState(false)
 
   const [adManuallyChecked, setAdManuallyChecked] = useState(false)
@@ -943,7 +943,7 @@ const Checkout = () => {
                       <div className="payment-options">
                         <FormControl>
                           <RadioGroup
-                            defaultValue="payOnline"
+                            defaultValue="payLater"
                             onChange={(event) => {
                               setPayLater(event.target.value === 'payLater')
                             }}
@@ -958,7 +958,7 @@ const Checkout = () => {
                                 </span>
                               )}
                             />
-                            <FormControlLabel
+                            { /* <FormControlLabel
                               value="payOnline"
                               control={<Radio />}
                               label={(
@@ -967,7 +967,7 @@ const Checkout = () => {
                                   <span className="payment-info">{`(${strings.PAY_ONLINE_INFO})`}</span>
                                 </span>
                               )}
-                            />
+                            /> */ }
                           </RadioGroup>
                         </FormControl>
                       </div>
@@ -1032,7 +1032,7 @@ const Checkout = () => {
           </div>
         )}
         {noMatch && <NoMatch hideHeader />}
-        {success && <Info message={payLater ? strings.PAY_LATER_SUCCESS : strings.SUCCESS} />}
+        {success && <Info message={payLater ? strings.PAY_LATER_SUCCESS : strings.SUCCESS} type="success" />}
       </Layout>
     </ReCaptchaProvider>
   )

@@ -223,7 +223,7 @@ const CarFilter = ({
               </Button>
             </FormControl>
             <FormControl fullWidth className="chk-same-location">
-              <FormControlLabel control={<Checkbox checked={sameLocation} onChange={handleSameLocationChange} />} label={strings.DROP_OFF} />
+              <FormControlLabel control={<Checkbox disabled checked={sameLocation} onChange={handleSameLocationChange} />} label={strings.DROP_OFF} />
             </FormControl>
           </form>
         </Accordion>
@@ -287,7 +287,7 @@ const CarFilter = ({
                     />
                   </FormControl>
                   <FormControl fullWidth className="chk-same-location">
-                    <FormControlLabel control={<Checkbox checked={sameLocation} onChange={handleSameLocationChange} />} label={strings.DROP_OFF} />
+                    <FormControlLabel control={<Checkbox disabled checked={sameLocation} onChange={handleSameLocationChange} />} label={strings.DROP_OFF} />
                   </FormControl>
                 </>
               )

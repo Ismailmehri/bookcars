@@ -1,5 +1,4 @@
 import React, { useState, useEffect, ReactNode } from 'react'
-import { Button } from '@mui/material'
 import * as bookcarsTypes from ':bookcars-types'
 import { strings } from '@/lang/master'
 import Header from './Header'
@@ -7,6 +6,7 @@ import * as UserService from '@/services/UserService'
 import * as helper from '@/common/helper'
 import { useInit } from '@/common/customHooks'
 import { useAnalytics } from '@/common/useAnalytics'
+import ValidateEmail from './ValidateUser'
 
 interface LayoutProps {
   user?: bookcarsTypes.User
@@ -110,12 +110,10 @@ const Layout = ({
         <div className="content">{children}</div>
       ) : (
         !loading && (
-          <div className="validate-email">
-            <span>{strings.VALIDATE_EMAIL}</span>
-            <Button type="button" variant="contained" size="small" className="btn-primary btn-resend" onClick={handleResend}>
-              {strings.RESEND}
-            </Button>
-          </div>
+          <ValidateEmail
+            message={strings.VALIDATE_EMAIL}
+            onResend={handleResend}
+          />
         )
       )}
     </>

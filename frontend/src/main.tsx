@@ -264,14 +264,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         pauseOnHover
         theme="dark"
       />
-      <a
-        className="github-fork-ribbon fixed left-bottom"
-        href="https://github.com/aelassas/bookcars"
-        data-ribbon="Fork me on GitHub"
-        title="Fork me on GitHub"
-      >
-        Fork me on GitHub
-      </a>
     </CssBaseline>
   </ThemeProvider>,
 )

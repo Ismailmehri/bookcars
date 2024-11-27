@@ -12,7 +12,12 @@ form.home-search-form .btn-search {
   border-radius: 5px;
   margin: 0;
   white-space: nowrap;
-  background: #212121;
+  background: #1976d2;
+}
+
+form.home-search-form .btn-cancel {
+  color: #1976d2;
+  border-color: #1976d2;
 }
 
 form.home-search-form .btn-search:hover,

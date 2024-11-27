@@ -284,7 +284,7 @@ const SearchForm = ({
         </FormControl>
       )}
       <FormControl className="chk-same-location">
-        <FormControlLabel control={<Checkbox checked={sameLocation} onChange={handleSameLocationChange} />} label={strings.DROP_OFF} />
+        <FormControlLabel control={<Checkbox disabled checked={sameLocation} onChange={handleSameLocationChange} />} label={strings.DROP_OFF} />
       </FormControl>
     </form>
   )

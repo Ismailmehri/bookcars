@@ -114,8 +114,8 @@ export interface Filter {
 }
 
 export interface GetBookingsPayload {
-  suppliers: string[]
-  statuses: string[]
+  suppliers: string[] | undefined
+  statuses: string[] | undefined
   user?: string
   car?: string
   filter?: Filter

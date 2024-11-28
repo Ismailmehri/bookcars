@@ -34,6 +34,7 @@ import StatusList from './StatusList'
 import BookingStatus from './BookingStatus'
 
 import '@/assets/css/booking-list.css'
+import CarReservationCalendar from './CarReservationCalendar'
 
 interface BookingListProps {
   suppliers?: string[]
@@ -475,205 +476,214 @@ const BookingList = ({
   const bookingDetailHeight = env.SUPPLIER_IMAGE_HEIGHT + 10
 
   return (
-    <div className="bs-list">
-      {loggedUser
-        && (rows.length === 0 ? (
-          !loading
-          && !init
-          && !bookingLoading
-          && (
-            <Card variant="outlined" className="empty-list">
-              <CardContent>
-                <Typography color="textSecondary">{strings.EMPTY_LIST}</Typography>
-              </CardContent>
-            </Card>
-          )
-        ) : env.isMobile() ? (
-          <>
-            {rows.map((booking, index) => {
-              const from = new Date(booking.from)
-              const to = new Date(booking.to)
-              const days = bookcarsHelper.days(from, to)
+    <div>
+      <div style={{ padding: '15px' }}>
+        <CarReservationCalendar
+          suppliers={suppliers}
+          statuses={statuses}
+          carId={car}
+        />
+      </div>
+      <div className="bs-list">
+        {loggedUser
+          && (rows.length === 0 ? (
+            !loading
+            && !init
+            && !bookingLoading
+            && (
+              <Card variant="outlined" className="empty-list">
+                <CardContent>
+                  <Typography color="textSecondary">{strings.EMPTY_LIST}</Typography>
+                </CardContent>
+              </Card>
+            )
+          ) : env.isMobile() ? (
+            <>
+              {rows.map((booking, index) => {
+                const from = new Date(booking.from)
+                const to = new Date(booking.to)
+                const days = bookcarsHelper.days(from, to)
 
-              return (
-                <div key={booking._id} className="booking-details">
-                  <div className={`bs bs-${booking.status}`}>
-                    <span>{helper.getBookingStatus(booking.status)}</span>
-                  </div>
-                  <div className="booking-detail" style={{ height: bookingDetailHeight }}>
-                    <span className="booking-detail-title">{strings.CAR}</span>
-                    <div className="booking-detail-value">
-                      <Link href={`car/?cr=${(booking.car as bookcarsTypes.Car)._id}`}>{(booking.car as bookcarsTypes.Car).name}</Link>
+                return (
+                  <div key={booking._id} className="booking-details">
+                    <div className={`bs bs-${booking.status}`}>
+                      <span>{helper.getBookingStatus(booking.status)}</span>
                     </div>
-                  </div>
-                  <div className="booking-detail" style={{ height: bookingDetailHeight }}>
-                    <span className="booking-detail-title">{strings.DRIVER}</span>
-                    <div className="booking-detail-value">
-                      <Link href={`user/?u=${(booking.driver as bookcarsTypes.User)._id}`}>{(booking.driver as bookcarsTypes.User).fullName}</Link>
-                    </div>
-                  </div>
-                  <div className="booking-detail" style={{ height: bookingDetailHeight }}>
-                    <span className="booking-detail-title">{strings.DAYS}</span>
-                    <div className="booking-detail-value">
-                      {`${helper.getDaysShort(bookcarsHelper.days(from, to))} (${bookcarsHelper.capitalize(
-                        format(from, _format, { locale: _locale }),
-                      )} - ${bookcarsHelper.capitalize(format(to, _format, { locale: _locale }))})`}
-                    </div>
-                  </div>
-                  <div className="booking-detail" style={{ height: bookingDetailHeight }}>
-                    <span className="booking-detail-title">{commonStrings.PICK_UP_LOCATION}</span>
-                    <div className="booking-detail-value">{(booking.pickupLocation as bookcarsTypes.Location).name}</div>
-                  </div>
-                  <div className="booking-detail" style={{ height: bookingDetailHeight }}>
-                    <span className="booking-detail-title">{commonStrings.DROP_OFF_LOCATION}</span>
-                    <div className="booking-detail-value">{(booking.dropOffLocation as bookcarsTypes.Location).name}</div>
-                  </div>
-                  <div className="booking-detail" style={{ height: bookingDetailHeight }}>
-                    <span className="booking-detail-title">{commonStrings.SUPPLIER}</span>
-                    <div className="booking-detail-value">
-                      <div className="car-supplier">
-                        <img src={bookcarsHelper.joinURL(env.CDN_USERS, (booking.supplier as bookcarsTypes.User).avatar)} alt={(booking.supplier as bookcarsTypes.User).fullName} />
-                        <span className="car-supplier-name">{(booking.supplier as bookcarsTypes.User).fullName}</span>
+                    <div className="booking-detail" style={{ height: bookingDetailHeight }}>
+                      <span className="booking-detail-title">{strings.CAR}</span>
+                      <div className="booking-detail-value">
+                        <Link href={`car/?cr=${(booking.car as bookcarsTypes.Car)._id}`}>{(booking.car as bookcarsTypes.Car).name}</Link>
                       </div>
                     </div>
-                  </div>
-
-                  {(booking.cancellation || booking.amendments || booking.collisionDamageWaiver || booking.theftProtection || booking.fullInsurance || booking.additionalDriver) && (
-                    <>
-                      <div className="extras">
-                        <span className="extras-title">{commonStrings.OPTIONS}</span>
-                        {booking.cancellation && (
-                          <div className="extra">
-                            <CheckIcon className="extra-icon" />
-                            <span className="extra-title">{csStrings.CANCELLATION}</span>
-                            <span className="extra-text">{helper.getCancellationOption((booking.car as bookcarsTypes.Car).cancellation, language as string, true)}</span>
-                          </div>
-                        )}
-
-                        {booking.amendments && (
-                          <div className="extra">
-                            <CheckIcon className="extra-icon" />
-                            <span className="extra-title">{csStrings.AMENDMENTS}</span>
-                            <span className="extra-text">{helper.getAmendmentsOption((booking.car as bookcarsTypes.Car).amendments, language as string, true)}</span>
-                          </div>
-                        )}
-
-                        {booking.collisionDamageWaiver && (
-                          <div className="extra">
-                            <CheckIcon className="extra-icon" />
-                            <span className="extra-title">{csStrings.COLLISION_DAMAGE_WAVER}</span>
-                            <span className="extra-text">{helper.getCollisionDamageWaiverOption((booking.car as bookcarsTypes.Car).collisionDamageWaiver, days, language as string, true)}</span>
-                          </div>
-                        )}
-
-                        {booking.theftProtection && (
-                          <div className="extra">
-                            <CheckIcon className="extra-icon" />
-                            <span className="extra-title">{csStrings.THEFT_PROTECTION}</span>
-                            <span className="extra-text">{helper.getTheftProtectionOption((booking.car as bookcarsTypes.Car).theftProtection, days, language as string, true)}</span>
-                          </div>
-                        )}
-
-                        {booking.fullInsurance && (
-                          <div className="extra">
-                            <CheckIcon className="extra-icon" />
-                            <span className="extra-title">{csStrings.FULL_INSURANCE}</span>
-                            <span className="extra-text">{helper.getFullInsuranceOption((booking.car as bookcarsTypes.Car).fullInsurance, days, language as string, true)}</span>
-                          </div>
-                        )}
-
-                        {booking.additionalDriver && (
-                          <div className="extra">
-                            <CheckIcon className="extra-icon" />
-                            <span className="extra-title">{csStrings.ADDITIONAL_DRIVER}</span>
-                            <span className="extra-text">{helper.getAdditionalDriverOption((booking.car as bookcarsTypes.Car).additionalDriver, days, language as string, true)}</span>
-                          </div>
-                        )}
+                    <div className="booking-detail" style={{ height: bookingDetailHeight }}>
+                      <span className="booking-detail-title">{strings.DRIVER}</span>
+                      <div className="booking-detail-value">
+                        <Link href={`user/?u=${(booking.driver as bookcarsTypes.User)._id}`}>{(booking.driver as bookcarsTypes.User).fullName}</Link>
                       </div>
-                    </>
-                  )}
+                    </div>
+                    <div className="booking-detail" style={{ height: bookingDetailHeight }}>
+                      <span className="booking-detail-title">{strings.DAYS}</span>
+                      <div className="booking-detail-value">
+                        {`${helper.getDaysShort(bookcarsHelper.days(from, to))} (${bookcarsHelper.capitalize(
+                          format(from, _format, { locale: _locale }),
+                        )} - ${bookcarsHelper.capitalize(format(to, _format, { locale: _locale }))})`}
+                      </div>
+                    </div>
+                    <div className="booking-detail" style={{ height: bookingDetailHeight }}>
+                      <span className="booking-detail-title">{commonStrings.PICK_UP_LOCATION}</span>
+                      <div className="booking-detail-value">{(booking.pickupLocation as bookcarsTypes.Location).name}</div>
+                    </div>
+                    <div className="booking-detail" style={{ height: bookingDetailHeight }}>
+                      <span className="booking-detail-title">{commonStrings.DROP_OFF_LOCATION}</span>
+                      <div className="booking-detail-value">{(booking.dropOffLocation as bookcarsTypes.Location).name}</div>
+                    </div>
+                    <div className="booking-detail" style={{ height: bookingDetailHeight }}>
+                      <span className="booking-detail-title">{commonStrings.SUPPLIER}</span>
+                      <div className="booking-detail-value">
+                        <div className="car-supplier">
+                          <img src={bookcarsHelper.joinURL(env.CDN_USERS, (booking.supplier as bookcarsTypes.User).avatar)} alt={(booking.supplier as bookcarsTypes.User).fullName} />
+                          <span className="car-supplier-name">{(booking.supplier as bookcarsTypes.User).fullName}</span>
+                        </div>
+                      </div>
+                    </div>
 
-                  <div className="booking-detail" style={{ height: bookingDetailHeight }}>
-                    <span className="booking-detail-title">{strings.COST}</span>
-                    <div className="booking-detail-value booking-price">{bookcarsHelper.formatPrice(booking.price as number, commonStrings.CURRENCY, language as string)}</div>
+                    {(booking.cancellation || booking.amendments || booking.collisionDamageWaiver || booking.theftProtection || booking.fullInsurance || booking.additionalDriver) && (
+                      <>
+                        <div className="extras">
+                          <span className="extras-title">{commonStrings.OPTIONS}</span>
+                          {booking.cancellation && (
+                            <div className="extra">
+                              <CheckIcon className="extra-icon" />
+                              <span className="extra-title">{csStrings.CANCELLATION}</span>
+                              <span className="extra-text">{helper.getCancellationOption((booking.car as bookcarsTypes.Car).cancellation, language as string, true)}</span>
+                            </div>
+                          )}
+
+                          {booking.amendments && (
+                            <div className="extra">
+                              <CheckIcon className="extra-icon" />
+                              <span className="extra-title">{csStrings.AMENDMENTS}</span>
+                              <span className="extra-text">{helper.getAmendmentsOption((booking.car as bookcarsTypes.Car).amendments, language as string, true)}</span>
+                            </div>
+                          )}
+
+                          {booking.collisionDamageWaiver && (
+                            <div className="extra">
+                              <CheckIcon className="extra-icon" />
+                              <span className="extra-title">{csStrings.COLLISION_DAMAGE_WAVER}</span>
+                              <span className="extra-text">{helper.getCollisionDamageWaiverOption((booking.car as bookcarsTypes.Car).collisionDamageWaiver, days, language as string, true)}</span>
+                            </div>
+                          )}
+
+                          {booking.theftProtection && (
+                            <div className="extra">
+                              <CheckIcon className="extra-icon" />
+                              <span className="extra-title">{csStrings.THEFT_PROTECTION}</span>
+                              <span className="extra-text">{helper.getTheftProtectionOption((booking.car as bookcarsTypes.Car).theftProtection, days, language as string, true)}</span>
+                            </div>
+                          )}
+
+                          {booking.fullInsurance && (
+                            <div className="extra">
+                              <CheckIcon className="extra-icon" />
+                              <span className="extra-title">{csStrings.FULL_INSURANCE}</span>
+                              <span className="extra-text">{helper.getFullInsuranceOption((booking.car as bookcarsTypes.Car).fullInsurance, days, language as string, true)}</span>
+                            </div>
+                          )}
+
+                          {booking.additionalDriver && (
+                            <div className="extra">
+                              <CheckIcon className="extra-icon" />
+                              <span className="extra-title">{csStrings.ADDITIONAL_DRIVER}</span>
+                              <span className="extra-text">{helper.getAdditionalDriverOption((booking.car as bookcarsTypes.Car).additionalDriver, days, language as string, true)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    <div className="booking-detail" style={{ height: bookingDetailHeight }}>
+                      <span className="booking-detail-title">{strings.COST}</span>
+                      <div className="booking-detail-value booking-price">{bookcarsHelper.formatPrice(booking.price as number, commonStrings.CURRENCY, language as string)}</div>
+                    </div>
+
+                    <div className="bs-buttons">
+                      <Button
+                        variant="contained"
+                        className="btn-primary"
+                        size="small"
+                        href={`update-booking?b=${booking._id}`}
+                      >
+                        {commonStrings.UPDATE}
+                      </Button>
+                      <Button
+                        variant="contained"
+                        className="btn-secondary"
+                        size="small"
+                        data-id={booking._id}
+                        data-index={index}
+                        onClick={handleDelete}
+                      >
+                        {commonStrings.DELETE}
+                      </Button>
+                    </div>
                   </div>
+                )
+              })}
+            </>
+          ) : (
+            <DataGrid
+              checkboxSelection={checkboxSelection}
+              getRowId={(row: bookcarsTypes.Booking): GridRowId => row._id as GridRowId}
+              columns={columns}
+              rows={rows}
+              rowCount={rowCount}
+              loading={loading}
+              initialState={{
+                pagination: {
+                  paginationModel: { pageSize: env.BOOKINGS_PAGE_SIZE },
+                },
+              }}
+              pageSizeOptions={[env.BOOKINGS_PAGE_SIZE, 50, 100]}
+              pagination
+              paginationMode="server"
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+              onRowSelectionModelChange={(_selectedIds) => {
+                setSelectedIds(Array.from(new Set(_selectedIds)).map((id) => id.toString()))
+              }}
+              disableRowSelectionOnClick
+              className="booking-grid"
+            />
+          ))}
+        <Dialog disableEscapeKeyDown maxWidth="xs" open={openUpdateDialog}>
+          <DialogTitle className="dialog-header">{strings.UPDATE_STATUS}</DialogTitle>
+          <DialogContent className="bs-update-status">
+            <StatusList label={strings.NEW_STATUS} onChange={handleStatusChange} />
+          </DialogContent>
+          <DialogActions className="dialog-actions">
+            <Button onClick={handleCancelUpdate} variant="contained" className="btn-secondary">
+              {commonStrings.CANCEL}
+            </Button>
+            <Button onClick={handleConfirmUpdate} variant="contained" className="btn-primary">
+              {commonStrings.UPDATE}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-                  <div className="bs-buttons">
-                    <Button
-                      variant="contained"
-                      className="btn-primary"
-                      size="small"
-                      href={`update-booking?b=${booking._id}`}
-                    >
-                      {commonStrings.UPDATE}
-                    </Button>
-                    <Button
-                      variant="contained"
-                      className="btn-secondary"
-                      size="small"
-                      data-id={booking._id}
-                      data-index={index}
-                      onClick={handleDelete}
-                    >
-                      {commonStrings.DELETE}
-                    </Button>
-                  </div>
-                </div>
-              )
-            })}
-          </>
-        ) : (
-          <DataGrid
-            checkboxSelection={checkboxSelection}
-            getRowId={(row: bookcarsTypes.Booking): GridRowId => row._id as GridRowId}
-            columns={columns}
-            rows={rows}
-            rowCount={rowCount}
-            loading={loading}
-            initialState={{
-              pagination: {
-                paginationModel: { pageSize: env.BOOKINGS_PAGE_SIZE },
-              },
-            }}
-            pageSizeOptions={[env.BOOKINGS_PAGE_SIZE, 50, 100]}
-            pagination
-            paginationMode="server"
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            onRowSelectionModelChange={(_selectedIds) => {
-              setSelectedIds(Array.from(new Set(_selectedIds)).map((id) => id.toString()))
-            }}
-            disableRowSelectionOnClick
-            className="booking-grid"
-          />
-        ))}
-      <Dialog disableEscapeKeyDown maxWidth="xs" open={openUpdateDialog}>
-        <DialogTitle className="dialog-header">{strings.UPDATE_STATUS}</DialogTitle>
-        <DialogContent className="bs-update-status">
-          <StatusList label={strings.NEW_STATUS} onChange={handleStatusChange} />
-        </DialogContent>
-        <DialogActions className="dialog-actions">
-          <Button onClick={handleCancelUpdate} variant="contained" className="btn-secondary">
-            {commonStrings.CANCEL}
-          </Button>
-          <Button onClick={handleConfirmUpdate} variant="contained" className="btn-primary">
-            {commonStrings.UPDATE}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog disableEscapeKeyDown maxWidth="xs" open={openDeleteDialog}>
-        <DialogTitle className="dialog-header">{commonStrings.CONFIRM_TITLE}</DialogTitle>
-        <DialogContent className="dialog-content">{selectedIds.length === 0 ? strings.DELETE_BOOKING : strings.DELETE_BOOKINGS}</DialogContent>
-        <DialogActions className="dialog-actions">
-          <Button onClick={handleCancelDelete} variant="contained" className="btn-secondary">
-            {commonStrings.CANCEL}
-          </Button>
-          <Button onClick={handleConfirmDelete} variant="contained" color="error">
-            {commonStrings.DELETE}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <Dialog disableEscapeKeyDown maxWidth="xs" open={openDeleteDialog}>
+          <DialogTitle className="dialog-header">{commonStrings.CONFIRM_TITLE}</DialogTitle>
+          <DialogContent className="dialog-content">{selectedIds.length === 0 ? strings.DELETE_BOOKING : strings.DELETE_BOOKINGS}</DialogContent>
+          <DialogActions className="dialog-actions">
+            <Button onClick={handleCancelDelete} variant="contained" className="btn-secondary">
+              {commonStrings.CANCEL}
+            </Button>
+            <Button onClick={handleConfirmDelete} variant="contained" color="error">
+              {commonStrings.DELETE}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </div>
     </div>
   )
 }

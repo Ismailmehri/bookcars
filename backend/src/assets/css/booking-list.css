@@ -95,6 +95,63 @@ div.bs-list div.booking-details div.bs-cancelled {
   color: #E53935;
 }
 
+.fc-event.bs-void {
+  background: #000;
+  border: 1px solid #6E7C86;
+
+}
+.fc-event.bs-pending {
+  background: #EF6C00;
+  border: 1px solid #EF6C00;
+}
+.fc-event.bs-deposit {
+  background: #3CB371;
+  border: 1px solid #3CB371;
+}
+.fc-event.bs-paid {
+  background: #77BC23;
+  border: 1px solid #77BC23;
+}
+.fc-event.bs-reserved {
+  background: #1E88E5;
+  border: 1px solid #1E88E5;
+}
+.fc-event.bs-cancelled {
+  background: #E53935;
+  border: 1px solid #E53935;
+}
+
+/* Style pour les boutons "Précédent" et "Suivant" (principal) */
+.fc-toolbar .fc-button {
+  background-color: #1976d2 !important; /* Couleur principale */
+  color: white !important; /* Texte en blanc */
+  border: none !important; /* Pas de bordure */
+}
+
+.fc-toolbar .fc-button:hover {
+  background-color: #115293 !important; /* Couleur au survol */
+}
+
+/* Style pour le bouton "Aujourd'hui" (secondaire) */
+.fc-toolbar .fc-button.fc-today-button {
+  background-color: transparent !important; /* Fond transparent */
+  color: #1976d2 !important; /* Texte en bleu */
+  border: 1px solid #1976d2 !important; /* Bordure bleue */
+}
+
+.fc-toolbar .fc-button.fc-today-button:hover {
+  background-color: #e3f2fd !important; /* Fond clair au survol */
+  color: #115293 !important; /* Texte plus foncé au survol */
+  border-color: #115293 !important; /* Bordure plus foncée */
+}
+
+/* Style spécifique pour mobile */
+@media (max-width: 768px) {
+  .fc .fc-toolbar-title {
+    font-size: 0.9em; /* Taille pour les écrans mobiles */
+  }
+}
+
 div.bs-list div.booking-details div.booking-detail {
   display: table-row;
 }
@@ -191,7 +248,7 @@ div.bs-list div.bs-buttons button {
 
 @media only screen and (width >=960px) {
   div.bs-list {
-    position: absolute;
+    position: static;
     inset: 0;
     overflow-y: auto;
   }

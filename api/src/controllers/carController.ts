@@ -107,6 +107,7 @@ export const update = async (req: Request, res: Response) => {
         multimedia,
         rating,
         co2,
+        periodicPrices,
       } = body
 
       car.supplier = new mongoose.Types.ObjectId(supplier)
@@ -140,6 +141,7 @@ export const update = async (req: Request, res: Response) => {
       car.multimedia = multimedia
       car.rating = rating
       car.co2 = co2
+      car.periodicPrices = periodicPrices
 
       await car.save()
       return res.json(car)

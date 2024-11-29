@@ -54,6 +54,22 @@ const carSchema = new Schema<env.Car>(
     discountedMonthlyPrice: {
       type: Number,
     },
+    periodicPrices: [
+      {
+        startDate: {
+          type: Date,
+          required: [true, "Start date can't be blank"],
+        },
+        endDate: {
+          type: Date,
+          required: [true, "End date can't be blank"],
+        },
+        dailyPrice: {
+          type: Number,
+          required: [true, "Daily price can't be blank"],
+        },
+      },
+    ],
     // --------- end of price fields ---------
 
     deposit: {

@@ -19,6 +19,34 @@ div.create-car {
   color: #121212;
 }
 
+.add-button {
+  margin-top: 35px;
+  margin-bottom: 0px;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+}
+
+.add-button button {
+  width: 20px;
+  height: 20px;
+}
+
+.fixed-width-300 {
+  width: 300px;
+}
+
+.add-border {
+  border: 2px solid rgb(123 119 119 / 60%);
+  border-radius: 10px;
+  padding: 16px;
+  margin: 15px -10px 0 -10px;
+}
+
+.text-tilte {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
 .checkbox-fc {
   margin: 13px 0 !important;
 }

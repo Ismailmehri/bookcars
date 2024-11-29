@@ -451,6 +451,11 @@ export interface Booking extends Document {
   expireAt?: Date
 }
 
+interface PricePeriod {
+  startDate: null | Date
+  endDate: null | Date
+  dailyPrice: null | number
+}
 /**
  * Car Document.
  *
@@ -473,6 +478,7 @@ export interface Car extends Document {
   discountedWeeklyPrice: number | null
   monthlyPrice: number | null
   discountedMonthlyPrice: number | null
+  periodicPrices: PricePeriod[];
 
   deposit: number
   available: boolean

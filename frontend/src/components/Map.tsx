@@ -78,7 +78,7 @@ interface MapProps {
 
 const Map = ({
   title,
-  position = new L.LatLng(33.8251045, 4.5304893),
+  position = new L.LatLng(33.886917, 9.537499),
   initialZoom,
   locations,
   parkingSpots,
@@ -87,7 +87,7 @@ const Map = ({
   onSelelectPickUpLocation,
   // onSelelectDropOffLocation,
 }: MapProps) => {
-  const _initialZoom = initialZoom || 5.5
+  const _initialZoom = initialZoom || 7
   const [zoom, setZoom] = useState(_initialZoom)
   const [map, setMap] = useState<L.Map | null>(null)
 

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { MailOutline } from '@mui/icons-material'
 import { strings } from '@/lang/footer'
 
-import SecurePayment from '@/assets/img/secure-payment.png'
 import '@/assets/css/footer.css'
 
 const Footer = () => {
@@ -35,14 +34,14 @@ const Footer = () => {
           </ul>
           <div className="contact">
             <MailOutline className="icon" />
-            <a href="mailto:info@bookcars.ma">info@bookcars.ma</a>
+            <a href="mailto:info@plany.tn">mailto:info@plany.tn</a>
           </div>
         </div>
       </section>
-      <section className="payment">
+      {/* <section className="payment">
         <div className="payment-text">{strings.SECURE_PAYMENT}</div>
         <img src={SecurePayment} alt="" />
-      </section>
+      </section> */}
       <section className="copyright">
         <div className="copyright">
           <span>{strings.COPYRIGHT_PART1}</span>

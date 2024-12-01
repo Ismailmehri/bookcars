@@ -38,6 +38,7 @@ const strings = new LocalizedStrings({
     CORPORATE: 'Corporativo',
     ABOUT: 'Sobre Nosotros',
     TOS: 'Términos de Servicio',
+    PRIVACY: 'Politique de Confidentialité',
     RENT: 'Alquilar un Coche',
     SUPPLIERS: 'Proveedores',
     LOCATIONS: 'Ubicaciones',

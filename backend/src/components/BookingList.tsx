@@ -224,13 +224,17 @@ const BookingList = ({
         field: 'from',
         headerName: commonStrings.FROM,
         flex: 1,
-        valueGetter: (value: string) => getDate(value),
+        valueGetter: (params) => params, // Retourne la date brute pour le tri
+        renderCell: (params) => new Date(params.value).toLocaleDateString('fr-FR'), // Affiche la date formatée
+        sortComparator: (v1, v2) => new Date(v1).getTime() - new Date(v2).getTime(), // Compare par timestamp
       },
       {
         field: 'to',
         headerName: commonStrings.TO,
         flex: 1,
-        valueGetter: (value: string) => getDate(value),
+        valueGetter: (params) => params, // Retourne la date brute pour le tri
+        renderCell: (params) => new Date(params.value).toLocaleDateString('fr-FR'), // Affiche la date formatée
+        sortComparator: (v1, v2) => new Date(v1).getTime() - new Date(v2).getTime(), // Compare par timestamp
       },
       {
         field: 'price',

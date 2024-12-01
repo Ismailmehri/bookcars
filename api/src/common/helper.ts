@@ -263,3 +263,7 @@ export const validateAccessToken = async (socialSignInType: bookcarsTypes.Social
 
   return false
 }
+
+export const admin = (user?: bookcarsTypes.User): boolean => (user && user.type === bookcarsTypes.RecordType.Admin) ?? false
+
+export const supplier = (user?: bookcarsTypes.User): boolean => (user && user.type === bookcarsTypes.RecordType.Supplier) ?? false

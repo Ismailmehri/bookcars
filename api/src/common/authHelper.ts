@@ -82,3 +82,16 @@ export const getAuthCookieName = (req: Request): string => {
   // Mobile app and unit tests auth header name
   return env.X_ACCESS_TOKEN
 }
+
+export const getSessionData = (req: Request) => {
+  let token: string
+  if (isBackend(req)) {
+    token = req.signedCookies[env.BACKEND_AUTH_COOKIE_NAME] as string // backend
+  } else if (isFrontend(req)) {
+    token = req.signedCookies[env.FRONTEND_AUTH_COOKIE_NAME] as string // frontend
+  } else {
+    token = req.headers[env.X_ACCESS_TOKEN] as string // mobile app and unit tests
+  }
+
+  return decryptJWT(token)
+}

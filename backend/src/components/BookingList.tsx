@@ -481,7 +481,9 @@ const BookingList = ({
         <CarReservationCalendar
           suppliers={suppliers}
           statuses={statuses}
-          carId={car}
+          car={car}
+          filter={filter}
+          user={user}
         />
       </div>
       <div className="bs-list">

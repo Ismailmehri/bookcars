@@ -20,7 +20,9 @@ import {
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  AccountCircle, Check as VerifiedIcon
+  AccountCircle, Check as VerifiedIcon,
+  PriorityHigh as NotActivatedIcon,
+  HourglassEmpty as UnverifiedIcon
 } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -143,7 +145,34 @@ const UserList = ({
 
           if (__user.avatar) {
             if (__user.type === bookcarsTypes.RecordType.Supplier) {
-              userAvatar = <img src={bookcarsHelper.joinURL(env.CDN_USERS, row.avatar)} alt={row.fullName} />
+              const supplierAvatar = (
+                <img
+                  src={bookcarsHelper.joinURL(env.CDN_USERS, row.avatar)}
+                  alt={row.fullName}
+                />
+              )
+
+              // Vérification si le fournisseur est activé
+              userAvatar = __user.active ? (
+                supplierAvatar
+              ) : (
+                <Badge
+                  overlap="circular"
+                  anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                  badgeContent={(
+                    <Tooltip title={commonStrings.UNVERIFIED}>
+                      <Box borderRadius="50%" className="user-avatar-notactivated-small">
+                        <NotActivatedIcon className="user-avatar-verified-icon-small" />
+                      </Box>
+                    </Tooltip>
+                )}
+                >
+                  {supplierAvatar}
+                </Badge>
+              )
             } else {
               const userAvatarUrl = __user.avatar
                 ? (__user.avatar.startsWith('http') ? __user.avatar : bookcarsHelper.joinURL(env.CDN_USERS, __user.avatar))
@@ -173,6 +202,17 @@ const UserList = ({
                 userAvatar = (
                   <Badge
                     overlap="circular"
+                    anchorOrigin={{
+                      vertical: 'bottom',
+                      horizontal: 'right',
+                    }}
+                    badgeContent={(
+                      <Tooltip title={commonStrings.UNVERIFIED}>
+                        <Box borderRadius="50%" className="user-avatar-unverified-small">
+                          <UnverifiedIcon className="user-avatar-verified-icon-small" />
+                        </Box>
+                      </Tooltip>
+                    )}
                   >
                     {avatar}
                   </Badge>
@@ -205,6 +245,17 @@ const UserList = ({
               userAvatar = (
                 <Badge
                   overlap="circular"
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                  }}
+                  badgeContent={(
+                    <Tooltip title={commonStrings.UNVERIFIED}>
+                      <Box borderRadius="50%" className="user-avatar-unverified-small">
+                        <UnverifiedIcon className="user-avatar-verified-icon-small" />
+                      </Box>
+                    </Tooltip>
+                  )}
                 >
                   {avatar}
                 </Badge>

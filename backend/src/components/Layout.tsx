@@ -1,5 +1,4 @@
 import React, { useState, useEffect, CSSProperties, ReactNode } from 'react'
-import { Button } from '@mui/material'
 import * as bookcarsTypes from ':bookcars-types'
 import { strings } from '@/lang/master'
 import Header from './Header'
@@ -7,6 +6,7 @@ import * as UserService from '@/services/UserService'
 import Unauthorized from './Unauthorized'
 import * as helper from '@/common/helper'
 import { useInit } from '@/common/customHooks'
+import ValidateEmail from './ValidateUser'
 
 interface LayoutProps {
   user?: bookcarsTypes.User
@@ -119,18 +119,29 @@ const Layout = ({
   return (
     <>
       <Header user={user} hidden={hideHeader || loading} />
-      {((!user && !loading) || (user && user.verified) || !strict) && !unauthorized ? (
+      {((!user && !loading) || (user && user.verified && user.active) || !strict) && !unauthorized ? (
         <div className="content" style={style || {}}>
           {children}
         </div>
       ) : (
-        !loading && !unauthorized && (
-          <div className="validate-email">
-            <span>{strings.VALIDATE_EMAIL}</span>
-            <Button type="button" variant="contained" size="small" className="btn-primary btn-resend" onClick={handleResend}>
-              {strings.RESEND}
-            </Button>
-          </div>
+        !loading
+        && !unauthorized && (
+          <>
+            {user && !user.verified && (
+              <ValidateEmail
+                message={strings.VALIDATE_EMAIL}
+                withButton
+                onResend={handleResend}
+              />
+            )}
+            {user && user.verified && !user.active && (
+              <ValidateEmail
+                message={strings.NOT_ACTIVATED_MAIL}
+                onResend={handleResend}
+                withButton={false}
+              />
+            )}
+          </>
         )
       )}
       {unauthorized && <Unauthorized style={{ marginTop: '75px' }} />}

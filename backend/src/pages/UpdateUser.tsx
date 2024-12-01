@@ -57,6 +57,7 @@ const UpdateUser = () => {
   const [birthDateValid, setBirthDateValid] = useState(true)
   const [phoneValid, setPhoneValid] = useState(true)
   const [payLater, setPayLater] = useState(true)
+  const [active, setActive] = useState(true)
 
   const validateFullName = async (_fullName: string, strict = true) => {
     const __fullName = _fullName || fullName
@@ -220,8 +221,9 @@ const UpdateUser = () => {
         if (id && id !== '') {
           try {
             const _user = await UserService.getUser(id)
+            const isAdmin = helper.admin(_loggedUser)
 
-            if (_user) {
+            if (_user && isAdmin) {
               setLoggedUser(_loggedUser)
               setUser(_user)
               setAdmin(helper.admin(_loggedUser))
@@ -234,6 +236,7 @@ const UpdateUser = () => {
               setBio(_user.bio || '')
               setBirthDate(_user && _user.birthDate ? new Date(_user.birthDate) : undefined)
               setPayLater(_user.payLater || false)
+              setActive(_user.active || false)
               setVisible(true)
               setLoading(false)
             } else {
@@ -306,6 +309,10 @@ const UpdateUser = () => {
 
       if (type === bookcarsTypes.RecordType.Supplier) {
         data.payLater = payLater
+      }
+
+      if (admin) {
+        data.active = active
       }
 
       const status = await UserService.updateUser(data)
@@ -418,6 +425,23 @@ const UpdateUser = () => {
                     label={commonStrings.PAY_LATER}
                   />
                 </FormControl>
+              )}
+
+              {admin && (
+              <FormControl component="fieldset" style={{ marginTop: 15 }}>
+                <FormControlLabel
+                  control={(
+                    <Switch
+                      checked={active}
+                      onChange={(e) => {
+                          setActive(e.target.checked)
+                        }}
+                      color="primary"
+                    />
+                    )}
+                  label={commonStrings.IS_ACTIVE}
+                />
+              </FormControl>
               )}
 
               <div className="info">

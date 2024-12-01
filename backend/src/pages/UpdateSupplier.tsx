@@ -168,7 +168,7 @@ const UpdateSupplier = () => {
     if (_user && _user.verified) {
       setLoading(true)
       setUser(_user)
-
+      const isAdmin = helper.admin(_user);
       const params = new URLSearchParams(window.location.search)
       if (params.has('c')) {
         const id = params.get('c')
@@ -176,7 +176,7 @@ const UpdateSupplier = () => {
           try {
             const _supplier = await SupplierService.getSupplier(id)
 
-            if (_supplier) {
+            if (_supplier && (isAdmin || _supplier._id === _user._id)) {
               setSupplier(_supplier)
               setEmail(_supplier.email || '')
               setAvatar(_supplier.avatar || '')

@@ -52,7 +52,7 @@ const _signup = async (req: Request, res: Response, userType: bookcarsTypes.User
   let user: env.User
   try {
     body.email = helper.trim(body.email, ' ')
-    body.active = true
+    body.active = userType !== bookcarsTypes.UserType.Supplier.toString()
     body.verified = false
     body.blacklisted = false
     body.type = userType
@@ -142,7 +142,8 @@ export const signup = async (req: Request, res: Response) => {
  * @param {Response} res
  */
 export const adminSignup = async (req: Request, res: Response) => {
-  await _signup(req, res, bookcarsTypes.UserType.Admin)
+  const adminExists = await User.findOne({ type: bookcarsTypes.UserType.Admin })
+  await _signup(req, res, adminExists ? bookcarsTypes.UserType.Supplier : bookcarsTypes.UserType.Admin)
 }
 
 /**
@@ -504,6 +505,7 @@ export const signin = async (req: Request, res: Response) => {
         enableEmailNotifications: user.enableEmailNotifications,
         blacklisted: user.blacklisted,
         avatar: user.avatar,
+        active: user.active,
       }
 
       //
@@ -624,6 +626,7 @@ export const socialSignin = async (req: Request, res: Response) => {
       enableEmailNotifications: user.enableEmailNotifications,
       blacklisted: user.blacklisted,
       avatar: user.avatar,
+      active: user.active,
     }
 
     //
@@ -926,6 +929,8 @@ export const update = async (req: Request, res: Response) => {
   try {
     const { body }: { body: bookcarsTypes.UpdateUserPayload } = req
     const { _id } = body
+    const sessionData = await authHelper.getSessionData(req)
+    let connectedUser: bookcarsTypes.User | null
 
     if (!helper.isValidObjectId(_id)) {
       throw new Error('User id is not valid')
@@ -933,7 +938,14 @@ export const update = async (req: Request, res: Response) => {
 
     const user = await User.findById(_id)
 
-    if (!user) {
+    if (sessionData.id === _id && user) {
+      connectedUser = user as bookcarsTypes.User
+    } else {
+      connectedUser = await User.findById(sessionData.id)
+    }
+
+    const isAdmin = connectedUser ? helper.admin(connectedUser) : false
+    if (!user || (!isAdmin && (user._id !== connectedUser?._id))) {
       logger.error('[user.update] User not found:', body.email)
       return res.sendStatus(204)
     }
@@ -947,6 +959,7 @@ export const update = async (req: Request, res: Response) => {
       birthDate,
       enableEmailNotifications,
       payLater,
+      active,
     } = body
 
     if (fullName) {
@@ -964,6 +977,10 @@ export const update = async (req: Request, res: Response) => {
     }
     if (typeof payLater !== 'undefined') {
       user.payLater = payLater
+    }
+
+    if (isAdmin) {
+      user.active = active
     }
 
     await user.save()
@@ -1076,6 +1093,7 @@ export const getUser = async (req: Request, res: Response) => {
       birthDate: 1,
       payLater: 1,
       customerId: 1,
+      active: 1,
     }).lean()
 
     if (!user) {
@@ -1334,19 +1352,31 @@ export const checkPassword = async (req: Request, res: Response) => {
  * @param {Response} res
  * @returns {unknown}
  */
-export const getUsers = async (req: Request, res: Response) => {
+export const getUsers2 = async (req: Request, res: Response) => {
   try {
     const keyword = escapeStringRegexp(String(req.query.s || ''))
     const options = 'i'
     const page = Number.parseInt(req.params.page, 10)
     const size = Number.parseInt(req.params.size, 10)
     const { body }: { body: bookcarsTypes.GetUsersBody } = req
-    const { types, user: userId } = body
+    const { user: userId } = body
+
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser: bookcarsTypes.User | null = await User.findById(sessionData.id)
+
+    const isAdmin = connectedUser ? helper.admin(connectedUser) : false
+    const isSupplier = connectedUser ? helper.supplier(connectedUser) : false
+
+    if (!isAdmin && !isSupplier) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const selectedTypes = isAdmin ? [bookcarsTypes.UserType.Admin, bookcarsTypes.UserType.Supplier, bookcarsTypes.UserType.User] : [bookcarsTypes.UserType.User]
 
     const $match: mongoose.FilterQuery<env.User> = {
       $and: [
         {
-          type: { $in: types },
+          type: { $in: selectedTypes },
         },
         {
           $or: [
@@ -1385,6 +1415,7 @@ export const getUsers = async (req: Request, res: Response) => {
             blacklisted: 1,
             birthDate: 1,
             customerId: 1,
+            active: 1,
           },
         },
         {
@@ -1407,6 +1438,108 @@ export const getUsers = async (req: Request, res: Response) => {
     return res.status(400).send(i18n.t('DB_ERROR') + err)
   }
 }
+
+export const getUsers = async (req: Request, res: Response) => {
+  try {
+    const keyword = escapeStringRegexp(String(req.query.s || ''))
+    const options = 'i'
+    const page = Number.parseInt(req.params.page, 10)
+    const size = Number.parseInt(req.params.size, 10)
+    const { body }: { body: bookcarsTypes.GetUsersBody } = req
+    const { user: userId } = body
+
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser: bookcarsTypes.User | null = await User.findById(sessionData.id)
+
+    const isAdmin = connectedUser ? helper.admin(connectedUser) : false
+    const isSupplier = connectedUser ? helper.supplier(connectedUser) : false
+
+    if (!isAdmin && !isSupplier) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    // Filtre pour les types d'utilisateur
+    const selectedTypes = isAdmin ? [bookcarsTypes.UserType.Admin, bookcarsTypes.UserType.Supplier, bookcarsTypes.UserType.User] : [bookcarsTypes.UserType.User]
+
+    // Préparation du $match pour filtrer les utilisateurs
+    const $match: mongoose.FilterQuery<env.User> = {
+      $and: [
+        {
+          type: { $in: selectedTypes },
+        },
+        {
+          $or: [
+            { fullName: { $regex: keyword, $options: options } },
+            { email: { $regex: keyword, $options: options } },
+          ],
+        },
+        {
+          expireAt: null,
+        },
+      ],
+    }
+
+    if (userId) {
+      $match.$and!.push({ _id: { $ne: new mongoose.Types.ObjectId(userId) } })
+    }
+
+    // Ajout de la condition spécifique pour les fournisseurs (pas admin)
+    if (!isAdmin && isSupplier) {
+      const supplierId = connectedUser?._id
+
+      // Recherche des utilisateurs ayant réservé au moins une fois avec le fournisseur
+      const bookedDriverIds = await Booking.distinct('driver', { supplier: supplierId })
+
+      $match.$and!.push({
+        _id: { $in: bookedDriverIds }, // Ne récupérer que les utilisateurs ayant réservé au moins une fois
+      })
+    }
+
+    const users = await User.aggregate(
+      [
+        {
+          $match,
+        },
+        {
+          $project: {
+            supplier: 1,
+            email: 1,
+            phone: 1,
+            fullName: 1,
+            verified: 1,
+            language: 1,
+            enableEmailNotifications: 1,
+            avatar: 1,
+            bio: 1,
+            location: 1,
+            type: 1,
+            blacklisted: 1,
+            birthDate: 1,
+            customerId: 1,
+            active: 1,
+          },
+        },
+        {
+          $facet: {
+            resultData: [{ $sort: { fullName: 1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
+            pageInfo: [
+              {
+                $count: 'totalRecords',
+              },
+            ],
+          },
+        },
+      ],
+      { collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 } },
+    )
+
+    return res.json(users)
+  } catch (err) {
+    logger.error(`[user.getUsers] ${i18n.t('DB_ERROR')}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
 
 /**
  * Delete Users.

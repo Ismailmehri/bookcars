@@ -259,12 +259,14 @@ export interface CreateUserPayload {
   payLater?: boolean
   supplier?: string
   contracts?: Contract[]
+  active?: boolean
 }
 
 export interface UpdateUserPayload extends CreateUserPayload {
   _id: string
   enableEmailNotifications?: boolean
   payLater?: boolean
+  active?: boolean
 }
 
 export interface ChangePasswordPayload {

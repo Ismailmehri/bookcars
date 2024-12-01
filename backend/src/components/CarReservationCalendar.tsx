@@ -9,9 +9,11 @@ import * as bookcarsTypes from ':bookcars-types'
 import * as helper from '@/common/helper'
 
 interface CarReservationCalendarProp {
-    carId: string
     suppliers: string[] | undefined
     statuses: string[] | undefined
+    user?: bookcarsTypes.User
+    car?: string
+    filter?: bookcarsTypes.Filter | null
 }
 
 interface CalendarEvent {
@@ -22,7 +24,7 @@ interface CalendarEvent {
     className: string;
   }
 
-const CarReservationCalendar = ({ carId, suppliers, statuses } : CarReservationCalendarProp) => {
+const CarReservationCalendar = ({ car, suppliers, statuses, filter, user } : CarReservationCalendarProp) => {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [open, setOpen] = React.useState(false) // State pour gérer l'ouverture du modal
   const [selectedEvent, setSelectedEvent] = React.useState(null) // L'événement sélectionné
@@ -49,9 +51,15 @@ const CarReservationCalendar = ({ carId, suppliers, statuses } : CarReservationC
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const payload: bookcarsTypes.GetBookingsPayload = { car: carId, suppliers, statuses }
+        const payload: bookcarsTypes.GetBookingsPayload = {
+            suppliers,
+            statuses,
+            filter: filter || undefined,
+            car,
+            user: (user && user._id) || undefined,
+          }
         const bookings = await BookingService.getBookings(payload, 1, 100) // Récupérer toutes les réservations pour la voiture
-        if (bookings && bookings[0] && bookings[0].resultData && bookings[0].resultData.length > 0) {
+        if (bookings && bookings[0] && bookings[0].resultData) {
             const formattedEvents: CalendarEvent[] = bookings[0].resultData.map((booking) => ({
                 title: helper.getBookingStatus(booking.status), // Vous pouvez personnaliser le titre
                 start: booking.from,
@@ -68,7 +76,7 @@ const CarReservationCalendar = ({ carId, suppliers, statuses } : CarReservationC
     }
 
     fetchBookings()
-  }, [carId, suppliers, statuses])
+  }, [car, suppliers, statuses, filter, user])
 
   return (
     <div>

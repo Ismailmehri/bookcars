@@ -157,6 +157,20 @@ div.signin div.signin-buttons .btn-primary:hover {
   background: #07ac51;
 }
 
+.user-avatar-unverified-small,
+.user-avatar-unverified-medium,
+.user-avatar-unverified-large {
+  color: #ffff;
+  background: #3842ff;
+}
+
+.user-avatar-notactivated-small,
+.user-avatar-notactivated-medium,
+.user-avatar-notactivated-large {
+  color: #ffff;
+  background: #fc3c02;
+}
+
 .user-avatar-verified-small {
   width: 12px !important;
   height: 12px !important;

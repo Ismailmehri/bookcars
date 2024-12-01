@@ -15,6 +15,7 @@ import Booking from '../models/Booking'
 import Car from '../models/Car'
 import * as helper from '../common/helper'
 import * as logger from '../common/logger'
+import * as authHelper from '../common/authHelper'
 
 /**
  * Validate Supplier by fullname.
@@ -55,13 +56,27 @@ export const validate = async (req: Request, res: Response) => {
 export const update = async (req: Request, res: Response) => {
   const { body }: { body: bookcarsTypes.UpdateSupplierPayload } = req
   const { _id } = body
+  const sessionData = await authHelper.getSessionData(req)
+  let connectedUser: bookcarsTypes.User | null
+
+  if (!helper.isValidObjectId(_id)) {
+    throw new Error('body._id is not valid')
+  }
+  const supplier = await User.findById(_id)
+
+  if (sessionData.id === _id && supplier) {
+    connectedUser = supplier as bookcarsTypes.User
+  } else {
+    connectedUser = await User.findById(sessionData.id)
+  }
+
+  const isAdmin = connectedUser ? helper.admin(connectedUser) : false
+
+  if (!isAdmin && connectedUser?._id !== _id) {
+    return res.status(400).send(i18n.t('DB_ERROR'))
+  }
 
   try {
-    if (!helper.isValidObjectId(_id)) {
-      throw new Error('body._id is not valid')
-    }
-    const supplier = await User.findById(_id)
-
     if (supplier) {
       const {
         fullName,

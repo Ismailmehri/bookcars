@@ -115,7 +115,7 @@ const CreateCar = () => {
     setPricePeriods(updatedPeriods)
   }
 
-  const handleEditPeriod = (index) => {
+  const handleEditPeriod = (index: number) => {
     const periodToEdit = pricePeriods[index]
     setNewPeriod({
       startDate: periodToEdit.startDate,

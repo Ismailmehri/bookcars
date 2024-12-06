@@ -16,6 +16,12 @@ interface CarReservationCalendarProp {
     filter?: bookcarsTypes.Filter | null
 }
 
+interface Event {
+  id: number;
+  title: string;
+  url: string; // Assurez-vous que l'URL est définie ici
+}
+
 interface CalendarEvent {
     title: string;
     start: Date;
@@ -27,7 +33,7 @@ interface CalendarEvent {
 const CarReservationCalendar = ({ car, suppliers, statuses, filter, user } : CarReservationCalendarProp) => {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [open, setOpen] = React.useState(false) // State pour gérer l'ouverture du modal
-  const [selectedEvent, setSelectedEvent] = React.useState(null) // L'événement sélectionné
+  const [selectedEvent, setSelectedEvent] = React.useState<Event | null>(null)
 
   // Fonction pour ouvrir le modal
   const handleClickOpen = (event: any) => {

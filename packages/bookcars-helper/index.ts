@@ -1,5 +1,4 @@
 import * as bookcarsTypes from ':bookcars-types'
-import { differenceInDays, addDays } from 'date-fns';
 
 
 /**
@@ -242,19 +241,20 @@ export const formatPrice = (price: number, currency: string, language: string) =
  * @param {?bookcarsTypes.CarOptions} [options]
  * @returns {number}
  */
-
 export const calculateTotalPrice = (
   car: bookcarsTypes.Car,
   from: Date,
   to: Date,
   options?: bookcarsTypes.CarOptions
 ): number => {
-  const totalDays = differenceInDays(to, from);
+  // Calculer le nombre total de jours
+  const oneDay = 24 * 60 * 60 * 1000; // Milliseconds in one day
+  const totalDays = Math.round((to.getTime() - from.getTime()) / oneDay);
   let totalPrice = 0;
 
   // Parcourir chaque jour de la réservation
   for (let i = 0; i < totalDays; i++) {
-    const currentDate = addDays(from, i);
+    const currentDate = new Date(from.getTime() + i * oneDay);
     let dailyPrice = car.dailyPrice; // Prix par défaut
 
     // Vérifier si une période spéciale existe pour ce jour
@@ -307,6 +307,7 @@ export const calculateTotalPrice = (
 
   return totalPrice;
 };
+
 
 
 

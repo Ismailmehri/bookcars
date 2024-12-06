@@ -731,6 +731,9 @@ export const getBookings = async (req: Request, res: Response) => {
     const { body }: { body: bookcarsTypes.GetBookingsPayload } = req
     const page = Number.parseInt(req.params.page, 10)
     const size = Number.parseInt(req.params.size, 10)
+    if (!body || !body.suppliers) {
+      return []
+    }
     const suppliers = body.suppliers.map((id) => new mongoose.Types.ObjectId(id))
     const {
       statuses,

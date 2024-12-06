@@ -112,6 +112,7 @@ beforeAll(async () => {
     additionalDriver: 0,
     range: bookcarsTypes.CarRange.Midi,
     multimedia: [bookcarsTypes.CarMultimedia.AndroidAuto],
+    periodicPrices: [],
     rating: 4,
   }
 

@@ -112,6 +112,7 @@ describe('POST /api/create-car', () => {
       additionalDriver: 20,
       range: bookcarsTypes.CarRange.Mini,
       multimedia: [bookcarsTypes.CarMultimedia.Bluetooth],
+      periodicPrices: [],
       rating: 3,
     }
     let res = await request(app)
@@ -179,7 +180,6 @@ describe('POST /api/create-car', () => {
 describe('PUT /api/update-car', () => {
   it('should update a car', async () => {
     const token = await testHelper.signinAsAdmin()
-
     const payload: bookcarsTypes.UpdateCarPayload = {
       _id: CAR_ID,
       name: 'BMW X5',
@@ -211,6 +211,7 @@ describe('PUT /api/update-car', () => {
       additionalDriver: 22,
       range: bookcarsTypes.CarRange.Midi,
       multimedia: [bookcarsTypes.CarMultimedia.AndroidAuto],
+      periodicPrices: [],
       rating: 4,
     }
     let res = await request(app)

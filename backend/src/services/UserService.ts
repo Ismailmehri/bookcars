@@ -1,5 +1,6 @@
-import * as bookcarsTypes from ':bookcars-types'
+import axios from 'axios'
 import axiosInstance from './axiosInstance'
+import * as bookcarsTypes from ':bookcars-types'
 import env from '@/config/env.config'
 
 /**
@@ -14,6 +15,31 @@ export const create = (data: bookcarsTypes.CreateUserPayload): Promise<number> =
       '/api/create-user',
       data,
       { withCredentials: true }
+    )
+    .then((res) => res.status)
+
+/**
+ * Get client IP.
+ *
+ * @async
+ * @returns {Promise<string>}
+ */
+export const getIP = async (): Promise<string> => {
+  const res = await axios.get('https://api.ipify.org/?format=json')
+  return String(res.data.ip)
+}
+
+/**
+* Send an email. reCAPTCHA is mandatory.
+*
+* @param {bookcarsTypes.SendEmailPayload} payload
+* @returns {Promise<number>}
+*/
+export const sendEmail = (payload: bookcarsTypes.SendEmailPayload): Promise<number> =>
+  axiosInstance
+    .post(
+      '/api/send-email',
+      payload,
     )
     .then((res) => res.status)
 

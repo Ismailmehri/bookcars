@@ -7,6 +7,7 @@ import mongoose from 'mongoose'
 import { CookieOptions, Request, Response } from 'express'
 import nodemailer from 'nodemailer'
 import axios from 'axios'
+import validator from 'validator'
 import * as bookcarsTypes from ':bookcars-types'
 import i18n from '../lang/i18n'
 import * as env from '../config/env.config'
@@ -1540,7 +1541,6 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 }
 
-
 /**
  * Delete Users.
  *
@@ -1634,6 +1634,16 @@ export const verifyRecaptcha = async (req: Request, res: Response) => {
   }
 }
 
+const escapeHTML = (str: string): string => str.replace(/[&<>"']/g, (char) => {
+  const escapeChars: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }
+  return escapeChars[char] || char
+})
 /**
  * Send an email. reCAPTCHA is mandatory.
  *
@@ -1646,6 +1656,17 @@ export const sendEmail = async (req: Request, res: Response) => {
   try {
     const { body }: { body: bookcarsTypes.SendEmailPayload } = req
     const { from, to, subject, message, recaptchaToken: token, ip } = body
+
+    if (!validator.isEmail(from)) {
+      return res.status(400).send('Invalid email address')
+    }
+    if (!validator.isLength(subject, { min: 1, max: 255 })) {
+      return res.status(400).send('Invalid subject length')
+    }
+    if (!validator.isLength(message, { min: 1, max: 5000 })) {
+      return res.status(400).send('Invalid message length')
+    }
+
     const result = await axios.get(`https://www.google.com/recaptcha/api/siteverify?secret=${encodeURIComponent(env.RECAPTCHA_SECRET)}&response=${encodeURIComponent(token)}&remoteip=${ip}`)
     const { success } = result.data
 
@@ -1656,13 +1677,14 @@ export const sendEmail = async (req: Request, res: Response) => {
     const mailOptions: nodemailer.SendMailOptions = {
       from: env.SMTP_FROM,
       to,
-      subject: i18n.t('CONTACT_SUBJECT'),
-      html:
-        `<p>
-              ${i18n.t('FROM')}: ${from}<br>
-              ${i18n.t('SUBJECT')}: ${subject}<br>
-              ${i18n.t('MESSAGE')}:<br>${message.replace(/(?:\r\n|\r|\n)/g, '<br>')}<br>
-         </p>`,
+      subject: escapeHTML(subject),
+      html: `
+        <p>
+          ${i18n.t('FROM')}: ${escapeHTML(from)}<br>
+          ${i18n.t('SUBJECT')}: ${escapeHTML(subject)}<br>
+          ${i18n.t('MESSAGE')}:<br>${escapeHTML(message).replace(/(?:\r\n|\r|\n)/g, '<br>')}<br>
+        </p>
+      `,
     }
     await mailHelper.sendMail(mailOptions)
 

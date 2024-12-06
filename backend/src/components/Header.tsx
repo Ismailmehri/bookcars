@@ -68,6 +68,7 @@ const Header = ({
   const [isSignedIn, setIsSignedIn] = useState(false)
   const [loading, setIsLoading] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const isMenuOpen = Boolean(anchorEl)
   const isMobileMenuOpen = Boolean(mobileMoreAnchorEl)
@@ -187,6 +188,7 @@ const Header = ({
   useEffect(() => {
     if (!hidden) {
       if (user) {
+        setIsAdmin(helper.admin(user))
         NotificationService.getNotificationCounter(user._id as string)
           .then((notificationCounter) => {
             setIsSignedIn(true)
@@ -293,14 +295,18 @@ const Header = ({
                   <ListItemIcon><SuppliersIcon /></ListItemIcon>
                   <ListItemText primary={strings.COMPANIES} />
                 </ListItemLink>
-                <ListItemLink href="/countries">
-                  <ListItemIcon><CountriesIcon /></ListItemIcon>
-                  <ListItemText primary={strings.COUNTRIES} />
-                </ListItemLink>
-                <ListItemLink href="/locations">
-                  <ListItemIcon><LocationsIcon /></ListItemIcon>
-                  <ListItemText primary={strings.LOCATIONS} />
-                </ListItemLink>
+                {(isAdmin) && (
+                <>
+                  <ListItemLink href="/countries">
+                    <ListItemIcon><CountriesIcon /></ListItemIcon>
+                    <ListItemText primary={strings.COUNTRIES} />
+                  </ListItemLink>
+                  <ListItemLink href="/locations">
+                    <ListItemIcon><LocationsIcon /></ListItemIcon>
+                    <ListItemText primary={strings.LOCATIONS} />
+                  </ListItemLink>
+                </>
+                 )}
                 <ListItemLink href="/cars">
                   <ListItemIcon><CarsIcon /></ListItemIcon>
                   <ListItemText primary={strings.CARS} />

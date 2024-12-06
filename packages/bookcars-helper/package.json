@@ -10,6 +10,7 @@
   "author": "Akram El Assas",
   "license": "ISC",
   "devDependencies": {
+    "@types/date-fns": "^2.6.3",
     "rimraf": "^5.0.5",
     "typescript": "^5.2.2"
   }

@@ -119,7 +119,7 @@ const Layout = ({
   return (
     <>
       <Header user={user} hidden={hideHeader || loading} />
-      {((!user && !loading) || (user && user.verified && user.active) || !strict) && !unauthorized ? (
+      {((!user && !loading) || (user && user.verified && (user.active || user.type === bookcarsTypes.RecordType.Admin)) || !strict) && !unauthorized ? (
         <div className="content" style={style || {}}>
           {children}
         </div>

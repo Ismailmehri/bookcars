@@ -27,6 +27,7 @@ export const sendMail = (mailOptions: nodemailer.SendMailOptions): Promise<nodem
       const updatedMailOptions: nodemailer.SendMailOptions = {
         ...mailOptions,
         // Générer le contenu HTML si mailOptions.html est une chaîne
+        from: `"Plany" <${env.SMTP_USER}>`,
         html: typeof mailOptions.html === 'string' ? generateEmailTemplate(mailOptions.subject || '', mailOptions.html) : mailOptions.html,
       }
       // Envoyer l'email avec la copie mise à jour

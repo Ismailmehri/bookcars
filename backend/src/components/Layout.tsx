@@ -134,7 +134,7 @@ const Layout = ({
                 onResend={handleResend}
               />
             )}
-            {user && user.verified && !user.active && !admin && (
+            {user && user.verified && !user.active && user.type !== bookcarsTypes.RecordType.Admin && (
               <ValidateEmail
                 message={strings.NOT_ACTIVATED_MAIL}
                 onResend={handleResend}

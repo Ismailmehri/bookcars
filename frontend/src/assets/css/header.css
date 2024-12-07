@@ -35,6 +35,12 @@
   color: #121212;
 }
 
+.header .logo .logo-icon {
+  width: 90px;
+  height: 40px;
+  margin-top: 6px;
+}
+
 /* Device width is greater than or equal to 960px */
 
 @media only screen and (width >=960px) {

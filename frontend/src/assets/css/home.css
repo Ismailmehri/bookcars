@@ -53,7 +53,7 @@ div.home div.home-content {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background-image: url('/cover.jpg');
+  background-image: url('/cover.webp');
   background-size: cover;
   background-position: bottom;
   width: 100%;

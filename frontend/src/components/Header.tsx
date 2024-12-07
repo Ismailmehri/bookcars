@@ -292,7 +292,9 @@ const Header = ({
                   <MenuIcon />
                 </IconButton>
 
-                <Link href="/" className="logo">BookCars</Link>
+                <Link href="/" className="logo">
+                  <img src="/logo.png" alt="Logo" className="logo-icon" />
+                </Link>
 
                 {!env.isMobile() && headerTitle && <div className="header-title">{headerTitle}</div>}
               </>

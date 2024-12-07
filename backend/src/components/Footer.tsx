@@ -10,7 +10,7 @@ const Footer = () => {
 
   return (
     <div className="footer">
-      <div className="header">BookCars</div>
+      <div className="header">Plany</div>
       <section className="main">
         <div className="main-section">
           <div className="title">{strings.CORPORATE}</div>

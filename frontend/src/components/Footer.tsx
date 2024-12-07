@@ -11,7 +11,7 @@ const Footer = () => {
 
   return (
     <div className="footer">
-      <div className="header">BookCars</div>
+      <div className="header">Plany</div>
       <section className="main">
         <div className="main-section">
           <div className="title">{strings.CORPORATE}</div>
@@ -35,7 +35,7 @@ const Footer = () => {
           </ul>
           <div className="contact">
             <MailOutline className="icon" />
-            <a href="mailto:info@bookcars.ma">info@bookcars.ma</a>
+            <a href="mailto:info@plany.tn">info@plany.tn</a>
           </div>
         </div>
       </section>

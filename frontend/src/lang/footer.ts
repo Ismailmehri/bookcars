@@ -1,7 +1,7 @@
 import LocalizedStrings from 'react-localization'
 import * as langHelper from '@/common/langHelper'
 
-const COPYRIGHT_PART1 = `Copyright © ${new Date().getFullYear()} BookCars`
+const COPYRIGHT_PART1 = `Copyright © ${new Date().getFullYear()} Plany`
 
 const strings = new LocalizedStrings({
   fr: {
@@ -16,7 +16,7 @@ const strings = new LocalizedStrings({
     LOCATIONS: 'Lieux',
     SUPPORT: 'Support',
     CONTACT: 'Contact',
-    SECURE_PAYMENT: 'Paiement 100% sécurisé avec BookCars',
+    SECURE_PAYMENT: 'Paiement 100% sécurisé avec Plany',
   },
   en: {
     COPYRIGHT_PART1,
@@ -30,7 +30,7 @@ const strings = new LocalizedStrings({
     LOCATIONS: 'Locations',
     SUPPORT: 'Support',
     CONTACT: 'Contact',
-    SECURE_PAYMENT: '100% secure payment with BookCars',
+    SECURE_PAYMENT: '100% secure payment with Plany',
   },
   es: {
     COPYRIGHT_PART1,
@@ -43,7 +43,7 @@ const strings = new LocalizedStrings({
     LOCATIONS: 'Ubicaciones',
     SUPPORT: 'Soporte',
     CONTACT: 'Contacto',
-    SECURE_PAYMENT: 'Pago 100% seguro con BookCars',
+    SECURE_PAYMENT: 'Pago 100% seguro con Plany',
   },
 })
 

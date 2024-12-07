@@ -141,12 +141,7 @@ const Home = () => {
                 />
                 <ul>
                   <li>
-                    <span className="price">{bookcarsHelper.formatPrice(2.5, commonStrings.CURRENCY, language)}</span>
-                    <span className="unit"> · phr</span>
-                  </li>
-                  <li>
-                    <span className="price">{bookcarsHelper.formatPrice(40, commonStrings.CURRENCY, language)}</span>
-                    <span className="unit"> · pday</span>
+                    <span className="price">{bookcarsHelper.formatPrice(100, commonStrings.CURRENCY, language)}</span>
                   </li>
                 </ul>
               </div>
@@ -173,12 +168,7 @@ const Home = () => {
                 />
                 <ul>
                   <li>
-                    <span className="price">{bookcarsHelper.formatPrice(3.5, commonStrings.CURRENCY, language)}</span>
-                    <span className="unit"> · phr</span>
-                  </li>
-                  <li>
-                    <span className="price">{bookcarsHelper.formatPrice(50, commonStrings.CURRENCY, language)}</span>
-                    <span className="unit"> · pday</span>
+                    <span className="price">{bookcarsHelper.formatPrice(120, commonStrings.CURRENCY, language)}</span>
                   </li>
                 </ul>
               </div>
@@ -204,12 +194,7 @@ const Home = () => {
                 />
                 <ul>
                   <li>
-                    <span className="price">{bookcarsHelper.formatPrice(4.5, commonStrings.CURRENCY, language)}</span>
-                    <span className="unit"> · phr</span>
-                  </li>
-                  <li>
-                    <span className="price">{bookcarsHelper.formatPrice(70, commonStrings.CURRENCY, language)}</span>
-                    <span className="unit"> · pday</span>
+                    <span className="price">{bookcarsHelper.formatPrice(150, commonStrings.CURRENCY, language)}</span>
                   </li>
                 </ul>
               </div>

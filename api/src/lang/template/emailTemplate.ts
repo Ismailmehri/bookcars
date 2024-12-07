@@ -100,7 +100,7 @@ export const generateEmailTemplate = (subject: string | Buffer | undefined, body
     </div>
     <div class="email-footer">
       Cordialement,<br>
-      L'équipe BookCars<br>
+      L'équipe Plany<br>
       <a href="${env.FRONTEND_HOST}">Plany.tn</a>
     </div>
   </div>

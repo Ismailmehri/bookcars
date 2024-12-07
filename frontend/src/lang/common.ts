@@ -4,7 +4,7 @@ import * as langHelper from '@/common/langHelper'
 
 const strings = new LocalizedStrings({
   fr: {
-    BOOKCARS: 'BookCars',
+    BOOKCARS: 'Plany',
     GENERIC_ERROR: "Une erreur non gérée s'est produite.",
     CHANGE_LANGUAGE_ERROR: "Une erreur s'est produite lors du changement de langue.",
     UPDATED: 'Modifications effectuées avec succès.',
@@ -91,7 +91,7 @@ const strings = new LocalizedStrings({
     NO_MATCH_DESCRIPTION: 'La page que vous cherchez n\'existe pas ou a été déplacée.',
   },
   en: {
-    BOOKCARS: 'BookCars',
+    BOOKCARS: 'Plany',
     GENERIC_ERROR: 'An unhandled error occurred.',
     CHANGE_LANGUAGE_ERROR: 'An error occurred while changing language.',
     UPDATED: 'Changes made successfully.',
@@ -178,7 +178,7 @@ const strings = new LocalizedStrings({
     NO_MATCH_DESCRIPTION: 'The page you are looking for does not exist or has been moved.'
   },
   es: {
-    BOOKCARS: 'BookCars',
+    BOOKCARS: 'Plany',
     GENERIC_ERROR: 'Se ha producido un error no gestionado.',
     CHANGE_LANGUAGE_ERROR: 'Se ha producido un error al cambiar el idioma.',
     UPDATED: 'Cambios realizados con éxito.',

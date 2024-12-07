@@ -2,9 +2,9 @@
   "expo": {
     "jsEngine": "hermes",
     "newArchEnabled": true,
-    "name": "BookCars",
+    "name": "Plany",
     "version": "4.6.0",
-    "slug": "bookcars",
+    "slug": "Plany",
     "icon": "./assets/icon.png",
     "assetBundlePatterns": [
       "**/*"

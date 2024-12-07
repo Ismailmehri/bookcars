@@ -575,13 +575,13 @@ const Checkout = () => {
         return
       }
 
-      if (_pickupLocation.latitude && _pickupLocation.longitude) {
+      /** if (_pickupLocation.latitude && _pickupLocation.longitude) {
         const l = await helper.getLocation()
         if (l) {
           const d = bookcarsHelper.distance(_pickupLocation.latitude, _pickupLocation.longitude, l[0], l[1], 'K')
           setDistance(bookcarsHelper.formatDistance(d, UserService.getLanguage()))
         }
-      }
+      } * */
 
       if (dropOffLocationId !== pickupLocationId) {
         _dropOffLocation = await LocationService.getLocation(dropOffLocationId)
@@ -630,6 +630,8 @@ const Checkout = () => {
                 <div>
 
                   <CarList
+                    from={from}
+                    to={to}
                     cars={[car]}
                     pickupLocationName={pickupLocation.name}
                     distance={distance}

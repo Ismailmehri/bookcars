@@ -6,10 +6,7 @@ const isTestMode = !env.isProduction
 
 export const initGTM = () => {
   if (TRACKING_ID) {
-    TagManager.initialize({ gtmId: TRACKING_ID,
-      dataLayer: {
-      environment: isTestMode ? 'test' : 'production',
-    }, })
+    TagManager.initialize({ gtmId: TRACKING_ID })
   } else {
     console.warn('GTM is not enabled or GTM ID is missing.')
   }

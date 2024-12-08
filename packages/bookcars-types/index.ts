@@ -558,13 +558,4 @@ export interface CarOptions {
   fullInsurance?: boolean
   additionalDriver?: boolean
 }
-enum EventType {
-  PAGEVIEW = 'pageview',
-  PURCHASE = 'purchase',
-  ADD_TO_CART = 'add_to_cart',
-  CHECKOUT = 'checkout',
-  SCREEN_VIEW = 'screen_view',
-  USER_SIGN_UP = 'user_sign_up',
-  USER_LOGIN = 'user_login',
-}
 

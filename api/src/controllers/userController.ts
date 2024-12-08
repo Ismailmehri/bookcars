@@ -585,7 +585,7 @@ export const socialSignin = async (req: Request, res: Response) => {
         fullName,
         active: true,
         verified: true,
-        language: 'en',
+        language: 'fr',
         enableEmailNotifications: true,
         type: bookcarsTypes.UserType.User,
         blacklisted: false,

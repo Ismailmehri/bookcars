@@ -52,6 +52,7 @@ import NoMatch from './NoMatch'
 import Info from './Info'
 
 import '@/assets/css/checkout.css'
+import { sendCheckoutEvent } from '@/common/gtm'
 
 //
 // Make sure to call `loadStripe` outside of a component’s render to avoid
@@ -520,6 +521,9 @@ const Checkout = () => {
 
       if (status === 200) {
         if (payLater) {
+          sendCheckoutEvent(price, [
+            { item_name: car._id, item_id: _bookingId, price: car.dailyPrice, quantity: days },
+          ])
           setVisible(false)
           setSuccess(true)
         }

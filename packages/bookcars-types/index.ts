@@ -558,3 +558,66 @@ export interface CarOptions {
   fullInsurance?: boolean
   additionalDriver?: boolean
 }
+enum EventType {
+  PAGEVIEW = 'pageview',
+  PURCHASE = 'purchase',
+  ADD_TO_CART = 'add_to_cart',
+  CHECKOUT = 'checkout',
+  SCREEN_VIEW = 'screen_view',
+  USER_SIGN_UP = 'user_sign_up',
+  USER_LOGIN = 'user_login',
+}
+
+interface EventData {
+  event: EventType;
+  [key: string]: any; // Cette clé permet d'ajouter des champs dynamiques pour chaque événement
+}
+
+interface PageViewEvent extends EventData {
+  event: EventType.PAGEVIEW;
+  page_url: string;
+  page_title: string;
+}
+
+interface PurchaseEvent extends EventData {
+  event: EventType.PURCHASE;
+  transaction_id: string;
+  value: number;
+  currency: string;
+  items: Array<{
+    item_name: string;
+    item_id: string;
+    price: number;
+    quantity: number;
+  }>;
+}
+
+interface AddToCartEvent extends EventData {
+  event: EventType.ADD_TO_CART;
+  product_id: string;
+  quantity: number;
+}
+
+interface CheckoutEvent extends EventData {
+  event: EventType.CHECKOUT;
+  checkout_value: number;
+  items: Array<{
+    item_name: string;
+    item_id: string;
+    price: number;
+    quantity: number;
+  }>;
+}
+
+interface UserSignUpEvent extends EventData {
+  event: EventType.USER_SIGN_UP;
+  user_id: string;
+  email: string;
+}
+
+interface UserLoginEvent extends EventData {
+  event: EventType.USER_LOGIN;
+  user_id: string;
+  email: string;
+}
+

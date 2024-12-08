@@ -3,10 +3,10 @@ import { Route, Routes } from 'react-router-dom'
 import SuspenseRouter from '@/components/SuspenseRouter'
 import env from '@/config/env.config'
 import { GlobalProvider } from '@/context/GlobalContext'
-import { init as initGA } from '@/common/ga4'
+import { initGTM } from '@/common/gtm'
 
 if (env.GOOGLE_ANALYTICS_ENABLED) {
-  initGA()
+  initGTM()
 }
 
 const SignIn = lazy(() => import('@/pages/SignIn'))

@@ -568,8 +568,3 @@ enum EventType {
   USER_LOGIN = 'user_login',
 }
 
-interface EventData {
-  event: EventType;
-  [key: string]: any; // Cette clé permet d'ajouter des champs dynamiques pour chaque événement
-}
-

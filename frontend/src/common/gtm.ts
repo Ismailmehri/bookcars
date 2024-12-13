@@ -2,8 +2,8 @@ import TagManager from 'react-gtm-module'
 import env from '@/config/env.config'
 
 const TRACKING_ID = env.GOOGLE_ANALYTICS_ID
-const isTestMode = !env.isProduction
 
+// Initialisation de Google Tag Manager
 export const initGTM = () => {
   if (TRACKING_ID) {
     TagManager.initialize({ gtmId: TRACKING_ID })
@@ -12,6 +12,7 @@ export const initGTM = () => {
   }
 }
 
+// Fonction générique pour envoyer des événements
 export const pushEvent = (eventName: string, eventData: Record<string, any>) => {
   if (TRACKING_ID) {
     TagManager.dataLayer({
@@ -23,34 +24,72 @@ export const pushEvent = (eventName: string, eventData: Record<string, any>) => 
   }
 }
 
+// Événement PageView (compatible avec le Pixel Facebook `PageView`)
 export const sendPageviewEvent = (pageUrl: string, pageTitle: string) => {
   const pageViewData = {
-    event: 'pageview',
+    event: 'PageView', // Événement standard Pixel Facebook
     page_url: pageUrl,
     page_title: pageTitle,
   }
 
-  pushEvent('pageview', pageViewData)
+  pushEvent('PageView', pageViewData)
 }
 
+// Événement InitiateCheckout (Pixel Facebook: `InitiateCheckout`)
+export const sendCheckoutEvent = (checkoutValue: number, items: any[]) => {
+  const checkoutData = {
+    event: 'InitiateCheckout', // Événement standard Pixel Facebook
+    value: checkoutValue,
+    currency: 'TND', // Remplacez par votre devise
+    contents: items.map((item) => ({
+      id: item.item_id,
+      name: item.item_name,
+      quantity: item.quantity,
+      price: item.price,
+    })),
+  }
+
+  pushEvent('InitiateCheckout', checkoutData)
+}
+
+// Événement Purchase (Pixel Facebook: `Purchase`)
 export const sendPurchaseEvent = (transactionId: string, value: number, currency: string, items: any[]) => {
   const purchaseData = {
-    event: 'purchase',
+    event: 'Purchase', // Événement standard Pixel Facebook
     transaction_id: transactionId,
     value,
     currency,
-    items,
+    contents: items.map((item) => ({
+      id: item.item_id,
+      name: item.item_name,
+      quantity: item.quantity,
+      price: item.price,
+    })),
   }
 
-  pushEvent('purchase', purchaseData)
+  pushEvent('Purchase', purchaseData)
 }
 
-export const sendCheckoutEvent = (checkoutValue: number, items: any[]) => {
-  const checkoutData = {
-    event: 'checkout',
-    checkout_value: checkoutValue,
-    items,
+// Événement Search (Pixel Facebook: `Search`)
+export const sendSearchEvent = (searchTerm: string, searchParams: Record<string, any>) => {
+  const searchData = {
+    event: 'Search', // Événement standard Pixel Facebook
+    search_term: searchTerm,
+    ...searchParams,
   }
 
-  pushEvent('checkout', checkoutData)
+  pushEvent('Search', searchData)
+}
+
+// Événement ViewContent (Pixel Facebook: `ViewContent`)
+export const sendViewContentEvent = (item: { id: string; name: string; price: number; currency: string }) => {
+  const viewContentData = {
+    event: 'ViewContent', // Événement standard Pixel Facebook
+    content_id: item.id,
+    content_name: item.name,
+    value: item.price,
+    currency: item.currency,
+  }
+
+  pushEvent('ViewContent', viewContentData)
 }

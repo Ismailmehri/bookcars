@@ -38,6 +38,7 @@ import CO2MaxIcon from '@/assets/img/co2-max-icon.png'
 import DistanceIcon from '@/assets/img/distance-icon.png'
 
 import '@/assets/css/car-list.css'
+import { sendCheckoutEvent } from '@/common/gtm'
 
 interface CarListProps {
   from?: Date
@@ -517,6 +518,10 @@ const CarList = ({
                             variant="contained"
                             className="btn-book btn-margin-bottom"
                             onClick={() => {
+                              sendCheckoutEvent(totalPrice, [{ id: car.id,
+                                name: car.name,
+                                quantity: days,
+                                price: totalPrice / days }])
                               navigate('/checkout', {
                                 state: {
                                   carId: car._id,

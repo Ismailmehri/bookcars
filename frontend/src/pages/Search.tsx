@@ -155,26 +155,37 @@ const Search = () => {
   }
 
   const onLoad = async (user?: bookcarsTypes.User) => {
+    // Extraction des paramètres depuis l'URL
+    const searchParams = new URLSearchParams(window.location.search)
+    const pickupLocationIdFromUrl = searchParams.get('pickupLocation') || null
+    const supplier = searchParams.get('supplier') || null
+
     const { state } = location
-    if (!state) {
+
+    // Définir pickupLocationId à partir de state ou URL
+    const pickupLocationId = state?.pickupLocationId || pickupLocationIdFromUrl
+    const dropOffLocationId = state?.dropOffLocationId || null
+    const _from = state?.from || null
+    const _to = state?.to || null
+
+    // Vérification des données dans l'état ou dans les paramètres URL
+    if (!pickupLocationId) {
       setNoMatch(true)
       return
     }
 
-    const { pickupLocationId } = state
-    const { dropOffLocationId } = state
-    const { from: _from } = state
-    const { to: _to } = state
-
-    if (!pickupLocationId || !dropOffLocationId || !_from || !_to) {
-      setLoading(false)
-      setNoMatch(true)
-      return
-    }
+    // Calculer les dates par défaut si from et to ne sont pas fournis
+    const now = new Date()
+    const defaultFrom = new Date(now.getTime() + 24 * 60 * 60 * 1000) // Maintenant + 3 heures
+    const defaultTo = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000) // Maintenant + 3 jours
+    const startDate = _from ? new Date(_from) : defaultFrom
+    const endDate = _to ? new Date(_to) : defaultTo
 
     let _pickupLocation
     let _dropOffLocation
+
     try {
+      // Récupérer la localisation de départ
       _pickupLocation = await LocationService.getLocation(pickupLocationId)
 
       if (!_pickupLocation) {
@@ -183,7 +194,8 @@ const Search = () => {
         return
       }
 
-      if (dropOffLocationId !== pickupLocationId) {
+      // Récupérer la localisation de dépôt si différente
+      if (dropOffLocationId && dropOffLocationId !== pickupLocationId) {
         _dropOffLocation = await LocationService.getLocation(dropOffLocationId)
       } else {
         _dropOffLocation = _pickupLocation
@@ -195,6 +207,7 @@ const Search = () => {
         return
       }
 
+      // Préparer les données pour le service de fournisseurs
       const payload: bookcarsTypes.GetCarsPayload = {
         pickupLocation: _pickupLocation._id,
         carSpecs,
@@ -207,31 +220,32 @@ const Search = () => {
         multimedia,
         rating,
         seats,
-        startDate: from,
-        endDate: to
+        startDate,
+        endDate,
+        suppliers: supplier ? [supplier] : []
       }
-      const _suppliers = await SupplierService.getFrontendSuppliers(payload)
+
+      let _suppliers = []
+      if (supplier) {
+        _suppliers = await SupplierService.getFrontendSuppliers(payload)
+        _suppliers = _suppliers.filter((s) => s._id === supplier)
+      } else {
+        _suppliers = await SupplierService.getFrontendSuppliers(payload)
+      }
       const _supplierIds = bookcarsHelper.flattenSuppliers(_suppliers)
 
       setPickupLocation(_pickupLocation)
       setDropOffLocation(_dropOffLocation)
-      setFrom(_from)
-      setTo(_to)
+      setFrom(startDate)
+      setTo(endDate)
       setSuppliers(_suppliers)
       setSupplierIds(_supplierIds)
 
-      const { ranges: _ranges } = state
+      // Charger les plages de disponibilité si présentes dans state
+      const { ranges: _ranges } = state || {}
       if (_ranges) {
         setRanges(_ranges)
       }
-
-      // if (_pickupLocation.latitude && _pickupLocation.longitude) {
-      //   const l = await helper.getLocation()
-      //   if (l) {
-      //     const d = bookcarsHelper.distance(_pickupLocation.latitude, _pickupLocation.longitude, l[0], l[1], 'K')
-      //     setDistance(bookcarsHelper.formatDistance(d, UserService.getLanguage()))
-      //   }
-      // }
 
       setLoading(false)
       if (!user || (user && user.verified)) {

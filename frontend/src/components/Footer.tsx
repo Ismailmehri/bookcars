@@ -1,13 +1,32 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MailOutline } from '@mui/icons-material'
 import { strings } from '@/lang/footer'
-
 import SecurePayment from '@/assets/img/secure-payment.png'
+import * as LocationService from '@/services/LocationService'
+import * as bookcarsTypes from ':bookcars-types'
 import '@/assets/css/footer.css'
 
 const Footer = () => {
   const navigate = useNavigate()
+  const [locations, setLocations] = useState<bookcarsTypes.Location[]>([])
+  const PAGE_SIZE = 15
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const _page = 1 // Page par défaut
+        const _keyword = '' // Optionnel, selon votre implémentation
+        const data: bookcarsTypes.Result<bookcarsTypes.Location> | [] = await LocationService.getLocations(_keyword, _page, PAGE_SIZE)
+        const _data = data && data.length > 0 && data[0] ? data[0].resultData : []
+        setLocations(_data) // Assurez-vous que la réponse contient un champ `results`
+      } catch (error) {
+        console.error('Erreur lors de la récupération des locations:', error)
+      }
+    }
+
+    fetchLocations()
+  }, [])
 
   return (
     <div className="footer">
@@ -24,8 +43,20 @@ const Footer = () => {
         <div className="main-section">
           <div className="title">{strings.RENT}</div>
           <ul className="links">
-            <li onClick={() => navigate('/suppliers')}>{strings.SUPPLIERS}</li>
-            <li onClick={() => navigate('/locations')}>{strings.LOCATIONS}</li>
+            {locations.length > 0 ? (
+              locations.map((location) => (
+                <li
+                  key={location._id} // Ajout d'une clé unique
+                  onClick={() => navigate(`/search?pickupLocation=${location._id}`)}
+                >
+                  Location voiture à
+                  {' '}
+                  {location.name}
+                </li>
+              ))
+            ) : (
+              <li>Chargement des locations...</li>
+            )}
           </ul>
         </div>
         <div className="main-section">
@@ -41,10 +72,10 @@ const Footer = () => {
       </section>
       <section className="payment">
         <div className="payment-text">{strings.SECURE_PAYMENT}</div>
-        <img src={SecurePayment} alt="" />
+        <img src={SecurePayment} alt="Paiement sécurisé" />
       </section>
       <section className="copyright">
-        <div className="copyright">
+        <div>
           <span>{strings.COPYRIGHT_PART1}</span>
           <span>{strings.COPYRIGHT_PART2}</span>
         </div>
@@ -52,4 +83,5 @@ const Footer = () => {
     </div>
   )
 }
+
 export default Footer

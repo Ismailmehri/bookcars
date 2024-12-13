@@ -52,7 +52,7 @@ import NoMatch from './NoMatch'
 import Info from './Info'
 
 import '@/assets/css/checkout.css'
-import { sendCheckoutEvent } from '@/common/gtm'
+import { sendCheckoutEvent, sendPurchaseEvent } from '@/common/gtm'
 
 //
 // Make sure to call `loadStripe` outside of a component’s render to avoid
@@ -521,9 +521,10 @@ const Checkout = () => {
 
       if (status === 200) {
         if (payLater) {
-          sendCheckoutEvent(price, [
-            { item_name: car._id, item_id: _bookingId, price: car.dailyPrice, quantity: days },
-          ])
+          sendPurchaseEvent(_bookingId, price, 'TND', [{id: car._id,
+            name: car.name,
+            quantity: days,
+            price: car.dailyPrice }])
           setVisible(false)
           setSuccess(true)
         }

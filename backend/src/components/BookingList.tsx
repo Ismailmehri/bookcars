@@ -202,15 +202,6 @@ const BookingList = ({
     }
   }, [pageSize]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const getDate = (date?: string) => {
-    if (date) {
-      const d = new Date(date)
-      return `${bookcarsHelper.formatDatePart(d.getDate())}-${bookcarsHelper.formatDatePart(d.getMonth() + 1)}-${d.getFullYear()}`
-    }
-
-    throw new Error('Invalid date')
-  }
-
   const getColumns = (): GridColDef<bookcarsTypes.Booking>[] => {
     const _columns: GridColDef<bookcarsTypes.Booking>[] = [
       {

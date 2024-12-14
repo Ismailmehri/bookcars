@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import multiMonthPlugin from '@fullcalendar/multimonth'
@@ -86,9 +86,11 @@ const CarReservationCalendar = ({ car, suppliers, statuses, filter, user } : Car
       }
     }
 
-  const handleDatesSet = (dates: { startStr: Date; endStr: Date }) => {
-    // Appelez fetchBookings avec les dates visibles
-    fetchBookings(dates.startStr, dates.endStr)
+  const handleDatesSet = (info: { startStr: string; endStr: string }) => {
+      // Convertir startStr et endStr en objets Date
+    const start = new Date(info.startStr)
+    const end = new Date(info.endStr)
+    fetchBookings(start, end)
   }
 
   return (

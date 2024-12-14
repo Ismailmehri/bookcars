@@ -52,7 +52,7 @@ import NoMatch from './NoMatch'
 import Info from './Info'
 
 import '@/assets/css/checkout.css'
-import { sendCheckoutEvent, sendPurchaseEvent } from '@/common/gtm'
+import { sendPurchaseEvent } from '@/common/gtm'
 
 //
 // Make sure to call `loadStripe` outside of a component’s render to avoid
@@ -113,7 +113,6 @@ const Checkout = () => {
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [bookingId, setBookingId] = useState<string>()
   const [sessionId, setSessionId] = useState<string>()
-  const [distance, setDistance] = useState('')
 
   const _fr = language === 'fr'
   const _locale = _fr ? fr : enUS
@@ -521,7 +520,7 @@ const Checkout = () => {
 
       if (status === 200) {
         if (payLater) {
-          sendPurchaseEvent(_bookingId, price, 'TND', [{id: car._id,
+          sendPurchaseEvent(_bookingId, price, 'TND', [{ id: car._id,
             name: car.name,
             quantity: days,
             price: car.dailyPrice }])
@@ -639,7 +638,6 @@ const Checkout = () => {
                     to={to}
                     cars={[car]}
                     pickupLocationName={pickupLocation.name}
-                    distance={distance}
                     hidePrice
                     sizeAuto
                   />

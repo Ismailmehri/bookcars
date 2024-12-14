@@ -23,6 +23,8 @@ import Midi from '@/assets/img/midi.png'
 import Maxi from '@/assets/img/maxi.png'
 
 import '@/assets/css/home.css'
+import HowItWorks from '@/components/HowItWorks'
+import RentalAgencySection from '@/components/RentalAgencySection'
 
 const Home = () => {
   const [suppliers, setSuppliers] = useState<bookcarsTypes.User[]>([])
@@ -114,7 +116,7 @@ const Home = () => {
             </div>
           </div>
         )}
-
+        <HowItWorks />
         <div className="car-size">
           <h1>{strings.CAR_SIZE_TITLE}</h1>
           <p>{strings.CAR_SIZE_TEXT}</p>
@@ -211,7 +213,6 @@ const Home = () => {
             {strings.SEARCH_FOR_CAR}
           </Button>
         </div>
-
         <div className="home-map">
           <Map
             title={strings.MAP_TITLE}
@@ -234,6 +235,7 @@ const Home = () => {
           // }}
           />
         </div>
+        <RentalAgencySection />
       </div>
 
       <Dialog

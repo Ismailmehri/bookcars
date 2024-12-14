@@ -1,11 +1,12 @@
 import TagManager from 'react-gtm-module'
 import env from '@/config/env.config'
 
+const { isProduction } = env
 const TRACKING_ID = env.GOOGLE_ANALYTICS_ID
 
 // Initialisation de Google Tag Manager
 export const initGTM = () => {
-  if (TRACKING_ID) {
+  if (isProduction && TRACKING_ID) {
     TagManager.initialize({ gtmId: TRACKING_ID })
   } else {
     console.warn('GTM is not enabled or GTM ID is missing.')

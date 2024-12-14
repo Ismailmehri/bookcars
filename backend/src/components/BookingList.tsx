@@ -482,13 +482,15 @@ const BookingList = ({
   return (
     <div>
       <div style={{ padding: '15px' }}>
-        <CarReservationCalendar
-          suppliers={suppliers}
-          statuses={statuses}
-          car={car}
-          filter={filter}
-          user={user}
-        />
+        {suppliers && suppliers.length > 0 ? (
+          <CarReservationCalendar
+            suppliers={suppliers}
+            statuses={statuses}
+            car={car}
+            filter={filter}
+            user={user}
+          />
+          ) : (<div />)}
       </div>
       <div className="bs-list">
         {loggedUser

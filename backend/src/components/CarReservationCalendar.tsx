@@ -54,68 +54,75 @@ const CarReservationCalendar = ({ car, suppliers, statuses, filter, user } : Car
     setOpen(false)
   }
 
-  useEffect(() => {
-    const fetchBookings = async () => {
+    const fetchBookings = async (start: Date, end: Date) => {
+      const adjustedStart = new Date(start)
+      adjustedStart.setMonth(adjustedStart.getMonth() - 1) // Soustraire un mois
+
+      const adjustedEnd = new Date(end)
+      adjustedEnd.setMonth(adjustedEnd.getMonth() + 1) // Ajouter un mois
+      filter = { from: adjustedStart, to: adjustedEnd }
       try {
         const payload: bookcarsTypes.GetBookingsPayload = {
-            suppliers,
-            statuses,
-            filter: filter || undefined,
-            car,
-            user: (user && user._id) || undefined,
-          }
-        const bookings = await BookingService.getBookings(payload, 1, 100) // Récupérer toutes les réservations pour la voiture
+          suppliers,
+          statuses,
+          filter: filter || undefined,
+          car,
+          user: (user && user._id) || undefined,
+        }
+
+        const bookings = await BookingService.getBookings(payload, 1, 100)
         if (bookings && bookings[0] && bookings[0].resultData) {
-            const formattedEvents: CalendarEvent[] = bookings[0].resultData.map((booking) => ({
-                title: helper.getBookingStatus(booking.status), // Vous pouvez personnaliser le titre
-                start: booking.from,
-                end: booking.to,
-                url: `update-booking?b=${booking._id}`,
-                className: `bs-${booking.status}`
-                // ... autres propriétés d'événement si nécessaire
-              }))
-              setEvents(formattedEvents)
+          const formattedEvents: CalendarEvent[] = bookings[0].resultData.map((booking) => ({
+            title: helper.getBookingStatus(booking.status),
+            start: booking.from,
+            end: booking.to,
+            url: `update-booking?b=${booking._id}`,
+            className: `bs-${booking.status}`,
+          }))
+          setEvents(formattedEvents)
         }
       } catch (error) {
         console.error('Erreur lors de la récupération des réservations :', error)
       }
     }
 
-    fetchBookings()
-  }, [car, suppliers, statuses, filter, user])
+  const handleDatesSet = (dates: { startStr: Date; endStr: Date }) => {
+    // Appelez fetchBookings avec les dates visibles
+    fetchBookings(dates.startStr, dates.endStr)
+  }
 
   return (
     <div>
       <FullCalendar
-        plugins={[dayGridPlugin, multiMonthPlugin, timeGridPlugin]} // Active les plugins nécessaires
-        initialView="multiMonthYear" // Utilise la vue multi-mois
+        plugins={[dayGridPlugin, multiMonthPlugin, timeGridPlugin]}
+        initialView="multiMonthYear"
         views={{
-            multiMonthYear: {
+          multiMonthYear: {
             type: 'multiMonth',
-            duration: { months: 2 }, // Affiche 2 mois
-            multiMonthMaxColumns: 2, // Dispose les mois côte à côte
-            },
-            dayGridMonth: {
-                titleFormat: { year: 'numeric', month: 'long' }, // Format du titre pour chaque mois
-            }
+            duration: { months: 2 },
+            multiMonthMaxColumns: 2,
+          },
+          dayGridMonth: {
+            titleFormat: { year: 'numeric', month: 'long' },
+          },
         }}
-        height="auto" // Adjust height
+        height="auto"
         headerToolbar={{
-            end: 'prev,next', // Navigation buttons
-            center: 'title', // Calendar title
-            start: 'today', // View options
+          end: 'prev,next',
+          center: 'title',
+          start: 'today',
         }}
         buttonText={{
-            today: "Aujourd'hui", // Texte personnalisé pour "Today"
+          today: "Aujourd'hui",
         }}
         locale="fr"
         events={events}
-        eventDisplay="block" // Affiche les événements comme des blocs colorés
+        eventDisplay="block"
         eventClick={(info) => {
-            // Empêche le comportement par défaut pour les liens
-            info.jsEvent.preventDefault()
-            handleClickOpen(info.event)
-          }}
+          info.jsEvent.preventDefault()
+          handleClickOpen(info.event)
+        }}
+        datesSet={(info) => handleDatesSet(info)} // Capture les dates visibles
       />
       <Dialog
         open={open}
@@ -123,9 +130,7 @@ const CarReservationCalendar = ({ car, suppliers, statuses, filter, user } : Car
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">
-          Confirmer l&apos;ouverture de la réservation ?
-        </DialogTitle>
+        <DialogTitle id="alert-dialog-title">Confirmer l&apos;ouverture de la réservation ?</DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
             Êtes-vous sûr de vouloir ouvrir la page de réservation dans un nouvel onglet ?

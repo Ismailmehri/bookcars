@@ -5,8 +5,9 @@ WORKDIR /bookcars/frontend
 COPY ./frontend ./
 COPY ./frontend/.env.docker .env
 COPY ./packages /bookcars/packages
-RUN npm install
-RUN npm run build
+RUN npm cache clean --force
+RUN npm install --silent
+RUN npm run build --silent
 
 FROM nginx:stable-alpine
 WORKDIR /usr/share/nginx/html

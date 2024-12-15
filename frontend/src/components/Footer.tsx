@@ -10,7 +10,7 @@ import '@/assets/css/footer.css'
 const Footer = () => {
   const navigate = useNavigate()
   const [locations, setLocations] = useState<bookcarsTypes.Location[]>([])
-  const PAGE_SIZE = 15
+  const PAGE_SIZE = 100
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -18,7 +18,8 @@ const Footer = () => {
         const _page = 1 // Page par défaut
         const _keyword = '' // Optionnel, selon votre implémentation
         const data: bookcarsTypes.Result<bookcarsTypes.Location> | [] = await LocationService.getLocations(_keyword, _page, PAGE_SIZE)
-        const _data = data && data.length > 0 && data[0] ? data[0].resultData : []
+        const _data = data && data.length > 0 && data[0] ? data[0].resultData.filter((location) => location && location.name && (location.name.includes('Aéroport') || location.name.includes('(Centre-ville)'))) : []
+
         setLocations(_data) // Assurez-vous que la réponse contient un champ `results`
       } catch (error) {
         console.error('Erreur lors de la récupération des locations:', error)

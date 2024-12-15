@@ -66,6 +66,7 @@ const ZoomControlledLayer = ({ zoom, minZoom, children }: ZoomControlledLayerPro
 
 interface MapProps {
   title?: string
+  description?: string
   position?: LatLngExpression
   initialZoom?: number,
   locations?: bookcarsTypes.Location[]
@@ -78,6 +79,7 @@ interface MapProps {
 
 const Map = ({
   title,
+  description,
   position = new L.LatLng(33.886917, 9.537499),
   initialZoom,
   locations,
@@ -185,6 +187,7 @@ const Map = ({
   return (
     <>
       {title && <h1 className="title">{title}</h1>}
+      {description && <span>{description}</span>}
       <MapContainer
         center={position}
         zoom={_initialZoom}

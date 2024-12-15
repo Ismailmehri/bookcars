@@ -141,11 +141,17 @@ const Home = () => {
                   )}
                   label={strings.MINI}
                 />
-                <ul>
-                  <li>
-                    <span className="price">{bookcarsHelper.formatPrice(100, commonStrings.CURRENCY, language)}</span>
-                  </li>
-                </ul>
+                <div>
+                  <span className="price">
+                    À partir de
+                    {' '}
+                    {bookcarsHelper.formatPrice(100, commonStrings.CURRENCY, language)}
+                    /Jour
+                  </span>
+                </div>
+                <div>
+                  Compacte et économique, parfaite pour les trajets urbains ou courts voyages.
+                </div>
               </div>
             </div>
             <div className="box">
@@ -168,11 +174,17 @@ const Home = () => {
                   )}
                   label={strings.MIDI}
                 />
-                <ul>
-                  <li>
-                    <span className="price">{bookcarsHelper.formatPrice(120, commonStrings.CURRENCY, language)}</span>
-                  </li>
-                </ul>
+                <div>
+                  <span className="price">
+                    À partir de
+                    {' '}
+                    {bookcarsHelper.formatPrice(130, commonStrings.CURRENCY, language)}
+                    /Jour
+                  </span>
+                </div>
+                <div>
+                  Confortable et polyvalente, idéale pour les familles et les longs trajets
+                </div>
               </div>
             </div>
             <div className="box">
@@ -194,11 +206,17 @@ const Home = () => {
                   )}
                   label={strings.MAXI}
                 />
-                <ul>
-                  <li>
-                    <span className="price">{bookcarsHelper.formatPrice(150, commonStrings.CURRENCY, language)}</span>
-                  </li>
-                </ul>
+                <div>
+                  <span className="price">
+                    À partir de
+                    {' '}
+                    {bookcarsHelper.formatPrice(160, commonStrings.CURRENCY, language)}
+                    /Jour
+                  </span>
+                </div>
+                <div>
+                  Spacieuse et pratique, idéale pour les groupes et les longs voyages.
+                </div>
               </div>
             </div>
           </div>
@@ -217,7 +235,7 @@ const Home = () => {
           <Map
             title={strings.MAP_TITLE}
             position={new L.LatLng(33.886917, 9.537499)}
-            initialZoom={5}
+            initialZoom={env.isMobile() ? 6 : 7}
             locations={locations}
             onSelelectPickUpLocation={async (locationId) => {
               setPickupLocation(locationId)

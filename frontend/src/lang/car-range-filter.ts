@@ -4,9 +4,9 @@ import * as langHelper from '@/common/langHelper'
 const strings = new LocalizedStrings({
   fr: {
     RANGE: 'Gamme',
-    MINI: 'Mini',
-    MIDI: 'Midi',
-    MAXI: 'Maxi',
+    MINI: 'Petite voiture',
+    MIDI: 'Voiture moyenne',
+    MAXI: 'Grande voiture',
     SCOOTER: 'Scooter',
   },
   en: {

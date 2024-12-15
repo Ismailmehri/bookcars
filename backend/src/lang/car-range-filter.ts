@@ -11,9 +11,9 @@ const strings = new LocalizedStrings({
   },
   en: {
     RANGE: 'Range',
-    MINI: 'Mini',
-    MIDI: 'Midi',
-    MAXI: 'Maxi',
+    MINI: 'Petite voiture',
+    MIDI: 'Voiture moyenne',
+    MAXI: 'Grande voiture',
     SCOOTER: 'Scooter',
   },
 })

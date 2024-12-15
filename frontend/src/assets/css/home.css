@@ -179,8 +179,14 @@ div.home div.car-size div.boxes div.box div.box-content span.unit {
 }
 
 div.home div.home-map {
-  width: 80%;
+  width: 40%;
   margin: 15px 0 30px;
+}
+
+@media (max-width: 768px) {
+  div.home div.home-map {
+    width: 70%;
+  }
 }
 
 /* Device width is greater than or equal to 960px */

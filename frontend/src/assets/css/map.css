@@ -4,9 +4,15 @@
 }
 
 .map {
-  min-height: 540px;
+  min-height: 750px;
   height: 100%;
   width: 100%;
+}
+
+@media (max-width: 768px) {
+  .map {
+    min-height: 540px;
+  }
 }
 
 .marker .name {

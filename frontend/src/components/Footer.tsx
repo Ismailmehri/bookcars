@@ -69,6 +69,27 @@ const Footer = () => {
             <MailOutline className="icon" />
             <a href="mailto:info@plany.tn">info@plany.tn</a>
           </div>
+          <div className="whatsapp-contact">
+            <a
+              href="https://wa.me/message/375AVPIE7SAUP1"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                textDecoration: 'none',
+                color: '#25D366',
+                marginTop: '10px',
+              }}
+            >
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                alt="WhatsApp"
+                style={{ width: '24px', height: '24px', marginRight: '8px' }}
+              />
+              Contactez-nous sur WhatsApp
+            </a>
+          </div>
         </div>
       </section>
       <section className="payment">

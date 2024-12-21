@@ -7,6 +7,7 @@ import Unauthorized from './Unauthorized'
 import * as helper from '@/common/helper'
 import { useInit } from '@/common/customHooks'
 import ValidateEmail from './ValidateUser'
+import { useAnalytics } from '@/common/useAnalytics'
 
 interface LayoutProps {
   user?: bookcarsTypes.User
@@ -31,6 +32,7 @@ const Layout = ({
   const [loading, setLoading] = useState(true)
   const [unauthorized, setUnauthorized] = useState(false)
 
+  useAnalytics()
   useEffect(() => {
     if (masterUser && user && user.avatar !== masterUser.avatar) {
       setUser(masterUser)

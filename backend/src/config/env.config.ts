@@ -22,7 +22,9 @@ const LANGUAGES = [
 
 const env = {
   isMobile: () => window.innerWidth <= 960,
-
+  isProduction: import.meta.env.VITE_NODE_ENV === 'production',
+  GOOGLE_ANALYTICS_ID: String(import.meta.env.VITE_BC_GOOGLE_ANALYTICS_ID),
+  GOOGLE_ANALYTICS_ENABLED: (import.meta.env.VITE_BC_GOOGLE_ANALYTICS_ENABLED && import.meta.env.VITE_BC_GOOGLE_ANALYTICS_ENABLED.toLowerCase()) === 'true',
   APP_TYPE: bookcarsTypes.AppType.Backend,
   API_HOST: String(import.meta.env.VITE_BC_API_HOST),
   LANGUAGES: LANGUAGES.map((l) => l.code),

@@ -2,7 +2,12 @@ import React, { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import SuspenseRouter from '@/components/SuspenseRouter'
 import { GlobalProvider } from '@/context/GlobalContext'
+import env from '@/config/env.config'
+import { initGTM } from '@/common/gtm'
 
+if (env.GOOGLE_ANALYTICS_ENABLED) {
+  initGTM()
+}
 const SignIn = lazy(() => import('@/pages/SignIn'))
 const Activate = lazy(() => import('@/pages/Activate'))
 const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'))

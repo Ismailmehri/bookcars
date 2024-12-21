@@ -146,6 +146,18 @@ const SignIn = () => {
                   {strings.SIGN_IN}
                 </Button>
               </div>
+              <div className="separator" />
+              <div className="signin-button">
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  href="https://admin.plany.tn/sign-up"
+                  sx={{ padding: '10px 20px', fontSize: '16px', borderRadius: '10px' }}
+                >
+                  Inscrivez votre agence maintenant
+                </Button>
+              </div>
               <div className="form-error">
                 {error && <Error message={strings.ERROR_IN_SIGN_IN} />}
                 {blacklisted && <Error message={strings.IS_BLACKLISTED} />}

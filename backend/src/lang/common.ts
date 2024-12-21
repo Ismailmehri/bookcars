@@ -8,7 +8,7 @@ const strings = new LocalizedStrings({
     CHANGE_LANGUAGE_ERROR: "Une erreur s'est produite lors du changement de langue.",
     UPDATED: 'Modifications effectuées avec succès.',
     GO_TO_HOME: "Aller à la page d'accueil",
-    FULL_NAME: 'Nom complet',
+    FULL_NAME: "Nom de l'agence",
     EMAIL: 'E-mail',
     PASSWORD: 'Mot de passe',
     EMAIL_ALREADY_REGISTERED: 'Cette adresse e-mail est déjà enregistrée.',

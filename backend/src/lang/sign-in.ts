@@ -5,6 +5,7 @@ const strings = new LocalizedStrings({
   fr: {
     SIGN_IN_HEADING: 'Connexion',
     SIGN_IN: 'Se connecter',
+    SIGN_UP: "S'inscrire",
     ERROR_IN_SIGN_IN: 'E-mail ou mot de passe incorrect.',
     IS_BLACKLISTED: 'Votre compte est suspendu.',
     RESET_PASSWORD: 'Mot de passe oublié ?',
@@ -12,6 +13,7 @@ const strings = new LocalizedStrings({
   },
   en: {
     SIGN_IN_HEADING: 'Sign in',
+    SIGN_UP: "S'inscrire",
     SIGN_IN: 'Sign in',
     ERROR_IN_SIGN_IN: 'Incorrect email or password.',
     IS_BLACKLISTED: 'Your account is suspended.',

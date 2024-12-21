@@ -152,6 +152,9 @@ const SignIn = () => {
               </div>
 
               <div className="signin-buttons">
+                <Button type="submit" href="/sign-up" style={{ marginRight: '10px' }} variant="contained" size="small" className="btn-secondary">
+                  {strings.SIGN_UP}
+                </Button>
                 <Button type="submit" variant="contained" size="small" className="btn-primary">
                   {strings.SIGN_IN}
                 </Button>

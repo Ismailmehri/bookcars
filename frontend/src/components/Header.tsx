@@ -353,11 +353,6 @@ const Header = ({
                   {strings.SIGN_IN}
                 </Button>
               )}
-              {isLoaded && !loading && (
-                <Button variant="contained" startIcon={<LanguageIcon />} onClick={handleLangMenuOpen} disableElevation fullWidth className="btn">
-                  {lang?.label}
-                </Button>
-              )}
               {isSignedIn && (
                 <IconButton edge="end" aria-label="account" aria-controls={menuId} aria-haspopup="true" onClick={handleAccountMenuOpen} className="btn">
                   <Avatar loggedUser={user} user={user} size="small" readonly />
@@ -365,10 +360,10 @@ const Header = ({
               )}
             </div>
             <div className="header-mobile">
-              {!isSignedIn && !loading && (
-                <Button variant="contained" startIcon={<LanguageIcon />} onClick={handleLangMenuOpen} disableElevation fullWidth className="btn">
-                  {lang?.label}
-                </Button>
+              {!hideSignin && !isSignedIn && isLoaded && !loading && (
+              <Button variant="contained" startIcon={<LoginIcon />} href="/sign-in" disableElevation fullWidth className="btn" style={{ minWidth: '180px' }}>
+                {strings.SIGN_IN}
+              </Button>
               )}
               {isSignedIn && (
                 <IconButton onClick={handleNotificationsClick} className="btn">

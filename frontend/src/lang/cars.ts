@@ -72,6 +72,7 @@ const strings = new LocalizedStrings({
     GEARBOX: 'Transmission',
     ENGINE: 'Moteur',
     DEPOSIT: 'Dépôt de garantie',
+    DEPOSIT_TOOLTIP: 'Caution remboursable demandée pour garantir la location, restituée après le retour du véhicule en bon état.',
     LESS_THAN_VALUE_1: `Moins de ${isUS ? env.CURRENCY : ''}${env.DEPOSIT_FILTER_VALUE_1}${!isUS ? (` ${env.CURRENCY}`) : ''}`,
     LESS_THAN_VALUE_2: `Moins de ${isUS ? env.CURRENCY : ''}${env.DEPOSIT_FILTER_VALUE_2}${!isUS ? (` ${env.CURRENCY}`) : ''}`,
     LESS_THAN_VALUE_3: `Moins de ${isUS ? env.CURRENCY : ''}${env.DEPOSIT_FILTER_VALUE_3}${!isUS ? (` ${env.CURRENCY}`) : ''}`,

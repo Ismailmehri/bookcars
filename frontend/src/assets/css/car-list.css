@@ -10,6 +10,16 @@ section.car-list .empty-list {
   width: 250px;
 }
 
+.copy-link {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.copy-link button {
+  width: 100%;
+}
+
 section.car-list div.bc-title {
   text-align: left;
   width: 100%;

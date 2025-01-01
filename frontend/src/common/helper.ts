@@ -364,6 +364,24 @@ export const getCancellation = (cancellation: number, language: string) => {
 }
 
 /**
+ * Get deposit label.
+ *
+ * @param {number} deposit
+ * @param {string} language
+ * @returns {string}
+ */
+export const getDeposit = (deposit: number, language: string) => {
+  const fr = bookcarsHelper.isFrench(language)
+
+  if (deposit === -1) {
+    return `${strings.DEPOSIT}${fr ? ' : ' : ': '}${strings.UNAVAILABLE}`
+  } if (deposit === 0) {
+    return `${strings.DEPOSIT}${fr ? ' : ' : ': '}${strings.INCLUDED}`
+  }
+  return `${strings.DEPOSIT}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(deposit, commonStrings.CURRENCY, language)}`
+}
+
+/**
  * Get booking status label.
  *
  * @param {string} status

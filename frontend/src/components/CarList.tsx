@@ -251,6 +251,9 @@ const CarList = ({
       if (option === 'cancellation' && booking.cancellation && extra > 0) {
         available = true
       }
+      if (option === 'deposit') {
+        available = true
+      }
       if (option === 'amendments' && booking.amendments && extra > 0) {
         available = true
       }
@@ -439,6 +442,16 @@ const CarList = ({
                         </ul>
 
                         <ul className="extras-list">
+                          {car.deposit > -1 && (
+                          <li>
+                            <Tooltip title={booking ? '' : car.deposit > -1 ? strings.DEPOSIT_TOOLTIP : helper.getDeposit(car.cancellation, language)} placement="left">
+                              <div className="car-info-list-item">
+                                {getExtraIcon('deposit', car.deposit)}
+                                <span className="car-info-list-text">{helper.getDeposit(car.deposit, language)}</span>
+                              </div>
+                            </Tooltip>
+                          </li>
+                          )}
                           {car.cancellation > -1 && (
                             <li>
                               <Tooltip title={booking ? '' : car.cancellation > -1 ? strings.CANCELLATION_TOOLTIP : helper.getCancellation(car.cancellation, language)} placement="left">

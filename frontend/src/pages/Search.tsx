@@ -40,6 +40,7 @@ const Search = () => {
   const [dropOffLocation, setDropOffLocation] = useState<bookcarsTypes.Location>()
   const [from, setFrom] = useState<Date>()
   const [to, setTo] = useState<Date>()
+  const [selectedSupplier, setSelectedSupplier] = useState<string[]>()
   const [allSuppliers, setAllSuppliers] = useState<bookcarsTypes.User[]>([])
   const [allSuppliersIds, setAllSuppliersIds] = useState<string[]>([])
   const [suppliers, setSuppliers] = useState<bookcarsTypes.User[]>([])
@@ -112,6 +113,7 @@ const Search = () => {
 
   const handleSupplierFilterChange = (newSuppliers: string[]) => {
     setSupplierIds(newSuppliers)
+    setSelectedSupplier(newSuppliers)
   }
 
   const handleRatingFilterChange = (value: number) => {
@@ -155,51 +157,38 @@ const Search = () => {
   }
 
   const onLoad = async (user?: bookcarsTypes.User) => {
-    // Extraction des paramètres depuis l'URL
     const searchParams = new URLSearchParams(window.location.search)
     const pickupLocationIdFromUrl = searchParams.get('pickupLocation') || null
-    const supplier = searchParams.get('supplier') || null
+    const suppliersFromUrl = searchParams.get('supplier')?.split(',').filter(Boolean) || []
 
     const { state } = location
-
-    // Définir pickupLocationId à partir de state ou URL
     const pickupLocationId = state?.pickupLocationId || pickupLocationIdFromUrl
     const dropOffLocationId = state?.dropOffLocationId || null
     const _from = state?.from || null
     const _to = state?.to || null
 
-    // Vérification des données dans l'état ou dans les paramètres URL
     if (!pickupLocationId) {
       setNoMatch(true)
       return
     }
 
-    // Calculer les dates par défaut si from et to ne sont pas fournis
     const now = new Date()
-    const defaultFrom = new Date(now.getTime() + 24 * 60 * 60 * 1000) // Maintenant + 3 heures
-    const defaultTo = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000) // Maintenant + 3 jours
+    const defaultFrom = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    const defaultTo = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
     const startDate = _from ? new Date(_from) : defaultFrom
     const endDate = _to ? new Date(_to) : defaultTo
 
-    let _pickupLocation
-    let _dropOffLocation
-
     try {
-      // Récupérer la localisation de départ
-      _pickupLocation = await LocationService.getLocation(pickupLocationId)
-
+      const _pickupLocation = await LocationService.getLocation(pickupLocationId)
       if (!_pickupLocation) {
         setLoading(false)
         setNoMatch(true)
         return
       }
 
-      // Récupérer la localisation de dépôt si différente
-      if (dropOffLocationId && dropOffLocationId !== pickupLocationId) {
-        _dropOffLocation = await LocationService.getLocation(dropOffLocationId)
-      } else {
-        _dropOffLocation = _pickupLocation
-      }
+      const _dropOffLocation = dropOffLocationId && dropOffLocationId !== pickupLocationId
+        ? await LocationService.getLocation(dropOffLocationId)
+        : _pickupLocation
 
       if (!_dropOffLocation) {
         setLoading(false)
@@ -207,7 +196,6 @@ const Search = () => {
         return
       }
 
-      // Préparer les données pour le service de fournisseurs
       const payload: bookcarsTypes.GetCarsPayload = {
         pickupLocation: _pickupLocation._id,
         carSpecs,
@@ -222,16 +210,11 @@ const Search = () => {
         seats,
         startDate,
         endDate,
-        suppliers: supplier ? [supplier] : []
+        suppliers: suppliersFromUrl
       }
 
-      let _suppliers = []
-      if (supplier) {
-        _suppliers = await SupplierService.getFrontendSuppliers(payload)
-        _suppliers = _suppliers.filter((s) => s._id === supplier)
-      } else {
-        _suppliers = await SupplierService.getFrontendSuppliers(payload)
-      }
+      const _suppliers = await SupplierService.getFrontendSuppliers(payload)
+
       const _supplierIds = bookcarsHelper.flattenSuppliers(_suppliers)
 
       setPickupLocation(_pickupLocation)
@@ -241,14 +224,12 @@ const Search = () => {
       setSuppliers(_suppliers)
       setSupplierIds(_supplierIds)
 
-      // Charger les plages de disponibilité si présentes dans state
-      const { ranges: _ranges } = state || {}
-      if (_ranges) {
-        setRanges(_ranges)
+      if (state?.ranges) {
+        setRanges(state.ranges)
       }
 
       setLoading(false)
-      if (!user || (user && user.verified)) {
+      if (!user || user.verified) {
         setVisible(true)
       }
     } catch (err) {
@@ -288,6 +269,7 @@ const Search = () => {
                   dropOffLocation={dropOffLocation}
                   from={from}
                   to={to}
+                  suppliers={selectedSupplier}
                   accordion
                   collapse
                   onSubmit={handleCarFilterSubmit}

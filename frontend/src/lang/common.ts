@@ -65,6 +65,7 @@ const strings = new LocalizedStrings({
     ACTIVATION_EMAIL_SENT: "E-mail d'activation envoyé.",
     EMAIL_NOT_VALID: 'E-mail non valide',
     PICK_UP_LOCATION: 'Lieu de prise en charge',
+    COPY_LINK: 'Copier et partager le lien',
     DROP_OFF_LOCATION: 'Lieu de restitution',
     PHONE_NOT_VALID: 'Numéro de téléphone non valide',
     ALL: 'Tous',

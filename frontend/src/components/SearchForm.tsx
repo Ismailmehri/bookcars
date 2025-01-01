@@ -41,14 +41,25 @@ const SearchForm = ({
   const [selectedPickupLocation, setSelectedPickupLocation] = useState<bookcarsTypes.Location | undefined>(undefined)
   const [dropOffLocation, setDropOffLocation] = useState('')
   const [selectedDropOffLocation, setSelectedDropOffLocation] = useState<bookcarsTypes.Location | undefined>(undefined)
-  const [minDate, setMinDate] = useState(_minDate)
-  const [maxDate, setMaxDate] = useState<Date>()
   const [from, setFrom] = useState<Date>()
   const [to, setTo] = useState<Date>()
   const [sameLocation, setSameLocation] = useState(true)
   const [fromError, setFromError] = useState(false)
   const [toError, setToError] = useState(false)
   const [ranges, setRanges] = useState(bookcarsHelper.getAllRanges())
+
+  const updateDateRange = (startDate: Date | undefined, endDate: Date | undefined) => {
+    if (startDate) {
+      const minEndDate = new Date(startDate)
+      minEndDate.setDate(startDate.getDate() + 1)
+
+      if (!endDate || endDate < minEndDate) {
+        const newEndDate = new Date(startDate)
+        newEndDate.setDate(startDate.getDate() + 3)
+        setTo(newEndDate)
+      }
+    }
+  }
 
   useEffect(() => {
     const _from = new Date()
@@ -61,14 +72,6 @@ const SearchForm = ({
     const _to = new Date(_from)
     _to.setDate(_to.getDate() + 3)
 
-    const _maxDate = new Date(_to)
-    _maxDate.setDate(_maxDate.getDate() - 1)
-    setMaxDate(_maxDate)
-
-    const __minDate = new Date(_from)
-    __minDate.setDate(__minDate.getDate() + 1)
-
-    setMinDate(__minDate)
     setFrom(_from)
     setTo(_to)
   }, [])
@@ -87,8 +90,7 @@ const SearchForm = ({
       }
     }
     init()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [__pickupLocation])
+  }, [__pickupLocation, dropOffLocation, sameLocation])
 
   useEffect(() => {
     const init = async () => {
@@ -100,16 +102,7 @@ const SearchForm = ({
       }
     }
     init()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [__dropOffLocation])
-
-  useEffect(() => {
-    if (from) {
-      const __minDate = new Date(from)
-      __minDate.setDate(from.getDate() + 1)
-      setMinDate(__minDate)
-    }
-  }, [from])
+  }, [__dropOffLocation, pickupLocation])
 
   useEffect(() => {
     setRanges(__ranges || bookcarsHelper.getAllRanges())
@@ -153,22 +146,34 @@ const SearchForm = ({
     }
   }
 
+  const handleFromDateChange = (date: Date | null) => {
+    if (date) {
+      setFrom(date)
+      setFromError(false)
+      updateDateRange(date, to)
+    } else {
+      setFrom(undefined)
+    }
+  }
+
+  const handleToDateChange = (date: Date | null) => {
+    if (date) {
+      const minEndDate = from ? new Date(from.getTime() + 24 * 60 * 60 * 1000) : _minDate
+      if (date >= minEndDate) {
+        setTo(date)
+        setToError(false)
+      }
+    } else {
+      setTo(undefined)
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!pickupLocation || !dropOffLocation || !from || !to || fromError || toError) {
       return
     }
-
-    // navigate('/search', {
-    //   state: {
-    //     pickupLocationId: pickupLocation,
-    //     dropOffLocationId: dropOffLocation,
-    //     from,
-    //     to,
-    //     ranges,
-    //   },
-    // })
 
     setTimeout(navigate, 0, '/search', {
       state: {
@@ -200,27 +205,11 @@ const SearchForm = ({
           label={strings.PICK_UP_DATE}
           value={from}
           minDate={_minDate}
-          maxDate={maxDate}
           variant="outlined"
           required
-          onChange={(date) => {
-            if (date) {
-              const __minDate = new Date(date)
-              __minDate.setDate(date.getDate() + 1)
-              setFrom(date)
-              setMinDate(__minDate)
-              setFromError(false)
-            } else {
-              setFrom(undefined)
-              setMinDate(_minDate)
-            }
-          }}
+          onChange={handleFromDateChange}
           onError={(err: DateTimeValidationError) => {
-            if (err) {
-              setFromError(true)
-            } else {
-              setFromError(false)
-            }
+            setFromError(!!err)
           }}
           language={UserService.getLanguage()}
         />
@@ -229,27 +218,12 @@ const SearchForm = ({
         <DateTimePicker
           label={strings.DROP_OFF_DATE}
           value={to}
-          minDate={minDate}
+          minDate={from ? new Date(from.getTime() + 24 * 60 * 60 * 1000) : _minDate}
           variant="outlined"
           required
-          onChange={(date) => {
-            if (date) {
-              const _maxDate = new Date(date)
-              _maxDate.setDate(_maxDate.getDate() - 1)
-              setTo(date)
-              setMaxDate(_maxDate)
-              setToError(false)
-            } else {
-              setTo(undefined)
-              setMaxDate(undefined)
-            }
-          }}
+          onChange={handleToDateChange}
           onError={(err: DateTimeValidationError) => {
-            if (err) {
-              setToError(true)
-            } else {
-              setToError(false)
-            }
+            setToError(!!err)
           }}
           language={UserService.getLanguage()}
         />
@@ -284,7 +258,7 @@ const SearchForm = ({
         </FormControl>
       )}
       <FormControl className="chk-same-location">
-        <FormControlLabel control={<Checkbox disabled checked={sameLocation} onChange={handleSameLocationChange} />} label={strings.DROP_OFF} />
+        <FormControlLabel control={<Checkbox checked={sameLocation} onChange={handleSameLocationChange} />} label={strings.DROP_OFF} />
       </FormControl>
     </form>
   )

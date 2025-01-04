@@ -1,5 +1,3 @@
-import * as env from '../../config/env.config'
-
 /**
  * Génère un email HTML basé sur un template.
  *

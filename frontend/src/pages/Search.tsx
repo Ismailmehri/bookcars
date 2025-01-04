@@ -213,7 +213,11 @@ const Search = () => {
         suppliers: suppliersFromUrl
       }
 
-      const _suppliers = await SupplierService.getFrontendSuppliers(payload)
+      let _suppliers = await SupplierService.getFrontendSuppliers(payload)
+
+      if (suppliersFromUrl && suppliersFromUrl.length > 0) {
+        _suppliers = _suppliers.filter((s) => s._id && suppliersFromUrl.includes(s._id))
+      }
 
       const _supplierIds = bookcarsHelper.flattenSuppliers(_suppliers)
 

@@ -8,6 +8,7 @@ import { CookieOptions, Request, Response } from 'express'
 import nodemailer from 'nodemailer'
 import axios from 'axios'
 import validator from 'validator'
+import { templateAfterValidation } from 'src/lang/template/emailTemplateAfterValidation'
 import * as bookcarsTypes from ':bookcars-types'
 import i18n from '../lang/i18n'
 import * as env from '../config/env.config'
@@ -384,6 +385,56 @@ export const resend = async (req: Request, res: Response) => {
     return res.sendStatus(204)
   } catch (err) {
     logger.error(`[user.resend] ${i18n.t('DB_ERROR')} ${email}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+/**
+ * Activate a User and set his Password.
+ *
+ * @export
+ * @async
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {unknown}
+ */
+export const activateSupplier = async (req: Request, res: Response) => {
+  const { body }: { body: bookcarsTypes.ActivatePayload } = req
+  const { userId } = body
+  const sessionData = await authHelper.getSessionData(req)
+  let connectedUser: bookcarsTypes.User | null
+
+  try {
+    if (!helper.isValidObjectId(userId)) {
+      throw new Error('body.userId is not valid')
+    }
+
+    const user = await User.findById(userId)
+
+  if (sessionData.id === userId && user) {
+    connectedUser = user as bookcarsTypes.User
+  } else {
+    connectedUser = await User.findById(sessionData.id)
+  }
+
+  const isAdmin = connectedUser ? helper.admin(connectedUser) : false
+
+    if (user && isAdmin) {
+        user.active = true
+        await user.save()
+        const mailOptions: nodemailer.SendMailOptions = {
+          html: templateAfterValidation('Félicitations ! Votre compte Plany est prêt à l’emploi', user.fullName),
+          to: user.email,
+          subject: 'Félicitations ! Votre compte Plany est prêt à l’emploi',
+        }
+        mailHelper.sendMailHTML(mailOptions)
+
+        return res.sendStatus(200)
+    }
+
+    return res.sendStatus(204)
+  } catch (err) {
+    logger.error(`[user.activate] ${i18n.t('DB_ERROR')} ${userId}`, err)
     return res.status(400).send(i18n.t('DB_ERROR') + err)
   }
 }
@@ -1460,8 +1511,17 @@ export const getUsers = async (req: Request, res: Response) => {
     }
 
     // Filtre pour les types d'utilisateur
-    const selectedTypes = isAdmin ? [bookcarsTypes.UserType.Admin, bookcarsTypes.UserType.Supplier, bookcarsTypes.UserType.User] : [bookcarsTypes.UserType.User]
+    let selectedTypes: bookcarsTypes.UserType[]
 
+    if (isAdmin) {
+      if (body.types && body.types.length > 0) {
+        selectedTypes = body.types
+      } else {
+        selectedTypes = [bookcarsTypes.UserType.Admin, bookcarsTypes.UserType.Supplier, bookcarsTypes.UserType.User]
+      }
+    } else {
+      selectedTypes = [bookcarsTypes.UserType.User]
+    }
     // Préparation du $match pour filtrer les utilisateurs
     const $match: mongoose.FilterQuery<env.User> = {
       $and: [

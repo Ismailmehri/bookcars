@@ -100,6 +100,14 @@ export const resend = (email?: string, reset = false, appType: string = bookcars
     )
     .then((res) => res.status)
 
+   export const activateSupplier = (data: bookcarsTypes.ActivatePayload): Promise<number> =>
+     axiosInstance
+       .post(
+         '/api/activate-supplier/ ',
+         data,
+         { withCredentials: true }
+       )
+       .then((res) => res.status)
 /**
  * Activate an account.
  *

@@ -3,6 +3,7 @@ const routes = {
   checkToken: '/api/check-token/:type/:userId/:email/:token',
   deleteTokens: '/api/delete-tokens/:userId',
   activate: '/api/activate',
+  activateSupplier: '/api/activate-supplier',
   resend: '/api/resend/:type/:email/:reset',
   signup: '/api/sign-up',
   adminSignup: '/api/admin-sign-up',

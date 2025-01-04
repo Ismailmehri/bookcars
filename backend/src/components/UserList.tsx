@@ -22,7 +22,8 @@ import {
   Delete as DeleteIcon,
   AccountCircle, Check as VerifiedIcon,
   PriorityHigh as NotActivatedIcon,
-  HourglassEmpty as UnverifiedIcon
+  HourglassEmpty as UnverifiedIcon,
+  CheckCircle as ActivateIcon
 } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -133,6 +134,15 @@ const UserList = ({
     }
   }, [pageSize]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleActivate = async (row: any) => {
+    try {
+      const payload : bookcarsTypes.ActivatePayload = { userId: row._id, token: '', password: '' }
+      await UserService.activateSupplier(payload) // Appeler le service
+      row.active = true
+    } catch (error) {
+      console.error('Erreur lors de l\'activation du fournisseur :', error)
+    }
+  }
   const getColumns = (_user: bookcarsTypes.User): GridColDef<bookcarsTypes.User>[] => {
     const _columns: GridColDef<bookcarsTypes.User>[] = [
       {
@@ -338,10 +348,40 @@ const UserList = ({
           <></>
         )),
       },
+      {
+        field: 'active',
+        headerName: '',
+        sortable: false,
+        disableColumnMenu: true,
+        renderCell: ({ row }: GridRenderCellParams<bookcarsTypes.User>) => {
+          const __user = row
+          return _user.type === bookcarsTypes.RecordType.Admin ? ( // Condition principale
+            <div>
+              {!__user.active ? ( // Condition pour afficher le bouton d'activation
+                <Tooltip title={commonStrings.ACTIVATE}>
+                  <IconButton onClick={() => handleActivate(row)}>
+                    <NotActivatedIcon color="error" />
+                  </IconButton>
+                </Tooltip>
+              ) : ( // Si l'utilisateur est déjà actif
+                <Tooltip title={commonStrings.ACTIVATE}>
+                  <IconButton>
+                    <ActivateIcon color="success" />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </div>
+          ) : ( // Si l'utilisateur n'est pas un admin
+              null
+          )
+        },
+      },
     ]
 
     if (hideDesktopColumns) {
       _columns.splice(1, 3)
+    } else if (_user.type !== bookcarsTypes.RecordType.Admin) {
+      _columns.splice(3)
     }
 
     return _columns

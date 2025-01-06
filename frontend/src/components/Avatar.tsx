@@ -7,12 +7,12 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
 } from '@mui/material'
 import {
   AccountCircle,
   PhotoCamera as PhotoCameraIcon,
-  BrokenImageTwoTone as DeleteIcon
+  BrokenImageTwoTone as DeleteIcon,
 } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -22,14 +22,14 @@ import { strings as commonStrings } from '@/lang/common'
 import * as UserService from '@/services/UserService'
 
 interface AvatarProps {
-  loggedUser?: bookcarsTypes.User
-  user?: bookcarsTypes.User
-  size: 'small' | 'medium' | 'large',
-  readonly?: boolean,
-  color?: 'disabled' | 'action' | 'inherit' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning',
-  className?: string,
-  onBeforeUpload?: () => void,
-  onChange?: (user: bookcarsTypes.User) => void,
+  loggedUser?: bookcarsTypes.User;
+  user?: bookcarsTypes.User;
+  size: 'small' | 'medium' | 'large';
+  readonly?: boolean;
+  color?: 'disabled' | 'action' | 'inherit' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+  className?: string;
+  onBeforeUpload?: () => void;
+  onChange?: (user: bookcarsTypes.User) => void;
 }
 
 const Avatar = ({
@@ -52,6 +52,20 @@ const Avatar = ({
       return
     }
 
+    const file = e.target.files[0]
+
+    // Vérifier le type de fichier
+    if (!file.type.startsWith('image/')) {
+      helper.error('Seuls les fichiers de type image sont autorisés.', 'Seuls les fichiers de type image sont autorisés.')
+      return
+    }
+
+    // Vérifier la taille du fichier (5 Mo max)
+    if (file.size > 5 * 1024 * 1024) {
+      helper.error('La taille du fichier ne doit pas dépasser 5 Mo.', 'La taille du fichier ne doit pas dépasser 5 Mo.')
+      return
+    }
+
     if (onBeforeUpload) {
       onBeforeUpload()
     }
@@ -64,7 +78,6 @@ const Avatar = ({
     }
 
     const reader = new FileReader()
-    const file = e.target.files[0]
 
     reader.onloadend = async () => {
       try {
@@ -166,7 +179,7 @@ const Avatar = ({
     }
   }, [avatarUser])
 
-  const avatarUrl = user?.avatar
+  const avatarUrl = user && user.avatar
     ? (user.avatar?.startsWith('http') ? user.avatar : bookcarsHelper.joinURL(env.CDN_USERS, user.avatar))
     : ''
 
@@ -174,7 +187,7 @@ const Avatar = ({
     <div className={className}>
       {loggedUser._id === user._id && !readonly ? (
         <div>
-          <input id="upload" type="file" hidden onChange={handleChange} />
+          <input id="upload" type="file" hidden onChange={handleChange} accept="image/*" />
           {user.avatar ? (
             <Badge
               overlap="circular"

@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Tooltip
+  Tooltip,
 } from '@mui/material'
 import {
   AccountCircle,
@@ -29,21 +29,21 @@ import * as CarService from '@/services/CarService'
 import * as LocationService from '@/services/LocationService'
 
 interface AvatarProps {
-  avatar?: string
-  width?: number
-  height?: number
-  mode?: 'create' | 'update'
-  type?: string
-  record?: bookcarsTypes.User | bookcarsTypes.Car | bookcarsTypes.Location | null
-  size: 'small' | 'medium' | 'large'
-  readonly?: boolean
-  color?: 'disabled' | 'action' | 'inherit' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'
-  className?: string
-  verified?: boolean
-  hideDelete?: boolean
-  onValidate?: (valid: boolean) => void
-  onBeforeUpload?: () => void
-  onChange?: (param: string) => void
+  avatar?: string;
+  width?: number;
+  height?: number;
+  mode?: 'create' | 'update';
+  type?: string;
+  record?: bookcarsTypes.User | bookcarsTypes.Car | bookcarsTypes.Location | null;
+  size: 'small' | 'medium' | 'large';
+  readonly?: boolean;
+  color?: 'disabled' | 'action' | 'inherit' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+  className?: string;
+  verified?: boolean;
+  hideDelete?: boolean;
+  onValidate?: (valid: boolean) => void;
+  onBeforeUpload?: () => void;
+  onChange?: (param: string) => void;
 }
 
 const Avatar = ({
@@ -106,12 +106,25 @@ const Avatar = ({
       return
     }
 
+    const file = e.target.files[0]
+
+    // Vérifier le type de fichier
+    if (!file.type.startsWith('image/')) {
+      helper.error('Seuls les fichiers de type image sont autorisés.', 'Seuls les fichiers de type image sont autorisés.')
+      return
+    }
+
+    // Vérifier la taille du fichier (5 Mo max)
+    if (file.size > 5 * 1024 * 1024) {
+      helper.error('La taille du fichier ne doit pas dépasser 5 Mo.', 'La taille du fichier ne doit pas dépasser 5 Mo.')
+      return
+    }
+
     if (onBeforeUpload) {
       onBeforeUpload()
     }
 
     const reader = new FileReader()
-    const file = e.target.files[0]
 
     reader.onloadend = async () => {
       if (type === bookcarsTypes.RecordType.Admin
@@ -688,7 +701,7 @@ const Avatar = ({
           </Button>
         </DialogActions>
       </Dialog>
-      {!readonly && <input id="upload" type="file" hidden onChange={handleChange} />}
+      {!readonly && <input id="upload" type="file" hidden onChange={handleChange} accept="image/*" />}
     </div>
   ) : null
 }

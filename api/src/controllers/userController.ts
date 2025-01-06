@@ -422,13 +422,14 @@ export const activateSupplier = async (req: Request, res: Response) => {
     if (user && isAdmin) {
         user.active = true
         await user.save()
-        const mailOptions: nodemailer.SendMailOptions = {
-          html: templateAfterValidation('Félicitations ! Votre compte Plany est prêt à l’emploi', user.fullName),
-          to: user.email,
-          subject: 'Félicitations ! Votre compte Plany est prêt à l’emploi',
+        if (user.type === bookcarsTypes.UserType.Supplier) {
+          const mailOptions: nodemailer.SendMailOptions = {
+            html: templateAfterValidation('Félicitations ! Votre compte Plany est prêt à l’emploi', user.fullName),
+            to: user.email,
+            subject: 'Félicitations ! Votre compte Plany est prêt à l’emploi',
+          }
+          mailHelper.sendMailHTML(mailOptions)
         }
-        mailHelper.sendMailHTML(mailOptions)
-
         return res.sendStatus(200)
     }
 

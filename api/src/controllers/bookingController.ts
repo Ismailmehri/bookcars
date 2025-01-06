@@ -976,7 +976,7 @@ export const cancelBooking = async (req: Request, res: Response) => {
       .populate<{ supplier: env.User }>('supplier')
       .populate<{ driver: env.User }>('driver')
 
-    if (booking && booking.cancellation && !booking.cancelRequest) {
+    if (booking && (booking.cancellation || booking.status === bookcarsTypes.BookingStatus.Pending) && !booking.cancelRequest) {
       booking.cancelRequest = true
       await booking.save()
 

@@ -497,6 +497,8 @@ const Booking = () => {
               booking={booking}
               cars={[booking.car as bookcarsTypes.Car]}
               hidePrice
+              from={new Date(booking?.from)}
+              to={new Date(booking?.to)}
             />
           </div>
         </div>

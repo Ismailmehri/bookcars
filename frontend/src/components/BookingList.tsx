@@ -23,7 +23,8 @@ import {
 import {
   Visibility as ViewIcon,
   Check as CheckIcon,
-  Cancel as CancelIcon
+  Cancel as CancelIcon,
+  Pending as PendingIcon
 } from '@mui/icons-material'
 import { format } from 'date-fns'
 import { fr as dfnsFR, enUS as dfnsENUS } from 'date-fns/locale'
@@ -254,13 +255,21 @@ const BookingList = ({
                   <ViewIcon />
                 </IconButton>
               </Tooltip>
-              {row.cancellation
+              {(row.cancellation || row.status === bookcarsTypes.BookingStatus.Pending)
                 && !row.cancelRequest
                 && row.status !== bookcarsTypes.BookingStatus.Cancelled
                 && new Date(row.from) >= today && (
                   <Tooltip title={strings.CANCEL}>
                     <IconButton onClick={cancelBooking}>
                       <CancelIcon />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              {row.cancelRequest
+                && row.status !== bookcarsTypes.BookingStatus.Cancelled && (
+                  <Tooltip title={strings.CANCEL_REQUEST}>
+                    <IconButton>
+                      <PendingIcon />
                     </IconButton>
                   </Tooltip>
                 )}
@@ -494,24 +503,32 @@ const BookingList = ({
                     <span className="booking-detail-title">{strings.COST}</span>
                     <div className="booking-detail-value booking-price">{bookcarsHelper.formatPrice(booking.price as number, commonStrings.CURRENCY, language as string)}</div>
                   </div>
-
                   <div className="bs-buttons">
-                    {booking.cancellation
-                      && !booking.cancelRequest
-                      && booking.status !== bookcarsTypes.BookingStatus.Cancelled
-                      && new Date(booking.from) > new Date() && (
-                        <Button
-                          variant="contained"
-                          className="btn-secondary"
-                          onClick={() => {
-                            setSelectedId(booking._id as string)
-                            setOpenCancelDialog(true)
-                          }}
-                        >
-                          {strings.CANCEL}
-                        </Button>
+                    {booking.cancelRequest && booking.status !== bookcarsTypes.BookingStatus.Cancelled ? (
+                      <div className="cancel-info">
+                        <PendingIcon style={{ marginRight: '8px', color: '#f57c00' }} />
+                        {strings.CANCEL_REQUEST}
+                      </div>
+                      ) : (
+                        (booking.cancellation || booking.status === bookcarsTypes.BookingStatus.Pending)
+                        && !booking.cancelRequest
+                        && booking.status !== bookcarsTypes.BookingStatus.Cancelled
+                        && new Date(booking.from) > new Date() && (
+                          // Affichage du bouton d'annulation
+                          <Button
+                            variant="contained"
+                            className="btn-secondary"
+                            onClick={() => {
+                              setSelectedId(booking._id as string)
+                              setOpenCancelDialog(true)
+                            }}
+                          >
+                            {strings.CANCEL}
+                          </Button>
+                        )
                       )}
                   </div>
+
                 </div>
               )
             })}

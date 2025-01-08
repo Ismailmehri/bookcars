@@ -13,6 +13,7 @@ import BookingFilter from '@/components/BookingFilter'
 import * as SupplierService from '@/services/SupplierService'
 
 import '@/assets/css/bookings.css'
+import ProfileAlert from '@/components/ProfileAlert'
 
 const Bookings = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
@@ -95,6 +96,7 @@ const Bookings = () => {
             )}
           </div>
           <div className="col-2">
+            <ProfileAlert />
             <BookingList
               containerClassName="bookings"
               offset={offset}

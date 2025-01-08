@@ -1,23 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Button,
-  Tooltip,
-  Card,
-  CardContent,
-  Typography
-} from '@mui/material'
-import {
-  LocalGasStation as CarTypeIcon,
-  AccountTree as GearboxIcon,
-  Person as SeatsIcon,
-  AcUnit as AirconIcon,
-  DirectionsCar as MileageIcon,
-  Check as CheckIcon,
-  Clear as UncheckIcon,
-  Info as InfoIcon,
-  LocationOn as LocationIcon,
-} from '@mui/icons-material'
+import { Button, Tooltip, Card, CardContent, Typography } from '@mui/material'
+import { LocalGasStation as CarTypeIcon, AccountTree as GearboxIcon, Person as SeatsIcon, AcUnit as AirconIcon, DirectionsCar as MileageIcon, Check as CheckIcon, Clear as UncheckIcon, Info as InfoIcon, LocationOn as LocationIcon } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
@@ -29,44 +13,43 @@ import * as CarService from '@/services/CarService'
 import * as UserService from '@/services/UserService'
 import Pager from './Pager'
 import Badge from './Badge'
-
 import DoorsIcon from '@/assets/img/car-door.png'
 import RatingIcon from '@/assets/img/rating-icon.png'
 import CO2MinIcon from '@/assets/img/co2-min-icon.png'
 import CO2MiddleIcon from '@/assets/img/co2-middle-icon.png'
 import CO2MaxIcon from '@/assets/img/co2-max-icon.png'
 import DistanceIcon from '@/assets/img/distance-icon.png'
-
 import '@/assets/css/car-list.css'
 import { sendCheckoutEvent } from '@/common/gtm'
+import ProfileAlert from './ProfileAlert'
 
 interface CarListProps {
-  from?: Date
-  to?: Date
-  suppliers?: string[]
-  pickupLocation?: string
-  dropOffLocation?: string
-  pickupLocationName?: string
-  carSpecs?: bookcarsTypes.CarSpecs
-  carType?: string[]
-  gearbox?: string[]
-  mileage?: string[]
-  fuelPolicy?: string[]
-  deposit?: number
-  cars?: bookcarsTypes.Car[]
-  reload?: boolean
-  booking?: bookcarsTypes.Booking
-  className?: string
-  hidePrice?: boolean
-  hideSupplier?: boolean
-  loading?: boolean
-  sizeAuto?: boolean
-  ranges?: string[]
-  multimedia?: string[]
-  rating?: number
-  seats?: number
-  distance?: string
-  onLoad?: bookcarsTypes.DataEvent<bookcarsTypes.Car>
+  from?: Date;
+  to?: Date;
+  suppliers?: string[];
+  pickupLocation?: string;
+  dropOffLocation?: string;
+  pickupLocationName?: string;
+  carSpecs?: bookcarsTypes.CarSpecs;
+  carType?: string[];
+  gearbox?: string[];
+  mileage?: string[];
+  fuelPolicy?: string[];
+  deposit?: number;
+  cars?: bookcarsTypes.Car[];
+  reload?: boolean;
+  booking?: bookcarsTypes.Booking;
+  className?: string;
+  hidePrice?: boolean;
+  hideSupplier?: boolean;
+  loading?: boolean;
+  sizeAuto?: boolean;
+  ranges?: string[];
+  multimedia?: string[];
+  rating?: number;
+  seats?: number;
+  distance?: string;
+  onLoad?: bookcarsTypes.DataEvent<bookcarsTypes.Car>;
 }
 
 const CarList = ({
@@ -283,6 +266,7 @@ const CarList = ({
   return (
     <>
       <section className={`${className ? `${className} ` : ''}car-list`}>
+        <ProfileAlert />
         {rows.length === 0
           ? !init
           && !loading
@@ -297,7 +281,8 @@ const CarList = ({
           : ((from && to && pickupLocation && dropOffLocation) || hidePrice) // || (hidePrice && booking))
           && (
             <>
-              {totalRecords > 0 && (
+              <div>
+                {totalRecords > 0 && (
                 <div className="bc-title">
                   <div className="bookcars">
                     <span>{strings.TITLE_1}</span>
@@ -310,7 +295,7 @@ const CarList = ({
                 </div>
               )}
 
-              {rows.map((car) => {
+                {rows.map((car) => {
                 const totalPrice = bookcarsHelper.calculateTotalPrice(car, from as Date, to as Date)
 
                 return (
@@ -555,6 +540,7 @@ const CarList = ({
                   </div>
                 )
               })}
+              </div>
             </>
           )}
       </section>

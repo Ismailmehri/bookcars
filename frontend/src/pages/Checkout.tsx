@@ -992,7 +992,7 @@ const Checkout = () => {
                     )
                   )}
                   <div className="booking-buttons">
-                    {(!clientSecret || payLater) && (
+                    {((!clientSecret || payLater) && (!user || user?.phone)) && (
                       <Button type="submit" variant="contained" className="btn-checkout btn-margin-bottom" size="small" disabled={loading}>
                         {
                           loading
@@ -1000,6 +1000,15 @@ const Checkout = () => {
                             : strings.BOOK
                         }
                       </Button>
+                    )}
+                    {((!clientSecret || (payLater)) && user && !user?.phone) && (
+                    <Button href="/settings" variant="contained" className="btn-checkout btn-margin-bottom" size="small" disabled={loading}>
+                      {
+                          loading
+                            ? <CircularProgress color="inherit" size={24} />
+                            : 'Compléter votre profil pour réserver'
+                        }
+                    </Button>
                     )}
                     <Button
                       variant="contained"

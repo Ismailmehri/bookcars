@@ -709,7 +709,6 @@ const UpdateCar = () => {
                     </IconButton>
                   </div>
                 </div>
-                <span>{newPeriod.dailyPrice}</span>
                 {pricePeriods.length > 0 && (
                 <TableContainer component={Paper}>
                   <Table>

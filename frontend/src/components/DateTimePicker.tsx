@@ -61,9 +61,9 @@ const DateTimePicker = ({
 
           if (_value && minDate) {
             const val = new Date(_value)
-            val.setHours(0, 0, 0, 0)
+            val.setHours(8, 0, 0, 0)
             const min = new Date(minDate)
-            min.setHours(0, 0, 0, 0)
+            min.setHours(8, 0, 0, 0)
 
             if (val < min && onError) {
               onError('minDate', _value)
@@ -73,7 +73,7 @@ const DateTimePicker = ({
         onError={onError}
         minDate={minDate}
         maxDate={maxDate}
-        timeSteps={{ hours: 1, minutes: 5 }}
+        timeSteps={{ hours: 1, minutes: 30 }}
         slotProps={{
           textField: {
             variant: variant || 'standard',
@@ -82,6 +82,15 @@ const DateTimePicker = ({
           actionBar: {
             actions,
           },
+        }}
+        // Désactiver les heures entre 22h et 7h
+        shouldDisableTime={(timeValue, clockType) => {
+          if (clockType === 'hours') {
+            const hour = timeValue.getHours()
+            // Désactiver les heures entre 22h et 8h
+            return hour >= 22 || hour < 8
+          }
+          return false
         }}
       />
     </LocalizationProvider>

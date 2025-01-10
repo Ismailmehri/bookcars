@@ -66,7 +66,7 @@ const CreateCar = () => {
   const [multimedia, setMultimedia] = useState<bookcarsTypes.CarMultimedia[]>([])
   const [rating, setRating] = useState('')
   const [co2, setCo2] = useState('')
-  const [available, setAvailable] = useState(false)
+  const [available, setAvailable] = useState(true)
   const [type, setType] = useState('')
   const [gearbox, setGearbox] = useState('')
   const [dailyPrice, setDailyPrice] = useState('')
@@ -770,7 +770,7 @@ const CreateCar = () => {
                 value={amendments}
               />
             </FormControl>
-
+            {/*
             <FormControl fullWidth margin="dense">
               <TextField
                 label={`${csStrings.THEFT_PROTECTION} (${csStrings.CAR_CURRENCY})`}
@@ -814,7 +814,7 @@ const CreateCar = () => {
                 value={additionalDriver}
               />
             </FormControl>
-
+              */}
             <div className="buttons">
               <Button type="submit" variant="contained" className="btn-primary btn-margin-bottom" size="small" disabled={loading}>
                 {commonStrings.CREATE}

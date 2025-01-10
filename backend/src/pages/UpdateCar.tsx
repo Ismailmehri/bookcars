@@ -862,7 +862,7 @@ const UpdateCar = () => {
                   value={amendments}
                 />
               </FormControl>
-
+              {/*
               <FormControl fullWidth margin="dense">
                 <TextField
                   label={`${csStrings.THEFT_PROTECTION} (${csStrings.CAR_CURRENCY})`}
@@ -906,7 +906,7 @@ const UpdateCar = () => {
                   value={additionalDriver}
                 />
               </FormControl>
-
+                */}
               <div className="buttons">
                 <Button type="submit" variant="contained" className="btn-primary btn-margin-bottom" size="small">
                   {commonStrings.SAVE}

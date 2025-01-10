@@ -249,7 +249,7 @@ export const calculateTotalPrice = (
 ): number => {
   // Calculer le nombre total de jours
   const oneDay = 24 * 60 * 60 * 1000; // Milliseconds in one day
-  const totalDays = Math.round((to.getTime() - from.getTime()) / oneDay);
+  const totalDays = Math.ceil((to.getTime() - from.getTime()) / oneDay);
   let totalPrice = 0;
 
   // Parcourir chaque jour de la réservation

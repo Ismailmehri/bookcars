@@ -61,9 +61,9 @@ const DateTimePicker = ({
 
           if (_value && minDate) {
             const val = new Date(_value)
-            val.setHours(8, 0, 0, 0)
+            val.setHours(0, 0, 0, 0)
             const min = new Date(minDate)
-            min.setHours(8, 0, 0, 0)
+            min.setHours(0, 0, 0, 0)
 
             if (val < min && onError) {
               onError('minDate', _value)

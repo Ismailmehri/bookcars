@@ -751,7 +751,8 @@ export const getFrontendCars = async (req: Request, res: Response) => {
                 $expr: {
                   $and: [
                     { $eq: ['$supplier', '$$supplierId'] }, // Filtre les réservations par agence
-                    { $ne: ['$status', 'cancelled'] },      // Exclut les réservations annulées
+                    { $ne: ['$status', 'cancelled'] }, // Exclut les réservations annulées
+                    { $ne: ['$status', 'void'] },
                   ],
                 },
               },
@@ -775,7 +776,8 @@ export const getFrontendCars = async (req: Request, res: Response) => {
                 $expr: {
                   $and: [
                     { $eq: ['$car', '$$carId'] },
-                    { $ne: ['$status', 'cancelled'] },
+                    { $ne: ['$status', 'cancelled'] }, // Exclut les réservations annulées
+                    { $ne: ['$status', 'void'] },
                     { $lt: ['$from', endDateObj] },
                     { $gt: ['$to', startDateObj] },
                   ],

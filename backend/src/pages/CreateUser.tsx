@@ -350,7 +350,7 @@ const CreateUser = () => {
               )}
 
               <FormControl fullWidth margin="dense">
-                <InputLabel className="required">{commonStrings.FULL_NAME}</InputLabel>
+                <InputLabel className="required">{commonStrings.FULL_NAME_USER}</InputLabel>
                 <Input id="full-name" type="text" error={fullNameError} required onBlur={handleFullNameBlur} onChange={handleFullNameChange} autoComplete="off" />
                 <FormHelperText error={fullNameError}>{(fullNameError && ccStrings.INVALID_SUPPLIER_NAME) || ''}</FormHelperText>
               </FormControl>

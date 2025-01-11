@@ -1551,9 +1551,13 @@ export const getUsers = async (req: Request, res: Response) => {
 
       // Recherche des utilisateurs ayant réservé au moins une fois avec le fournisseur
       const bookedDriverIds = await Booking.distinct('driver', { supplier: supplierId })
+      const userCreatedBySupplier = await User.distinct('_id', { supplier: supplierId })
 
       $match.$and!.push({
-        _id: { $in: bookedDriverIds }, // Ne récupérer que les utilisateurs ayant réservé au moins une fois
+        $or: [
+          { _id: { $in: bookedDriverIds } }, // Utilisateurs ayant réservé au moins une fois
+          { _id: { $in: userCreatedBySupplier } }, // Utilisateurs créés par le fournisseur
+        ],
       })
     }
 

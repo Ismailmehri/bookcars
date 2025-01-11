@@ -744,6 +744,30 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       {
         $lookup: {
           from: 'Booking',
+          let: { supplierId: '$supplier._id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$supplier', '$$supplierId'] }, // Filtre les réservations par agence
+                    { $ne: ['$status', 'cancelled'] },      // Exclut les réservations annulées
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'supplierBookings',
+        },
+      },
+      {
+        $addFields: {
+          supplierReservationCount: { $size: '$supplierBookings' }, // Calcule le nombre de réservations de l'agence
+        },
+      },
+      {
+        $lookup: {
+          from: 'Booking',
           let: { carId: '$_id' },
           pipeline: [
             {
@@ -771,9 +795,49 @@ export const getFrontendCars = async (req: Request, res: Response) => {
         $match: { hasConflict: false },
       },
       {
+        $addFields: {
+          totalPrice: {
+            $let: {
+              vars: {
+                periodicPrices: { $ifNull: ['$periodicPrices', []] },
+                periodicPrice: {
+                  $filter: {
+                    input: '$periodicPrices',
+                    as: 'period',
+                    cond: {
+                      $and: [
+                        { $lte: ['$$period.startDate', endDateObj] },
+                        { $gte: ['$$period.endDate', startDateObj] },
+                      ],
+                    },
+                  },
+                },
+              },
+              in: {
+                $cond: {
+                  if: { $gt: [{ $size: { $ifNull: ['$$periodicPrice', []] } }, 0] },
+                  then: {
+                    $multiply: [
+                      { $arrayElemAt: ['$$periodicPrice.dailyPrice', 0] },
+                      { $ceil: { $divide: [{ $subtract: [endDateObj, startDateObj] }, 1000 * 60 * 60 * 24] } },
+                    ],
+                  },
+                  else: {
+                    $multiply: [
+                      '$dailyPrice',
+                      { $ceil: { $divide: [{ $subtract: [endDateObj, startDateObj] }, 1000 * 60 * 60 * 24] } },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      {
         $facet: {
           resultData: [
-            { $sort: { dailyPrice: 1 } },
+            { $sort: { totalPrice: 1, supplierReservationCount: 1 } },
             { $skip: (page - 1) * size },
             { $limit: size },
           ],

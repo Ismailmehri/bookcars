@@ -15,6 +15,8 @@ import carRoutes from './routes/carRoutes'
 import userRoutes from './routes/userRoutes'
 import stripeRoutes from './routes/stripeRoutes'
 import countryRoutes from './routes/countryRoutes'
+import cronRoutes from './routes/cronRoutes'
+
 import * as helper from './common/helper'
 
 const app = express()
@@ -52,6 +54,7 @@ app.use('/', carRoutes)
 app.use('/', userRoutes)
 app.use('/', stripeRoutes)
 app.use('/', countryRoutes)
+app.use('/', cronRoutes)
 
 i18n.locale = env.DEFAULT_LANGUAGE
 

@@ -103,6 +103,23 @@ const userSchema = new Schema<env.User>(
     customerId: {
       type: String,
     },
+    emailLogs: [{
+      type: {
+        type: String,
+        enum: Object.values(bookcarsTypes.EmailType),
+        required: true,
+      },
+      name: {
+        type: String,
+        enum: Object.values(bookcarsTypes.EmailName),
+        required: true,
+      },
+      sentAt: {
+        type: Date,
+        required: true,
+        default: Date.now,
+      },
+    }], // Ajouter le champ emailLogs
     contracts: [{
       language: {
         type: String,

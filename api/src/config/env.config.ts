@@ -106,6 +106,13 @@ export const DB_DEBUG = helper.StringToBoolean(__env__('BC_DB_DEBUG', false, 'fa
 export const COOKIE_SECRET = __env__('BC_COOKIE_SECRET', false, 'bookcars')
 
 /**
+ * api key. It should at least be 32 characters long, but the longer the better.
+ *
+ * @type {string}
+ */
+export const API_SECRET_KEY = __env__('BC_API_SECRET_KEY', true)
+
+/**
  * Authentication cookie domain.
  * Default is localhost.
  *
@@ -345,6 +352,25 @@ export const ADMIN_EMAIL = __env__('BC_ADMIN_EMAIL', false)
  */
 export const RECAPTCHA_SECRET = __env__('BC_RECAPTCHA_SECRET', false)
 
+export enum EmailType {
+  Promotional = 'promotional',
+  Transactional = 'transactional',
+  Notification = 'notification',
+}
+
+export enum EmailName {
+  SupplierReminderNoCars = 'SUPPLIER_REMINDER_NO_CARS', // Rappel aux fournisseurs sans voitures
+  SupplierReminderNoPhone = 'SUPPLIER_REMINDER_NO_PHONE', // Rappel aux fournisseurs sans numéro de téléphone
+  ClientReminderNoPhone = 'CLIENT_REMINDER_NO_PHONE', // Rappel aux clients sans numéro de téléphone
+  SupplierPendingBookingReminder = 'SUPPLIER_PENDING_BOOKING_REMINDER', // Rappel aux fournisseurs avec des réservations en attente
+}
+
+interface EmailLog {
+  type: EmailType
+  name: EmailName
+  sentAt: Date
+}
+
 /**
  * User Document.
  *
@@ -374,6 +400,7 @@ export interface User extends Document {
   customerId?: string
   contracts?: bookcarsTypes.Contract[]
   expireAt?: Date
+  emailLogs?: EmailLog[]
 }
 
 /**

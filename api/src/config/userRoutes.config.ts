@@ -32,6 +32,10 @@ const routes = {
   verifyRecaptcha: '/api/verify-recaptcha/:token/:ip',
   sendEmail: '/api/send-email',
   hasPassword: '/api/has-password/:id',
+  notifySuppliersWithoutCars: '/api/cron/suppliers/reminder',
+  notifySuppliersWithoutPhone: '/api/cron/suppliers/phone',
+  notifyClientsWithoutPhone: '/api/cron/clients/phone',
+  notifySuppliersWithPendingBookings: '/api/cron/suppliers/pending-bookings',
 }
 
 export default routes

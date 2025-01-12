@@ -292,6 +292,19 @@ export enum SocialSignInType {
   Google = 'google'
 }
 
+export enum EmailType {
+  Promotional = 'promotional',
+  Transactional = 'transactional',
+  Notification = 'notification',
+}
+
+export enum EmailName {
+  SupplierReminderNoCars = 'SUPPLIER_REMINDER_NO_CARS', // Rappel aux fournisseurs sans voitures
+  SupplierReminderNoPhone = 'SUPPLIER_REMINDER_NO_PHONE', // Rappel aux fournisseurs sans numéro de téléphone
+  ClientReminderNoPhone = 'CLIENT_REMINDER_NO_PHONE', // Rappel aux clients sans numéro de téléphone
+  SupplierPendingBookingReminder = 'SUPPLIER_PENDING_BOOKING_REMINDER', // Rappel aux fournisseurs avec des réservations en attente
+}
+
 export interface SignInPayload {
   email?: string
   password?: string
@@ -336,6 +349,12 @@ export interface UpdateStatusPayload {
   status: string
 }
 
+export interface EmailLog {
+  type: EmailType
+  name: EmailName
+  sentAt: Date
+}
+
 export interface User {
   _id?: string
   supplier?: User | string
@@ -360,6 +379,7 @@ export interface User {
   customerId?: string
   carCount?: number
   contracts?: Contract[]
+  emailLogs?: EmailLog[]
 }
 
 export interface Option {

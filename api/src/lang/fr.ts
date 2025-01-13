@@ -79,4 +79,9 @@ export const fr = {
   VIEW_BOOKING_BUTTON: 'Voir la réservation',
   CLIENT_EMAIL: 'E-mail du client',
   CLIENT_PHONE: 'Téléphone du client',
+  SUPPLIER_HIGH_SEASON_REMINDER_SUBJECT: 'Important : Ajoutez vos prix pour la haute saison',
+  SUPPLIER_HIGH_SEASON_REMINDER_MESSAGE: 'Cher partenaire, nous avons constaté que vos prix pour la haute saison (juillet et août) ne sont pas encore configurés. Ces périodes sont très demandées, en particulier par les Tunisiens vivant à l\'étranger qui souhaitent réserver dès maintenant. En ajoutant vos prix, vous augmenterez vos chances d\'attirer plus de clients et de maximiser vos revenus.',
+  ADD_HIGH_SEASON_PRICES_NOW: 'Ajoutez vos prix de haute saison pour ne pas manquer cette opportunité',
+  UPDATE_PRICES_BUTTON: 'Configurer les prix maintenant',
+  WATCH_HOW_TO_ADD_DATES: 'Regardez comment ajouter des dates',
 }

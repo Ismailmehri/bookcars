@@ -36,6 +36,7 @@ const routes = {
   notifySuppliersWithoutPhone: '/api/cron/suppliers/phone',
   notifyClientsWithoutPhone: '/api/cron/clients/phone',
   notifySuppliersWithPendingBookings: '/api/cron/suppliers/pending-bookings',
+  notifySuppliersWithoutHighSeasonPrices: '/api/cron/suppliers/high-season-prices',
 }
 
 export default routes

@@ -647,7 +647,7 @@ const UpdateCar = () => {
               </FormControl>
               */ }
               <div className="add-border">
-                <span className="text-title">Définir un tarif spécifique pour une période</span>
+                <span className="text-title">Ajouter un tarif spécial pour des périodes spécifiques (par exemple juin, juillet, août ou fin décembre)</span>
                 <Chip
                   label="optionnel"
                   size="small"

@@ -3,9 +3,12 @@ import * as helper from '../common/helper'
 import * as env from '../config/env.config'
 import * as logger from '../common/logger'
 
+// Fonction pour normaliser les URL (supprimer "www." si présent)
+const normalizeUrl = (url: string): string => helper.trimEnd(url.replace(/^https?:\/\/www\./i, 'https://'), '/')
+
 const whitelist = [
-  helper.trimEnd(env.BACKEND_HOST, '/'),
-  helper.trimEnd(env.FRONTEND_HOST, '/'),
+  normalizeUrl(env.BACKEND_HOST),
+  normalizeUrl(env.FRONTEND_HOST),
 ]
 
 /**

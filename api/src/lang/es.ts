@@ -74,5 +74,10 @@ export const es = {
     VIEW_BOOKING_BUTTON: 'View Booking',
     CLIENT_EMAIL: 'Client Email',
     CLIENT_PHONE: 'Client Phone',
+    SUPPLIER_HIGH_SEASON_REMINDER_SUBJECT: 'Important: Add your high season prices',
+    SUPPLIER_HIGH_SEASON_REMINDER_MESSAGE: 'Dear partner, we noticed that your prices for the high season (July and August) are not yet configured. These periods are in high demand, especially among Tunisians living abroad who are looking to book now. By adding your prices, you increase your chances of attracting more customers and maximizing your revenue.',
+    ADD_HIGH_SEASON_PRICES_NOW: 'Add your high season prices to seize this opportunity',
+    UPDATE_PRICES_BUTTON: 'Set prices now',
+    WATCH_HOW_TO_ADD_DATES: 'Watch how to add dates',
 
   }

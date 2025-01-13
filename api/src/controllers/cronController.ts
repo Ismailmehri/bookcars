@@ -303,3 +303,112 @@ export const notifyClientsWithoutPhone = async (req: Request, res: Response) => 
       return res.status(500).send(i18n.t('DB_ERROR') + err)
     }
   }
+
+/**
+ * Notify Suppliers who haven't configured high season prices (July and August).
+ *
+ * @export
+ * @async
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {unknown}
+ */
+export const notifySuppliersWithoutHighSeasonPrices = async (req: Request, res: Response) => {
+    try {
+      // Dates clés pour vérifier les prix de haute saison (5 juillet et 5 août)
+      const julyDate = new Date(new Date().getFullYear(), 6, 5) // 5 juillet
+      const augustDate = new Date(new Date().getFullYear(), 7, 5) // 5 août
+
+      // Récupérer toutes les agences
+      const suppliers = await User.find({ type: bookcarsTypes.UserType.Supplier })
+
+      for (const supplier of suppliers) {
+        // Récupérer toutes les voitures de l'agence
+        const cars = await Car.find({ supplier: supplier._id })
+
+        // Si l'agence n'a pas encore ajouté de voitures, passer à l'agence suivante
+        if (cars && cars.length > 0) {
+          let hasHighSeasonPrices = false
+
+          for (const car of cars) {
+            if (car.periodicPrices && car.periodicPrices.length > 0) {
+              for (const period of car.periodicPrices) {
+                // Vérifier que startDate et endDate ne sont pas null
+                if (period.startDate && period.endDate) {
+                  const startDate = new Date(period.startDate)
+                  const endDate = new Date(period.endDate)
+
+                  // Vérifier si la période couvre le 5 juillet ou le 5 août
+                  if (
+                    (julyDate >= startDate && julyDate <= endDate)
+                    || (augustDate >= startDate && augustDate <= endDate)
+                  ) {
+                    hasHighSeasonPrices = true
+                    break // Pas besoin de vérifier les autres périodes
+                  }
+                }
+              }
+
+              if (hasHighSeasonPrices) {
+                break // Pas besoin de vérifier les autres voitures
+              }
+            }
+          }
+
+          // Si aucune voiture n'a de prix pour juillet ou août, envoyer un e-mail de rappel
+          if (!hasHighSeasonPrices) {
+            // Récupérer l'image de la première voiture sans prix de haute saison
+            const firstCar = cars[0]
+            const carImageUrl = firstCar.image
+              ? `http://localhost/cdn/bookcars/cars/${firstCar.image}`
+              : 'https://via.placeholder.com/300' // Image par défaut si aucune image n'est disponible
+
+            i18n.locale = supplier.language || 'fr' // Utiliser le français par défaut si la langue n'est pas définie
+            const mailOptions: nodemailer.SendMailOptions = {
+              from: env.SMTP_FROM,
+              to: supplier.email,
+              subject: i18n.t('SUPPLIER_HIGH_SEASON_REMINDER_SUBJECT'),
+              html: `
+                <table style="width: 100%; font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                  <tr>
+                    <td style="text-align: center; padding: 20px;">
+                      <h1 style="color: #007BFF;">${i18n.t('WELCOME_TO_PLANY')}</h1>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 20px;">
+                      <p>${i18n.t('HELLO')} <strong>${supplier.fullName}</strong>,</p>
+                      <p>${i18n.t('SUPPLIER_HIGH_SEASON_REMINDER_MESSAGE')}</p>
+                      <p><strong>${i18n.t('ADD_HIGH_SEASON_PRICES_NOW')}</strong></p>
+                      <div style="text-align: center; margin: 20px 0;">
+                        <img src="${carImageUrl}" alt="Car Image" style="max-width: 100%; height: auto; border-radius: 10px;">
+                      </div>
+                      <p style="text-align: center; margin: 20px 0;">
+                        <a href="https://admin.plany.tn" style="background-color: #007BFF; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; display: inline-block; width: 265px; text-align: center;">
+                          ${i18n.t('UPDATE_PRICES_BUTTON')}
+                        </a>
+                      </p>
+                      <p>${i18n.t('THANK_YOU')}</p>
+                      <p style="text-align: center; margin: 20px 0;">
+                        <a href="https://youtu.be/FwzTmx_ia6c?si=H-3ar72zJdh6bZeK" style="background-color: #007BFF; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-size: 16px; display: inline-block; width: 265px; text-align: center;">
+                          ${i18n.t('WATCH_HOW_TO_ADD_DATES')}
+                        </a>
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              `,
+            }
+
+            await mailHelper.sendMail(mailOptions)
+            logger.info(`Reminder email sent to supplier (high season prices): ${supplier.email}`)
+          }
+        }
+      }
+
+      return res.status(200).json({ message: 'Reminder emails sent to suppliers without high season prices' })
+    } catch (err) {
+      logger.error(`[notification.notifySuppliersWithoutHighSeasonPrices] ${i18n.t('DB_ERROR')}`, err)
+      return res.status(500).send(i18n.t('DB_ERROR') + err)
+    }
+  }

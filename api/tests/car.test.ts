@@ -113,6 +113,7 @@ describe('POST /api/create-car', () => {
       range: bookcarsTypes.CarRange.Mini,
       multimedia: [bookcarsTypes.CarMultimedia.Bluetooth],
       periodicPrices: [],
+      unavailablePeriods: [],
       rating: 3,
     }
     let res = await request(app)

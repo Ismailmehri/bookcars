@@ -16,7 +16,7 @@ import {
   TableHead,
   TableRow,
   IconButton,
-  Chip
+  Chip,
 } from '@mui/material'
 import { Delete as DeleteIcon, Edit as EditIcon, Info as InfoIcon, Add as AddIcon } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
@@ -46,9 +46,14 @@ import MultimediaList from '@/components/MultimediaList'
 import '@/assets/css/create-car.css'
 
 interface PricePeriod {
-  startDate: null | Date
-  endDate: null | Date
-  dailyPrice: null | number
+  startDate: null | Date;
+  endDate: null | Date;
+  dailyPrice: null | number;
+}
+
+interface UnavailablePeriod {
+  startDate: Date | null;
+  endDate: Date | null;
 }
 
 const CreateCar = () => {
@@ -70,13 +75,6 @@ const CreateCar = () => {
   const [type, setType] = useState('')
   const [gearbox, setGearbox] = useState('')
   const [dailyPrice, setDailyPrice] = useState('')
-  const [discountedDailyPrice, setDiscountedDailyPrice] = useState('')
-  const [biWeeklyPrice, setBiWeeklyPrice] = useState('')
-  const [discountedBiWeeklyPrice, setDiscountedBiWeeklyPrice] = useState('')
-  const [weeklyPrice, setWeeklyPrice] = useState('')
-  const [discountedWeeklyPrice, setDiscountedWeeklyPrice] = useState('')
-  const [monthlyPrice, setMonthlyPrice] = useState('')
-  const [discountedMonthlyPrice, setDiscountedMonthlyPrice] = useState('')
   const [seats, setSeats] = useState('')
   const [doors, setDoors] = useState('')
   const [aircon, setAircon] = useState(false)
@@ -93,10 +91,15 @@ const CreateCar = () => {
   const [formError, setFormError] = useState(false)
   const [deposit, setDeposit] = useState('')
   const [pricePeriods, setPricePeriods] = useState<PricePeriod[]>([])
+  const [unavailablePeriods, setUnavailablePeriods] = useState<UnavailablePeriod[]>([])
   const [newPeriod, setNewPeriod] = useState<PricePeriod>({
     startDate: null,
     endDate: null,
-    dailyPrice: null
+    dailyPrice: null,
+  })
+  const [newUnavailablePeriod, setNewUnavailablePeriod] = useState<UnavailablePeriod>({
+    startDate: null,
+    endDate: null,
   })
 
   const handleAddPeriod = () => {
@@ -123,6 +126,27 @@ const CreateCar = () => {
       dailyPrice: periodToEdit.dailyPrice,
     })
     handleDeletePeriod(index)
+  }
+
+  const handleAddUnavailablePeriod = () => {
+    if (newUnavailablePeriod.startDate && newUnavailablePeriod.endDate) {
+      setUnavailablePeriods([...unavailablePeriods, newUnavailablePeriod])
+      setNewUnavailablePeriod({ startDate: null, endDate: null })
+    }
+  }
+
+  const handleDeleteUnavailablePeriod = (index: number) => {
+    const updatedPeriods = unavailablePeriods.filter((_, i) => i !== index)
+    setUnavailablePeriods(updatedPeriods)
+  }
+
+  const handleEditUnavailablePeriod = (index: number) => {
+    const periodToEdit = unavailablePeriods[index]
+    setNewUnavailablePeriod({
+      startDate: periodToEdit.startDate,
+      endDate: periodToEdit.endDate,
+    })
+    handleDeleteUnavailablePeriod(index)
   }
 
   const handleBeforeUpload = () => {
@@ -250,25 +274,7 @@ const CreateCar = () => {
     setAmendments(e.target.value)
   }
 
-  const handleTheftProtectionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTheftProtection(e.target.value)
-  }
-
-  const handleCollisionDamageWaiverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCollisionDamageWaiver(e.target.value)
-  }
-
-  const handleFullinsuranceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFullInsurance(e.target.value)
-  }
-
-  const handleAdditionalDriverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAdditionalDriver(e.target.value)
-  }
-
   const extraToNumber = (extra: string) => (extra === '' ? -1 : Number(extra))
-
-  const getPrice = (price: string) => (price && Number(price)) || null
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     try {
@@ -295,13 +301,13 @@ const CreateCar = () => {
         minimumAge: Number.parseInt(minimumAge, 10),
         locations: locations.map((l) => l._id),
         dailyPrice: Number(dailyPrice),
-        discountedDailyPrice: getPrice(discountedDailyPrice),
-        biWeeklyPrice: getPrice(biWeeklyPrice),
-        discountedBiWeeklyPrice: getPrice(discountedBiWeeklyPrice),
-        weeklyPrice: getPrice(weeklyPrice),
-        discountedWeeklyPrice: getPrice(discountedWeeklyPrice),
-        monthlyPrice: getPrice(monthlyPrice),
-        discountedMonthlyPrice: getPrice(discountedMonthlyPrice),
+        discountedDailyPrice: null,
+        biWeeklyPrice: null,
+        discountedBiWeeklyPrice: null,
+        weeklyPrice: null,
+        discountedWeeklyPrice: null,
+        monthlyPrice: null,
+        discountedMonthlyPrice: null,
         deposit: Number(deposit),
         available,
         type,
@@ -323,6 +329,7 @@ const CreateCar = () => {
         rating: Number(rating) || undefined,
         co2: Number(co2) || undefined,
         periodicPrices: pricePeriods,
+        unavailablePeriods, // Ajoutez les périodes d'indisponibilité ici
       }
 
       const car = await CarService.create(data)
@@ -354,11 +361,7 @@ const CreateCar = () => {
     <Layout onLoad={onLoad} strict>
       <div className="create-car">
         <Paper className="car-form car-form-wrapper" elevation={10} style={visible ? {} : { display: 'none' }}>
-          <h1 className="car-form-title">
-            {' '}
-            {strings.NEW_CAR_HEADING}
-            {' '}
-          </h1>
+          <h1 className="car-form-title">{strings.NEW_CAR_HEADING}</h1>
           <form onSubmit={handleSubmit}>
             <Avatar
               type={bookcarsTypes.RecordType.Car}
@@ -418,8 +421,8 @@ const CreateCar = () => {
                 slotProps={{
                   htmlInput: {
                     inputMode: 'numeric',
-                    pattern: '^\\d+(.\\d+)?$'
-                  }
+                    pattern: '^\\d+(.\\d+)?$',
+                  },
                 }}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setDailyPrice(e.target.value)
@@ -431,131 +434,6 @@ const CreateCar = () => {
               />
             </FormControl>
 
-            { /* <FormControl fullWidth margin="dense">
-              <TextField
-                label={`${strings.DISCOUNTED_DAILY_PRICE} (${commonStrings.CURRENCY})`}
-                slotProps={{
-                  htmlInput: {
-                    inputMode: 'numeric',
-                    pattern: '^\\d+(.\\d+)?$'
-                  }
-                }}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setDiscountedDailyPrice(e.target.value)
-                }}
-                variant="standard"
-                autoComplete="off"
-                value={discountedDailyPrice}
-              />
-            </FormControl>
-
-            <FormControl fullWidth margin="dense">
-              <TextField
-                label={`${strings.BI_WEEKLY_PRICE} (${commonStrings.CURRENCY})`}
-                slotProps={{
-                  htmlInput: {
-                    inputMode: 'numeric',
-                    pattern: '^\\d+(.\\d+)?$'
-                  }
-                }}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setBiWeeklyPrice(e.target.value)
-                }}
-                variant="standard"
-                autoComplete="off"
-                value={biWeeklyPrice}
-              />
-            </FormControl>
-
-            <FormControl fullWidth margin="dense">
-              <TextField
-                label={`${strings.DISCOUNTED_BI_WEEKLY_PRICE} (${commonStrings.CURRENCY})`}
-                slotProps={{
-                  htmlInput: {
-                    inputMode: 'numeric',
-                    pattern: '^\\d+(.\\d+)?$'
-                  }
-                }}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setDiscountedBiWeeklyPrice(e.target.value)
-                }}
-                variant="standard"
-                autoComplete="off"
-                value={discountedBiWeeklyPrice}
-              />
-            </FormControl>
-
-            <FormControl fullWidth margin="dense">
-              <TextField
-                label={`${strings.WEEKLY_PRICE} (${commonStrings.CURRENCY})`}
-                slotProps={{
-                  htmlInput: {
-                    inputMode: 'numeric',
-                    pattern: '^\\d+(.\\d+)?$'
-                  }
-                }}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setWeeklyPrice(e.target.value)
-                }}
-                variant="standard"
-                autoComplete="off"
-                value={weeklyPrice}
-              />
-            </FormControl>
-
-            <FormControl fullWidth margin="dense">
-              <TextField
-                label={`${strings.DISCOUNTED_WEEKLY_PRICE} (${commonStrings.CURRENCY})`}
-                slotProps={{
-                  htmlInput: {
-                    inputMode: 'numeric',
-                    pattern: '^\\d+(.\\d+)?$'
-                  }
-                }}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setDiscountedWeeklyPrice(e.target.value)
-                }}
-                variant="standard"
-                autoComplete="off"
-                value={discountedWeeklyPrice}
-              />
-            </FormControl>
-
-            <FormControl fullWidth margin="dense">
-              <TextField
-                label={`${strings.MONTHLY_PRICE} (${commonStrings.CURRENCY})`}
-                slotProps={{
-                  htmlInput: {
-                    inputMode: 'numeric',
-                    pattern: '^\\d+(.\\d+)?$'
-                  }
-                }}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setMonthlyPrice(e.target.value)
-                }}
-                variant="standard"
-                autoComplete="off"
-                value={monthlyPrice}
-              />
-            </FormControl>
-
-            <FormControl fullWidth margin="dense">
-              <TextField
-                label={`${strings.DISCOUNTED_MONThLY_PRICE} (${commonStrings.CURRENCY})`}
-                slotProps={{
-                  htmlInput: {
-                    inputMode: 'numeric',
-                    pattern: '^\\d+(.\\d+)?$'
-                  }
-                }}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setDiscountedMonthlyPrice(e.target.value)
-                }}
-                variant="standard"
-                autoComplete="off"
-                value={discountedMonthlyPrice}
-              />
-            </FormControl> */}
             <div className="add-border">
               <span className="text-title">Ajouter un tarif spécial pour des périodes spécifiques (par exemple juin, juillet, août ou fin décembre)</span>
               <Chip
@@ -564,24 +442,22 @@ const CreateCar = () => {
                 color="primary"
                 variant="outlined"
                 sx={{
-                    height: 'auto',
-                    margin: '0 0px 4px 10px',
-                    '& .MuiChip-label': {
-                      display: 'block',
-                      whiteSpace: 'normal',
-                      paddingBottom: '3px'
-                    },
-                  }}
+                  height: 'auto',
+                  margin: '0 0px 4px 10px',
+                  '& .MuiChip-label': {
+                    display: 'block',
+                    whiteSpace: 'normal',
+                    paddingBottom: '3px',
+                  },
+                }}
               />
-              {' '}
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                 <FormControl fullWidth margin="dense">
                   <DateTimePicker
                     label={strings.START_DATE}
                     value={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
-                    maxDate={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined} // Limite la date max en fonction de la date de fin
-                    onChange={(date) =>
-                      setNewPeriod({ ...newPeriod, startDate: date })}
+                    maxDate={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
+                    onChange={(date) => setNewPeriod({ ...newPeriod, startDate: date })}
                     language={UserService.getLanguage()}
                   />
                 </FormControl>
@@ -589,9 +465,8 @@ const CreateCar = () => {
                   <DateTimePicker
                     label={strings.END_DATE}
                     value={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
-                    minDate={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined} // Limite la date min en fonction de la date de début
-                    onChange={(date) =>
-                      setNewPeriod({ ...newPeriod, endDate: date })}
+                    minDate={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
+                    onChange={(date) => setNewPeriod({ ...newPeriod, endDate: date })}
                     language={UserService.getLanguage()}
                   />
                 </FormControl>
@@ -601,13 +476,13 @@ const CreateCar = () => {
                     slotProps={{
                       htmlInput: {
                         inputMode: 'numeric',
-                        pattern: '^\\d+(.\\d+)?$'
-                      }
+                        pattern: '^\\d+(.\\d+)?$',
+                      },
                     }}
                     value={newPeriod.dailyPrice !== null ? newPeriod.dailyPrice : ''}
                     variant="standard"
                     autoComplete="off"
-                    onChange={(e:React.ChangeEvent<HTMLInputElement>) => setNewPeriod({ ...newPeriod, dailyPrice: Number(e.target.value) })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPeriod({ ...newPeriod, dailyPrice: Number(e.target.value) })}
                   />
                 </FormControl>
                 <div className="add-button">
@@ -621,45 +496,46 @@ const CreateCar = () => {
                 </div>
               </div>
               {pricePeriods.length > 0 && (
-              <TableContainer component={Paper}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>{strings.START_DATE}</TableCell>
-                      <TableCell>{strings.END_DATE}</TableCell>
-                      <TableCell>{`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}</TableCell>
-                      <TableCell>{strings.ACTIONS_BUTTON}</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {pricePeriods.map((period, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
-                        <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
-                        <TableCell>{`${period.dailyPrice} (${commonStrings.CURRENCY})`}</TableCell>
-                        <TableCell>
-                          <IconButton onClick={() => handleEditPeriod(index)}>
-                            <EditIcon />
-                          </IconButton>
-                          <IconButton onClick={() => handleDeletePeriod(index)}>
-                            <DeleteIcon />
-                          </IconButton>
-                        </TableCell>
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>{strings.START_DATE}</TableCell>
+                        <TableCell>{strings.END_DATE}</TableCell>
+                        <TableCell>{`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}</TableCell>
+                        <TableCell>{strings.ACTIONS_BUTTON}</TableCell>
                       </TableRow>
-              ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {pricePeriods.map((period, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
+                          <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
+                          <TableCell>{`${period.dailyPrice} (${commonStrings.CURRENCY})`}</TableCell>
+                          <TableCell>
+                            <IconButton onClick={() => handleEditPeriod(index)}>
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton onClick={() => handleDeletePeriod(index)}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               )}
             </div>
+
             <FormControl fullWidth margin="dense">
               <TextField
                 label={`${csStrings.DEPOSIT} (${commonStrings.CURRENCY})`}
                 slotProps={{
                   htmlInput: {
                     inputMode: 'numeric',
-                    pattern: '^\\d+(.\\d+)?$'
-                  }
+                    pattern: '^\\d+(.\\d+)?$',
+                  },
                 }}
                 onChange={handleDepositChange}
                 required
@@ -668,6 +544,7 @@ const CreateCar = () => {
                 value={deposit}
               />
             </FormControl>
+
             <FormControl fullWidth margin="dense">
               <CarRangeList label={strings.CAR_RANGE} variant="standard" required value={range} onChange={handleCarRangeChange} />
             </FormControl>
@@ -685,7 +562,7 @@ const CreateCar = () => {
                     min: 1,
                     max: 5,
                     step: 0.01,
-                  }
+                  },
                 }}
                 onChange={handleRatingChange}
                 variant="standard"
@@ -708,6 +585,90 @@ const CreateCar = () => {
             <FormControl fullWidth margin="dense" className="checkbox-fc">
               <FormControlLabel control={<Switch checked={available} onChange={handleAvailableChange} color="primary" />} label={strings.AVAILABLE} className="checkbox-fcl" />
             </FormControl>
+
+            <div className="add-border">
+              <span className="text-title">
+                Marquer la voiture comme indisponible pour une période spécifique
+                <Chip
+                  label="optionnel"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  sx={{
+                    height: 'auto',
+                    margin: '0 0px 4px 10px',
+                    '& .MuiChip-label': {
+                      display: 'block',
+                      whiteSpace: 'normal',
+                      paddingBottom: '3px',
+                    },
+                  }}
+                />
+                <br />
+                <small>
+                  (par exemple, si elle est louée en dehors de Plany, en maintenance, ou pour toute autre raison)
+                </small>
+              </span>
+
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <FormControl fullWidth margin="dense">
+                  <DateTimePicker
+                    label={strings.START_DATE}
+                    value={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined}
+                    maxDate={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined}
+                    onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, startDate: date })}
+                    language={UserService.getLanguage()}
+                  />
+                </FormControl>
+                <FormControl fullWidth margin="dense">
+                  <DateTimePicker
+                    label={strings.END_DATE}
+                    value={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined}
+                    minDate={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined}
+                    onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, endDate: date })}
+                    language={UserService.getLanguage()}
+                  />
+                </FormControl>
+                <div className="add-button" style={{ marginLeft: '15px' }}>
+                  <IconButton
+                    color="primary"
+                    onClick={handleAddUnavailablePeriod}
+                    disabled={!newUnavailablePeriod.startDate || !newUnavailablePeriod.endDate}
+                  >
+                    <AddIcon />
+                  </IconButton>
+                </div>
+              </div>
+              {unavailablePeriods.length > 0 && (
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>{strings.START_DATE}</TableCell>
+                        <TableCell>{strings.END_DATE}</TableCell>
+                        <TableCell>{strings.ACTIONS_BUTTON}</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {unavailablePeriods.map((period, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
+                          <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
+                          <TableCell>
+                            <IconButton onClick={() => handleEditUnavailablePeriod(index)}>
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton onClick={() => handleDeleteUnavailablePeriod(index)}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </div>
 
             <FormControl fullWidth margin="dense">
               <CarTypeList label={strings.CAR_TYPE} variant="standard" required onChange={handleCarTypeChange} />
@@ -770,51 +731,7 @@ const CreateCar = () => {
                 value={amendments}
               />
             </FormControl>
-            {/*
-            <FormControl fullWidth margin="dense">
-              <TextField
-                label={`${csStrings.THEFT_PROTECTION} (${csStrings.CAR_CURRENCY})`}
-                slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' } }}
-                onChange={handleTheftProtectionChange}
-                variant="standard"
-                autoComplete="off"
-                value={theftProtection}
-              />
-            </FormControl>
 
-            <FormControl fullWidth margin="dense">
-              <TextField
-                label={`${csStrings.COLLISION_DAMAGE_WAVER} (${csStrings.CAR_CURRENCY})`}
-                slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' } }}
-                onChange={handleCollisionDamageWaiverChange}
-                variant="standard"
-                autoComplete="off"
-                value={collisionDamageWaiver}
-              />
-            </FormControl>
-
-            <FormControl fullWidth margin="dense">
-              <TextField
-                label={`${csStrings.FULL_INSURANCE} (${csStrings.CAR_CURRENCY})`}
-                slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' } }}
-                onChange={handleFullinsuranceChange}
-                variant="standard"
-                autoComplete="off"
-                value={fullInsurance}
-              />
-            </FormControl>
-
-            <FormControl fullWidth margin="dense">
-              <TextField
-                label={`${csStrings.ADDITIONAL_DRIVER} (${csStrings.CAR_CURRENCY})`}
-                slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' } }}
-                onChange={handleAdditionalDriverChange}
-                variant="standard"
-                autoComplete="off"
-                value={additionalDriver}
-              />
-            </FormControl>
-              */}
             <div className="buttons">
               <Button type="submit" variant="contained" className="btn-primary btn-margin-bottom" size="small" disabled={loading}>
                 {commonStrings.CREATE}

@@ -461,6 +461,7 @@ const UpdateBooking = () => {
                 _id: drv._id as string,
                 name: drv.fullName,
                 image: drv.avatar,
+                phone: drv.phone,
               })
               const pul = _booking.pickupLocation as bookcarsTypes.Location
               setPickupLocation({
@@ -541,7 +542,17 @@ const UpdateBooking = () => {
                 onChange={handleDriverChange}
                 value={driver}
               />
-
+              {driver?.phone && (
+              <div className="contact-info">
+                <p>
+                  Pour contacter
+                  {' '}
+                  <strong>{driver.name}</strong>
+                  , veuillez utiliser le numéro suivant :
+                  <strong>{driver.phone}</strong>
+                </p>
+              </div>
+              )}
               <FormControl fullWidth margin="dense">
                 <LocationSelectList
                   label={bfStrings.PICK_UP_LOCATION}

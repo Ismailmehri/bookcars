@@ -37,7 +37,7 @@ export const fr = {
   BOOKING_CONFIRMED_PART13: 'Veuillez respecter les dates et les horaires de prise en charge et de restitution du véhicule.',
   BOOKING_CONFIRMED_PART14: 'Vous pouvez suivre l\'état de votre réservation sur : ',
   BOOKING_CONFIRMED_PART15: 'Si vous avez des questions, vous pouvez contacter l\'agence directement au ',
-  BOOKING_PAY_LATER_NOTIFICATION: 'a reçu votre demande de réservation',
+  BOOKING_PAY_LATER_NOTIFICATION: ' vient de réserver une voiture. Veuillez vérifier et traiter la demande rapidement.',
   BOOKING_PAID_NOTIFICATION: 'a payé la réservation',
   CANCEL_BOOKING_NOTIFICATION: "a fait une demande d'annulation de la réservation",
   BOOKING_UPDATED_NOTIFICATION_PART1: 'Le statut de la réservation',

@@ -483,6 +483,11 @@ interface PricePeriod {
   endDate: null | Date
   dailyPrice: null | number
 }
+
+interface UnavailablePeriod {
+  startDate: Date | null;
+  endDate: Date | null;
+}
 /**
  * Car Document.
  *
@@ -528,6 +533,7 @@ export interface Car extends Document {
   rating?: number
   trips: number
   co2?: number
+  unavailablePeriods?: UnavailablePeriod[];
 }
 
 /**

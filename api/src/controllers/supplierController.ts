@@ -280,18 +280,45 @@ export const getSuppliers = async (req: Request, res: Response) => {
  */
 export const getAllSuppliers = async (req: Request, res: Response) => {
   try {
-    let data = await User.aggregate(
+    const data = await User.aggregate(
       [
+        // Étape 1 : Filtrer les utilisateurs de type "Supplier" avec un avatar
         { $match: { type: bookcarsTypes.UserType.Supplier, avatar: { $ne: null } } },
-        { $sort: { fullName: 1, _id: 1 } },
-      ],
-      { collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 } },
-    )
 
-    data = data.map((supplier) => {
-      const { _id, fullName, avatar } = supplier
-      return { _id, fullName, avatar }
-    })
+        // Étape 2 : Joindre la collection "Car" pour compter les voitures associées
+        {
+          $lookup: {
+            from: 'Car', // Collection à joindre
+            localField: '_id', // Champ dans la collection User
+            foreignField: 'supplier', // Champ dans la collection Car
+            as: 'cars', // Nom du tableau de résultats
+          },
+        },
+
+        // Étape 3 : Ajouter un champ `carCount` qui contient le nombre de voitures
+        {
+          $addFields: {
+            carCount: { $size: '$cars' }, // `carCount` est le nombre d'éléments dans le tableau `cars`
+          },
+        },
+
+        // Étape 4 : Trier les résultats par `fullName`
+        { $sort: { carCount: 1, fullName: 1 } },
+
+        // Étape 5 : Sélectionner uniquement les champs nécessaires
+        {
+          $project: {
+            _id: 1,
+            fullName: 1,
+            avatar: 1,
+            verified: 1,
+            active: 1,
+            carCount: 1, // Inclure le champ `carCount` dans les résultats
+          },
+        },
+      ],
+      { collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 } }, // Options de collation pour le tri
+    )
 
     return res.json(data)
   } catch (err) {

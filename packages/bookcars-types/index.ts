@@ -176,6 +176,7 @@ export interface CreateCarPayload {
   monthlyPrice: number | null
   discountedMonthlyPrice: number | null
   periodicPrices: PricePeriod[];
+  unavailablePeriods: UnavailablePeriod[];
 
   deposit: number
   available: boolean
@@ -429,6 +430,11 @@ interface PricePeriod {
   dailyPrice: number | null;
 }
 
+interface UnavailablePeriod {
+  startDate: Date | null;
+  endDate: Date | null;
+}
+
 export interface Car {
   _id: string
   name: string
@@ -446,6 +452,7 @@ export interface Car {
   discountedMonthlyPrice: number | null
 
   periodicPrices: PricePeriod[];
+  unavailablePeriods: UnavailablePeriod[];
   deposit: number
   available: boolean
   type: CarType

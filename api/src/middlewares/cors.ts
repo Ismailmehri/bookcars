@@ -9,7 +9,7 @@ const normalizeUrl = (url: string): string => helper.trimEnd(url.replace(/^https
 const whitelist = [
   normalizeUrl(env.BACKEND_HOST),
   normalizeUrl(env.FRONTEND_HOST),
-  normalizeUrl('https://www.plany.tn'),
+  'https://www.plany.tn',
 ]
 
 /**

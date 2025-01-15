@@ -108,6 +108,7 @@ export const update = async (req: Request, res: Response) => {
         rating,
         co2,
         periodicPrices,
+        unavailablePeriods,
       } = body
 
       car.supplier = new mongoose.Types.ObjectId(supplier)
@@ -142,6 +143,7 @@ export const update = async (req: Request, res: Response) => {
       car.rating = rating
       car.co2 = co2
       car.periodicPrices = periodicPrices
+      car.unavailablePeriods = unavailablePeriods
 
       await car.save()
       return res.json(car)
@@ -651,11 +653,13 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       rating,
       seats,
       startDate,
-      endDate } = body
+      endDate,
+    } = body
 
-      const startDateObj = new Date(startDate || Date.now())
-      const endDateObj = new Date(endDate || Date.now())
-          // Filtre de base pour les voitures disponibles
+    const startDateObj = new Date(startDate || Date.now())
+    const endDateObj = new Date(endDate || Date.now())
+
+    // Filtre de base pour les voitures disponibles
     const $match: mongoose.FilterQuery<bookcarsTypes.Car> = {
       $and: [
         { supplier: { $in: suppliers } },
@@ -795,6 +799,32 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       },
       {
         $match: { hasConflict: false },
+      },
+      {
+        $addFields: {
+          unavailablePeriods: { $ifNull: ['$unavailablePeriods', []] }, // Garantit que unavailablePeriods est un tableau
+        },
+      },
+      {
+        $addFields: {
+          isUnavailable: {
+            $anyElementTrue: {
+              $map: {
+                input: '$unavailablePeriods',
+                as: 'period',
+                in: {
+                  $and: [
+                    { $lte: ['$$period.startDate', endDateObj] },
+                    { $gte: ['$$period.endDate', startDateObj] },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $match: { isUnavailable: false },
       },
       {
         $addFields: {

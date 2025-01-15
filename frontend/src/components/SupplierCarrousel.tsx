@@ -9,7 +9,7 @@ import 'slick-carousel/slick/slick-theme.css'
 import '@/assets/css/supplier-carrousel.css'
 
 interface SupplierCarrouselProps {
-  suppliers: bookcarsTypes.User[]
+  suppliers: bookcarsTypes.User[];
 }
 
 const settings = {
@@ -25,18 +25,28 @@ const settings = {
   centerPadding: '64px',
 }
 
-const SupplierCarrousel = ({ suppliers }: SupplierCarrouselProps) => (
-  <Slider {...settings} className="supplier-carrousel">
-    {
-      suppliers.map((supplier) => (
+const SupplierCarrousel = ({ suppliers }: SupplierCarrouselProps) => {
+  // Filtrer les fournisseurs avec au moins une voiture (carCount > 0)
+  const filteredSuppliers = suppliers.filter((supplier) => (supplier.carCount || 0) > 0 && supplier.active && supplier.verified)
+
+  // Trier les fournisseurs par nombre de voitures (carCount) en ordre décroissant
+  filteredSuppliers.sort((a, b) => (b.carCount || 0) - (a.carCount || 0))
+
+  return (
+    <Slider {...settings} className="supplier-carrousel">
+      {filteredSuppliers.map((supplier) => (
         <div key={supplier._id}>
-          <div key={supplier._id} className="supplier-container">
-            <img src={bookcarsHelper.joinURL(env.CDN_USERS, supplier.avatar)} alt={supplier.fullName} title={supplier.fullName} />
+          <div className="supplier-container">
+            <img
+              src={bookcarsHelper.joinURL(env.CDN_USERS, supplier.avatar)}
+              alt={supplier.fullName}
+              title={supplier.fullName}
+            />
           </div>
         </div>
-      ))
-    }
-  </Slider>
-)
+      ))}
+    </Slider>
+  )
+}
 
 export default SupplierCarrousel

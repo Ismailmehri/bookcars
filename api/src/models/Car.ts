@@ -71,7 +71,18 @@ const carSchema = new Schema<env.Car>(
       },
     ],
     // --------- end of price fields ---------
-
+    unavailablePeriods: [
+      {
+        startDate: {
+          type: Date,
+          required: [true, "Start date can't be blank"],
+        },
+        endDate: {
+          type: Date,
+          required: [true, "End date can't be blank"],
+        },
+      },
+    ],
     deposit: {
       type: Number,
       required: [true, "can't be blank"],

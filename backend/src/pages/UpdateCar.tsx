@@ -52,6 +52,11 @@ interface PricePeriod {
   dailyPrice: null | number
 }
 
+interface UnavailablePeriod {
+  startDate: Date | null;
+  endDate: Date | null;
+}
+
 const UpdateCar = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [car, setCar] = useState<bookcarsTypes.Car>()
@@ -96,12 +101,39 @@ const UpdateCar = () => {
   const [formError, setFormError] = useState(false)
   const [deposit, setDeposit] = useState('')
   const [pricePeriods, setPricePeriods] = useState<PricePeriod[]>([])
+  const [unavailablePeriods, setUnavailablePeriods] = useState<UnavailablePeriod[]>([])
+
+  const [newUnavailablePeriod, setNewUnavailablePeriod] = useState<UnavailablePeriod>({
+    startDate: null,
+    endDate: null,
+  })
+
   const [newPeriod, setNewPeriod] = useState<PricePeriod>({
     startDate: null,
     endDate: null,
     dailyPrice: null
   })
 
+  const handleAddUnavailablePeriod = () => {
+    if (newUnavailablePeriod.startDate && newUnavailablePeriod.endDate) {
+      setUnavailablePeriods([...unavailablePeriods, newUnavailablePeriod])
+      setNewUnavailablePeriod({ startDate: null, endDate: null })
+    }
+  }
+
+  const handleDeleteUnavailablePeriod = (index: number) => {
+    const updatedPeriods = unavailablePeriods.filter((_, i) => i !== index)
+    setUnavailablePeriods(updatedPeriods)
+  }
+
+  const handleEditUnavailablePeriod = (index: number) => {
+    const periodToEdit = unavailablePeriods[index]
+    setNewUnavailablePeriod({
+      startDate: periodToEdit.startDate,
+      endDate: periodToEdit.endDate,
+    })
+    handleDeleteUnavailablePeriod(index)
+  }
   const handleAddPeriod = () => {
     if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice) {
       const start = new Date(newPeriod.startDate)
@@ -252,6 +284,7 @@ const UpdateCar = () => {
     setAmendments(e.target.value)
   }
 
+  /**
   const handleTheftProtectionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTheftProtection(e.target.value)
   }
@@ -266,7 +299,7 @@ const UpdateCar = () => {
 
   const handleAdditionalDriverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAdditionalDriver(e.target.value)
-  }
+  } * */
 
   const extraToString = (extra: number) => (extra === -1 ? '' : String(extra))
 
@@ -326,6 +359,7 @@ const UpdateCar = () => {
         multimedia,
         rating: Number(rating) || undefined,
         co2: Number(co2) || undefined,
+        unavailablePeriods
       }
 
       const status = await CarService.update(data)
@@ -387,6 +421,15 @@ const UpdateCar = () => {
               setPricePeriods(
                 _car.periodicPrices
                   ? _car.periodicPrices.map((period) => ({
+                      ...period,
+                      startDate: period.startDate ? new Date(period.startDate) : null,
+                      endDate: period.endDate ? new Date(period.endDate) : null,
+                    }))
+                  : []
+              )
+              setUnavailablePeriods(
+                _car.unavailablePeriods
+                  ? _car.unavailablePeriods.map((period) => ({
                       ...period,
                       startDate: period.startDate ? new Date(period.startDate) : null,
                       endDate: period.endDate ? new Date(period.endDate) : null,
@@ -647,13 +690,14 @@ const UpdateCar = () => {
               </FormControl>
               */ }
               <div className="add-border">
-                <span className="text-title">Ajouter un tarif spécial pour des périodes spécifiques (par exemple juin, juillet, août ou fin décembre)</span>
-                <Chip
-                  label="optionnel"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                  sx={{
+                <span className="text-title">
+                  Ajouter un tarif spécial pour des périodes spécifiques
+                  <Chip
+                    label="optionnel"
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    sx={{
                     height: 'auto',
                     margin: '0 0px 4px 10px',
                     '& .MuiChip-label': {
@@ -662,7 +706,13 @@ const UpdateCar = () => {
                       paddingBottom: '3px'
                     },
                   }}
-                />
+                  />
+                  <br />
+                  <small>
+                    (par exemple, haute saison en juin, juillet, août, ou périodes festives comme fin décembre)
+                  </small>
+                </span>
+
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                   <FormControl fullWidth margin="dense">
                     <DateTimePicker
@@ -798,6 +848,90 @@ const UpdateCar = () => {
               <FormControl fullWidth margin="dense" className="checkbox-fc">
                 <FormControlLabel control={<Switch checked={available} onChange={handleAvailableChange} color="primary" />} label={strings.AVAILABLE} className="checkbox-fcl" />
               </FormControl>
+
+              <div className="add-border">
+                <span className="text-title">
+                  Marquer la voiture comme indisponible pour une période spécifique
+                  <Chip
+                    label="optionnel"
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    sx={{
+                    height: 'auto',
+                    margin: '0 0px 4px 10px',
+                    '& .MuiChip-label': {
+                      display: 'block',
+                      whiteSpace: 'normal',
+                      paddingBottom: '3px'
+                    },
+                  }}
+                  />
+                  <br />
+                  <small>
+                    (par exemple, si elle est louée en dehors de Plany, en maintenance, ou pour toute autre raison)
+                  </small>
+                </span>
+
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                  <FormControl fullWidth margin="dense">
+                    <DateTimePicker
+                      label={strings.START_DATE}
+                      value={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined}
+                      maxDate={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined} // Limite la date max en fonction de la date de fin
+                      onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, startDate: date })}
+                      language={UserService.getLanguage()}
+                    />
+                  </FormControl>
+                  <FormControl fullWidth margin="dense">
+                    <DateTimePicker
+                      label={strings.END_DATE}
+                      value={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined}
+                      minDate={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined} // Limite la date min en fonction de la date de début
+                      onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, endDate: date })}
+                      language={UserService.getLanguage()}
+                    />
+                  </FormControl>
+                  <div className="add-button" style={{ marginLeft: '15px' }}>
+                    <IconButton
+                      color="primary"
+                      onClick={handleAddUnavailablePeriod}
+                      disabled={!newUnavailablePeriod.startDate || !newUnavailablePeriod.endDate}
+                    >
+                      <AddIcon />
+                    </IconButton>
+                  </div>
+                </div>
+                {unavailablePeriods.length > 0 && (
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>{strings.START_DATE}</TableCell>
+                        <TableCell>{strings.END_DATE}</TableCell>
+                        <TableCell>{strings.ACTIONS_BUTTON}</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {unavailablePeriods.map((period, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
+                          <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
+                          <TableCell>
+                            <IconButton onClick={() => handleEditUnavailablePeriod(index)}>
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton onClick={() => handleDeleteUnavailablePeriod(index)}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                )}
+              </div>
 
               <FormControl fullWidth margin="dense">
                 <CarTypeList label={strings.CAR_TYPE} variant="standard" required value={type} onChange={handleCarTypeChange} />

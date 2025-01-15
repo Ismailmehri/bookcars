@@ -212,6 +212,7 @@ describe('PUT /api/update-car', () => {
       range: bookcarsTypes.CarRange.Midi,
       multimedia: [bookcarsTypes.CarMultimedia.AndroidAuto],
       periodicPrices: [],
+      unavailablePeriods: [],
       rating: 4,
     }
     let res = await request(app)

@@ -323,14 +323,14 @@ export const checkout = async (req: Request, res: Response) => {
       // Notify supplier
       i18n.locale = supplier.language
       let message = body.payLater ? i18n.t('BOOKING_PAY_LATER_NOTIFICATION') : i18n.t('BOOKING_PAID_NOTIFICATION')
-      await notify(user, booking.id, supplier, message, i18n.t('BOOKING_PAY_LATER_NOTIFICATION'))
+      await notify(user, booking.id, supplier, message)
 
       // Notify admin
       const admin = !!env.ADMIN_EMAIL && await User.findOne({ email: env.ADMIN_EMAIL, type: bookcarsTypes.UserType.Admin })
       if (admin) {
         i18n.locale = admin.language
         message = body.payLater ? i18n.t('BOOKING_PAY_LATER_NOTIFICATION') : i18n.t('BOOKING_PAID_NOTIFICATION')
-        await notify(user, booking.id, admin, message, i18n.t('BOOKING_PAY_LATER_NOTIFICATION'))
+        await notify(user, booking.id, admin, message)
       }
     }
 

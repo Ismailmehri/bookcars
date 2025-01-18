@@ -14,13 +14,18 @@ import {
   Switch,
   RadioGroup,
   Radio,
-  CircularProgress
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from '@mui/material'
 import {
   DirectionsCar as CarIcon,
   Person as DriverIcon,
   EventSeat as BookingIcon,
-  Settings as PaymentOptionsIcon
+  Settings as PaymentOptionsIcon,
 } from '@mui/icons-material'
 import validator from 'validator'
 import { format, intervalToDuration } from 'date-fns'
@@ -54,10 +59,6 @@ import Info from './Info'
 import '@/assets/css/checkout.css'
 import { sendPurchaseEvent } from '@/common/gtm'
 
-//
-// Make sure to call `loadStripe` outside of a component’s render to avoid
-// recreating the `Stripe` object on every render.
-//
 const stripePromise = loadStripe(env.STRIPE_PUBLISHABLE_KEY)
 
 const Checkout = () => {
@@ -105,8 +106,9 @@ const Checkout = () => {
   const [addiontalDriverBirthDateValid, setAddiontalDriverBirthDateValid] = useState(true)
   const [payLater, setPayLater] = useState(true)
   const [recaptchaError, setRecaptchaError] = useState(false)
-
   const [adManuallyChecked, setAdManuallyChecked] = useState(false)
+  const [openConfirmationDialog, setOpenConfirmationDialog] = useState(false)
+
   const adRequired = true
 
   const [paymentFailed, setPaymentFailed] = useState(false)
@@ -324,7 +326,6 @@ const Checkout = () => {
     return true
   }
 
-  // additionalDriver
   const _validatePhone = (_phone?: string) => {
     if (_phone) {
       const _phoneValid = validator.isMobilePhone(_phone)
@@ -354,7 +355,6 @@ const Checkout = () => {
     return true
   }
 
-  // additionalDriver
   const _validateBirthDate = (date?: Date) => {
     if (car && date && bookcarsHelper.isDate(date)) {
       const now = new Date()
@@ -440,6 +440,14 @@ const Checkout = () => {
         }
       }
 
+      setOpenConfirmationDialog(true)
+    } catch (err) {
+      helper.error(err)
+    }
+  }
+
+  const handleConfirmReservation = async () => {
+    try {
       setLoading(true)
       setPaymentFailed(false)
 
@@ -457,11 +465,11 @@ const Checkout = () => {
       }
 
       const booking: bookcarsTypes.Booking = {
-        supplier: car.supplier._id as string,
-        car: car._id,
+        supplier: car?.supplier._id as string,
+        car: car ? car._id : '',
         driver: authenticated ? user?._id : undefined,
-        pickupLocation: pickupLocation._id,
-        dropOffLocation: dropOffLocation._id,
+        pickupLocation: pickupLocation ? pickupLocation._id : '',
+        dropOffLocation: dropOffLocation ? dropOffLocation._id : '',
         from,
         to,
         status: bookcarsTypes.BookingStatus.Pending,
@@ -494,9 +502,9 @@ const Checkout = () => {
           currency: env.STRIPE_CURRENCY_CODE,
           locale: language,
           receiptEmail: (!authenticated ? driver?.email : user?.email) as string,
-          name: `${car.name} 
+          name: `${car?.name} 
           - ${daysLabel} 
-          - ${pickupLocation._id === dropOffLocation._id ? pickupLocation.name : `${pickupLocation.name} - ${dropOffLocation.name}`}`,
+          - ${pickupLocation?._id === dropOffLocation?._id ? pickupLocation?.name : `${pickupLocation?.name} - ${dropOffLocation?.name}`}`,
           description: 'BookCars Web Service',
           customerName: (!authenticated ? driver?.fullName : user?.fullName) as string,
         }
@@ -512,7 +520,7 @@ const Checkout = () => {
         additionalDriver: _additionalDriver,
         payLater,
         sessionId: _sessionId,
-        customerId: _customerId
+        customerId: _customerId,
       }
 
       const { status, bookingId: _bookingId } = await BookingService.checkout(payload)
@@ -520,10 +528,10 @@ const Checkout = () => {
 
       if (status === 200) {
         if (payLater) {
-          sendPurchaseEvent(_bookingId, price, 'TND', [{ id: car._id,
-            name: car.name,
+          sendPurchaseEvent(_bookingId, price, 'TND', [{ id: car?._id,
+            name: car?.name,
             quantity: days,
-            price: car.dailyPrice }])
+            price: car?.dailyPrice }])
           setVisible(false)
           setSuccess(true)
         }
@@ -536,7 +544,12 @@ const Checkout = () => {
       helper.error(err)
     } finally {
       setLoading(false)
+      setOpenConfirmationDialog(false)
     }
+  }
+
+  const handleCloseConfirmationDialog = () => {
+    setOpenConfirmationDialog(false)
   }
 
   const onLoad = async (_user?: bookcarsTypes.User) => {
@@ -578,14 +591,6 @@ const Checkout = () => {
         setNoMatch(true)
         return
       }
-
-      /** if (_pickupLocation.latitude && _pickupLocation.longitude) {
-        const l = await helper.getLocation()
-        if (l) {
-          const d = bookcarsHelper.distance(_pickupLocation.latitude, _pickupLocation.longitude, l[0], l[1], 'K')
-          setDistance(bookcarsHelper.formatDistance(d, UserService.getLanguage()))
-        }
-      } * */
 
       if (dropOffLocationId !== pickupLocationId) {
         _dropOffLocation = await LocationService.getLocation(dropOffLocationId)
@@ -632,7 +637,6 @@ const Checkout = () => {
               </h1>
               <form onSubmit={handleSubmit}>
                 <div>
-
                   <CarList
                     from={from}
                     to={to}
@@ -1017,11 +1021,6 @@ const Checkout = () => {
                       onClick={async () => {
                         try {
                           if (bookingId && sessionId) {
-                            //
-                            // Delete temporary booking on cancel.
-                            // Otherwise, temporary bookings are
-                            // automatically deleted through a TTL index.
-                            //
                             await BookingService.deleteTempBooking(bookingId, sessionId)
                           }
                         } catch (err) {
@@ -1047,6 +1046,30 @@ const Checkout = () => {
         )}
         {noMatch && <NoMatch hideHeader />}
         {success && <Info message={payLater ? strings.PAY_LATER_SUCCESS : strings.SUCCESS} type="success" />}
+
+        <Dialog
+          open={openConfirmationDialog}
+          onClose={handleCloseConfirmationDialog}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">
+            {strings.CONFIRM_RESERVATION_TITLE}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              {strings.CONFIRM_RESERVATION_MESSAGE}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseConfirmationDialog} color="primary">
+              {commonStrings.CANCEL}
+            </Button>
+            <Button onClick={handleConfirmReservation} color="primary" autoFocus>
+              {commonStrings.CONFIRM}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Layout>
     </ReCaptchaProvider>
   )

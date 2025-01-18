@@ -77,8 +77,8 @@ export interface Booking {
   driver?: string | User
   pickupLocation: string | Location
   dropOffLocation: string | Location
-  from: Date
-  to: Date
+  from: Date | undefined
+  to: Date | undefined
   status: BookingStatus
   cancellation?: boolean
   amendments?: boolean

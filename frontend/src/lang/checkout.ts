@@ -30,6 +30,8 @@ const strings = new LocalizedStrings({
     PAY_ONLINE_INFO: 'Modification et annulation sous conditions',
     PAYMENT_FAILED: 'Paiement échoué.',
     CHECKING: 'Vérification en cours...',
+    CONFIRM_RESERVATION_TITLE: 'Confirmer la réservation',
+    CONFIRM_RESERVATION_MESSAGE: 'Votre réservation sera envoyée à \'agence après confirmation. L\'agence vous contactera pour finaliser votre réservation. Merci de rester joignable sur votre téléphone pour toute communication.',
   },
   en: {
     BOOKING_HEADING: 'Book now',
@@ -59,6 +61,8 @@ const strings = new LocalizedStrings({
     PAY_ONLINE_INFO: 'Amendments and cancellation under conditions',
     PAYMENT_FAILED: 'Payment failed.',
     CHECKING: 'Checking in progress...',
+    CONFIRM_RESERVATION_TITLE: 'Confirm Reservation',
+    CONFIRM_RESERVATION_MESSAGE: 'Are you sure you want to book this vehicle? This action will send your reservation to the agency.',
   },
   es: {
     BOOKING_HEADING: 'Reservar ahora',
@@ -88,6 +92,8 @@ const strings = new LocalizedStrings({
     PAY_ONLINE_INFO: 'Modificaciones y cancelación bajo condiciones',
     PAYMENT_FAILED: 'El pago falló.',
     CHECKING: 'Verificación en curso...',
+    CONFIRM_RESERVATION_TITLE: 'Confirm Reservation',
+    CONFIRM_RESERVATION_MESSAGE: 'Are you sure you want to book this vehicle? This action will send your reservation to the agency.',
   },
 })
 

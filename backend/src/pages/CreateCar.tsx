@@ -82,10 +82,6 @@ const CreateCar = () => {
   const [fuelPolicy, setFuelPolicy] = useState('')
   const [cancellation, setCancellation] = useState('')
   const [amendments, setAmendments] = useState('')
-  const [theftProtection, setTheftProtection] = useState('')
-  const [collisionDamageWaiver, setCollisionDamageWaiver] = useState('')
-  const [fullInsurance, setFullInsurance] = useState('')
-  const [additionalDriver, setAdditionalDriver] = useState('')
   const [minimumAge, setMinimumAge] = useState(String(env.MINIMUM_AGE))
   const [minimumAgeValid, setMinimumAgeValid] = useState(true)
   const [formError, setFormError] = useState(false)
@@ -101,6 +97,7 @@ const CreateCar = () => {
     startDate: null,
     endDate: null,
   })
+  const [locationsError, setLocationsError] = useState<string | null>(null) // État pour l'erreur des localisations
 
   const handleAddPeriod = () => {
     if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice) {
@@ -212,6 +209,7 @@ const CreateCar = () => {
 
   const handleLocationsChange = (_locations: bookcarsTypes.Option[]) => {
     setLocations(_locations)
+    setLocationsError(null) // Effacer l'erreur lorsque l'utilisateur modifie la sélection
   }
 
   const handleCarRangeChange = (value: string) => {
@@ -295,6 +293,13 @@ const CreateCar = () => {
         return
       }
 
+      // Vérifier si des localisations sont sélectionnées
+      if (locations.length === 0) {
+        setLocationsError('Veuillez sélectionner au moins une localisation.')
+        return
+      }
+        setLocationsError(null)
+
       const data: bookcarsTypes.CreateCarPayload = {
         name,
         supplier,
@@ -320,16 +325,16 @@ const CreateCar = () => {
         mileage: extraToNumber(mileage),
         cancellation: extraToNumber(cancellation),
         amendments: extraToNumber(amendments),
-        theftProtection: extraToNumber(theftProtection),
-        collisionDamageWaiver: extraToNumber(collisionDamageWaiver),
-        fullInsurance: extraToNumber(fullInsurance),
-        additionalDriver: extraToNumber(additionalDriver),
+        theftProtection: 0,
+        collisionDamageWaiver: 0,
+        fullInsurance: 0,
+        additionalDriver: 0,
         range,
         multimedia,
         rating: Number(rating) || undefined,
         co2: Number(co2) || undefined,
         periodicPrices: pricePeriods,
-        unavailablePeriods, // Ajoutez les périodes d'indisponibilité ici
+        unavailablePeriods,
       }
 
       const car = await CarService.create(data)
@@ -413,6 +418,9 @@ const CreateCar = () => {
 
             <FormControl fullWidth margin="dense">
               <LocationSelectList label={strings.LOCATIONS} multiple required variant="standard" onChange={handleLocationsChange} />
+              {locationsError && (
+                <FormHelperText error>{locationsError}</FormHelperText>
+              )}
             </FormControl>
 
             <FormControl fullWidth margin="dense">

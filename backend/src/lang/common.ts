@@ -4,6 +4,7 @@ import * as langHelper from '@/common/langHelper'
 
 const strings = new LocalizedStrings({
   fr: {
+    // Textes existants
     GENERIC_ERROR: "Une erreur non gérée s'est produite.",
     CHANGE_LANGUAGE_ERROR: "Une erreur s'est produite lors du changement de langue.",
     UPDATED: 'Modifications effectuées avec succès.',
@@ -47,6 +48,7 @@ const strings = new LocalizedStrings({
     BOOKING_STATUS_RESERVED: 'Réservée',
     BOOKING_STATUS_CANCELLED: 'Annulée',
     FROM: 'Début',
+    CREATED_AT: 'Création',
     TO: 'Fin',
     OPTIONAL: 'Paramètres optionnels',
     AND: 'et',
@@ -89,8 +91,33 @@ const strings = new LocalizedStrings({
     ERROR_DESCRIPTION: 'Un problème est survenu. Veuillez réessayer plus tard.',
     NO_MATCH: 'Page non trouvée',
     NO_MATCH_DESCRIPTION: 'La page que vous cherchez n\'existe pas ou a été déplacée.',
+
+    // Nouveaux textes pour DriverReviewPage
+    NOT_AUTHORIZED: 'Vous n\'êtes pas autorisé à évaluer cette réservation.',
+    THANK_YOU: 'Merci pour votre avis !',
+    RATING_REQUIRED: 'Veuillez fournir une note et des commentaires (obligatoire si la note est inférieure à 3).',
+    ANSWER_ALL_QUESTIONS: 'Veuillez répondre à toutes les questions.',
+    SUBMIT_REVIEW_ERROR: 'Échec de la soumission de l\'avis. Veuillez réessayer.',
+    GENERIC_ERROR_MESSAGE: 'Une erreur est survenue',
+    DRIVER_NOT_FOUND: 'Conducteur non trouvé',
+    BOOKING_NOT_FOUND: 'Réservation non trouvée',
+    MISSING_USER_OR_BOOKING: 'utilisateur ou réservation manquant.',
+    BOOKING_NOT_ASSOCIATED: 'Cette réservation n\'est pas associée à votre agence.',
+    REVIEW_ALREADY_SUBMITTED: 'Vous avez déjà soumis votre avis pour cette réservation.',
+    EVALUATE_DRIVER: 'Évaluer le conducteur',
+    RATING: 'Note',
+    ADD_REVIEW_BUTTON: 'Noter le client',
+    COMMENTS: 'Commentaires',
+    COMMENTS_REQUIRED: 'Les commentaires sont obligatoires pour une note inférieure à 3.',
+    RENTED_CAR_QUESTION: 'Le conducteur a-t-il loué la voiture ?',
+    ANSWERED_CALL_QUESTION: 'Le conducteur a-t-il répondu au téléphone ?',
+    CANCELED_LAST_MINUTE_QUESTION: 'Le conducteur a-t-il annulé à la dernière minute ?',
+    CAR_ETA: 'Temps d\'arrivée estimé de la voiture (ETA)',
+    SUBMIT_REVIEW: 'Soumettre l\'avis',
+    GO_BACK_HOME: 'Retour à l\'accueil',
   },
   en: {
+    // Textes existants
     GENERIC_ERROR: 'An unhandled error occurred.',
     CHANGE_LANGUAGE_ERROR: 'An error occurred while changing language.',
     UPDATED: 'Changes made successfully.',
@@ -114,6 +141,7 @@ const strings = new LocalizedStrings({
     PASSWORDS_DONT_MATCH: "Passwords don't match.",
     CREATE: 'Create',
     UPDATE: 'Edit',
+    ADD_REVIEW_BUTTON: 'Noter le client',
     ACTIVATE: 'Activate',
     DELETE: 'Delete',
     SAVE: 'Save',
@@ -134,6 +162,7 @@ const strings = new LocalizedStrings({
     BOOKING_STATUS_RESERVED: 'Reserved',
     BOOKING_STATUS_CANCELLED: 'Cancelled',
     FROM: 'From',
+    CREATED_AT: 'Created At',
     TO: 'To',
     OPTIONAL: 'Optional Parameters',
     AND: 'and',
@@ -175,7 +204,30 @@ const strings = new LocalizedStrings({
     LATITUDE: 'Latitude',
     ERROR_DESCRIPTION: 'Something went wrong. Please try again later.',
     NO_MATCH: 'Page not found',
-    NO_MATCH_DESCRIPTION: 'The page you are looking for does not exist or has been moved.'
+    NO_MATCH_DESCRIPTION: 'The page you are looking for does not exist or has been moved.',
+
+    // Nouveaux textes pour DriverReviewPage
+    NOT_AUTHORIZED: 'You are not authorized to evaluate this booking.',
+    THANK_YOU: 'Thank you for your review!',
+    RATING_REQUIRED: 'Please provide a rating and comments (required if the rating is less than 3).',
+    ANSWER_ALL_QUESTIONS: 'Please answer all questions.',
+    SUBMIT_REVIEW_ERROR: 'Failed to submit the review. Please try again.',
+    GENERIC_ERROR_MESSAGE: 'An error occurred',
+    DRIVER_NOT_FOUND: 'Driver not found',
+    BOOKING_NOT_FOUND: 'Booking not found',
+    MISSING_USER_OR_BOOKING: 'utilisateur ou réservation manquant.',
+    BOOKING_NOT_ASSOCIATED: 'This booking is not associated with your agency.',
+    REVIEW_ALREADY_SUBMITTED: 'You have already submitted a review for this booking.',
+    EVALUATE_DRIVER: 'Evaluate the driver',
+    RATING: 'Rating',
+    COMMENTS: 'Comments',
+    COMMENTS_REQUIRED: 'Comments are required for a rating less than 3.',
+    RENTED_CAR_QUESTION: 'Did the agency rent the car?',
+    ANSWERED_CALL_QUESTION: 'Did the driver answer the phone?',
+    CANCELED_LAST_MINUTE_QUESTION: 'Did the driver cancel at the last minute?',
+    CAR_ETA: 'Estimated time of arrival (ETA)',
+    SUBMIT_REVIEW: 'Submit review',
+    GO_BACK_HOME: 'Go back to home',
   },
 })
 

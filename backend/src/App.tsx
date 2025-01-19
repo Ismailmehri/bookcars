@@ -32,6 +32,7 @@ const User = lazy(() => import('@/pages/User'))
 const CreateUser = lazy(() => import('@/pages/CreateUser'))
 const UpdateUser = lazy(() => import('@/pages/UpdateUser'))
 const Settings = lazy(() => import('@/pages/Settings'))
+const Review = lazy(() => import('@/pages/Review'))
 const Notifications = lazy(() => import('@/pages/Notifications'))
 const ToS = lazy(() => import('@/pages/ToS'))
 const Privacy = lazy(() => import('@/pages/Privacy'))
@@ -73,6 +74,7 @@ const App = () => (
             <Route path="/create-user" element={<CreateUser />} />
             <Route path="/update-user" element={<UpdateUser />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/review" element={<Review />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/about" element={<About />} />

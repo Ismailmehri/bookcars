@@ -378,6 +378,21 @@ export const updateUser = (data: bookcarsTypes.UpdateUserPayload): Promise<numbe
     )
     .then((res) => res.status)
 
+    /**
+ * Update a User.
+ *
+ * @param {bookcarsTypes.UpdateUserPayload} data
+ * @returns {Promise<number>}
+ */
+export const addReview = (data: bookcarsTypes.AddReviewPayload): Promise<number> =>
+  axiosInstance
+    .post(
+      '/api/add-review',
+      data,
+      { withCredentials: true }
+    )
+    .then((res) => res.status)
+
 /**
  * Update email notifications flag.
  *

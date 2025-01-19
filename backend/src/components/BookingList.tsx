@@ -19,7 +19,7 @@ import {
   CardContent,
   Typography
 } from '@mui/material'
-import { Edit as EditIcon, Delete as DeleteIcon, Check as CheckIcon } from '@mui/icons-material'
+import { Edit as EditIcon, Delete as DeleteIcon, Check as CheckIcon, Star as StarIcon } from '@mui/icons-material'
 import { format } from 'date-fns'
 import { fr as dfnsFR, enUS as dfnsENUS } from 'date-fns/locale'
 import * as bookcarsTypes from ':bookcars-types'
@@ -246,6 +246,7 @@ const BookingList = ({
         headerName: '',
         sortable: false,
         disableColumnMenu: true,
+        width: helper.admin(loggedUser) ? 140 : 100,
         renderCell: ({ row }: GridRenderCellParams<bookcarsTypes.Booking>) => {
           const handleDelete = (e: React.MouseEvent<HTMLElement>) => {
             e.stopPropagation() // don't select this row after clicking
@@ -260,11 +261,18 @@ const BookingList = ({
                   <EditIcon />
                 </IconButton>
               </Tooltip>
+              <Tooltip title={commonStrings.ADD_REVIEW_BUTTON}>
+                <IconButton href={`review?u=${(row.driver as bookcarsTypes.User)._id}&b=${row._id}`}>
+                  <StarIcon />
+                </IconButton>
+              </Tooltip>
+              {helper.admin(loggedUser) && (
               <Tooltip title={commonStrings.DELETE}>
                 <IconButton onClick={handleDelete}>
                   <DeleteIcon />
                 </IconButton>
               </Tooltip>
+              )}
             </div>
           )
         },
@@ -320,7 +328,16 @@ const BookingList = ({
           </Link>
         ),
         valueGetter: (value: bookcarsTypes.User) => value?.fullName,
-      })
+      },
+      {
+        field: 'createdAt',
+        headerName: commonStrings.CREATED_AT,
+        flex: 1,
+        valueGetter: (params) => params, // Retourne la date brute pour le tri
+        renderCell: (params) => new Date(params.value).toLocaleDateString('fr-FR'), // Affiche la date formatée
+        sortComparator: (v1, v2) => new Date(v1).getTime() - new Date(v2).getTime(), // Compare par timestamp
+      },
+    )
     }
 
     return _columns
@@ -617,14 +634,24 @@ const BookingList = ({
                       </Button>
                       <Button
                         variant="contained"
-                        className="btn-secondary"
+                        className="btn-primary"
                         size="small"
-                        data-id={booking._id}
-                        data-index={index}
-                        onClick={handleDelete}
+                        href={`review?u=${(booking.driver as bookcarsTypes.User)._id}&b=${booking._id}`}
                       >
-                        {commonStrings.DELETE}
+                        {commonStrings.ADD_REVIEW_BUTTON}
                       </Button>
+                      {helper.admin(loggedUser) && (
+                        <Button
+                          variant="contained"
+                          className="btn-secondary"
+                          size="small"
+                          data-id={booking._id}
+                          data-index={index}
+                          onClick={handleDelete}
+                        >
+                          {commonStrings.DELETE}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )

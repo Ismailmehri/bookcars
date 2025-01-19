@@ -31,7 +31,7 @@ const strings = new LocalizedStrings({
     PAYMENT_FAILED: 'Paiement échoué.',
     CHECKING: 'Vérification en cours...',
     CONFIRM_RESERVATION_TITLE: 'Confirmer la réservation',
-    CONFIRM_RESERVATION_MESSAGE: 'Votre réservation sera envoyée à \'agence après confirmation. L\'agence vous contactera pour finaliser votre réservation. Merci de rester joignable sur votre téléphone pour toute communication.',
+    CONFIRM_RESERVATION_MESSAGE: 'Votre réservation sera envoyée à l\'agence après confirmation. L\'agence vous contactera pour finaliser votre réservation. Merci de rester joignable sur votre téléphone pour toute communication.',
   },
   en: {
     BOOKING_HEADING: 'Book now',

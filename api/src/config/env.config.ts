@@ -371,6 +371,20 @@ interface EmailLog {
   sentAt: Date
 }
 
+export interface Review {
+  _id?: string;
+  booking: string; // ID de la réservation associée
+  user: string; // ID de l'agence qui a soumis l'avis
+  type: string // profile
+  rating: number; // Note de 1 à 5
+  comments?: string; // Commentaires de l'agence
+  rentedCar: boolean; // La voiture a-t-elle été louée ?
+  answeredCall: boolean; // Le conducteur a-t-il répondu au téléphone ?
+  canceledLastMinute: boolean; // Annulation de dernière minute ?
+  carEta?: string; // Temps d'arrivée estimé de la voiture
+  createdAt: Date; // Date de création de l'avis
+}
+
 /**
  * User Document.
  *
@@ -401,6 +415,7 @@ export interface User extends Document {
   contracts?: bookcarsTypes.Contract[]
   expireAt?: Date
   emailLogs?: EmailLog[]
+  reviews?: Review[];
 }
 
 /**

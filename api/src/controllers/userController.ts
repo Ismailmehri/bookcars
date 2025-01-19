@@ -1044,6 +1044,71 @@ export const update = async (req: Request, res: Response) => {
   }
 }
 
+export const addReview = async (req: Request, res: Response) => {
+  try {
+    const { body }: { body: bookcarsTypes.AddReviewPayload } = req
+    const { _id, review } = body
+
+    // Vérifier si l'ID de l'utilisateur est valide
+    if (!helper.isValidObjectId(_id)) {
+      throw new Error('User ID is not valid')
+    }
+
+    // Récupérer l'utilisateur connecté
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser = await User.findById(sessionData.id) as bookcarsTypes.User
+
+    // Vérifier si l'utilisateur connecté existe
+    if (!connectedUser) {
+      throw new Error('Connected user not found')
+    }
+
+    // Récupérer l'utilisateur à qui l'avis est destiné
+    const user = await User.findById(_id)
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    // Vérifier si l'utilisateur connecté est autorisé à ajouter un avis
+    const isAdmin = helper.admin(connectedUser) // Vérifie si l'utilisateur est un admin
+    const isSupplier = connectedUser.type === bookcarsTypes.RecordType.Supplier // Vérifie si l'utilisateur est un supplier
+    const isAuthorized = isAdmin || (isSupplier && review && connectedUser._id && review.user === connectedUser._id.toString()) // Autorisation si admin ou supplier correspondant
+
+    if (!isAuthorized) {
+      throw new Error('You are not authorized to add a review for this user')
+    }
+
+    // Ajouter l'avis à l'utilisateur
+    if (!user.reviews) {
+      user.reviews = []
+    }
+    if (review) {
+      const hasAlreadyReviewed = user.reviews.some((existingReview) => (
+          existingReview.booking.toString() === review.booking
+          && existingReview.user.toString() === review.user
+        ))
+
+      if (hasAlreadyReviewed && !isAdmin) {
+        throw new Error('Vous avez déjà soumis votre avis pour cette réservation.')
+      }
+      review.type = connectedUser.type ? connectedUser.type : 'plany'
+      user.reviews.push(review)
+    // Sauvegarder l'utilisateur mis à jour
+      await user.save()
+    }
+
+    // Sauvegarder l'utilisateur mis à jour
+    await user.save()
+
+    // Répondre avec un statut 200 (succès)
+    return res.sendStatus(200)
+  } catch (err) {
+    // Journaliser l'erreur et renvoyer une réponse d'erreur
+    logger.error(`[user.addReview] ${i18n.t('DB_ERROR')} ${JSON.stringify(req.body)}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
 /**
  * Update email notifications setting.
  *
@@ -1147,6 +1212,7 @@ export const getUser = async (req: Request, res: Response) => {
       payLater: 1,
       customerId: 1,
       active: 1,
+      reviews: 1,
     }).lean()
 
     if (!user) {

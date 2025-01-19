@@ -119,7 +119,7 @@ const userSchema = new Schema<env.User>(
         required: true,
         default: Date.now,
       },
-    }], // Ajouter le champ emailLogs
+    }],
     contracts: [{
       language: {
         type: String,
@@ -132,13 +132,54 @@ const userSchema = new Schema<env.User>(
       file: String,
     }],
     expireAt: {
-      //
-      // Non verified and active users created from checkout with Stripe are temporary and
-      // are automatically deleted if the payment checkout session expires.
-      //
       type: Date,
       index: { name: USER_EXPIRE_AT_INDEX_NAME, expireAfterSeconds: env.USER_EXPIRE_AT, background: true },
     },
+    reviews: [{
+      booking: {
+        type: Schema.Types.ObjectId,
+        ref: 'Booking',
+        required: true,
+      },
+      user: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+      type: {
+        type: String,
+        required: true,
+      },
+      rating: {
+        type: Number,
+        required: true,
+        min: 1,
+        max: 5,
+      },
+      comments: {
+        type: String,
+        required: false,
+      },
+      rentedCar: {
+        type: Boolean,
+        required: true,
+      },
+      answeredCall: {
+        type: Boolean,
+        required: true,
+      },
+      canceledLastMinute: {
+        type: Boolean,
+        required: true,
+      },
+      carEta: {
+        type: String,
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+    }],
   },
   {
     timestamps: true,
@@ -150,3 +191,17 @@ const userSchema = new Schema<env.User>(
 const User = model<env.User>('User', userSchema)
 
 export default User
+
+export interface Review {
+  _id?: string;
+  booking: string; // ID de la réservation associée
+  user: string; // ID de l'agence qui a soumis l'avis
+  type: string // profile
+  rating: number; // Note de 1 à 5
+  comments?: string; // Commentaires de l'agence
+  rentedCar: boolean; // La voiture a-t-elle été louée ?
+  answeredCall: boolean; // Le conducteur a-t-il répondu au téléphone ?
+  canceledLastMinute: boolean; // Annulation de dernière minute ?
+  carEta?: string; // Temps d'arrivée estimé de la voiture
+  createdAt: Date; // Date de création de l'avis
+}

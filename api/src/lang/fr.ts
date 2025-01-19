@@ -69,7 +69,7 @@ export const fr = {
   CLIENT_ADD_YOUR_PHONE_NOW: 'Ajoutez votre numéro de téléphone dès aujourd’hui et profitez d’une meilleure communication !',
   CLIENT_UPDATE_PROFILE_BUTTON: 'Mettre à jour mon profil',
   SUPPLIER_PENDING_BOOKING_REMINDER_SUBJECT: 'Rappel : Réservation en attente',
-  SUPPLIER_PENDING_BOOKING_REMINDER_MESSAGE: 'Vous avez une réservation en attente depuis plus de deux jours. Veuillez la traiter dès que possible.',
+  SUPPLIER_PENDING_BOOKING_REMINDER_MESSAGE: 'Vous avez une réservation en attente. Veuillez la traiter dès que possible.',
   BOOKING_DETAILS: 'Détails de la réservation',
   BOOKING_ID: 'ID de la réservation',
   PICKUP_LOCATION: 'Lieu de prise en charge',

@@ -246,6 +246,27 @@ export const CDN_TEMP_CARS = __env__('BC_CDN_TEMP_CARS', true)
 export const CDN_LOCATIONS = __env__('BC_CDN_LOCATIONS', true)
 
 /**
+ * Locations' cdn folder path.
+ *
+ * @type {string}
+ */
+export const CDN_USERS_API = __env__('BC_CDN_USERS_API', true)
+
+/**
+ * Locations' cdn folder path.
+ *
+ * @type {string}
+ */
+export const CDN_CARS_API = __env__('BC_CDN_CARS_API', true)
+
+/**
+ * Locations' cdn folder path.
+ *
+ * @type {string}
+ */
+export const CDN_LOCATIONS_API = __env__('BC_CDN_LOCATIONS_API', true)
+
+/**
  * Locations' temp cdn folder path.
  *
  * @type {string}

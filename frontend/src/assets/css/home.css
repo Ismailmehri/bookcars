@@ -8,6 +8,12 @@ div.home {
   transform: translate3d(0, 0, 0);
 }
 
+.custom-searsh {
+  padding: 30px 20px 20px 20px;
+  border: 1px solid #1976d2;
+  border-radius: 8px;
+}
+
 /* Device width is less than or equal to 960px */
 
 @media only screen and (width <=960px) {

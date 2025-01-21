@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { ToastContainer } from 'react-toastify'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
+import { extendTheme } from '@mui/joy/styles'
 
 import { frFR as corefrFR, enUS as coreenUS, elGR as coreelGR } from '@mui/material/locale'
 import { frFR, enUS, elGR } from '@mui/x-date-pickers/locales'
@@ -164,6 +165,11 @@ language = UserService.getLanguage()
 const isFr = language === 'fr'
 const isEL = language === 'el'
 
+const joyTheme = extendTheme({
+  // Personnalisez le thème de Joy ici si nécessaire
+})
+
+export default joyTheme
 const theme = createTheme(
   {
     // palette: {

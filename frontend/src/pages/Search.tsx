@@ -175,6 +175,11 @@ const Search = () => {
     const now = new Date()
     const defaultFrom = new Date(now.getTime() + 24 * 60 * 60 * 1000)
     const defaultTo = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+
+    // Définir l'heure à 9h pour les dates par défaut
+    defaultFrom.setHours(9, 0, 0, 0)
+    defaultTo.setHours(9, 0, 0, 0)
+
     const startDate = _from ? new Date(_from) : defaultFrom
     const endDate = _to ? new Date(_to) : defaultTo
 

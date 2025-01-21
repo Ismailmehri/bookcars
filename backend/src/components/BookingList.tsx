@@ -318,7 +318,8 @@ const BookingList = ({
     }
 
     if (helper.admin(loggedUser) && !hideSupplierColumn) {
-      _columns.unshift({
+      _columns.unshift(
+      {
         field: 'supplier',
         headerName: commonStrings.SUPPLIER,
         flex: 1,

@@ -771,7 +771,7 @@ const Checkout = () => {
                       </div>
                     </div>
                   </div>
-
+                  { /*
                   {!authenticated && (
                     <div className="driver-details">
                       <div className="booking-info">
@@ -860,7 +860,7 @@ const Checkout = () => {
                       </div>
                     </div>
                   )}
-
+                    */}
                   {(adManuallyChecked && additionalDriver) && (
                     <div className="driver-details">
                       <div className="booking-info">
@@ -996,7 +996,7 @@ const Checkout = () => {
                     )
                   )}
                   <div className="booking-buttons">
-                    {((!clientSecret || payLater) && (!user || user?.phone)) && (
+                    {((!clientSecret || payLater) && (user && user?.phone)) && (
                       <Button type="submit" variant="contained" className="btn-checkout btn-margin-bottom" size="small" disabled={loading}>
                         {
                           loading
@@ -1011,6 +1011,15 @@ const Checkout = () => {
                           loading
                             ? <CircularProgress color="inherit" size={24} />
                             : 'Compléter votre profil pour réserver'
+                        }
+                    </Button>
+                    )}
+                    {((!clientSecret || (payLater)) && !user) && (
+                    <Button href="/sign-in" variant="contained" className="btn-checkout btn-margin-bottom" size="small" disabled={loading}>
+                      {
+                          loading
+                            ? <CircularProgress color="inherit" size={24} />
+                            : strings.SIGN_IN2
                         }
                     </Button>
                     )}

@@ -20,6 +20,7 @@ import * as mailHelper from '../common/mailHelper'
 import * as env from '../config/env.config'
 import * as logger from '../common/logger'
 import stripeAPI from '../stripe'
+import { sendSms, validateAndFormatPhoneNumber } from '../common/smsHelper'
 
 /**
  * Create a Booking.
@@ -331,6 +332,10 @@ export const checkout = async (req: Request, res: Response) => {
         i18n.locale = admin.language
         message = body.payLater ? i18n.t('BOOKING_PAY_LATER_NOTIFICATION') : i18n.t('BOOKING_PAID_NOTIFICATION')
         await notify(user, booking.id, admin, message)
+      }
+      const result = validateAndFormatPhoneNumber(supplier.phone)
+      if (result.isValide) {
+        sendSms(result.phone, 'Vous avez des réservations à valider. Contactez le client et accédez aux infos en cliquant sur son nom via https://admin.plany.tn Plany!')
       }
     }
 

@@ -373,6 +373,12 @@ export const ADMIN_EMAIL = __env__('BC_ADMIN_EMAIL', false)
  */
 export const RECAPTCHA_SECRET = __env__('BC_RECAPTCHA_SECRET', false)
 
+export const SMS_API_KEY = __env__('BC_SMS_API_KEY', true)
+export const SMS_API_URL = __env__('BC_SMS_API_URL', true, 'https://app.tunisiesms.tn/Api/Api.aspx')
+export const SMS_SENDER = __env__('BC_SMS_SENDER', true, 'PLANY.TN')
+export const INFO_EMAIL = __env__('BC_INFO_EMAIL', true, 'info@plany.tn')
+export const SMS_ACTIVE = __env__('BC_SMS_ACTIVE', true, 'false') === 'true' // Convert to boolean
+
 export enum EmailType {
   Promotional = 'promotional',
   Transactional = 'transactional',
@@ -386,7 +392,18 @@ export enum EmailName {
   SupplierPendingBookingReminder = 'SUPPLIER_PENDING_BOOKING_REMINDER', // Rappel aux fournisseurs avec des réservations en attente
 }
 
-interface EmailLog {
+export interface PhoneNumberResult {
+  phone: string;
+  isValide: boolean;
+}
+
+export interface SmsResponse {
+  statusCode: number;
+  statusMsg: string;
+  messageId?: string; // Optionnel, car il peut être absent en cas d'erreur
+}
+
+export interface EmailLog {
   type: EmailType
   name: EmailName
   sentAt: Date

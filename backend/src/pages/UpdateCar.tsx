@@ -17,6 +17,8 @@ import {
   TableHead,
   TableRow,
   Chip,
+  Slider,
+  Box,
 } from '@mui/material'
 import { Delete as DeleteIcon, Edit as EditIcon, Info as InfoIcon, Add as AddIcon } from '@mui/icons-material'
 import DateTimePicker from '@/components/DateTimePicker'
@@ -57,6 +59,33 @@ interface UnavailablePeriod {
   endDate: Date | null;
 }
 
+const marks = [
+  {
+    value: 0,
+    label: '0 an',
+  },
+  {
+    value: 1,
+    label: '1 an',
+  },
+  {
+    value: 2,
+    label: '2 ans',
+  },
+  {
+    value: 3,
+    label: '3 ans',
+  },
+  {
+    value: 4,
+    label: '4 ans',
+  },
+  {
+    value: 5,
+    label: '5 ans',
+  }
+]
+
 const UpdateCar = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [car, setCar] = useState<bookcarsTypes.Car>()
@@ -74,6 +103,7 @@ const UpdateCar = () => {
   const [multimedia, setMultimedia] = useState<bookcarsTypes.CarMultimedia[]>([])
   const [rating, setRating] = useState('')
   const [co2, setCo2] = useState('')
+  const [minimumDrivingLicenseYears, setMinimumDrivingLicenseYears] = useState<number>(3)
   const [available, setAvailable] = useState(false)
   const [type, setType] = useState('')
   const [gearbox, setGearbox] = useState('')
@@ -220,6 +250,14 @@ const UpdateCar = () => {
     }
   }
 
+  const handleMinimumDrivingLicenseYears = (_event: Event, value: number | number[]) => {
+    if (typeof value === 'number') {
+      setMinimumDrivingLicenseYears(value)
+    }
+  }
+
+  const handleMinimumDrivingLicenseYearsText = (value: number) => `${value} ans`
+
   const handleLocationsChange = (_locations: bookcarsTypes.Option[]) => {
     setLocations(_locations)
   }
@@ -359,6 +397,7 @@ const UpdateCar = () => {
         multimedia,
         rating: Number(rating) || undefined,
         co2: Number(co2) || undefined,
+        minimumDrivingLicenseYears,
         unavailablePeriods
       }
 
@@ -444,6 +483,9 @@ const UpdateCar = () => {
               }
               if (_car.co2) {
                 setCo2(_car.co2.toString())
+              }
+              if (_car.minimumDrivingLicenseYears !== undefined) {
+                setMinimumDrivingLicenseYears(_car.minimumDrivingLicenseYears)
               }
               setAvailable(_car.available)
               setType(_car.type)
@@ -539,7 +581,32 @@ const UpdateCar = () => {
                 />
                 <FormHelperText error={!minimumAgeValid}>{(!minimumAgeValid && strings.MINIMUM_AGE_NOT_VALID) || ''}</FormHelperText>
               </FormControl>
-
+              <FormControl fullWidth margin="dense">
+                <InputLabel className="required" shrink>
+                  {strings.DRVER_LICENSE_MINIMUM_AGE}
+                </InputLabel>
+                <Box
+                  sx={{
+                    borderRadius: '4px', // Coins arrondis
+                    padding: '16px', // Espacement interne
+                    marginTop: '8px', // Ajustement pour l'espace avec le label
+                  }}
+                >
+                  <Slider
+                    aria-label="Minimum Driving License Years"
+                    defaultValue={minimumDrivingLicenseYears}
+                    value={minimumDrivingLicenseYears}
+                    getAriaValueText={handleMinimumDrivingLicenseYearsText}
+                    onChange={handleMinimumDrivingLicenseYears}
+                    valueLabelDisplay="auto"
+                    shiftStep={1}
+                    step={1}
+                    marks={marks}
+                    min={0}
+                    max={5}
+                  />
+                </Box>
+              </FormControl>
               <FormControl fullWidth margin="dense">
                 <LocationSelectList label={strings.LOCATIONS} multiple required variant="standard" value={locations} onChange={handleLocationsChange} />
               </FormControl>
@@ -563,132 +630,6 @@ const UpdateCar = () => {
                 />
               </FormControl>
 
-              { /* <FormControl fullWidth margin="dense">
-                <TextField
-                  label={`${strings.DISCOUNTED_DAILY_PRICE} (${commonStrings.CURRENCY})`}
-                  slotProps={{
-                    htmlInput: {
-                      inputMode: 'numeric',
-                      pattern: '^\\d+(.\\d+)?$'
-                    }
-                  }}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    setDiscountedDailyPrice(e.target.value)
-                  }}
-                  variant="standard"
-                  autoComplete="off"
-                  value={discountedDailyPrice}
-                />
-              </FormControl>
-
-              <FormControl fullWidth margin="dense">
-                <TextField
-                  label={`${strings.BI_WEEKLY_PRICE} (${commonStrings.CURRENCY})`}
-                  slotProps={{
-                    htmlInput: {
-                      inputMode: 'numeric',
-                      pattern: '^\\d+(.\\d+)?$'
-                    }
-                  }}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    setBiWeeklyPrice(e.target.value)
-                  }}
-                  variant="standard"
-                  autoComplete="off"
-                  value={biWeeklyPrice}
-                />
-              </FormControl>
-
-              <FormControl fullWidth margin="dense">
-                <TextField
-                  label={`${strings.DISCOUNTED_BI_WEEKLY_PRICE} (${commonStrings.CURRENCY})`}
-                  slotProps={{
-                    htmlInput: {
-                      inputMode: 'numeric',
-                      pattern: '^\\d+(.\\d+)?$'
-                    }
-                  }}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    setDiscountedBiWeeklyPrice(e.target.value)
-                  }}
-                  variant="standard"
-                  autoComplete="off"
-                  value={discountedBiWeeklyPrice}
-                />
-              </FormControl>
-
-              <FormControl fullWidth margin="dense">
-                <TextField
-                  label={`${strings.WEEKLY_PRICE} (${commonStrings.CURRENCY})`}
-                  slotProps={{
-                    htmlInput: {
-                      inputMode: 'numeric',
-                      pattern: '^\\d+(.\\d+)?$'
-                    }
-                  }}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    setWeeklyPrice(e.target.value)
-                  }}
-                  variant="standard"
-                  autoComplete="off"
-                  value={weeklyPrice}
-                />
-              </FormControl>
-
-              <FormControl fullWidth margin="dense">
-                <TextField
-                  label={`${strings.DISCOUNTED_WEEKLY_PRICE} (${commonStrings.CURRENCY})`}
-                  slotProps={{
-                    htmlInput: {
-                      inputMode: 'numeric',
-                      pattern: '^\\d+(.\\d+)?$'
-                    }
-                  }}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    setDiscountedWeeklyPrice(e.target.value)
-                  }}
-                  variant="standard"
-                  autoComplete="off"
-                  value={discountedWeeklyPrice}
-                />
-              </FormControl>
-
-              <FormControl fullWidth margin="dense">
-                <TextField
-                  label={`${strings.MONTHLY_PRICE} (${commonStrings.CURRENCY})`}
-                  slotProps={{
-                    htmlInput: {
-                      inputMode: 'numeric',
-                      pattern: '^\\d+(.\\d+)?$'
-                    }
-                  }}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    setMonthlyPrice(e.target.value)
-                  }}
-                  variant="standard"
-                  autoComplete="off"
-                  value={monthlyPrice}
-                />
-              </FormControl>
-
-              <FormControl fullWidth margin="dense">
-                <TextField
-                  label={`${strings.DISCOUNTED_MONThLY_PRICE} (${commonStrings.CURRENCY})`}
-                  slotProps={{
-                    htmlInput: {
-                      inputMode: 'numeric',
-                      pattern: '^\\d+(.\\d+)?$'
-                    }
-                  }}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    setDiscountedMonthlyPrice(e.target.value)
-                  }}
-                  variant="standard"
-                  autoComplete="off"
-                  value={discountedMonthlyPrice}
-                />
-              </FormControl>
-              */ }
               <div className="add-border">
                 <span className="text-title">
                   Ajouter un tarif spécial pour des périodes spécifiques

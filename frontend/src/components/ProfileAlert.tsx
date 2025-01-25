@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Alert, Button } from '@mui/material'
+import { Alert, Button, useMediaQuery, useTheme } from '@mui/material'
 import { Link } from 'react-router-dom'
 import * as UserService from '@/services/UserService' // Importez le service utilisateur
 
@@ -7,6 +7,8 @@ const ProfileAlert: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [hasPhoneNumber, setHasPhoneNumber] = useState(false)
   const [loading, setLoading] = useState(true) // Ajoutez un état de chargement
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -46,7 +48,9 @@ const ProfileAlert: React.FC = () => {
       severity="warning"
       className="warning-alert"
       sx={{
-        width: '100%', // Prend toute la largeur disponible
+        width: isMobile ? '97%' : '100%', // Prend toute la largeur disponible
+        marginTop: '5px',
+        border: '1px solid #ed6c02',
         maxWidth: '800px', // Limite la largeur maximale
         padding: '10px', // Ajoute un peu d'espace intérieur
         display: 'flex',

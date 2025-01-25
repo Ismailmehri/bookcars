@@ -30,6 +30,7 @@ import Map from '@/components/Map'
 import ViewOnMap from '@/assets/img/view-on-map.png'
 
 import '@/assets/css/search.css'
+import LocationHeader from '@/components/LocationHeader'
 
 const Search = () => {
   const location = useLocation()
@@ -298,6 +299,9 @@ const Search = () => {
             )}
           </div>
           <div className="col-2">
+            <LocationHeader
+              location={pickupLocation}
+            />
             <CarList
               carSpecs={carSpecs}
               suppliers={supplierIds}

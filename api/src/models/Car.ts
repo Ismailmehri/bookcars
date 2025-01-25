@@ -196,6 +196,9 @@ const carSchema = new Schema<env.Car>(
     co2: {
       type: Number,
     },
+    minimumDrivingLicenseYears: {
+      type: Number,
+    },
   },
   {
     timestamps: true,

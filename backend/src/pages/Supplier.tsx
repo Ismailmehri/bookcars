@@ -10,7 +10,7 @@ import {
   Tooltip,
   Link
 } from '@mui/material'
-import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material'
+import { Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon} from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -133,6 +133,7 @@ const Supplier = () => {
   }
 
   const edit = user && supplier && (user.type === bookcarsTypes.RecordType.Admin || user._id === supplier._id)
+  const admin = user && (user.type === bookcarsTypes.RecordType.Admin)
 
   return (
     <Layout onLoad={onLoad} user={user} strict>
@@ -193,7 +194,14 @@ const Supplier = () => {
                   </IconButton>
                 </Tooltip>
               )}
-              {edit && (
+              {admin && (
+                <Tooltip title={commonStrings.OPEN_SUPPLIER_PAGE}>
+                  <IconButton href={`/user?u=${supplier._id}`}>
+                    <VisibilityIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {admin && (
                 <Tooltip title={commonStrings.DELETE}>
                   <IconButton data-id={supplier._id} onClick={handleDelete}>
                     <DeleteIcon />

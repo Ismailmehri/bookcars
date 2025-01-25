@@ -198,6 +198,7 @@ export interface CreateCarPayload {
   multimedia: string[]
   rating?: number
   co2?: number
+  minimumDrivingLicenseYears?: number
 }
 
 export interface UpdateCarPayload extends CreateCarPayload {
@@ -496,6 +497,7 @@ export interface Car {
   rating?: number
   trips: number
   co2?: number
+  minimumDrivingLicenseYears?: number
   [propKey: string]: any
 }
 

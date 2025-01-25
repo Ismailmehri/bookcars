@@ -244,12 +244,12 @@ const Header = ({
         <SettingsIcon className="header-action" />
         <p>{strings.SETTINGS}</p>
       </MenuItem>
-      <MenuItem onClick={handleLangMenuOpen}>
+      { /* <MenuItem onClick={handleLangMenuOpen}>
         <IconButton aria-label="language of current user" aria-controls="primary-search-account-menu" aria-haspopup="true" color="inherit">
           <LanguageIcon />
         </IconButton>
         <p>{strings.LANGUAGE}</p>
-      </MenuItem>
+      </MenuItem> */ }
       <MenuItem onClick={handleSignout}>
         <IconButton color="inherit">
           <SignoutIcon />

@@ -586,6 +586,7 @@ export interface Car extends Document {
   rating?: number
   trips: number
   co2?: number
+  minimumDrivingLicenseYears?: number
   unavailablePeriods?: UnavailablePeriod[];
 }
 

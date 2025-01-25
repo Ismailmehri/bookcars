@@ -1,6 +1,5 @@
-import React, { useCallback, useState } from 'react'
+import React, { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { GoogleReCaptcha } from 'react-google-recaptcha-v3'
 import {
   OutlinedInput,
   InputLabel,
@@ -8,8 +7,6 @@ import {
   FormHelperText,
   Button,
   Paper,
-  Checkbox,
-  Link,
   FormControlLabel,
   Switch,
   RadioGroup,
@@ -52,7 +49,6 @@ import Layout from '@/components/Layout'
 import Error from '@/components/Error'
 import DatePicker from '@/components/DatePicker'
 import ReCaptchaProvider from '@/components/ReCaptchaProvider'
-import SocialLogin from '@/components/SocialLogin'
 import NoMatch from './NoMatch'
 import Info from './Info'
 
@@ -75,20 +71,7 @@ const Checkout = () => {
   const [authenticated, setAuthenticated] = useState(false)
   const [language, setLanguage] = useState(env.DEFAULT_LANGUAGE)
   const [noMatch, setNoMatch] = useState(false)
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [birthDate, setBirthDate] = useState<Date>()
-  const [birthDateValid, setBirthDateValid] = useState(true)
-  const [emailValid, setEmailValid] = useState(true)
-  const [emailRegitered, setEmailRegitered] = useState(false)
-  const [phoneValid, setPhoneValid] = useState(true)
-  const [tosChecked, setTosChecked] = useState(false)
-  const [tosError, setTosError] = useState(false)
-  const [error, setError] = useState(false)
   const [price, setPrice] = useState(0)
-  const [emailInfo, setEmailInfo] = useState(true)
-  const [phoneInfo, setPhoneInfo] = useState(true)
   const [cancellation, setCancellation] = useState(false)
   const [amendments, setAmendments] = useState(false)
   const [theftProtection, setTheftProtection] = useState(false)
@@ -105,7 +88,6 @@ const Checkout = () => {
   const [addiontalDriverPhoneValid, setAddiontalDriverPhoneValid] = useState(true)
   const [addiontalDriverBirthDateValid, setAddiontalDriverBirthDateValid] = useState(true)
   const [payLater, setPayLater] = useState(true)
-  const [recaptchaError, setRecaptchaError] = useState(false)
   const [adManuallyChecked, setAdManuallyChecked] = useState(false)
   const [openConfirmationDialog, setOpenConfirmationDialog] = useState(false)
 
@@ -163,60 +145,6 @@ const Checkout = () => {
     }
   }
 
-  const handleTheftProtectionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (car && from && to) {
-      const _theftProtection = e.target.checked
-      const options: bookcarsTypes.CarOptions = {
-        cancellation,
-        amendments,
-        theftProtection: _theftProtection,
-        collisionDamageWaiver,
-        fullInsurance,
-        additionalDriver,
-      }
-      const _price = bookcarsHelper.calculateTotalPrice(car, from, to, options)
-
-      setTheftProtection(_theftProtection)
-      setPrice(_price)
-    }
-  }
-
-  const handleCollisionDamageWaiverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (car && from && to) {
-      const _collisionDamageWaiver = e.target.checked
-      const options: bookcarsTypes.CarOptions = {
-        cancellation,
-        amendments,
-        theftProtection,
-        collisionDamageWaiver: _collisionDamageWaiver,
-        fullInsurance,
-        additionalDriver,
-      }
-      const _price = bookcarsHelper.calculateTotalPrice(car, from, to, options)
-
-      setCollisionDamageWaiver(_collisionDamageWaiver)
-      setPrice(_price)
-    }
-  }
-
-  const handleFullInsuranceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (car && from && to) {
-      const _fullInsurance = e.target.checked
-      const options: bookcarsTypes.CarOptions = {
-        cancellation,
-        amendments,
-        theftProtection,
-        collisionDamageWaiver,
-        fullInsurance: _fullInsurance,
-        additionalDriver,
-      }
-      const _price = bookcarsHelper.calculateTotalPrice(car, from, to, options)
-
-      setFullInsurance(_fullInsurance)
-      setPrice(_price)
-    }
-  }
-
   const handleAdditionalDriverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (car && from && to) {
       const _additionalDriver = e.target.checked
@@ -236,56 +164,6 @@ const Checkout = () => {
     }
   }
 
-  const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFullName(e.target.value)
-  }
-
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value)
-
-    if (!e.target.value) {
-      setEmailRegitered(false)
-      setEmailValid(true)
-    }
-  }
-
-  const validateEmail = async (_email?: string) => {
-    if (_email) {
-      if (validator.isEmail(_email)) {
-        try {
-          const status = await UserService.validateEmail({ email: _email })
-          if (status === 200) {
-            setEmailRegitered(false)
-            setEmailValid(true)
-            setEmailInfo(true)
-            return true
-          }
-          setEmailRegitered(true)
-          setEmailValid(true)
-          setError(false)
-          setEmailInfo(false)
-          return false
-        } catch (err) {
-          helper.error(err)
-          setEmailRegitered(false)
-          setEmailValid(true)
-          setEmailInfo(true)
-          return false
-        }
-      } else {
-        setEmailRegitered(false)
-        setEmailValid(false)
-        setEmailInfo(true)
-        return false
-      }
-    } else {
-      setEmailRegitered(false)
-      setEmailValid(true)
-      setEmailInfo(true)
-      return false
-    }
-  }
-
   // additionalDriver
   const _validateEmail = (_email?: string) => {
     if (_email) {
@@ -300,32 +178,6 @@ const Checkout = () => {
     return false
   }
 
-  const handleEmailBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
-    await validateEmail(e.target.value)
-  }
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhone(e.target.value)
-
-    if (!e.target.value) {
-      setPhoneValid(true)
-    }
-  }
-
-  const validatePhone = (_phone?: string) => {
-    if (_phone) {
-      const _phoneValid = validator.isMobilePhone(_phone)
-      setPhoneValid(_phoneValid)
-      setPhoneInfo(_phoneValid)
-
-      return _phoneValid
-    }
-    setPhoneValid(true)
-    setPhoneInfo(true)
-
-    return true
-  }
-
   const _validatePhone = (_phone?: string) => {
     if (_phone) {
       const _phoneValid = validator.isMobilePhone(_phone)
@@ -335,23 +187,6 @@ const Checkout = () => {
     }
     setAddiontalDriverPhoneValid(true)
 
-    return true
-  }
-
-  const handlePhoneBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    validatePhone(e.target.value)
-  }
-
-  const validateBirthDate = (date?: Date) => {
-    if (car && date && bookcarsHelper.isDate(date)) {
-      const now = new Date()
-      const sub = intervalToDuration({ start: date, end: now }).years ?? 0
-      const _birthDateValid = sub >= car.minimumAge
-
-      setBirthDateValid(_birthDateValid)
-      return _birthDateValid
-    }
-    setBirthDateValid(true)
     return true
   }
 
@@ -368,26 +203,6 @@ const Checkout = () => {
     return true
   }
 
-  const handleTosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTosChecked(e.target.checked)
-
-    if (e.target.checked) {
-      setTosError(false)
-    }
-  }
-
-  const handleRecaptchaVerify = useCallback(async (token: string) => {
-    try {
-      const ip = await UserService.getIP()
-      const status = await UserService.verifyRecaptcha(token, ip)
-      const valid = status === 200
-      setRecaptchaError(!valid)
-    } catch (err) {
-      helper.error(err)
-      setRecaptchaError(true)
-    }
-  }, [])
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     try {
       e.preventDefault()
@@ -395,32 +210,6 @@ const Checkout = () => {
       if (!car || !pickupLocation || !dropOffLocation || !from || !to) {
         helper.error()
         return
-      }
-
-      if (!authenticated) {
-        const _emailValid = await validateEmail(email)
-        if (!_emailValid) {
-          return
-        }
-
-        const _phoneValid = validatePhone(phone)
-        if (!_phoneValid) {
-          return
-        }
-
-        const _birthDateValid = validateBirthDate(birthDate)
-        if (!_birthDateValid) {
-          return
-        }
-
-        if (env.RECAPTCHA_ENABLED && recaptchaError) {
-          return
-        }
-
-        if (!tosChecked) {
-          setTosError(true)
-          return
-        }
       }
 
       if (adManuallyChecked && additionalDriver) {
@@ -453,16 +242,6 @@ const Checkout = () => {
 
       let driver: bookcarsTypes.User | undefined
       let _additionalDriver: bookcarsTypes.AdditionalDriver | undefined
-
-      if (!authenticated) {
-        driver = {
-          email,
-          phone,
-          fullName,
-          birthDate,
-          language: UserService.getLanguage(),
-        }
-      }
 
       const booking: bookcarsTypes.Booking = {
         supplier: car?.supplier._id as string,
@@ -677,46 +456,6 @@ const Checkout = () => {
                           )}
                         />
                       </FormControl>
-
-                      <FormControl fullWidth margin="dense">
-                        <FormControlLabel
-                          disabled={car.collisionDamageWaiver === -1 || car.collisionDamageWaiver === 0 || !!clientSecret}
-                          control={<Switch checked={collisionDamageWaiver} onChange={handleCollisionDamageWaiverChange} color="primary" />}
-                          label={(
-                            <span>
-                              <span className="booking-option-label">{csStrings.COLLISION_DAMAGE_WAVER}</span>
-                              <span className="booking-option-value">{helper.getCollisionDamageWaiverOption(car.collisionDamageWaiver, days, language)}</span>
-                            </span>
-                          )}
-                        />
-                      </FormControl>
-
-                      <FormControl fullWidth margin="dense">
-                        <FormControlLabel
-                          disabled={car.theftProtection === -1 || car.theftProtection === 0 || !!clientSecret}
-                          control={<Switch checked={theftProtection} onChange={handleTheftProtectionChange} color="primary" />}
-                          label={(
-                            <span>
-                              <span className="booking-option-label">{csStrings.THEFT_PROTECTION}</span>
-                              <span className="booking-option-value">{helper.getTheftProtectionOption(car.theftProtection, days, language)}</span>
-                            </span>
-                          )}
-                        />
-                      </FormControl>
-
-                      <FormControl fullWidth margin="dense">
-                        <FormControlLabel
-                          disabled={car.fullInsurance === -1 || car.fullInsurance === 0 || !!clientSecret}
-                          control={<Switch checked={fullInsurance} onChange={handleFullInsuranceChange} color="primary" />}
-                          label={(
-                            <span>
-                              <span className="booking-option-label">{csStrings.FULL_INSURANCE}</span>
-                              <span className="booking-option-value">{helper.getFullInsuranceOption(car.fullInsurance, days, language)}</span>
-                            </span>
-                          )}
-                        />
-                      </FormControl>
-
                       <FormControl fullWidth margin="dense">
                         <FormControlLabel
                           disabled={car.additionalDriver === -1 || !!clientSecret}
@@ -1044,10 +783,7 @@ const Checkout = () => {
                   </div>
                 </div>
                 <div className="form-error">
-                  {tosError && <Error message={commonStrings.TOS_ERROR} />}
-                  {error && <Error message={commonStrings.GENERIC_ERROR} />}
                   {paymentFailed && <Error message={strings.PAYMENT_FAILED} />}
-                  {recaptchaError && <Error message={commonStrings.RECAPTCHA_ERROR} />}
                 </div>
               </form>
             </Paper>

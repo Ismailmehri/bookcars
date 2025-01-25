@@ -17,6 +17,8 @@ import {
   TableRow,
   IconButton,
   Chip,
+  Box,
+  Slider,
 } from '@mui/material'
 import { Delete as DeleteIcon, Edit as EditIcon, Info as InfoIcon, Add as AddIcon } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
@@ -56,6 +58,29 @@ interface UnavailablePeriod {
   endDate: Date | null;
 }
 
+const marks = [
+  {
+    value: 1,
+    label: '1 an',
+  },
+  {
+    value: 2,
+    label: '2 ans',
+  },
+  {
+    value: 3,
+    label: '3 ans',
+  },
+  {
+    value: 4,
+    label: '4 ans',
+  },
+  {
+    value: 5,
+    label: '5 ans',
+  }
+]
+
 const CreateCar = () => {
   const navigate = useNavigate()
   const [isSupplier, setIsSupplier] = useState(false)
@@ -71,6 +96,7 @@ const CreateCar = () => {
   const [multimedia, setMultimedia] = useState<bookcarsTypes.CarMultimedia[]>([])
   const [rating, setRating] = useState('')
   const [co2, setCo2] = useState('')
+  const [minimumDrivingLicenseYears, setMinimumDrivingLicenseYears] = useState(3)
   const [available, setAvailable] = useState(true)
   const [type, setType] = useState('')
   const [gearbox, setGearbox] = useState('')
@@ -179,6 +205,15 @@ const CreateCar = () => {
   const handleSupplierChange = (values: bookcarsTypes.Option[]) => {
     setSupplier(values.length > 0 ? values[0]._id : '')
   }
+
+  const handleMinimumDrivingLicenseYears = (_event: Event, value: number | number[]) => {
+    if (typeof value === 'number') {
+      setMinimumDrivingLicenseYears(value)
+      console.log(_event)
+    }
+  }
+
+  const handleMinimumDrivingLicenseYearsText = (value: number) => `${value} ans`
 
   const validateMinimumAge = (age: string, updateState = true) => {
     if (age) {
@@ -334,6 +369,7 @@ const CreateCar = () => {
         rating: Number(rating) || undefined,
         co2: Number(co2) || undefined,
         periodicPrices: pricePeriods,
+        minimumDrivingLicenseYears,
         unavailablePeriods,
       }
 
@@ -414,6 +450,32 @@ const CreateCar = () => {
                 inputProps={{ inputMode: 'numeric', pattern: '^\\d{2}$' }}
               />
               <FormHelperText error={!minimumAgeValid}>{(!minimumAgeValid && strings.MINIMUM_AGE_NOT_VALID) || ''}</FormHelperText>
+            </FormControl>
+
+            <FormControl fullWidth margin="dense">
+              <InputLabel className="required" shrink>
+                {strings.DRVER_LICENSE_MINIMUM_AGE}
+              </InputLabel>
+              <Box
+                sx={{
+                    borderRadius: '4px', // Coins arrondis
+                    padding: '16px', // Espacement interne
+                    marginTop: '8px', // Ajustement pour l'espace avec le label
+                  }}
+              >
+                <Slider
+                  aria-label="Minimum Driving License Years"
+                  defaultValue={2}
+                  getAriaValueText={handleMinimumDrivingLicenseYearsText}
+                  onChange={handleMinimumDrivingLicenseYears}
+                  valueLabelDisplay="auto"
+                  shiftStep={1}
+                  step={1}
+                  marks={marks}
+                  min={0}
+                  max={5}
+                />
+              </Box>
             </FormControl>
 
             <FormControl fullWidth margin="dense">

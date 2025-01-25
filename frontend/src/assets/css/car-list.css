@@ -27,7 +27,7 @@ section.car-list div.bc-title {
 }
 
 section.car-list div.bc-title div.bookcars {
-  font-size: 22px;
+  font-size: 18px;
 }
 
 section.car-list div.bc-title div.bookcars span.title-bookcars {
@@ -282,7 +282,7 @@ section.car-list article .btn-book {
   section.car-list article span.price-days,
   section.car-list article span.price-day {
     font-size: 13px;
-    color: #a1a1a1;
+    color: #4e4c4c;
     display: table-row;
     text-align: right;
   }
@@ -526,7 +526,7 @@ section.car-list article .btn-book {
   section.car-list article span.price-days,
   section.car-list article span.price-day {
     font-size: 13px;
-    color: #a1a1a1;
+    color: #4e4c4c;
     display: table-row;
     text-align: right;
   }

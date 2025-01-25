@@ -46,7 +46,9 @@ const ProfileAlert: React.FC = () => {
       severity="warning"
       className="warning-alert"
       sx={{
-        width: '100%', // Prend toute la largeur disponible
+        width: '97%', // Prend toute la largeur disponible
+        marginTop: '5px',
+        border: '1px solid #ed6c02',
         // maxWidth: '800px', // Limite la largeur maximale
         padding: '10px', // Ajoute un peu d'espace intérieur
         display: 'flex',

@@ -87,9 +87,8 @@ const _signup = async (req: Request, res: Response, userType: bookcarsTypes.User
   // Send confirmation email
   //
   try {
-    // generate token and save
+    // Generate token and save
     const token = new Token({ user: user._id, token: helper.generateToken() })
-
     await token.save()
 
     // Send email
@@ -99,21 +98,24 @@ const _signup = async (req: Request, res: Response, userType: bookcarsTypes.User
       from: env.SMTP_FROM,
       to: user.email,
       subject: i18n.t('ACCOUNT_ACTIVATION_SUBJECT'),
-      html:
-        `<p>
-    ${i18n.t('HELLO')}${user.fullName},<br><br>
-    ${i18n.t('ACCOUNT_ACTIVATION_LINK')}<br>
-    <a class="button" href="http${env.HTTPS ? 's' : ''}://${req.headers.host}/api/confirm-email/${user.email}/${token.token}">${i18n.t('CLICK_HERE')}</a><br>
-    ${i18n.t('REGARDS')}<br>
-    </p>`,
+      html: `
+        <p>
+          ${i18n.t('HELLO')} ${user.fullName},<br><br>
+          ${i18n.t('ACCOUNT_ACTIVATION_LINK')}<br><br>
+          <a href="http${env.HTTPS ? 's' : ''}://${req.headers.host}/api/confirm-email/${user.email}/${token.token}" 
+             style="display: inline-block; padding: 5px 25px; font-size: 16px; color: #fff; background-color: #007bff; text-decoration: none; border-radius: 5px;">
+            ${i18n.t('CLICK_HERE')}
+          </a><br><br>
+          ${i18n.t('REGARDS')}<br>
+        </p>
+      `,
     }
+
     await mailHelper.sendMail(mailOptions)
     return res.sendStatus(200)
   } catch (err) {
     try {
-      //
-      // Delete user in case of smtp failure
-      //
+      // Delete user in case of SMTP failure
       await user.deleteOne()
     } catch (deleteErr) {
       logger.error(`[user.signup] ${i18n.t('DB_ERROR')} ${JSON.stringify(body)}`, deleteErr)

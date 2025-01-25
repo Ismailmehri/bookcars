@@ -381,6 +381,14 @@ export const getDeposit = (deposit: number, language: string) => {
   return `${strings.DEPOSIT}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(deposit, commonStrings.CURRENCY, language)}`
 }
 
+export const getLicense = (licenseAge: number, language: string) => {
+  const fr = bookcarsHelper.isFrench(language)
+  if (licenseAge === 1) {
+    return `${strings.DRIVER_LICENSE}${fr ? ' : ' : ': '}${licenseAge} an`
+  }
+  return `${strings.DRIVER_LICENSE}${fr ? ' : ' : ': '}${licenseAge} ans`
+}
+
 /**
  * Get booking status label.
  *

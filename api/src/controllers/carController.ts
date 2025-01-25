@@ -107,6 +107,7 @@ export const update = async (req: Request, res: Response) => {
         multimedia,
         rating,
         co2,
+        minimumDrivingLicenseYears,
         periodicPrices,
         unavailablePeriods,
       } = body
@@ -142,6 +143,7 @@ export const update = async (req: Request, res: Response) => {
       car.multimedia = multimedia
       car.rating = rating
       car.co2 = co2
+      car.minimumDrivingLicenseYears = minimumDrivingLicenseYears
       car.periodicPrices = periodicPrices
       car.unavailablePeriods = unavailablePeriods
 

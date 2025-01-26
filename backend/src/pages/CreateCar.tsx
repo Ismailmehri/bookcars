@@ -505,64 +505,87 @@ const CreateCar = () => {
             </FormControl>
 
             <div className="add-border">
-              <span className="text-title">Ajouter un tarif spécial pour des périodes spécifiques (par exemple juin, juillet, août ou fin décembre)</span>
-              <Chip
-                label="optionnel"
-                size="small"
-                color="primary"
-                variant="outlined"
-                sx={{
-                  height: 'auto',
-                  margin: '0 0px 4px 10px',
-                  '& .MuiChip-label': {
-                    display: 'block',
-                    whiteSpace: 'normal',
-                    paddingBottom: '3px',
-                  },
-                }}
-              />
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <FormControl fullWidth margin="dense">
+              <span className="text-title">
+                Ajouter un tarif spécial pour des périodes spécifiques
+                <Chip
+                  label="optionnel"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  sx={{
+                    height: 'auto',
+                    margin: '0 0px 4px 10px',
+                    '& .MuiChip-label': {
+                      display: 'block',
+                      whiteSpace: 'normal',
+                      paddingBottom: '3px'
+                    },
+                  }}
+                />
+                <br />
+                <small>
+                  (par exemple, haute saison en juin, juillet, août, ou périodes festives comme fin décembre)
+                </small>
+              </span>
+
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+                {/* DateTimePicker pour la date de début */}
+                <FormControl sx={{ width: '200px' }} margin="dense">
+                  {' '}
+                  {/* Largeur réduite */}
                   <DateTimePicker
                     label={strings.START_DATE}
                     value={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
-                    maxDate={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
+                    maxDate={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined} // Limite la date max en fonction de la date de fin
                     onChange={(date) => setNewPeriod({ ...newPeriod, startDate: date })}
                     language={UserService.getLanguage()}
+                    showTime={false}
                   />
                 </FormControl>
-                <FormControl fullWidth margin="dense">
+
+                {/* DateTimePicker pour la date de fin */}
+                <FormControl sx={{ width: '200px' }} margin="dense">
+                  {' '}
+                  {/* Largeur réduite */}
                   <DateTimePicker
                     label={strings.END_DATE}
                     value={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
-                    minDate={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
+                    minDate={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined} // Limite la date min en fonction de la date de début
                     onChange={(date) => setNewPeriod({ ...newPeriod, endDate: date })}
                     language={UserService.getLanguage()}
+                    showTime={false}
                   />
                 </FormControl>
-                <FormControl className="fixed-width-300" margin="dense">
+
+                {/* TextField pour le prix quotidien */}
+                <FormControl sx={{ width: '150px' }} margin="dense">
+                  {' '}
+                  {/* Largeur réduite */}
                   <TextField
                     label={`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}
                     slotProps={{
-                      htmlInput: {
-                        inputMode: 'numeric',
-                        pattern: '^\\d+(.\\d+)?$',
-                      },
-                    }}
+                        htmlInput: {
+                          inputMode: 'numeric',
+                          pattern: '^\\d+(.\\d+)?$',
+                        },
+                      }}
                     value={newPeriod.dailyPrice !== null ? newPeriod.dailyPrice : ''}
                     variant="standard"
                     autoComplete="off"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPeriod({ ...newPeriod, dailyPrice: Number(e.target.value) })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setNewPeriod({ ...newPeriod, dailyPrice: Number(e.target.value) })}
                   />
                 </FormControl>
+
+                {/* Bouton pour ajouter la période */}
                 <div className="add-button">
-                  <IconButton
-                    color="primary"
+                  <Button
+                    size="medium"
                     onClick={handleAddPeriod}
                     disabled={!newPeriod.startDate || !newPeriod.endDate || !newPeriod.dailyPrice}
                   >
-                    <AddIcon />
-                  </IconButton>
+                    Ajouter
+                  </Button>
                 </div>
               </div>
               {pricePeriods.length > 0 && (
@@ -591,7 +614,7 @@ const CreateCar = () => {
                             </IconButton>
                           </TableCell>
                         </TableRow>
-                      ))}
+              ))}
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -685,28 +708,30 @@ const CreateCar = () => {
                   <DateTimePicker
                     label={strings.START_DATE}
                     value={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined}
-                    maxDate={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined}
+                    maxDate={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined} // Limite la date max en fonction de la date de fin
                     onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, startDate: date })}
                     language={UserService.getLanguage()}
+                    showTime={false}
                   />
                 </FormControl>
                 <FormControl fullWidth margin="dense">
                   <DateTimePicker
                     label={strings.END_DATE}
                     value={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined}
-                    minDate={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined}
+                    minDate={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined} // Limite la date min en fonction de la date de début
                     onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, endDate: date })}
                     language={UserService.getLanguage()}
+                    showTime={false}
                   />
                 </FormControl>
                 <div className="add-button" style={{ marginLeft: '15px' }}>
-                  <IconButton
-                    color="primary"
+                  <Button
+                    size="medium"
                     onClick={handleAddUnavailablePeriod}
                     disabled={!newUnavailablePeriod.startDate || !newUnavailablePeriod.endDate}
                   >
-                    <AddIcon />
-                  </IconButton>
+                    Ajouter
+                  </Button>
                 </div>
               </div>
               {unavailablePeriods.length > 0 && (

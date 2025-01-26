@@ -4,20 +4,21 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { DateTimePicker as MuiDateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
 import { fr, enUS } from 'date-fns/locale'
 import { TextFieldVariants } from '@mui/material'
-import { DateTimeValidationError, PickersActionBarAction } from '@mui/x-date-pickers'
+import { DateTimeValidationError, PickersActionBarAction, DateOrTimeView } from '@mui/x-date-pickers'
 
 interface DateTimePickerProps {
-  value?: Date
-  label?: string
-  minDate?: Date
-  maxDate?: Date
-  required?: boolean
-  language?: string
-  variant?: TextFieldVariants
-  readOnly?: boolean
-  showClear?: boolean
-  onChange?: (value: Date | null) => void
-  onError?: (error: DateTimeValidationError, value: Date | null) => void
+  value?: Date;
+  label?: string;
+  minDate?: Date;
+  maxDate?: Date;
+  required?: boolean;
+  language?: string;
+  variant?: TextFieldVariants;
+  readOnly?: boolean;
+  showClear?: boolean;
+  showTime?: boolean; // Nouvelle prop pour afficher/masquer l'heure
+  onChange?: (value: Date | null) => void;
+  onError?: (error: DateTimeValidationError, value: Date | null) => void;
 }
 
 const DateTimePicker = ({
@@ -30,8 +31,9 @@ const DateTimePicker = ({
   language,
   readOnly,
   showClear,
+  showTime = true, // Valeur par défaut : true (afficher l'heure)
   onChange,
-  onError
+  onError,
 }: DateTimePickerProps) => {
   const [value, setValue] = useState<Date | null>(null)
 
@@ -45,13 +47,18 @@ const DateTimePicker = ({
     actions.push('clear')
   }
 
+  // Définir les vues en fonction de showTime
+  const views: DateOrTimeView[] = showTime
+    ? ['year', 'month', 'day', 'hours', 'minutes'] // Inclure l'heure
+    : ['year', 'month', 'day'] // Exclure l'heure
+
   return (
     <LocalizationProvider adapterLocale={language === 'fr' ? fr : enUS} dateAdapter={AdapterDateFns}>
       <MuiDateTimePicker
         label={label}
         value={value}
         readOnly={readOnly}
-        views={['year', 'month', 'day', 'hours', 'minutes']}
+        views={views} // Utiliser les vues définies
         onChange={(_value) => {
           setValue(_value)
 

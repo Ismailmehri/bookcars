@@ -129,6 +129,8 @@ const UpdateCar = () => {
   const [minimumAge, setMinimumAge] = useState(String(env.MINIMUM_AGE))
   const [minimumAgeValid, setMinimumAgeValid] = useState(true)
   const [formError, setFormError] = useState(false)
+  const [periodPriceError, setPeriodPriceError] = useState(false)
+  const [periodUnvalableError, setPeriodUnvalableError] = useState(false)
   const [deposit, setDeposit] = useState('')
   const [pricePeriods, setPricePeriods] = useState<PricePeriod[]>([])
   const [unavailablePeriods, setUnavailablePeriods] = useState<UnavailablePeriod[]>([])
@@ -148,12 +150,14 @@ const UpdateCar = () => {
     if (newUnavailablePeriod.startDate && newUnavailablePeriod.endDate) {
       setUnavailablePeriods([...unavailablePeriods, newUnavailablePeriod])
       setNewUnavailablePeriod({ startDate: null, endDate: null })
+      setPeriodUnvalableError(false)
     }
   }
 
   const handleDeleteUnavailablePeriod = (index: number) => {
     const updatedPeriods = unavailablePeriods.filter((_, i) => i !== index)
     setUnavailablePeriods(updatedPeriods)
+    setPeriodUnvalableError(false)
   }
 
   const handleEditUnavailablePeriod = (index: number) => {
@@ -163,6 +167,7 @@ const UpdateCar = () => {
       endDate: periodToEdit.endDate,
     })
     handleDeleteUnavailablePeriod(index)
+    setPeriodUnvalableError(false)
   }
   const handleAddPeriod = () => {
     if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice) {
@@ -173,11 +178,13 @@ const UpdateCar = () => {
         setNewPeriod({ startDate: null, endDate: null, dailyPrice: null })
       }
     }
+    setPeriodPriceError(false)
   }
 
   const handleDeletePeriod = (index: number) => {
     const updatedPeriods = pricePeriods.filter((_, i) => i !== index)
     setPricePeriods(updatedPeriods)
+    setPeriodPriceError(false)
   }
 
   const handleEditPeriod = (index: number) => {
@@ -188,6 +195,7 @@ const UpdateCar = () => {
       dailyPrice: periodToEdit.dailyPrice,
     })
     handleDeletePeriod(index)
+    setPeriodPriceError(false)
   }
 
   const handleBeforeUpload = () => {
@@ -350,6 +358,16 @@ const UpdateCar = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     try {
       e.preventDefault()
+
+      if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice) {
+        setPeriodPriceError(true)
+        return
+      }
+
+      if (newUnavailablePeriod.startDate && newUnavailablePeriod.endDate) {
+        setPeriodUnvalableError(true)
+        return
+      }
 
       const _minimumAgeValid = validateMinimumAge(minimumAge)
       if (!_minimumAgeValid) {
@@ -654,50 +672,64 @@ const UpdateCar = () => {
                   </small>
                 </span>
 
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                  <FormControl fullWidth margin="dense">
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+                  {/* DateTimePicker pour la date de début */}
+                  <FormControl sx={{ width: '200px' }} margin="dense">
+                    {' '}
+                    {/* Largeur réduite */}
                     <DateTimePicker
                       label={strings.START_DATE}
                       value={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
                       maxDate={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined} // Limite la date max en fonction de la date de fin
-                      onChange={(date) =>
-                      setNewPeriod({ ...newPeriod, startDate: date })}
+                      onChange={(date) => setNewPeriod({ ...newPeriod, startDate: date })}
                       language={UserService.getLanguage()}
+                      showTime={false}
                     />
                   </FormControl>
-                  <FormControl fullWidth margin="dense">
+
+                  {/* DateTimePicker pour la date de fin */}
+                  <FormControl sx={{ width: '200px' }} margin="dense">
+                    {' '}
+                    {/* Largeur réduite */}
                     <DateTimePicker
                       label={strings.END_DATE}
                       value={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
                       minDate={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined} // Limite la date min en fonction de la date de début
-                      onChange={(date) =>
-                      setNewPeriod({ ...newPeriod, endDate: date })}
+                      onChange={(date) => setNewPeriod({ ...newPeriod, endDate: date })}
                       language={UserService.getLanguage()}
+                      showTime={false}
                     />
                   </FormControl>
-                  <FormControl className="fixed-width-300" margin="dense">
+
+                  {/* TextField pour le prix quotidien */}
+                  <FormControl sx={{ width: '150px' }} margin="dense">
+                    {' '}
+                    {/* Largeur réduite */}
                     <TextField
                       label={`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}
                       slotProps={{
-                      htmlInput: {
-                        inputMode: 'numeric',
-                        pattern: '^\\d+(.\\d+)?$'
-                      }
-                    }}
+                        htmlInput: {
+                          inputMode: 'numeric',
+                          pattern: '^\\d+(.\\d+)?$',
+                        },
+                      }}
                       value={newPeriod.dailyPrice !== null ? newPeriod.dailyPrice : ''}
                       variant="standard"
                       autoComplete="off"
-                      onChange={(e:React.ChangeEvent<HTMLInputElement>) => setNewPeriod({ ...newPeriod, dailyPrice: Number(e.target.value) })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setNewPeriod({ ...newPeriod, dailyPrice: Number(e.target.value) })}
                     />
                   </FormControl>
+
+                  {/* Bouton pour ajouter la période */}
                   <div className="add-button">
-                    <IconButton
-                      color="primary"
+                    <Button
+                      size="medium"
                       onClick={handleAddPeriod}
                       disabled={!newPeriod.startDate || !newPeriod.endDate || !newPeriod.dailyPrice}
                     >
-                      <AddIcon />
-                    </IconButton>
+                      Ajouter
+                    </Button>
                   </div>
                 </div>
                 {pricePeriods.length > 0 && (
@@ -822,6 +854,7 @@ const UpdateCar = () => {
                       maxDate={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined} // Limite la date max en fonction de la date de fin
                       onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, startDate: date })}
                       language={UserService.getLanguage()}
+                      showTime={false}
                     />
                   </FormControl>
                   <FormControl fullWidth margin="dense">
@@ -831,16 +864,17 @@ const UpdateCar = () => {
                       minDate={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined} // Limite la date min en fonction de la date de début
                       onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, endDate: date })}
                       language={UserService.getLanguage()}
+                      showTime={false}
                     />
                   </FormControl>
                   <div className="add-button" style={{ marginLeft: '15px' }}>
-                    <IconButton
-                      color="primary"
+                    <Button
+                      size="medium"
                       onClick={handleAddUnavailablePeriod}
                       disabled={!newUnavailablePeriod.startDate || !newUnavailablePeriod.endDate}
                     >
-                      <AddIcon />
-                    </IconButton>
+                      Ajouter
+                    </Button>
                   </div>
                 </div>
                 {unavailablePeriods.length > 0 && (
@@ -995,6 +1029,8 @@ const UpdateCar = () => {
                 {imageRequired && <ErrorMessage message={commonStrings.IMAGE_REQUIRED} />}
                 {imageSizeError && <ErrorMessage message={strings.CAR_IMAGE_SIZE_ERROR} />}
                 {formError && <ErrorMessage message={commonStrings.FORM_ERROR} />}
+                {periodPriceError && <ErrorMessage message="Veuillez cliquer sur 'Ajouter' pour enregistrer la période avant de soumettre le formulaire." />}
+                {periodUnvalableError && <ErrorMessage message="Veuillez cliquer sur 'Ajouter' pour enregistrer la période avant de soumettre le formulaire." />}
               </div>
             </form>
           </Paper>

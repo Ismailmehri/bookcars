@@ -9,6 +9,7 @@ import * as env from '../config/env.config'
 import * as logger from '../common/logger'
 import Booking from '../models/Booking'
 import { CDN_CARS_API } from '../config/env.config'
+import * as helper from '../common/helper'
 
 /**
  * Notify Suppliers who haven't added cars after one week.
@@ -451,6 +452,7 @@ export const notifySuppliersWithoutCars = async (req: Request, res: Response) =>
         return res.status(500).send(i18n.t('DB_ERROR') + err)
     }
 }
+
 /**
  * Notify Suppliers who haven't configured high season prices (July and August).
  *
@@ -596,3 +598,108 @@ export const notifySuppliersWithoutHighSeasonPrices = async (req: Request, res: 
       return res.status(500).send(i18n.t('DB_ERROR') + err)
   }
 }
+
+/**
+ * Calculate agency scores and notify agencies with low scores.
+ *
+ * @export
+ * @async
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {unknown}
+ */
+export const notifyAgenciesWithLowScores = async (req: Request, res: Response) => {
+    try {
+      // Récupérer les paramètres de l'URL
+      const shouldSendMail = req.query.mail === 'true' // Contrôler l'envoi des e-mails
+      const limit = parseInt(req.query.limit as string, 10) // Limite d'e-mails à envoyer
+      const minScoreThreshold = parseInt(req.query.minScore as string, 10) || 50 // Seuil de score minimum (par défaut 50)
+
+      // Valider que limit est un nombre valide (positif ou 0)
+      if (Number.isNaN(limit) || limit < 0) {
+        return res.status(400).json({ message: 'Invalid limit parameter. It must be a positive number or 0.' })
+      }
+
+      // Récupérer toutes les agences
+      const agencies = await User.find({ type: bookcarsTypes.UserType.Supplier }) as bookcarsTypes.User[]
+
+      // Liste des agences avec un score faible
+      const agenciesWithLowScores: { email: string; fullName: string; score: number; recommendations: string[] }[] = []
+
+      // Compteur pour suivre le nombre d'e-mails envoyés
+      let emailsSent = 0
+
+      for (const agency of agencies) {
+        // Si la limite est atteinte (et limit !== 0), arrêter l'envoi des e-mails
+        if (limit !== 0 && emailsSent >= limit) {
+          break
+        }
+
+        // Récupérer les réservations et les voitures de l'agence
+        const bookings = await Booking.find({ supplier: agency._id }) as bookcarsTypes.Booking[]
+        const cars = (await Car.find({ supplier: agency._id }) as bookcarsTypes.Car[]).filter((car) => car.available)
+        const scoreBreakdown = helper.calculateAgencyScore(agency, bookings, cars)
+
+        // Si le score est inférieur au seuil, ajouter l'agence à la liste
+        if (scoreBreakdown.total < minScoreThreshold) {
+          agenciesWithLowScores.push({
+            email: agency.email || 'info@plany.tn',
+            fullName: agency.fullName,
+            score: scoreBreakdown.total,
+            recommendations: scoreBreakdown.recommendations,
+          })
+
+          // Envoyer un e-mail de notification uniquement si mail=true
+          if (shouldSendMail && agency.active && agency.verified && cars.length > 0) {
+            i18n.locale = agency.language || 'fr' // Utiliser le français par défaut si la langue n'est pas définie
+            const mailOptions: nodemailer.SendMailOptions = {
+              from: env.SMTP_FROM,
+              to: agency.email,
+              subject: i18n.t('AGENCY_LOW_SCORE_SUBJECT'),
+              html: `
+                <table style="width: 100%; font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                  <tr>
+                    <td style="text-align: center; padding: 20px;">
+                      <h2 style="color: #007BFF;">${i18n.t('IMPROVE_YOUR_SCORE')}</h2>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 20px;">
+                      <p>${i18n.t('HELLO')} <strong>${agency.fullName}</strong>,</p>
+                      <p>${i18n.t('AGENCY_LOW_SCORE_MESSAGE')}</p>
+                      <p><strong>${i18n.t('YOUR_SCORE')}: ${scoreBreakdown.total}/100</strong></p>
+                      <p>${i18n.t('RECOMMENDATIONS')}:</p>
+                      <ul>
+                        ${scoreBreakdown.recommendations.map((rec) => `<li>${rec}</li>`).join('')}
+                      </ul>
+                      <p style="text-align: center; margin: 20px 0;">
+                        <a href="https://admin.plany.tn" style="background-color: #007BFF; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-size: 16px;">
+                          ${i18n.t('IMPROVE_SCORE_BUTTON')}
+                        </a>
+                      </p>
+                      <p>${i18n.t('THANK_YOU')}</p>
+                    </td>
+                  </tr>
+                </table>
+              `,
+            }
+
+            await mailHelper.sendMail(mailOptions)
+            logger.info(`Notification email sent to agency (low score): ${agency.email}`)
+            emailsSent += 1 // Incrémenter le compteur d'e-mails envoyés
+          }
+        }
+      }
+
+      // Retourner la liste des agences avec un score faible
+      return res.status(200).json({
+        message: shouldSendMail
+          ? `Notification emails sent to ${emailsSent} agencies with low scores`
+          : 'Agencies with low scores retrieved',
+        agenciesWithLowScores,
+      })
+    } catch (err) {
+      logger.error(`[notification.notifyAgenciesWithLowScores] ${i18n.t('DB_ERROR')}`, err)
+      return res.status(500).send(i18n.t('DB_ERROR') + err)
+    }
+  }

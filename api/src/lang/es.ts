@@ -1,4 +1,10 @@
 export const es = {
+  BOOKING_STATUS_VOID: 'Vide',
+  BOOKING_STATUS_PENDING: 'En cours',
+  BOOKING_STATUS_DEPOSIT: 'Acompte',
+  BOOKING_STATUS_PAID: 'Payée',
+  BOOKING_STATUS_RESERVED: 'Réservée',
+  BOOKING_STATUS_CANCELLED: 'Annulée',
     ERROR: 'Error interno: ',
     DB_ERROR: 'Error en la solicitud a la base de datos: ',
     SMTP_ERROR: 'Error SMTP - Fallo en el envío del correo electrónico: ',
@@ -79,5 +85,18 @@ export const es = {
     ADD_HIGH_SEASON_PRICES_NOW: 'Add your high season prices to seize this opportunity',
     UPDATE_PRICES_BUTTON: 'Set prices now',
     WATCH_HOW_TO_ADD_DATES: 'Watch how to add dates',
-
+    AGENCY_LOW_SCORE_SUBJECT: 'Votre score est faible - Action Requise',
+    AGENCY_LOW_SCORE_MESSAGE: `
+      Bonjour {agencyName},
+      Nous avons remarqué que votre score sur notre plateforme est actuellement faible. Un score élevé est essentiel pour maximiser votre visibilité et attirer plus de clients.
+      Voici quelques recommandations pour améliorer votre score :
+      {recommendations}
+      N'hésitez pas à nous contacter si vous avez besoin d'aide pour mettre en œuvre ces améliorations.
+      Cordialement,
+      L'équipe Plany
+    `,
+    YOUR_SCORE: 'Votre score actuel est de {score}/100.',
+    RECOMMENDATIONS: 'Recommandations pour améliorer votre score :',
+    IMPROVE_SCORE_BUTTON: 'Améliorer mon score',
+    IMPROVE_YOUR_SCORE: 'Améliorez votre score Plany et boostez votre visibilité !',
   }

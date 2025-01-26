@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Alert, Button } from '@mui/material'
 import { Link } from 'react-router-dom'
 import * as UserService from '@/services/UserService' // Importez le service utilisateur
+import env from '@/config/env.config'
 
 const ProfileAlert: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -48,6 +49,7 @@ const ProfileAlert: React.FC = () => {
       sx={{
         width: '97%', // Prend toute la largeur disponible
         marginTop: '5px',
+        marginLeft: env.isMobile() ? '0px' : '10px',
         border: '1px solid #ed6c02',
         // maxWidth: '800px', // Limite la largeur maximale
         padding: '10px', // Ajoute un peu d'espace intérieur

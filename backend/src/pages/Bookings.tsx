@@ -14,6 +14,7 @@ import * as SupplierService from '@/services/SupplierService'
 
 import '@/assets/css/bookings.css'
 import ProfileAlert from '@/components/ProfileAlert'
+import AgencyScore from '@/components/AgencyScore'
 
 const Bookings = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
@@ -69,6 +70,11 @@ const Bookings = () => {
       {user && (
         <div className="bookings">
           <div className="col-1">
+            { user && user._id && (
+              <AgencyScore
+                agencyId={user._id}
+              />
+            )}
             {leftPanel && (
               <>
                 <Button variant="contained" className="btn-primary cl-new-booking" size="small" href="/create-booking">

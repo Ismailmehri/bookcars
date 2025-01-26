@@ -1,4 +1,10 @@
 export const fr = {
+  BOOKING_STATUS_VOID: 'Vide',
+  BOOKING_STATUS_PENDING: 'En cours',
+  BOOKING_STATUS_DEPOSIT: 'Acompte',
+  BOOKING_STATUS_PAID: 'Payée',
+  BOOKING_STATUS_RESERVED: 'Réservée',
+  BOOKING_STATUS_CANCELLED: 'Annulée',
   ERROR: 'Erreur interne : ',
   DB_ERROR: 'Échec de la requête dans la base de données : ',
   SMTP_ERROR: "Erreur SMTP - Échec de l'envoi de l'email: ",
@@ -84,4 +90,11 @@ export const fr = {
   ADD_HIGH_SEASON_PRICES_NOW: 'Ajoutez vos prix de haute saison pour ne pas manquer cette opportunité',
   UPDATE_PRICES_BUTTON: 'Configurer les prix maintenant',
   WATCH_HOW_TO_ADD_DATES: 'Regardez comment ajouter des dates',
+  AGENCY_LOW_SCORE_SUBJECT: 'Votre score est faible - Action Requise',
+  AGENCY_LOW_SCORE_MESSAGE: `
+    Nous avons remarqué que votre score sur notre plateforme est actuellement faible. Un score élevé est essentiel pour maximiser votre visibilité et attirer plus de clients.`,
+  YOUR_SCORE: 'Votre score actuel est de',
+  RECOMMENDATIONS: 'Voici quelques recommandations pour améliorer votre score :',
+  IMPROVE_SCORE_BUTTON: 'Améliorer mon score',
+  IMPROVE_YOUR_SCORE: 'Améliorez votre score Plany et boostez votre visibilité !',
 }

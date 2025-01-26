@@ -610,3 +610,22 @@ export interface CarOptions {
   additionalDriver?: boolean
 }
 
+export interface ScoreBreakdown {
+  score: number;
+  details: {
+    phone: { score: number; max: number };
+    carConfiguration: {
+      periodicPrices: { score: number; max: number; configuredCars: number };
+      unavailablePeriods: { score: number; max: number; configuredCars: number };
+    };
+    postRentalManagement: {
+      expiredPending: { score: number; max: number };
+      expiredReservedDeposit: { score: number; max: number };
+      cancelledVoidRatio: { score: number; max: number };
+    };
+    carQuantity: { score: number; max: number };
+    bookingStatusHealth: { score: number; max: number; ratio: number };
+  };
+  recommendations: string[];
+}
+

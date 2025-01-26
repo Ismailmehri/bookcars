@@ -3,6 +3,7 @@ const routes = {
   update: '/api/update-supplier',
   delete: '/api/delete-supplier/:id',
   getSupplier: '/api/supplier/:id',
+  getSupplierScore: '/api/supplier-score/:id',
   getSuppliers: '/api/suppliers/:page/:size',
   getAllSuppliers: '/api/all-suppliers',
   getFrontendSuppliers: '/api/frontend-suppliers',

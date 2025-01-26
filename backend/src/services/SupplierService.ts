@@ -59,6 +59,14 @@ export const getSupplier = (id: string): Promise<bookcarsTypes.User> =>
     )
     .then((res) => res.data)
 
+export const getSupplierScore = (id: string): Promise<bookcarsTypes.ScoreBreakdown> =>
+  axiosInstance
+    .get(
+      `/api/supplier-score/${encodeURIComponent(id)}`,
+      { withCredentials: true }
+    )
+    .then((res) => res.data)
+
 /**
  * Get Suppliers.
  *

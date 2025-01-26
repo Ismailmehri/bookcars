@@ -219,6 +219,53 @@ export const getSupplier = async (req: Request, res: Response) => {
 }
 
 /**
+ * Get Agency Score by ID.
+ *
+ * @export
+ * @async
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {unknown}
+ */
+export const getAgencyScore = async (req: Request, res: Response) => {
+  const { id } = req.params
+
+  try {
+    // Récupérer l'agence (utilisateur de type "supplier")
+    const agency = await User.findById(id) as bookcarsTypes.User
+
+    if (!agency) {
+      logger.error('[agency.getAgencyScore] Agency not found:', id)
+      return res.sendStatus(204) // No Content
+    }
+
+    // Vérifier que l'utilisateur est bien une agence (supplier)
+    if (agency.type !== 'supplier') {
+      logger.error('[agency.getAgencyScore] User is not a supplier:', id)
+      return res.status(400).send(i18n.t('NOT_A_SUPPLIER'))
+    }
+
+    // Récupérer les réservations et les voitures de l'agence
+    const bookings = await Booking.find({ supplier: id }) as bookcarsTypes.Booking[]
+    const cars = await Car.find({ supplier: id }) as bookcarsTypes.Car[]
+
+    // Calculer le score de l'agence
+    const scoreBreakdown = helper.calculateAgencyScore(agency, bookings, cars)
+
+    // Retourner le score et les détails
+    return res.json({
+      success: true,
+      score: scoreBreakdown.total,
+      details: scoreBreakdown.details,
+      recommendations: scoreBreakdown.recommendations,
+    })
+  } catch (err) {
+    logger.error(`[agency.getAgencyScore] ${i18n.t('DB_ERROR')} ${id}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+/**
  * Get Suppliers.
  *
  * @export

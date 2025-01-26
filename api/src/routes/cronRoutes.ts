@@ -9,5 +9,6 @@ router.post(routeNames.notifySuppliersWithoutCars, apiKeyValidator, cronControll
 router.post(routeNames.notifySuppliersWithoutPhone, apiKeyValidator, cronController.notifySuppliersWithoutPhone)
 router.post(routeNames.notifyClientsWithoutPhone, apiKeyValidator, cronController.notifyClientsWithoutPhone)
 router.post(routeNames.notifySuppliersWithPendingBookings, apiKeyValidator, cronController.notifySuppliersWithPendingBookings)
-router.post(routeNames.notifySuppliersWithoutHighSeasonPrices, apiKeyValidator, cronController.notifySuppliersWithoutHighSeasonPrices);
+router.post(routeNames.notifySuppliersWithoutHighSeasonPrices, apiKeyValidator, cronController.notifySuppliersWithoutHighSeasonPrices)
+router.post(routeNames.notifySuppliersWithLowScores, apiKeyValidator, cronController.notifyAgenciesWithLowScores)
 export default router

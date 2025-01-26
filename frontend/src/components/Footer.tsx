@@ -45,19 +45,26 @@ const Footer = () => {
           <div className="title">{strings.RENT}</div>
           <ul className="links">
             {locations.length > 0 ? (
-              locations.map((location) => (
-                <li
-                  key={location._id} // Ajout d'une clé unique
-                  onClick={() => navigate(`/search?pickupLocation=${location._id}`)}
-                >
-                  Location voiture à
-                  {' '}
-                  {location.name}
-                </li>
-              ))
-            ) : (
-              <li>Chargement des locations...</li>
-            )}
+    locations.map((location) => (
+      <li key={location._id}>
+        {' '}
+        {/* Ajout d'une clé unique */}
+        <a
+          href={`/search?pickupLocation=${location._id}`} // Lien cliquable
+          onClick={(e) => {
+            e.preventDefault() // Empêche le rechargement de la page
+            navigate(`/search?pickupLocation=${location._id}`) // Navigation avec React Router
+          }}
+        >
+          Location voiture à
+          {' '}
+          {location.name}
+        </a>
+      </li>
+    ))
+  ) : (
+    <li>Chargement des locations...</li>
+  )}
           </ul>
         </div>
         <div className="main-section">

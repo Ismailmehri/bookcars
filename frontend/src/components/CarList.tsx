@@ -322,15 +322,28 @@ const CarList = ({
                         <h2>{car.name}</h2>
                       </div>
                       <div className="car">
-                        <img src={bookcarsHelper.joinURL(env.CDN_CARS, car.image)} alt={car.name} className="car-img" />
+                        <img src={bookcarsHelper.joinURL(env.CDN_CARS, car.image)} alt={car.name} className="car-img" loading="lazy" />
                         <div className="car-footer" style={hidePrice ? { bottom: 10 } : undefined}>
                           {!hideSupplier && (
-                            <div className="car-supplier" style={sizeAuto ? { bottom: 10 } : {}} title={car.supplier.fullName}>
-                              <span className="car-supplier-logo">
-                                <img src={bookcarsHelper.joinURL(env.CDN_USERS, car.supplier.avatar)} alt={car.supplier.fullName} />
-                              </span>
-                              <span className="car-supplier-info">{car.supplier.fullName}</span>
-                            </div>
+                            <a
+                              href={`/search?pickupLocation=${pickupLocation}&supplier=${car.supplier._id}`}
+                              style={{ textDecoration: 'none', color: 'inherit' }}
+                              title={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
+                              aria-label={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
+                              itemScope
+                              itemType="https://schema.org/AutoRental"
+                            >
+                              <div className="car-supplier" style={sizeAuto ? { bottom: 10 } : {}} title={car.supplier.fullName}>
+                                <span className="car-supplier-logo">
+                                  <img
+                                    loading="lazy"
+                                    src={bookcarsHelper.joinURL(env.CDN_USERS, car.supplier.avatar)}
+                                    alt={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
+                                  />
+                                </span>
+                                <span className="car-supplier-info">{car.supplier.fullName}</span>
+                              </div>
+                            </a>
                           )}
                           <div className="car-footer-info">
                             <div className="rating">

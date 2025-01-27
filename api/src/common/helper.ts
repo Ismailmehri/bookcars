@@ -418,12 +418,12 @@ interface ScoreBreakdown {
 
     addRecommendation(
       'Configurer les prix périodiques sur toutes les voitures',
-      SCORE_CONFIG.CAR_CONFIGURATION_PERIODIC_PRICES_MAX - breakdown.details.carConfiguration.periodicPrices.score,
+      Math.round(SCORE_CONFIG.CAR_CONFIGURATION_PERIODIC_PRICES_MAX - breakdown.details.carConfiguration.periodicPrices.score),
     )
 
     addRecommendation(
       "Configurer les périodes d'indisponibilité sur toutes les voitures",
-      SCORE_CONFIG.CAR_CONFIGURATION_UNAVAILABLE_PERIODS_MAX - breakdown.details.carConfiguration.unavailablePeriods.score,
+      Math.round(SCORE_CONFIG.CAR_CONFIGURATION_UNAVAILABLE_PERIODS_MAX - breakdown.details.carConfiguration.unavailablePeriods.score),
     )
 
     // 3. Gestion post-réservation (20 points)
@@ -490,21 +490,21 @@ interface ScoreBreakdown {
     if (expiredPendingBookings > 0) {
       addRecommendation(
         `Mettre à jour ${expiredPendingBookings} réservation(s) expirée(s) avec statut "${getBookingStatus(bookcarsTypes.BookingStatus.Pending)}"`,
-        SCORE_CONFIG.POST_RENTAL_MANAGEMENT_EXPIRED_PENDING_MAX,
+        Math.round(SCORE_CONFIG.POST_RENTAL_MANAGEMENT_EXPIRED_PENDING_MAX - breakdown.details.postRentalManagement.cancelledVoidRatio.score),
       )
     }
 
     if (expiredReservedDepositBookings > 0) {
       addRecommendation(
         `Mettre à jour ${expiredReservedDepositBookings} réservation(s) expirée(s) avec statut "${getBookingStatus(bookcarsTypes.BookingStatus.Reserved)}" ou "${getBookingStatus(bookcarsTypes.BookingStatus.Deposit)}"`,
-        SCORE_CONFIG.POST_RENTAL_MANAGEMENT_EXPIRED_RESERVED_DEPOSIT_MAX,
+        Math.round(SCORE_CONFIG.POST_RENTAL_MANAGEMENT_EXPIRED_RESERVED_DEPOSIT_MAX - breakdown.details.postRentalManagement.expiredReservedDeposit.score),
       )
     }
 
     if (cancelledVoidRatio > CANCELLATION_THRESHOLD) {
       addRecommendation(
         `Réduire le nombre de réservations avec statut "${getBookingStatus(bookcarsTypes.BookingStatus.Cancelled)}" ou "${getBookingStatus(bookcarsTypes.BookingStatus.Void)}"`,
-        SCORE_CONFIG.POST_RENTAL_MANAGEMENT_CANCELLED_VOID_RATIO_MAX,
+        Math.round(SCORE_CONFIG.POST_RENTAL_MANAGEMENT_CANCELLED_VOID_RATIO_MAX - breakdown.details.postRentalManagement.cancelledVoidRatio.score),
       )
     }
 
@@ -515,7 +515,7 @@ interface ScoreBreakdown {
 
     addRecommendation(
       'Ajouter plus de voitures pour atteindre 5 voitures',
-      SCORE_CONFIG.CAR_QUANTITY_MAX - breakdown.details.carQuantity.score,
+      Math.round(SCORE_CONFIG.CAR_QUANTITY_MAX - breakdown.details.carQuantity.score),
     )
 
     // 5. Santé des réservations (30 points)
@@ -537,7 +537,7 @@ interface ScoreBreakdown {
         const validStatusesFrench = validStatuses.map((status) => getBookingStatus(status)).join(', ')
         addRecommendation(
           `Améliorer la santé des réservations en augmentant le nombre de réservations avec statut ${validStatusesFrench}`,
-          SCORE_CONFIG.BOOKING_STATUS_HEALTH_MAX - breakdown.details.bookingStatusHealth.score,
+          Math.round(SCORE_CONFIG.BOOKING_STATUS_HEALTH_MAX - breakdown.details.bookingStatusHealth.score),
         )
       }
     } else {
@@ -555,7 +555,7 @@ interface ScoreBreakdown {
       return 0
     }
 
-    breakdown.total = parseFloat(sumScores(breakdown.details).toFixed(2))
+    breakdown.total = Math.min(100, Math.round(sumScores(breakdown.details)))
 
     return breakdown
   }

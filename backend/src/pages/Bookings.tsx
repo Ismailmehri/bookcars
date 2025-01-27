@@ -70,7 +70,7 @@ const Bookings = () => {
       {user && (
         <div className="bookings">
           <div className="col-1">
-            { user && user._id && (
+            { !admin && user && user._id && (
               <AgencyScore
                 agencyId={user._id}
               />

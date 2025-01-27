@@ -10,7 +10,7 @@ import {
   Tooltip,
   Link
 } from '@mui/material'
-import { Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon} from '@mui/icons-material'
+import { Edit as EditIcon, Delete as DeleteIcon, Visibility as VisibilityIcon } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -28,6 +28,7 @@ import Error from './Error'
 import NoMatch from './NoMatch'
 
 import '@/assets/css/supplier.css'
+import AgencyScore from '@/components/AgencyScore'
 
 const Supplier = () => {
   const navigate = useNavigate()
@@ -140,6 +141,11 @@ const Supplier = () => {
       {visible && supplier && suppliers && (
         <div className="supplier">
           <div className="col-1">
+            { admin && supplier && supplier._id && (
+            <AgencyScore
+              agencyId={supplier._id}
+            />
+            )}
             <section className="supplier-avatar-sec">
               {edit ? (
                 <Avatar

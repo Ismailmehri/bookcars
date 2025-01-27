@@ -810,7 +810,7 @@ const Checkout = () => {
             <Button onClick={handleCloseConfirmationDialog} color="primary">
               {commonStrings.CANCEL}
             </Button>
-            <Button onClick={handleConfirmReservation} color="primary" autoFocus>
+            <Button onClick={handleConfirmReservation} color="primary" autoFocus disabled={loading}>
               {commonStrings.CONFIRM}
             </Button>
           </DialogActions>

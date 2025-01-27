@@ -614,6 +614,7 @@ export const notifyAgenciesWithLowScores = async (req: Request, res: Response) =
       const shouldSendMail = req.query.mail === 'true' // Contrôler l'envoi des e-mails
       const limit = parseInt(req.query.limit as string, 10) // Limite d'e-mails à envoyer
       const minScoreThreshold = parseInt(req.query.minScore as string, 10) || 50 // Seuil de score minimum (par défaut 50)
+      const maxScoreThreshold = parseInt(req.query.maxScore as string, 10) || 100 // Seuil de score minimum (par défaut 50)
 
       // Valider que limit est un nombre valide (positif ou 0)
       if (Number.isNaN(limit) || limit < 0) {
@@ -641,7 +642,7 @@ export const notifyAgenciesWithLowScores = async (req: Request, res: Response) =
         const scoreBreakdown = helper.calculateAgencyScore(agency, bookings, cars)
 
         // Si le score est inférieur au seuil, ajouter l'agence à la liste
-        if (scoreBreakdown.total < minScoreThreshold) {
+        if (scoreBreakdown.total > minScoreThreshold && scoreBreakdown.total <= maxScoreThreshold) {
           agenciesWithLowScores.push({
             email: agency.email || 'info@plany.tn',
             fullName: agency.fullName,
@@ -650,12 +651,71 @@ export const notifyAgenciesWithLowScores = async (req: Request, res: Response) =
           })
 
           // Envoyer un e-mail de notification uniquement si mail=true
+          const score = scoreBreakdown.total // Le score est disponible ici
+          type ScoreInterval = 'low' | 'mediumLow' | 'mediumHigh' | 'high';
+
+          // Définir les messages en fonction des intervalles de score
+          const scoreMessages: Record<ScoreInterval, { subject: string; message: (agencyName: string) => string }> = {
+            low: {
+              subject: 'Votre score est très faible - Action Requise',
+              message: (agencyName) => `
+                Bonjour ${agencyName},
+                Nous avons remarqué que votre score sur notre plateforme est actuellement très faible. Un score plus élevé est essentiel pour maximiser votre visibilité et attirer plus de clients.
+
+              `,
+            },
+            mediumLow: {
+                subject: 'Votre score peut être amélioré - Voici comment',
+                message: (agencyName) => `
+                  Bonjour ${agencyName},
+                  Votre score sur notre plateforme est actuellement en dessous de la moyenne. Bien que cela soit un bon début, il y a encore des opportunités pour améliorer votre visibilité et attirer plus de clients.
+
+              `,
+            },
+            mediumHigh: {
+                subject: 'Votre score est bon - Continuez sur cette voie !',
+                message: (agencyName) => `
+                  Bonjour ${agencyName},
+                  Votre score sur notre plateforme est actuellement bon, ce qui est une excellente nouvelle ! Vous êtes sur la bonne voie pour maximiser votre visibilité et attirer plus de clients.
+
+              `,
+            },
+            high: {
+              subject: 'Félicitations ! Votre score est élevé',
+              message: (agencyName) => `
+                Bonjour ${agencyName},
+                Félicitations ! Votre score sur notre plateforme est actuellement élevé. Cela signifie que vous êtes bien positionné pour attirer plus de clients.
+                Continuez sur cette lancée et n'hésitez pas à nous contacter si vous avez des questions ou besoin d'aide.
+              `,
+            },
+          }
+
+          // Déterminer l'intervalle de score
+          let interval: ScoreInterval
+          if (score < 50) {
+            interval = 'low'
+          } else if (score >= 50 && score < 65) {
+            interval = 'mediumLow'
+          } else if (score >= 65 && score < 85) {
+            interval = 'mediumHigh'
+          } else {
+            interval = 'high'
+          }
+
+          // Récupérer le sujet et la fonction de message en fonction de l'intervalle
+          const { subject, message } = scoreMessages[interval]
+
+          // Interpoler les variables dynamiques
+          const emailMessage = message(agency.fullName)
+
+          // Envoi de l'e-mail
           if (shouldSendMail && agency.active && agency.verified && cars.length > 0) {
             i18n.locale = agency.language || 'fr' // Utiliser le français par défaut si la langue n'est pas définie
-            const mailOptions: nodemailer.SendMailOptions = {
+
+            const mailOptions = {
               from: env.SMTP_FROM,
               to: agency.email,
-              subject: i18n.t('AGENCY_LOW_SCORE_SUBJECT'),
+              subject,
               html: `
                 <table style="width: 100%; font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                   <tr>
@@ -665,13 +725,12 @@ export const notifyAgenciesWithLowScores = async (req: Request, res: Response) =
                   </tr>
                   <tr>
                     <td style="padding: 20px;">
-                      <p>${i18n.t('HELLO')} <strong>${agency.fullName}</strong>,</p>
-                      <p>${i18n.t('AGENCY_LOW_SCORE_MESSAGE')}</p>
-                      <p><strong>${i18n.t('YOUR_SCORE')}: ${scoreBreakdown.total}/100</strong></p>
-                      <p>${i18n.t('RECOMMENDATIONS')}:</p>
-                      <ul>
-                        ${scoreBreakdown.recommendations.map((rec) => `<li>${rec}</li>`).join('')}
-                      </ul>
+                      <p>${emailMessage}</p>
+                      <p><strong>${i18n.t('YOUR_SCORE')}: ${score}/100</strong></p>
+                      ${score < 85 ? `<p>${i18n.t('RECOMMENDATIONS')}:</p>
+                        <ul>
+                          ${scoreBreakdown.recommendations.map((rec) => `<li>${rec}</li>`).join('')}
+                        </ul>` : ''}
                       <p style="text-align: center; margin: 20px 0;">
                         <a href="https://admin.plany.tn" style="background-color: #007BFF; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-size: 16px;">
                           ${i18n.t('IMPROVE_SCORE_BUTTON')}
@@ -685,7 +744,7 @@ export const notifyAgenciesWithLowScores = async (req: Request, res: Response) =
             }
 
             await mailHelper.sendMail(mailOptions)
-            logger.info(`Notification email sent to agency (low score): ${agency.email}`)
+            logger.info(`Notification email sent to agency (score: ${score}): ${agency.email}`)
             emailsSent += 1 // Incrémenter le compteur d'e-mails envoyés
           }
         }

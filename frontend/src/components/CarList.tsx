@@ -301,228 +301,278 @@ const CarList = ({
                 {rows.map((car) => {
                 const totalPrice = bookcarsHelper.calculateTotalPrice(car, from as Date, to as Date)
 
-                return (
-                  <div key={car._id} className="car-list-container">
-                    {pickupLocationName && (
-                      <div className="car-header">
-                        <div className="location">
-                          <LocationIcon />
-                          <span className="location-name">{pickupLocationName}</span>
-                        </div>
-                        {distance && (
-                          <div className="distance">
-                            <img alt="Distance" src={DistanceIcon} />
-                            <Badge backgroundColor="#D8EDF9" color="#000" text={`${distance} ${strings.FROM_YOU}`} />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <article>
-                      <div className="name">
-                        <h2>{car.name}</h2>
-                      </div>
-                      <div className="car">
-                        <img src={bookcarsHelper.joinURL(env.CDN_CARS, car.image)} alt={car.name} className="car-img" loading="lazy" />
-                        <div className="car-footer" style={hidePrice ? { bottom: 10 } : undefined}>
-                          {!hideSupplier && (
-                            <a
-                              href={`/search?pickupLocation=${pickupLocation}&supplier=${car.supplier._id}`}
-                              style={{ textDecoration: 'none', color: 'inherit' }}
-                              title={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
-                              aria-label={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
-                              itemScope
-                              itemType="https://schema.org/AutoRental"
-                            >
-                              <div className="car-supplier" style={sizeAuto ? { bottom: 10 } : {}} title={car.supplier.fullName}>
-                                <span className="car-supplier-logo">
-                                  <img
-                                    loading="lazy"
-                                    src={bookcarsHelper.joinURL(env.CDN_USERS, car.supplier.avatar)}
-                                    alt={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
-                                  />
-                                </span>
-                                <span className="car-supplier-info">{car.supplier.fullName}</span>
-                              </div>
-                            </a>
-                          )}
-                          <div className="car-footer-info">
-                            <div className="rating">
-                              {car.rating && car.rating >= 1 && (
-                                <>
-                                  <span className="value">{car.rating.toFixed(2)}</span>
-                                  <img alt="Rating" src={RatingIcon} />
-                                </>
-                              )}
-                              {car.trips >= 10 && <span className="trips">{`(${car.trips} ${strings.TRIPS})`}</span>}
-                            </div>
-                            {car.co2 && (
-                              <div className="co2">
-                                <img
-                                  alt="CO2 Effect"
-                                  src={
-                                    car.co2 <= 90
-                                      ? CO2MinIcon
-                                      : car.co2 <= 110
-                                        ? CO2MiddleIcon
-                                        : CO2MaxIcon
-                                  }
-                                />
-                                <span>{strings.CO2}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="car-info" style={hidePrice && !env.isMobile() ? { width: '57%' } : {}}>
-                        <ul className="car-info-list">
-                          {car.type !== bookcarsTypes.CarType.Unknown && (
-                            <li className="car-type">
-                              <Tooltip title={helper.getCarTypeTooltip(car.type)} placement="top">
-                                <div className="car-info-list-item">
-                                  <CarTypeIcon />
-                                  <span className="car-info-list-text">{helper.getCarTypeShort(car.type)}</span>
-                                </div>
-                              </Tooltip>
-                            </li>
-                          )}
-                          <li className="gearbox">
-                            <Tooltip title={helper.getGearboxTooltip(car.gearbox)} placement="top">
-                              <div className="car-info-list-item">
-                                <GearboxIcon />
-                                <span className="car-info-list-text">{helper.getGearboxTypeShort(car.gearbox)}</span>
-                              </div>
-                            </Tooltip>
-                          </li>
-                          {car.seats > 0 && (
-                            <li className="seats">
-                              <Tooltip title={helper.getSeatsTooltip(car.seats)} placement="top">
-                                <div className="car-info-list-item">
-                                  <SeatsIcon />
-                                  <span className="car-info-list-text">{car.seats}</span>
-                                </div>
-                              </Tooltip>
-                            </li>
-                          )}
-                          {car.doors > 0 && (
-                            <li className="doors">
-                              <Tooltip title={helper.getDoorsTooltip(car.doors)} placement="top">
-                                <div className="car-info-list-item">
-                                  <img src={DoorsIcon} alt="" className="car-doors" />
-                                  <span className="car-info-list-text">{car.doors}</span>
-                                </div>
-                              </Tooltip>
-                            </li>
-                          )}
-                          {car.aircon && (
-                            <li className="aircon">
-                              <Tooltip title={strings.AIRCON_TOOLTIP} placement="top">
-                                <div className="car-info-list-item">
-                                  <AirconIcon />
-                                </div>
-                              </Tooltip>
-                            </li>
-                          )}
-                          {car.mileage !== 0 && (
-                            <li className="mileage">
-                              <Tooltip title={helper.getMileageTooltip(car.mileage, language)} placement="left">
-                                <div className="car-info-list-item">
-                                  <MileageIcon />
-                                  <span className="car-info-list-text">{`${strings.MILEAGE}${fr ? ' : ' : ': '}${helper.getMileage(car.mileage, language)}`}</span>
-                                </div>
-                              </Tooltip>
-                            </li>
-                          )}
-                          <li className="fuel-policy">
-                            <Tooltip title={helper.getFuelPolicyTooltip(car.fuelPolicy)} placement="left">
-                              <div className="car-info-list-item">
-                                <CarTypeIcon />
-                                <span className="car-info-list-text">{`${strings.FUEL_POLICY}${fr ? ' : ' : ': '}${helper.getFuelPolicy(car.fuelPolicy)}`}</span>
-                              </div>
-                            </Tooltip>
-                          </li>
-                        </ul>
+  // Données pour le JSON-LD
+  const reservationData = {
+    '@context': 'https://schema.org',
+    '@type': 'RentalCarReservation',
+    reservationId: car._id, // Utilisez l'ID de la voiture comme ID de réservation
+    reservationStatus: 'https://schema.org/ReservationConfirmed',
+    underName: {
+      '@type': 'Person',
+      name: 'Mehdi ABBASI' // Remplacez par le nom de l'utilisateur si disponible
+    },
+    reservationFor: {
+      '@type': 'Car',
+      name: car.name, // Nom de la voiture
+      // model: car.model, // Modèle de la voiture (si disponible)
+    },
+    provider: {
+      '@type': 'Organization',
+      name: car.supplier.fullName // Nom du fournisseur de location
+    },
+    pickupLocation: {
+      '@type': 'Place',
+      name: pickupLocationName, // Nom du lieu de prise en charge
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Avenue Habib Bourguiba', // Adresse du lieu de prise en charge
+        addressLocality: 'Tunis',
+        addressRegion: 'Tunis',
+        postalCode: '1000',
+        addressCountry: 'TN'
+      }
+    },
+    dropoffLocation: {
+      '@type': 'Place',
+      name: pickupLocationName, // Nom du lieu de restitution
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Avenue Habib Bourguiba', // Adresse du lieu de restitution
+        addressLocality: 'Tunis',
+        addressRegion: 'Tunis',
+        postalCode: '1000',
+        addressCountry: 'TN'
+      }
+    },
+  }
 
-                        <ul className="extras-list">
-                          {car.deposit > -1 && (
-                          <li>
-                            <Tooltip title={booking ? '' : car.deposit > -1 ? strings.DEPOSIT_TOOLTIP : helper.getDeposit(car.cancellation, language)} placement="left">
-                              <div className="car-info-list-item">
-                                {getExtraIcon('deposit', car.deposit)}
-                                <span className="car-info-list-text">{helper.getDeposit(car.deposit, language)}</span>
-                              </div>
-                            </Tooltip>
-                          </li>
-                          )}
-                          {car.minimumDrivingLicenseYears !== undefined && car.minimumDrivingLicenseYears > 0 && (
-                          <li>
-                            <Tooltip title={booking ? '' : strings.DRIVER_LICENSE_TOOLTIP} placement="left">
-                              <div className="car-info-list-item">
-                                {getExtraIcon('license', car.minimumDrivingLicenseYears)}
-                                <span className="car-info-list-text">{helper.getLicense(car.minimumDrivingLicenseYears, language)}</span>
-                              </div>
-                            </Tooltip>
-                          </li>
-                          )}
-                          {car.cancellation > -1 && (
-                            <li>
-                              <Tooltip title={booking ? '' : car.cancellation > -1 ? strings.CANCELLATION_TOOLTIP : helper.getCancellation(car.cancellation, language)} placement="left">
-                                <div className="car-info-list-item">
-                                  {getExtraIcon('cancellation', car.cancellation)}
-                                  <span className="car-info-list-text">{helper.getCancellation(car.cancellation, language)}</span>
-                                </div>
-                              </Tooltip>
-                            </li>
-                          )}
-                          {car.amendments > -1 && (
-                            <li>
-                              <Tooltip title={booking ? '' : car.amendments > -1 ? strings.AMENDMENTS_TOOLTIP : helper.getAmendments(car.amendments, language)} placement="left">
-                                <div className="car-info-list-item">
-                                  {getExtraIcon('amendments', car.amendments)}
-                                  <span className="car-info-list-text">{helper.getAmendments(car.amendments, language)}</span>
-                                </div>
-                              </Tooltip>
-                            </li>
-                          )}
-                        </ul>
-                      </div>
+  return (
+    <div key={car._id} className="car-list-container">
+      {/* JSON-LD pour chaque voiture */}
+      <script type="application/ld+json">
+        {JSON.stringify(reservationData)}
+      </script>
 
-                      {!hidePrice && (
-                        <div className="price">
-                          <span className="price-days">{helper.getDays(days)}</span>
-                          <span className="price-main">{bookcarsHelper.formatPrice(totalPrice, commonStrings.CURRENCY, language)}</span>
-                          <span className="price-day">{`${strings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(totalPrice / days, commonStrings.CURRENCY, language)}`}</span>
-                        </div>
-                      )}
-                      {!hidePrice && (
-                        <div className="action">
-                          <Button
-                            variant="contained"
-                            className="btn-book btn-margin-bottom"
-                            onClick={() => {
-                              sendCheckoutEvent(totalPrice, [{ id: car.id,
-                                name: car.name,
-                                quantity: days,
-                                price: totalPrice / days }])
-                              navigate('/checkout', {
-                                state: {
-                                  carId: car._id,
-                                  pickupLocationId: pickupLocation,
-                                  dropOffLocationId: dropOffLocation,
-                                  from,
-                                  to
-                                }
-                              })
-                            }}
-                          >
-                            {strings.BOOK}
-                          </Button>
-                        </div>
-                      )}
+      {/* Contenu de la carte de voiture */}
+      {pickupLocationName && (
+        <div className="car-header">
+          <div className="location">
+            <LocationIcon />
+            <span className="location-name">{pickupLocationName}</span>
+          </div>
+          {distance && (
+            <div className="distance">
+              <img alt="Distance" src={DistanceIcon} />
+              <Badge backgroundColor="#D8EDF9" color="#000" text={`${distance} ${strings.FROM_YOU}`} />
+            </div>
+          )}
+        </div>
+      )}
 
-                    </article>
+      <article>
+        <div className="name">
+          <h2>{car.name}</h2>
+        </div>
+        <div className="car">
+          <img src={bookcarsHelper.joinURL(env.CDN_CARS, car.image)} alt={car.name} className="car-img" loading="lazy" />
+          <div className="car-footer" style={hidePrice ? { bottom: 10 } : undefined}>
+            {!hideSupplier && (
+              <a
+                href={`/search?pickupLocation=${pickupLocation}&supplier=${car.supplier._id}`}
+                style={{ textDecoration: 'none', color: 'inherit' }}
+                title={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
+                aria-label={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
+                itemScope
+                itemType="https://schema.org/AutoRental"
+              >
+                <div className="car-supplier" style={sizeAuto ? { bottom: 10 } : {}} title={car.supplier.fullName}>
+                  <span className="car-supplier-logo">
+                    <img
+                      loading="lazy"
+                      src={bookcarsHelper.joinURL(env.CDN_USERS, car.supplier.avatar)}
+                      alt={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
+                    />
+                  </span>
+                  <span className="car-supplier-info">{car.supplier.fullName}</span>
+                </div>
+              </a>
+            )}
+            <div className="car-footer-info">
+              <div className="rating">
+                {car.rating && car.rating >= 1 && (
+                  <>
+                    <span className="value">{car.rating.toFixed(2)}</span>
+                    <img alt="Rating" src={RatingIcon} />
+                  </>
+                )}
+                {car.trips >= 10 && <span className="trips">{`(${car.trips} ${strings.TRIPS})`}</span>}
+              </div>
+              {car.co2 && (
+                <div className="co2">
+                  <img
+                    alt="CO2 Effect"
+                    src={
+                      car.co2 <= 90
+                        ? CO2MinIcon
+                        : car.co2 <= 110
+                          ? CO2MiddleIcon
+                          : CO2MaxIcon
+                    }
+                  />
+                  <span>{strings.CO2}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="car-info" style={hidePrice && !env.isMobile() ? { width: '57%' } : {}}>
+          <ul className="car-info-list">
+            {car.type !== bookcarsTypes.CarType.Unknown && (
+              <li className="car-type">
+                <Tooltip title={helper.getCarTypeTooltip(car.type)} placement="top">
+                  <div className="car-info-list-item">
+                    <CarTypeIcon />
+                    <span className="car-info-list-text">{helper.getCarTypeShort(car.type)}</span>
                   </div>
-                )
-              })}
+                </Tooltip>
+              </li>
+            )}
+            <li className="gearbox">
+              <Tooltip title={helper.getGearboxTooltip(car.gearbox)} placement="top">
+                <div className="car-info-list-item">
+                  <GearboxIcon />
+                  <span className="car-info-list-text">{helper.getGearboxTypeShort(car.gearbox)}</span>
+                </div>
+              </Tooltip>
+            </li>
+            {car.seats > 0 && (
+              <li className="seats">
+                <Tooltip title={helper.getSeatsTooltip(car.seats)} placement="top">
+                  <div className="car-info-list-item">
+                    <SeatsIcon />
+                    <span className="car-info-list-text">{car.seats}</span>
+                  </div>
+                </Tooltip>
+              </li>
+            )}
+            {car.doors > 0 && (
+              <li className="doors">
+                <Tooltip title={helper.getDoorsTooltip(car.doors)} placement="top">
+                  <div className="car-info-list-item">
+                    <img src={DoorsIcon} alt="" className="car-doors" />
+                    <span className="car-info-list-text">{car.doors}</span>
+                  </div>
+                </Tooltip>
+              </li>
+            )}
+            {car.aircon && (
+              <li className="aircon">
+                <Tooltip title={strings.AIRCON_TOOLTIP} placement="top">
+                  <div className="car-info-list-item">
+                    <AirconIcon />
+                  </div>
+                </Tooltip>
+              </li>
+            )}
+            {car.mileage !== 0 && (
+              <li className="mileage">
+                <Tooltip title={helper.getMileageTooltip(car.mileage, language)} placement="left">
+                  <div className="car-info-list-item">
+                    <MileageIcon />
+                    <span className="car-info-list-text">{`${strings.MILEAGE}${fr ? ' : ' : ': '}${helper.getMileage(car.mileage, language)}`}</span>
+                  </div>
+                </Tooltip>
+              </li>
+            )}
+            <li className="fuel-policy">
+              <Tooltip title={helper.getFuelPolicyTooltip(car.fuelPolicy)} placement="left">
+                <div className="car-info-list-item">
+                  <CarTypeIcon />
+                  <span className="car-info-list-text">{`${strings.FUEL_POLICY}${fr ? ' : ' : ': '}${helper.getFuelPolicy(car.fuelPolicy)}`}</span>
+                </div>
+              </Tooltip>
+            </li>
+          </ul>
+
+          <ul className="extras-list">
+            {car.deposit > -1 && (
+              <li>
+                <Tooltip title={booking ? '' : car.deposit > -1 ? strings.DEPOSIT_TOOLTIP : helper.getDeposit(car.cancellation, language)} placement="left">
+                  <div className="car-info-list-item">
+                    {getExtraIcon('deposit', car.deposit)}
+                    <span className="car-info-list-text">{helper.getDeposit(car.deposit, language)}</span>
+                  </div>
+                </Tooltip>
+              </li>
+            )}
+            {car.minimumDrivingLicenseYears !== undefined && car.minimumDrivingLicenseYears > 0 && (
+              <li>
+                <Tooltip title={booking ? '' : strings.DRIVER_LICENSE_TOOLTIP} placement="left">
+                  <div className="car-info-list-item">
+                    {getExtraIcon('license', car.minimumDrivingLicenseYears)}
+                    <span className="car-info-list-text">{helper.getLicense(car.minimumDrivingLicenseYears, language)}</span>
+                  </div>
+                </Tooltip>
+              </li>
+            )}
+            {car.cancellation > -1 && (
+              <li>
+                <Tooltip title={booking ? '' : car.cancellation > -1 ? strings.CANCELLATION_TOOLTIP : helper.getCancellation(car.cancellation, language)} placement="left">
+                  <div className="car-info-list-item">
+                    {getExtraIcon('cancellation', car.cancellation)}
+                    <span className="car-info-list-text">{helper.getCancellation(car.cancellation, language)}</span>
+                  </div>
+                </Tooltip>
+              </li>
+            )}
+            {car.amendments > -1 && (
+              <li>
+                <Tooltip title={booking ? '' : car.amendments > -1 ? strings.AMENDMENTS_TOOLTIP : helper.getAmendments(car.amendments, language)} placement="left">
+                  <div className="car-info-list-item">
+                    {getExtraIcon('amendments', car.amendments)}
+                    <span className="car-info-list-text">{helper.getAmendments(car.amendments, language)}</span>
+                  </div>
+                </Tooltip>
+              </li>
+            )}
+          </ul>
+        </div>
+
+        {!hidePrice && (
+          <div className="price">
+            <span className="price-days">{helper.getDays(days)}</span>
+            <span className="price-main">{bookcarsHelper.formatPrice(totalPrice, commonStrings.CURRENCY, language)}</span>
+            <span className="price-day">{`${strings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(totalPrice / days, commonStrings.CURRENCY, language)}`}</span>
+          </div>
+        )}
+
+        {!hidePrice && (
+          <div className="action">
+            <Button
+              variant="contained"
+              className="btn-book btn-margin-bottom"
+              onClick={() => {
+                sendCheckoutEvent(totalPrice, [{ id: car.id, name: car.name, quantity: days, price: totalPrice / days }])
+                navigate('/checkout', {
+                  state: {
+                    carId: car._id,
+                    pickupLocationId: pickupLocation,
+                    dropOffLocationId: dropOffLocation,
+                    from,
+                    to
+                  }
+                })
+              }}
+            >
+              {strings.BOOK}
+            </Button>
+          </div>
+        )}
+      </article>
+    </div>
+  )
+})}
               </div>
             </>
           )}

@@ -2,6 +2,7 @@
 
 import axios from 'axios'
 
+import { addDays, format } from 'date-fns'
 import * as env from '../config/env.config'
 import { sendMail } from './mailHelper'
 import { PhoneNumberResult } from '../config/env.config'
@@ -21,11 +22,9 @@ function generateRandomMsgId(): string {
  * @returns {Promise<unknown>}
  */
 export const sendSms = async (mobile: string, message: string): Promise<unknown> => {
-  // Vérifiez si le service SMS est activé
   if (!env.SMS_ACTIVE) {
     console.log("Service SMS désactivé. Envoi d'un e-mail à info@plany.tn.")
 
-    // Envoyer un e-mail avec les détails du SMS
     const emailSubject = `SMS désactivé - Message non envoyé à ${mobile}`
     const emailContent = `
       <p>Le service SMS est désactivé. Voici les détails du message non envoyé :</p>
@@ -35,16 +34,32 @@ export const sendSms = async (mobile: string, message: string): Promise<unknown>
       </ul>
     `
 
-    await sendMail({
-      to: env.INFO_EMAIL,
-      subject: emailSubject,
-      html: emailContent,
-    })
-
+    await sendMail({ to: env.INFO_EMAIL, subject: emailSubject, html: emailContent })
     return { status: 'inactive', message: 'Service SMS désactivé. Un e-mail a été envoyé à info@plany.tn.' }
   }
 
-  // Construire l'URL de l'API SMS
+  const now = new Date()
+  const morningThreshold = new Date(now)
+  morningThreshold.setHours(9, 30, 0, 0) // 9h30
+  const eveningThreshold = new Date(now)
+  eveningThreshold.setHours(21, 0, 0, 0) // 21h00
+
+  let sendDate = now
+  let isImmediate = false
+
+  if (now < morningThreshold) {
+    // Avant 9h30 : programmer à 9h30 le même jour
+    sendDate = new Date(now)
+    sendDate.setHours(9, 30, 0, 0)
+  } else if (now >= eveningThreshold) {
+    // Après 21h00 : programmer à 9h30 le lendemain
+    sendDate = addDays(now, 1)
+    sendDate.setHours(9, 30, 0, 0)
+  } else {
+    // Entre 9h30 et 21h00 : envoi immédiat
+    isImmediate = true
+  }
+
   const params = new URLSearchParams()
   params.append('fct', 'sms')
   params.append('key', env.SMS_API_KEY)
@@ -53,21 +68,26 @@ export const sendSms = async (mobile: string, message: string): Promise<unknown>
   params.append('sender', env.SMS_SENDER)
   params.append('msg_id', generateRandomMsgId())
 
+  // Ajouter date/heure UNIQUEMENT si ce n'est pas un envoi immédiat
+  if (!isImmediate) {
+    const formattedDate = format(sendDate, 'dd/MM/yyyy')
+    const formattedTime = format(sendDate, 'HH:mm:ss')
+    params.append('date', formattedDate)
+    params.append('heure', formattedTime)
+  }
+
   const url = `${env.SMS_API_URL}?${params.toString()}`
 
   try {
     const response = await axios.get(url)
-    console.log('SMS envoyé avec succès:', response.data)
+    console.log(isImmediate ? 'SMS envoyé immédiatement' : 'SMS programmé', response.data)
     return response.data
   } catch (error) {
     console.error("Erreur lors de l'envoi du SMS:", error)
-
-    // Envoyer un e-mail en cas d'erreur
-    const emailSubject = `Erreur d'envoi de SMS à ${mobile}`
-    const emailContent = `
+    const errorContent = `
       <p>Une erreur s'est produite lors de l'envoi du SMS. Voici les détails :</p>
       <ul>
-        <li><strong>Numéro de téléphone :</strong> ${mobile}</li>
+        <li><strong>Numéro :</strong> ${mobile}</li>
         <li><strong>Message :</strong> ${message}</li>
         <li><strong>Erreur :</strong> ${error instanceof Error ? error.message : 'Erreur inconnue'}</li>
       </ul>
@@ -75,8 +95,8 @@ export const sendSms = async (mobile: string, message: string): Promise<unknown>
 
     await sendMail({
       to: env.INFO_EMAIL,
-      subject: emailSubject,
-      html: emailContent,
+      subject: `Erreur d'envoi de SMS à ${mobile}`,
+      html: errorContent,
     })
 
     throw error

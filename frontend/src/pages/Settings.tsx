@@ -8,10 +8,12 @@ import {
   FormControlLabel,
   Switch,
   Button,
-  Paper
+  Paper,
 } from '@mui/material'
 import validator from 'validator'
 import { intervalToDuration } from 'date-fns'
+import PhoneInput, { Value } from 'react-phone-number-input' // Import PhoneInput
+import fr from 'react-phone-number-input/locale/fr'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
@@ -23,6 +25,7 @@ import Backdrop from '@/components/SimpleBackdrop'
 import DatePicker from '@/components/DatePicker'
 import Avatar from '@/components/Avatar'
 import * as helper from '@/common/helper'
+import 'react-phone-number-input/style.css' // Import du style
 
 import '@/assets/css/settings.css'
 
@@ -31,7 +34,7 @@ const Settings = () => {
 
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [fullName, setFullName] = useState('')
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState<Value>() // Utilisez Value pour le type
   const [location, setLocation] = useState('')
   const [bio, setBio] = useState('')
   const [visible, setVisible] = useState(false)
@@ -45,26 +48,33 @@ const Settings = () => {
     setFullName(e.target.value)
   }
 
-  const validatePhone = (_phone: string) => {
+  const handlePhoneChange = (value: Value) => {
+    setPhone(value)
+
+    if (!value) {
+      setPhoneValid(true)
+    }
+  }
+
+  const validatePhone = (_phone?: Value) => {
     if (_phone) {
+      if (!_phone.startsWith('+')) {
+        _phone = '+216'.concat(_phone) as Value
+        setPhone(_phone)
+      }
       const _phoneValid = validator.isMobilePhone(_phone)
       setPhoneValid(_phoneValid)
 
       return _phoneValid
     }
-    setPhoneValid(true)
+    setPhoneValid(false)
 
-    return true
+    return false
   }
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhone(e.target.value)
-
-    if (!e.target.value) {
-      setPhoneValid(true)
-    }
+  const handlePhoneBlur = async () => {
+    validatePhone(phone)
   }
-
   const validateBirthDate = (date?: Date) => {
     if (date && bookcarsHelper.isDate(date)) {
       const now = new Date()
@@ -95,7 +105,7 @@ const Settings = () => {
 
         const payload: bookcarsTypes.UpdateEmailNotificationsPayload = {
           _id: user._id,
-          enableEmailNotifications: user.enableEmailNotifications
+          enableEmailNotifications: user.enableEmailNotifications,
         }
         const status = await UserService.updateEmailNotifications(payload)
 
@@ -143,7 +153,7 @@ const Settings = () => {
         _id: user._id,
         fullName,
         birthDate,
-        phone,
+        phone: phone || '', // Convertir en chaîne vide si undefined
         location,
         bio,
       }
@@ -164,7 +174,8 @@ const Settings = () => {
     if (_user) {
       setUser(_user)
       setFullName(_user.fullName)
-      setPhone(_user.phone || '')
+      setPhone(_user.phone as Value || undefined) // Initialiser avec une chaîne vide si undefined
+      validatePhone(_user.phone as Value)
       setBirthDate(_user && _user.birthDate ? new Date(_user.birthDate) : undefined)
       setLocation(_user.location || '')
       setBio(_user.bio || '')
@@ -198,9 +209,18 @@ const Settings = () => {
                 <InputLabel className="required">{commonStrings.EMAIL}</InputLabel>
                 <Input type="text" value={user.email} disabled />
               </FormControl>
+              <InputLabel className="required" sx={{ fontSize: '0.75rem' }}>{commonStrings.PHONE}</InputLabel>
               <FormControl fullWidth margin="dense">
-                <InputLabel className="required">{commonStrings.PHONE}</InputLabel>
-                <Input type="text" required error={!phoneValid} onChange={handlePhoneChange} autoComplete="off" value={phone} />
+                <PhoneInput
+                  labels={fr}
+                  placeholder={commonStrings.PHONE}
+                  international
+                  defaultCountry="TN" // Définir le pays par défaut
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  onBlur={handlePhoneBlur}
+                  className="phone-input" // Appliquer une classe personnalisée
+                />
                 <FormHelperText error={!phoneValid}>{(!phoneValid && commonStrings.PHONE_NOT_VALID) || ''}</FormHelperText>
               </FormControl>
               <FormControl fullWidth margin="dense">
@@ -259,13 +279,12 @@ const Settings = () => {
             </form>
           </Paper>
           <Paper className="settings-net settings-net-wrapper" elevation={10}>
-            <h1 className="settings-form-title">
-              {' '}
-              {strings.NETWORK_SETTINGS}
-              {' '}
-            </h1>
+            <h1 className="settings-form-title">{strings.NETWORK_SETTINGS}</h1>
             <FormControl component="fieldset">
-              <FormControlLabel control={<Switch checked={enableEmailNotifications} onChange={handleEmailNotificationsChange} />} label={strings.SETTINGS_EMAIL_NOTIFICATIONS} />
+              <FormControlLabel
+                control={<Switch checked={enableEmailNotifications} onChange={handleEmailNotificationsChange} />}
+                label={strings.SETTINGS_EMAIL_NOTIFICATIONS}
+              />
             </FormControl>
           </Paper>
         </div>

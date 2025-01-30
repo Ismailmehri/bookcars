@@ -1,19 +1,12 @@
 import React from 'react'
-import { Button, Container, Typography, Box, Grid, Card, CardActionArea, CardMedia, CardContent, Link, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
+import { Container, Typography, Box, Grid, Card, CardActionArea, CardMedia, CardContent, Link, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { useNavigate } from 'react-router-dom'
 import Layout from '@/components/Layout'
 import Footer from '@/components/Footer'
 import '@/assets/css/home.css'
 import SearchForm from '@/components/SearchForm'
 
 const LocationVoitureTunisPasCher = () => {
-  const router = useNavigate()
-
-  const handleSearch = () => {
-    router('/') // Redirige vers la page d'accueil pour effectuer la recherche
-  }
-
   // Liste des 5 villes contenant "(Centre-ville)"
   const villesCentreVille = [
     {

@@ -62,3 +62,30 @@ div.settings .settings-net-wrapper {
     padding: 30px;
   }
 }
+
+.phone-input {
+  border-bottom: 1px solid #8a8686;
+  padding: 2px;
+  width: 100%;
+}
+
+.phone-input:hover {
+  border-bottom: 1px solid #272626;
+}
+
+.phone-input input {
+  border: none;
+  outline: none;
+  width: 100%;
+  height: 25px;
+  color: #3f3f3f;
+  font-size: 15px;
+}
+
+.phone-input .react-phone-number-input__country {
+  margin-right: 8px;
+}
+
+.font-size {
+  font-size: 0.75rem;
+}

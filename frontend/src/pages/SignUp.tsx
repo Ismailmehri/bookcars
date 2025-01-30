@@ -8,11 +8,13 @@ import {
   Button,
   Paper,
   Checkbox,
-  Link
+  Link,
 } from '@mui/material'
 import validator from 'validator'
 import { intervalToDuration } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
+import PhoneInput, { Value } from 'react-phone-number-input' // Import Value
+import fr from 'react-phone-number-input/locale/fr'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
@@ -26,8 +28,9 @@ import Backdrop from '@/components/SimpleBackdrop'
 import DatePicker from '@/components/DatePicker'
 import ReCaptchaProvider from '@/components/ReCaptchaProvider'
 import SocialLogin from '@/components/SocialLogin'
+import 'react-phone-number-input/style.css' // Import du style
 
-import '@/assets/css/signup.css'
+import '@/assets/css/signup.css' // Votre fichier CSS personnalisé
 
 const SignUp = () => {
   const navigate = useNavigate()
@@ -48,7 +51,7 @@ const SignUp = () => {
   const [tosChecked, setTosChecked] = useState(false)
   const [tosError, setTosError] = useState(false)
   const [phoneValid, setPhoneValid] = useState(true)
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState<Value>() // Utilisez Value
   const [birthDateValid, setBirthDateValid] = useState(true)
 
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,28 +103,28 @@ const SignUp = () => {
     await validateEmail(e.target.value)
   }
 
-  const validatePhone = (_phone?: string) => {
+  const validatePhone = (_phone?: Value) => {
     if (_phone) {
       const _phoneValid = validator.isMobilePhone(_phone)
       setPhoneValid(_phoneValid)
 
       return _phoneValid
     }
-    setPhoneValid(true)
+    setPhoneValid(false)
 
-    return true
+    return false
   }
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhone(e.target.value)
+  const handlePhoneChange = (value: Value) => {
+    setPhone(value)
 
-    if (!e.target.value) {
+    if (!value) {
       setPhoneValid(true)
     }
   }
 
-  const handlePhoneBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
-    validatePhone(e.target.value)
+  const handlePhoneBlur = async () => {
+    validatePhone(phone)
   }
 
   const validateBirthDate = (date?: Date) => {
@@ -219,7 +222,7 @@ const SignUp = () => {
 
       const data: bookcarsTypes.SignUpPayload = {
         email,
-        phone,
+        phone: phone || '', // Convertir `undefined` en chaîne vide
         password,
         fullName,
         birthDate,
@@ -277,16 +280,19 @@ const SignUp = () => {
         {visible && (
           <div className="signup">
             <Paper className="signup-form" elevation={10}>
-              <h1 className="signup-form-title">
-                {' '}
-                {strings.SIGN_UP_HEADING}
-                {' '}
-              </h1>
+              <h1 className="signup-form-title">{strings.SIGN_UP_HEADING}</h1>
               <form onSubmit={handleSubmit}>
                 <div>
                   <FormControl fullWidth margin="dense">
                     <InputLabel className="required">{commonStrings.FULL_NAME}</InputLabel>
-                    <OutlinedInput type="text" label={commonStrings.FULL_NAME} value={fullName} required onChange={handleFullNameChange} autoComplete="off" />
+                    <OutlinedInput
+                      type="text"
+                      label={commonStrings.FULL_NAME}
+                      value={fullName}
+                      required
+                      onChange={handleFullNameChange}
+                      autoComplete="off"
+                    />
                   </FormControl>
                   <FormControl fullWidth margin="dense">
                     <InputLabel className="required">{commonStrings.EMAIL}</InputLabel>
@@ -305,17 +311,17 @@ const SignUp = () => {
                       {(emailError && commonStrings.EMAIL_ALREADY_REGISTERED) || ''}
                     </FormHelperText>
                   </FormControl>
+                  <InputLabel htmlFor="phone-input" className="required">{commonStrings.PHONE}</InputLabel>
                   <FormControl fullWidth margin="dense">
-                    <InputLabel className="required">{commonStrings.PHONE}</InputLabel>
-                    <OutlinedInput
-                      type="text"
-                      label={commonStrings.PHONE}
-                      error={!phoneValid}
+                    <PhoneInput
+                      labels={fr}
+                      placeholder={commonStrings.PHONE}
+                      international
+                      defaultCountry="TN"
                       value={phone}
-                      onBlur={handlePhoneBlur}
                       onChange={handlePhoneChange}
-                      required
-                      autoComplete="off"
+                      onBlur={handlePhoneBlur}
+                      className="phone-input" // Appliquez la classe personnalisée
                     />
                     <FormHelperText error={!phoneValid}>{(!phoneValid && commonStrings.PHONE_NOT_VALID) || ''}</FormHelperText>
                   </FormControl>
@@ -400,7 +406,6 @@ const SignUp = () => {
                       {strings.SIGN_UP}
                     </Button>
                     <Button variant="contained" className="btn-secondary btn-margin-bottom" size="small" href="/">
-                      {' '}
                       {commonStrings.CANCEL}
                     </Button>
                   </div>

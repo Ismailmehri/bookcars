@@ -110,6 +110,8 @@ export const update = async (req: Request, res: Response) => {
         minimumDrivingLicenseYears,
         periodicPrices,
         unavailablePeriods,
+        minimumRentalDays,
+        discounts,
       } = body
 
       car.supplier = new mongoose.Types.ObjectId(supplier)
@@ -146,6 +148,8 @@ export const update = async (req: Request, res: Response) => {
       car.minimumDrivingLicenseYears = minimumDrivingLicenseYears
       car.periodicPrices = periodicPrices
       car.unavailablePeriods = unavailablePeriods
+      car.minimumRentalDays = minimumRentalDays
+      car.discounts = discounts
 
       await car.save()
       return res.json(car)
@@ -756,8 +760,8 @@ export const getFrontendCars = async (req: Request, res: Response) => {
               $match: {
                 $expr: {
                   $and: [
-                    { $eq: ['$supplier', '$$supplierId'] }, // Filtre les réservations par agence
-                    { $ne: ['$status', 'cancelled'] }, // Exclut les réservations annulées
+                    { $eq: ['$supplier', '$$supplierId'] },
+                    { $ne: ['$status', 'cancelled'] },
                     { $ne: ['$status', 'void'] },
                   ],
                 },
@@ -769,7 +773,7 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       },
       {
         $addFields: {
-          supplierReservationCount: { $size: '$supplierBookings' }, // Calcule le nombre de réservations de l'agence
+          supplierReservationCount: { $size: '$supplierBookings' },
         },
       },
       {
@@ -782,7 +786,7 @@ export const getFrontendCars = async (req: Request, res: Response) => {
                 $expr: {
                   $and: [
                     { $eq: ['$car', '$$carId'] },
-                    { $ne: ['$status', 'cancelled'] }, // Exclut les réservations annulées
+                    { $ne: ['$status', 'cancelled'] },
                     { $ne: ['$status', 'void'] },
                     { $lt: ['$from', endDateObj] },
                     { $gt: ['$to', startDateObj] },
@@ -804,7 +808,7 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       },
       {
         $addFields: {
-          unavailablePeriods: { $ifNull: ['$unavailablePeriods', []] }, // Garantit que unavailablePeriods est un tableau
+          unavailablePeriods: { $ifNull: ['$unavailablePeriods', []] },
         },
       },
       {
@@ -869,9 +873,32 @@ export const getFrontendCars = async (req: Request, res: Response) => {
         },
       },
       {
+        $addFields: {
+          totalPriceWithDiscount: {
+            $cond: {
+              if: {
+                $and: [
+                  { $ne: [{ $ifNull: ['$discounts', null] }, null] },
+                  { $ne: ['$discounts.percentage', null] },
+                  { $ne: ['$discounts.threshold', null] },
+                  { $gte: [{ $ceil: { $divide: [{ $subtract: [endDateObj, startDateObj] }, 1000 * 60 * 60 * 24] } }, '$discounts.threshold'] },
+                ],
+              },
+              then: {
+                $multiply: [
+                  '$totalPrice',
+                  { $subtract: [1, { $divide: ['$discounts.percentage', 100] }] },
+                ],
+              },
+              else: '$totalPrice',
+            },
+          },
+        },
+      },
+      {
         $facet: {
           resultData: [
-            { $sort: { totalPrice: 1, supplierReservationCount: 1 } },
+            { $sort: { totalPriceWithDiscount: 1, supplierReservationCount: 1 } },
             { $skip: (page - 1) * size },
             { $limit: size },
           ],

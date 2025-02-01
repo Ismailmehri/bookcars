@@ -161,6 +161,11 @@ export interface UpdateSupplierPayload {
   payLater: boolean
 }
 
+export interface Discount {
+  threshold: number;
+  percentage: number;
+}
+
 export interface CreateCarPayload {
   name: string
   supplier: string
@@ -199,6 +204,8 @@ export interface CreateCarPayload {
   rating?: number
   co2?: number
   minimumDrivingLicenseYears?: number
+  minimumRentalDays?: number
+  discounts?: Discount
 }
 
 export interface UpdateCarPayload extends CreateCarPayload {
@@ -458,6 +465,11 @@ interface UnavailablePeriod {
   endDate: Date | null;
 }
 
+export interface Discount {
+  threshold: number; 
+  percentage: number;
+}
+
 export interface Car {
   _id: string
   name: string
@@ -498,6 +510,8 @@ export interface Car {
   trips: number
   co2?: number
   minimumDrivingLicenseYears?: number
+  minimumRentalDays: number;
+  discounts: Discount;
   [propKey: string]: any
 }
 

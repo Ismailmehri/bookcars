@@ -2,6 +2,19 @@ import { Schema, model } from 'mongoose'
 import * as bookcarsTypes from ':bookcars-types'
 import * as env from '../config/env.config'
 
+const discountSchema = new Schema({
+  threshold: {
+    type: Number,
+    required: [true, "Threshold can't be blank"],
+  },
+  percentage: {
+    type: Number,
+    required: [true, "Percentage can't be blank"],
+    min: 0,
+    max: 100,
+  },
+})
+
 const carSchema = new Schema<env.Car>(
   {
     name: {
@@ -199,6 +212,14 @@ const carSchema = new Schema<env.Car>(
     minimumDrivingLicenseYears: {
       type: Number,
     },
+
+    // Nouveaux champs
+    minimumRentalDays: {
+      type: Number,
+      required: [true, "Minimum rental days can't be blank"],
+      min: 1, // Au moins 1 jour
+    },
+    discounts: discountSchema, // Liste des remises
   },
   {
     timestamps: true,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Tooltip, Card, CardContent, Typography } from '@mui/material'
+import { Button, Tooltip, Card, CardContent, Typography, Avatar } from '@mui/material'
 import { LocalGasStation as CarTypeIcon, AccountTree as GearboxIcon, Person as SeatsIcon, AcUnit as AirconIcon, DirectionsCar as MileageIcon, Check as CheckIcon, Clear as UncheckIcon, Info as InfoIcon, LocationOn as LocationIcon } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -374,6 +374,14 @@ const CarList = ({
           <h2>{car.name}</h2>
         </div>
         <div className="car">
+          {car && car.discounts && car.discounts.percentage && days >= car.discounts.threshold && ( // Conditionally render the discount badge
+            <Avatar sx={{ top: env.isMobile() ? '-45%' : '0px', left: env.isMobile() ? '78%' : '0px', fontSize: '1.2rem', color: '#FFF', background: '#ef8b04', width: '50px', height: '50px', float: 'inline-end' }}>
+              -
+              {car?.discounts?.percentage}
+              {' '}
+              <span style={{ fontSize: '0.5rem', position: 'relative', top: '-7px' }}>%</span>
+            </Avatar>
+          )}
           <img src={bookcarsHelper.joinURL(env.CDN_CARS, car.image)} alt={car.name} className="car-img" loading="lazy" />
           <div className="car-footer" style={hidePrice ? { bottom: 10 } : undefined}>
             {!hideSupplier && (
@@ -550,6 +558,7 @@ const CarList = ({
         {!hidePrice && (
           <div className="action">
             <Button
+              disabled={!!(car.minimumRentalDays && days < car.minimumRentalDays)}
               variant="contained"
               className="btn-book btn-margin-bottom"
               onClick={() => {
@@ -565,14 +574,14 @@ const CarList = ({
                 })
               }}
             >
-              {strings.BOOK}
+              {car.minimumRentalDays && days < car.minimumRentalDays ? ` ${car.minimumRentalDays} jours minimum` : strings.BOOK}
             </Button>
           </div>
         )}
       </article>
     </div>
-  )
-})}
+        )
+    })}
               </div>
             </>
           )}

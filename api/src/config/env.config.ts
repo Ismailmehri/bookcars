@@ -549,6 +549,10 @@ interface UnavailablePeriod {
  * @typedef {Car}
  * @extends {Document}
  */
+export interface Discount {
+  threshold: number;
+  percentage: number;
+}
 export interface Car extends Document {
   name: string
   supplier: Types.ObjectId
@@ -588,6 +592,8 @@ export interface Car extends Document {
   co2?: number
   minimumDrivingLicenseYears?: number
   unavailablePeriods?: UnavailablePeriod[];
+  minimumRentalDays?: number;
+  discounts?: Discount;
 }
 
 /**

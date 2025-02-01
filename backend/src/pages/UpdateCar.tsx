@@ -45,7 +45,7 @@ import DoorsList from '@/components/DoorsList'
 import FuelPolicyList from '@/components/FuelPolicyList'
 import MultimediaList from '@/components/MultimediaList'
 import CarRangeList from '@/components/CarRangeList'
-
+import { Discount } from ':bookcars-types'
 import '@/assets/css/create-car.css'
 
 interface PricePeriod {
@@ -83,6 +83,31 @@ const marks = [
   {
     value: 5,
     label: '5 ans',
+  }
+]
+
+const marksDays = [
+  {
+    value: 1,
+    label: '1 jour',
+  },
+  {
+    value: 2,
+    label: '2 jours',
+  },
+  {
+    value: 3,
+    label: '3 jours',
+  },
+  {
+    value: 4,
+    label: '4 jours',
+    disabled: true
+  },
+  {
+    value: 5,
+    label: '5 jours',
+    disabled: true
   }
 ]
 
@@ -134,7 +159,11 @@ const UpdateCar = () => {
   const [deposit, setDeposit] = useState('')
   const [pricePeriods, setPricePeriods] = useState<PricePeriod[]>([])
   const [unavailablePeriods, setUnavailablePeriods] = useState<UnavailablePeriod[]>([])
-
+  const [minimumRentalDays, setMinimumRentalDays] = useState<number>(1)
+  const [days, setDays] = useState<string>('') // Utiliser "" au lieu de undefined
+  const [discountPercentage, setDiscountPercentage] = useState<string>('')
+  const [daysValid, setDaysValid] = useState<boolean>(true)
+  const [discountPercentageValid, setDiscountPercentageValid] = useState<boolean>(true)
   const [newUnavailablePeriod, setNewUnavailablePeriod] = useState<UnavailablePeriod>({
     startDate: null,
     endDate: null,
@@ -264,8 +293,6 @@ const UpdateCar = () => {
     }
   }
 
-  const handleMinimumDrivingLicenseYearsText = (value: number) => `${value} ans`
-
   const handleLocationsChange = (_locations: bookcarsTypes.Option[]) => {
     setLocations(_locations)
   }
@@ -330,23 +357,6 @@ const UpdateCar = () => {
     setAmendments(e.target.value)
   }
 
-  /**
-  const handleTheftProtectionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTheftProtection(e.target.value)
-  }
-
-  const handleCollisionDamageWaiverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCollisionDamageWaiver(e.target.value)
-  }
-
-  const handleFullinsuranceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFullInsurance(e.target.value)
-  }
-
-  const handleAdditionalDriverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAdditionalDriver(e.target.value)
-  } * */
-
   const extraToString = (extra: number) => (extra === -1 ? '' : String(extra))
 
   const extraToNumber = (extra: string) => (extra === '' ? -1 : Number(extra))
@@ -379,6 +389,35 @@ const UpdateCar = () => {
         helper.error()
         return
       }
+
+// Vérification des champs discount : si l'un est renseigné, l'autre doit l'être aussi
+if ((days && !discountPercentage) || (!days && discountPercentage)) {
+  setFormError(true)
+  // setErrorMessage('Si vous remplissez un champ, l\'autre doit également être renseigné.')
+  return
+}
+
+// Validation de la plage des jours et du pourcentage
+const dayValue = days ? parseInt(days, 10) : null
+const discountValue = discountPercentage ? parseInt(discountPercentage, 10) : null
+
+if (dayValue && (dayValue < 3 || dayValue > 30)) {
+  setFormError(true)
+  // setErrorMessage('Le nombre de jours doit être compris entre 3 et 30.')
+  return
+}
+
+if (discountValue && (discountValue < 0 || discountValue >= 50)) {
+  setFormError(true)
+  // setErrorMessage('Le pourcentage de remise doit être inférieur à 50%.')
+  return
+}
+
+// Créer l'objet Discount si les deux champs sont remplis
+const discount: Discount | undefined = dayValue && discountValue ? {
+  threshold: dayValue,
+  percentage: discountValue,
+} : undefined
 
       const data: bookcarsTypes.UpdateCarPayload = {
         _id: car._id,
@@ -416,7 +455,9 @@ const UpdateCar = () => {
         rating: Number(rating) || undefined,
         co2: Number(co2) || undefined,
         minimumDrivingLicenseYears,
-        unavailablePeriods
+        unavailablePeriods,
+        minimumRentalDays,
+        discounts: discount, // Ajouter le discount au payload
       }
 
       const status = await CarService.update(data)
@@ -519,6 +560,13 @@ const UpdateCar = () => {
               setCollisionDamageWaiver(extraToString(_car.collisionDamageWaiver))
               setFullInsurance(extraToString(_car.fullInsurance))
               setAdditionalDriver(extraToString(_car.additionalDriver))
+              if (_car.minimumRentalDays !== undefined) {
+                setMinimumRentalDays(_car.minimumRentalDays)
+              }
+              if (_car.discounts && _car.discounts.threshold && _car.discounts.percentage) {
+                setDays(extraToString(_car.discounts.threshold))
+                setDiscountPercentage(extraToString(_car.discounts.percentage))
+              }
               setVisible(true)
               setLoading(false)
             } else {
@@ -543,7 +591,28 @@ const UpdateCar = () => {
   }
 
   const admin = user && user.type === bookcarsTypes.RecordType.Admin
+  const handleMinimumRentalDaysChange = (_event: Event, value: number | number[]) => {
+    if (typeof value === 'number') {
+      setMinimumRentalDays(value)
+      console.log(_event)
+    }
+  }
 
+  const handleDaysChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = event.target
+    setDays(value)
+
+    const parsedValue = parseInt(value, 10)
+    setDaysValid(parsedValue >= 3 && parsedValue <= 30)
+  }
+
+  const handleDiscountPercentageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = event.target
+    setDiscountPercentage(value)
+
+    const parsedValue = parseInt(value, 10)
+    setDiscountPercentageValid(parsedValue >= 0 && parsedValue < 50)
+  }
   return (
     <Layout onLoad={onLoad} strict>
       {!error && !noMatch && (
@@ -614,7 +683,6 @@ const UpdateCar = () => {
                     aria-label="Minimum Driving License Years"
                     defaultValue={minimumDrivingLicenseYears}
                     value={minimumDrivingLicenseYears}
-                    getAriaValueText={handleMinimumDrivingLicenseYearsText}
                     onChange={handleMinimumDrivingLicenseYears}
                     valueLabelDisplay="auto"
                     shiftStep={1}
@@ -625,6 +693,33 @@ const UpdateCar = () => {
                   />
                 </Box>
               </FormControl>
+
+              <FormControl fullWidth margin="dense">
+                <InputLabel className="required" shrink>
+                  {strings.MINIMUM_RENTAL_DAYS}
+                </InputLabel>
+                <Box
+                  sx={{
+                    borderRadius: '4px', // Coins arrondis
+                    padding: '16px', // Espacement interne
+                    marginTop: '8px', // Ajustement pour l'espace avec le label
+                  }}
+                >
+                  <Slider
+                    aria-label="Minimum Driving License Years"
+                    defaultValue={1}
+                    value={minimumRentalDays}
+                    onChange={handleMinimumRentalDaysChange}
+                    valueLabelDisplay="auto"
+                    shiftStep={1}
+                    step={1}
+                    marks={marksDays}
+                    min={1}
+                    max={3}
+                  />
+                </Box>
+              </FormControl>
+
               <FormControl fullWidth margin="dense">
                 <LocationSelectList label={strings.LOCATIONS} multiple required variant="standard" value={locations} onChange={handleLocationsChange} />
               </FormControl>
@@ -647,6 +742,82 @@ const UpdateCar = () => {
                   value={dailyPrice}
                 />
               </FormControl>
+
+              <div className="add-border">
+                <span className="text-title">
+                  Ajouter une remise pour les longues durées
+                  <Chip
+                    label="Optionnel"
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    sx={{
+                        height: 'auto',
+                        margin: '0 0px 4px 10px',
+                        '& .MuiChip-label': {
+                          display: 'block',
+                          whiteSpace: 'normal',
+                          paddingBottom: '3px'
+                        },
+                      }}
+                  />
+                  <br />
+                  <small>
+                    Offrez une réduction aux clients qui réservent pour une période prolongée.
+                    Par exemple, appliquez
+                    {' '}
+                    <strong>5% de remise</strong>
+                    {' '}
+                    pour toute réservation de
+                    {' '}
+                    <strong>14 jours ou plus</strong>
+                    .
+                  </small>
+                </span>
+
+                <Box
+                  component="form"
+                  sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      mt: 2,
+                      p: 2,
+                      border: '1px solid #ccc',
+                      borderRadius: '8px'
+                    }}
+                  noValidate
+                  autoComplete="off"
+                >
+                  <TextField
+                    id="min-days"
+                    label="Nombre de jours minimum"
+                    type="number"
+                    value={days}
+                    onChange={handleDaysChange}
+                    error={!daysValid}
+                    helperText={!daysValid ? 'Doit être entre 3 et 30 jours.' : `À partir de ${days || 0} jours, une remise est appliquée.`}
+                    slotProps={{
+                    inputLabel: { shrink: true },
+                  }}
+                    sx={{ flex: 1 }}
+                  />
+
+                  <TextField
+                    id="discount-percentage"
+                    label="Pourcentage de remise"
+                    type="number"
+                    value={discountPercentage}
+                    onChange={handleDiscountPercentageChange}
+                    error={!discountPercentageValid}
+                    helperText={!discountPercentageValid ? 'Doit être inférieur à 50%.' : `Une remise de ${discountPercentage || 0}% de réduction sur les ${days || 0} jours.`}
+                    slotProps={{
+                    inputLabel: { shrink: true },
+                  }}
+                    sx={{ flex: 1 }}
+                  />
+                </Box>
+              </div>
 
               <div className="add-border">
                 <span className="text-title">

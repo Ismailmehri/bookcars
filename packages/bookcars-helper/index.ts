@@ -283,6 +283,13 @@ export const calculateTotalPrice = (
     totalPrice += dailyPrice; // Ajouter le prix de la journée au total
   }
 
+  if (car.discounts && car.discounts.threshold && car.discounts.percentage && totalDays >= car.discounts.threshold) {
+    // Calcul de la remise en pourcentage sur le total
+    const discountAmount = totalPrice * (car.discounts.percentage / 100);
+    // Soustraction de la remise du prix total
+    totalPrice = totalPrice - discountAmount;
+  }
+
   // Ajouter les prix par options si définis
   if (options) {
     if (options.cancellation && car.cancellation > 0) {

@@ -1,6 +1,7 @@
 import React from 'react'
 import { Container, Typography, Box, Grid, Card, CardActionArea, CardMedia, CardContent, Link, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import { Helmet } from 'react-helmet'
 import Layout from '@/components/Layout'
 import Footer from '@/components/Footer'
 import '@/assets/css/home.css'
@@ -67,6 +68,120 @@ const LocationVoitureTunisPasCher = () => {
 
   return (
     <Layout strict={false}>
+      <Helmet>
+        <meta charSet="utf-8" />
+        <title>Location de Voiture Pas Cher à Tunis - Plany.tn</title>
+        <meta
+          name="description"
+          content={`
+      Louez une voiture pas cher à Tunis avec Plany.tn. Dès 65DT/jour, profitez des meilleures offres de location de voiture à ${villesCentreVille.map((ville) => ville.nom).join(', ')}. 
+    `}
+        />
+        <meta
+          name="keywords"
+          content="location voiture pas cher Tunis, location voiture Tunis pas cher, voiture à louer Tunis, location de voiture à Tunis, location voiture Tunisie, location voiture aéroport Tunis"
+        />
+        <link rel="canonical" href="https://plany.tn/location-voiture-pas-cher-a-tunis" />
+
+        {/* Balises Open Graph pour les réseaux sociaux */}
+        <meta property="og:title" content="Location de Voiture Pas Cher à Tunis - Plany.tn" />
+        <meta
+          property="og:description"
+          content={`
+      Louez une voiture pas cher à Tunis avec Plany.tn. Dès 65DT/jour, profitez des meilleures offres de location de voiture à Tunis. 
+      Explorez les villes comme ${villesCentreVille.map((ville) => ville.nom).join(', ')}. 
+    `}
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://plany.tn/location-voiture-pas-cher-a-tunis" />
+        <meta property="og:image" content="https://plany.tn/logo.png" />
+        <meta property="og:site_name" content="Plany" />
+
+        {/* Balises Twitter Card pour Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta
+          name="twitter:title"
+          content="Location de Voiture Pas Cher à Tunis - Plany.tn"
+        />
+        <meta
+          name="twitter:description"
+          content={`
+      Louez une voiture pas cher à Tunis avec Plany.tn. Dès 65DT/jour, profitez des meilleures offres de location de voiture à Tunis. 
+      Explorez les villes comme ${villesCentreVille.map((ville) => ville.nom).join(', ')}. 
+      Réservation en ligne rapide et sécurisée.
+    `}
+        />
+        <meta name="twitter:image" content="https://plany.tn/logo.png" />
+
+        {/* Données structurées pour Schema.org */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'LocalBusiness',
+      name: 'Plany.tn - Location de Voiture Pas Cher à Tunis',
+      description: `
+        Louez une voiture pas cher à Tunis avec Plany.tn. Dès 65DT/jour, profitez des meilleures offres de location de voiture à Tunis. 
+        Explorez les aéroports comme ${aeroports.map((aeroport) => aeroport.nom).join(', ')}. 
+        Réservation en ligne rapide et sécurisée.
+      `,
+      image: 'https://plany.tn/logo.png',
+      telephone: '+216 21 170 468',
+      email: 'contact@plany.tn',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Rue de la Liberté',
+        addressLocality: 'Tunis',
+        postalCode: '1000',
+        addressCountry: 'TN'
+      },
+      priceRange: '65DT - 200DT',
+      openingHours: 'Mo-Su 08:00-18:00',
+      url: 'https://plany.tn/location-voiture-pas-cher-a-tunis',
+      sameAs: [
+        'https://www.facebook.com/plany.tn',
+        'https://www.instagram.com/plany.tn'
+      ],
+      areaServed: [
+        ...villesCentreVille.map((ville) => ({
+          '@type': 'City',
+          name: ville.nom,
+          description: ville.description,
+          url: `https://plany.tn/search?pickupLocation=${ville.id}`
+        })),
+        ...aeroports.map((aeroport) => ({
+          '@type': 'Airport',
+          name: aeroport.nom,
+          description: aeroport.description,
+          url: `https://plany.tn/search?pickupLocation=${aeroport.id}`
+        }))
+      ],
+      hasOfferCatalog: {
+        '@type': 'OfferCatalog',
+        name: 'Offres de Location de Voitures',
+        itemListElement: [
+          {
+            '@type': 'Offer',
+            name: 'Location de Voiture Économique',
+            description: 'Voiture compacte idéale pour une conduite en ville.',
+            price: '65',
+            priceCurrency: 'TND',
+            availability: 'http://schema.org/InStock',
+            url: 'https://plany.tn/offre-economique'
+          },
+          {
+            '@type': 'Offer',
+            name: 'Location de Voiture Premium',
+            description: 'Voiture de luxe pour un confort exceptionnel.',
+            price: '200',
+            priceCurrency: 'TND',
+            availability: 'http://schema.org/InStock',
+            url: 'https://plany.tn/offre-premium'
+          }
+        ]
+      }
+    })}
+        </script>
+      </Helmet>
       <Container maxWidth="lg">
         {/* Section 1 : Titre et Introduction */}
         <Box sx={{ textAlign: 'center', mt: 8, mb: 8 }}>

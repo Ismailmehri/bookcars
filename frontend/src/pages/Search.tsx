@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Box, Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material'
 import { Close as CloseIcon } from '@mui/icons-material'
+import { Helmet } from 'react-helmet'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
@@ -247,8 +248,156 @@ const Search = () => {
     }
   }
 
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: 'Plany.tn - Recherche de Voitures à Louer en Tunisie',
+    description: 'Recherchez et comparez les offres de location de voitures en Tunisie selon votre emplacement. Dès 65DT/jour, trouvez la voiture qui correspond à vos besoins.',
+    image: 'https://plany.tn/logo.png',
+    url: 'https://plany.tn',
+    mainEntity: {
+      '@type': 'LocalBusiness',
+      name: 'Plany.tn',
+      description: 'Plateforme de location de voitures en Tunisie proposant des prix compétitifs et une réservation en ligne sécurisée.',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://plany.tn/logo.png',
+        width: 1200,
+        height: 630
+      },
+      telephone: '+216 21 170 468',
+      email: 'contact@plany.tn',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Rue de la Liberté',
+        addressLocality: 'Tunis',
+        postalCode: '1000',
+        addressCountry: 'TN'
+      },
+      priceRange: '65DT - 200DT',
+      openingHours: 'Mo-Su 08:00-18:00',
+      sameAs: [
+        'https://www.facebook.com/plany.tn',
+        'https://www.instagram.com/plany.tn'
+      ],
+      areaServed: [
+        {
+          '@type': 'City',
+          name: 'Tunis',
+          url: 'https://plany.tn/search?pickupLocation=67547fef27ee3d7b476bc64d'
+        },
+        {
+          '@type': 'Airport',
+          name: 'Aéroport International de Tunis-Carthage',
+          url: 'https://plany.tn/search?pickupLocation=675e8576f2a6e5a87913cfed'
+        },
+        {
+          '@type': 'City',
+          name: 'Sousse',
+          url: 'https://plany.tn/search?pickupLocation=675e8b7ef2a6e5a87913d103'
+        },
+        {
+          '@type': 'City',
+          name: 'Monastir',
+          url: 'https://plany.tn/search?pickupLocation=675e8d65f2a6e5a87913d199'
+        },
+        {
+          '@type': 'City',
+          name: 'Nabeul',
+          url: 'https://plany.tn/search?pickupLocation=675e896bf2a6e5a87913d061'
+        },
+        {
+          '@type': 'City',
+          name: 'Mahdia',
+          url: 'https://plany.tn/search?pickupLocation=675e9201f2a6e5a87913d212'
+        },
+        {
+          '@type': 'Airport',
+          name: 'Aéroport International de Monastir Habib-Bourguiba',
+          url: 'https://plany.tn/search?pickupLocation=675e85aef2a6e5a87913cffc'
+        },
+        {
+          '@type': 'Airport',
+          name: 'Aéroport International de Djerba-Zarzis',
+          url: 'https://plany.tn/search?pickupLocation=675e8612f2a6e5a87913d01e'
+        }
+        // Ajoutez d'autres villes et aéroports ici dynamiquement
+      ]
+    }
+  }
+
   return (
     <Layout onLoad={onLoad} strict={false}>
+      <Helmet>
+        <meta charSet="utf-8" />
+        <title>
+          {pickupLocation
+          ? `Location Voiture - Trouvez les Meilleures Offres à ${pickupLocation.name}`
+          : 'Location Voiture - Trouvez les Meilleures Offres en Tunisie'}
+        </title>
+        <meta
+          name="description"
+          content={
+          pickupLocation
+            ? `Réservez votre voiture à ${pickupLocation.name} avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture.`
+            : 'Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture.'
+        }
+        />
+        <meta
+          name="keywords"
+          content={
+          pickupLocation
+            ? `location voiture, location de voiture, voiture à louer, location voiture pas cher, location voiture ${pickupLocation.name}`
+            : 'location voiture, location de voiture, voiture à louer, location voiture pas cher, location voiture en Tunisie'
+        }
+        />
+        <link rel="canonical" href="https://plany.tn/search" />
+
+        {/* Balises Open Graph pour les réseaux sociaux */}
+        <meta
+          property="og:title"
+          content={
+          pickupLocation
+            ? `Location Voiture - Trouvez les Meilleures Offres à ${pickupLocation.name}`
+            : 'Location Voiture - Trouvez les Meilleures Offres en Tunisie'
+        }
+        />
+        <meta
+          property="og:description"
+          content={
+          pickupLocation
+            ? `Réservez votre voiture à ${pickupLocation.name} avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture.`
+            : 'Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture.'
+        }
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://plany.tn/search" />
+        <meta property="og:image" content="https://plany.tn/logo.png" />
+        <meta property="og:site_name" content="Plany" />
+
+        {/* Balises Twitter Card pour Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta
+          name="twitter:title"
+          content={
+          pickupLocation
+            ? `Location Voiture - Trouvez les Meilleures Offres à ${pickupLocation.name}`
+            : 'Location Voiture - Trouvez les Meilleures Offres en Tunisie'
+        }
+        />
+        <meta
+          name="twitter:description"
+          content={
+          pickupLocation
+            ? `Réservez votre voiture à ${pickupLocation.name} avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture.`
+            : 'Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture.'
+        }
+        />
+        <meta name="twitter:image" content="https://plany.tn/logo.png" />
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData)}
+        </script>
+      </Helmet>
       {visible && supplierIds && pickupLocation && dropOffLocation && from && to && (
         <div className="search">
           <div className="col-1">

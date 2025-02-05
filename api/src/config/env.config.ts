@@ -306,7 +306,7 @@ export const FRONTEND_HOST = __env__('BC_FRONTEND_HOST', true)
  *
  * @type {string}
  */
-export const DEFAULT_LANGUAGE = __env__('BC_DEFAULT_LANGUAGE', false, 'en')
+export const DEFAULT_LANGUAGE = __env__('BC_DEFAULT_LANGUAGE', false, 'fr')
 
 /**
  * Default Minimum age for rental. Default is 21 years.

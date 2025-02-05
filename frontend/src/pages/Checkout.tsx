@@ -32,6 +32,7 @@ import {
   EmbeddedCheckout,
 } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
+import { Helmet } from 'react-helmet'
 import CarList from '@/components/CarList'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -403,9 +404,107 @@ const Checkout = () => {
     }
   }
 
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Order', // Utilisez 'Order' car il s'agit d'une commande
+    orderStatus: 'https://schema.org/OrderProcessing', // Statut de la commande (en cours de traitement)
+    priceCurrency: 'TND',
+    totalPaymentDue: `${price || 100}`, // Prix total simulé
+    orderedItem: {
+      '@type': 'Product', // Le produit principal est la voiture louée
+      name: car?.name || 'Voiture Économique', // Nom de la voiture
+      description: car?.description || 'Une voiture compacte idéale pour une conduite en ville.',
+      image: car?.image || 'https://plany.tn/default-car.png', // Image de la voiture
+      sku: car?._id || 'CAR12345', // ID de la voiture simulé
+      url: car?.url || 'https://plany.tn/car-details', // URL de détails de la voiture
+      offers: {
+        '@type': 'Offer',
+        priceCurrency: 'TND',
+        price: `${price || 65}`, // Prix par jour simulé
+        availability: 'http://schema.org/InStock', // Disponibilité du produit
+        itemCondition: 'http://schema.org/UsedCondition', // Condition de la voiture (ex. usagée)
+      },
+    },
+    seller: {
+      '@type': 'LocalBusiness',
+      name: 'Plany.tn',
+      description: 'Plateforme de location de voitures en Tunisie.',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://plany.tn/logo.png',
+        width: 1200,
+        height: 630,
+      },
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Rue de la Liberté',
+        addressLocality: 'Tunis',
+        postalCode: '1000',
+        addressCountry: 'TN',
+      },
+      telephone: '+216 21 170 468',
+      email: 'contact@plany.tn',
+    },
+    customer: {
+      '@type': 'Person',
+      name: user?.fullName || 'John Doe', // Nom du client simulé
+      email: user?.email || 'john.doe@example.com', // Email du client simulé
+    },
+    partOfInvoice: {
+      '@type': 'Invoice',
+      merchant: {
+        '@type': 'Organization',
+        name: 'Plany.tn',
+        url: 'https://plany.tn/',
+      },
+    },
+  }
+
   return (
     <ReCaptchaProvider>
       <Layout onLoad={onLoad} strict={false}>
+        <Helmet>
+          <meta charSet="utf-8" />
+          <title>Location Voiture en Tunisie - Meilleures Offres | Plany.tn</title>
+          <meta
+            name="description"
+            content="Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture à Tunis, Sousse, Hammamet..."
+          />
+          <meta
+            name="keywords"
+            content="location voiture tunisie, location voiture en tunisie, voiture location tunisie, location de voiture en tunisie, location de voiture tunisie, location voiture Sousse, location voiture en Hammamet, voiture location aéroport, location de voiture en tunis, location de voiture tunis"
+          />
+          <link rel="canonical" href="https://plany.tn/checkout" />
+
+          {/* Balises Open Graph pour les réseaux sociaux */}
+          <meta
+            property="og:title"
+            content="Location Voiture en Tunisie - Meilleures Offres | Plany.tn"
+          />
+          <meta
+            property="og:description"
+            content="Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture à Tunis, Sousse, Hammamet et autres villes."
+          />
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content="https://plany.tn/location-voiture-tunisie" />
+          <meta property="og:image" content="https://plany.tn/logo.png" />
+          <meta property="og:site_name" content="Plany" />
+
+          {/* Balises Twitter Card pour Twitter */}
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta
+            name="twitter:title"
+            content="Location Voiture en Tunisie - Meilleures Offres | Plany.tn"
+          />
+          <meta
+            name="twitter:description"
+            content="Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture à Tunis, Sousse, Hammamet et autres villes."
+          />
+          <meta name="twitter:image" content="https://plany.tn/logo.png" />
+          <script type="application/ld+json">
+            {JSON.stringify(structuredData)}
+          </script>
+        </Helmet>
         {visible && car && from && to && pickupLocation && dropOffLocation && (
           <div className="booking">
             <Paper className="booking-form" elevation={10}>
@@ -413,6 +512,7 @@ const Checkout = () => {
                 {' '}
                 {strings.BOOKING_HEADING}
                 {' '}
+                {pickupLocation.name}
               </h1>
               <form onSubmit={handleSubmit}>
                 <div>

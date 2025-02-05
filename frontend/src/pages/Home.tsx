@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Button, Checkbox, Dialog, DialogContent, FormControlLabel, Tab, Tabs } from '@mui/material'
 import L from 'leaflet'
+import { Helmet } from 'react-helmet'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
@@ -55,9 +56,155 @@ const Home = () => {
 
   const language = UserService.getLanguage()
 
+  const locationsData = [
+    {
+      _id: '675e85aef2a6e5a87913cffc',
+      name: 'Aéroport International de Monastir Habib-Bourguiba',
+      latitude: 35.7597,
+      longitude: 10.7547
+    },
+    {
+      _id: '675e8612f2a6e5a87913d01e',
+      name: 'Aéroport International de Djerba-Zarzis',
+      latitude: 33.875,
+      longitude: 10.7758
+    },
+    {
+      _id: '675e8576f2a6e5a87913cfed',
+      name: 'Aéroport International de Tunis-Carthage',
+      latitude: 36.851,
+      longitude: 10.227
+    },
+    // Ajoutez ici toutes les autres données...
+    {
+      _id: '675e8b7ef2a6e5a87913d103',
+      name: 'Sousse (Centre-ville)',
+      latitude: 35.8256,
+      longitude: 10.636
+    },
+    {
+      _id: '675e896bf2a6e5a87913d061',
+      name: 'Nabeul (centre-ville)',
+      latitude: 36.4551,
+      longitude: 10.7377
+    },
+    {
+      _id: '675e8d65f2a6e5a87913d199',
+      name: 'Monastir (Centre-ville)',
+      latitude: 35.776,
+      longitude: 10.8262
+    },
+    {
+      _id: '675e9201f2a6e5a87913d212',
+      name: 'Mahdia (Centre-ville)',
+      latitude: 35.506798,
+      longitude: 11.046753
+    },
+    {
+      _id: '675e863af2a6e5a87913d02d',
+      name: 'Aéroport International de Sfax',
+      latitude: 34.718,
+      longitude: 10.69
+    },
+    {
+      _id: '675e8689f2a6e5a87913d03c',
+      name: "Aéroport International d'Enfidha-Hammamet",
+      latitude: 36.0758,
+      longitude: 10.4386
+    }
+  ]
+
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: 'Accueil - Plany.tn',
+    description:
+      'Plany.tn : La plateforme leader de location de voitures en Tunisie. Louez une voiture facilement avec notre comparateur d’agences locales.',
+    url: 'https://plany.tn/',
+    mainEntity: {
+      '@type': 'LocalBusiness',
+      name: 'Plany.tn',
+      description:
+        'Découvrez nos offres de location de voitures dans les principales villes et aéroports de Tunisie. Réservez en ligne rapidement et en toute sécurité.',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Rue de la Liberté',
+        addressLocality: 'Tunis',
+        postalCode: '1000',
+        addressCountry: 'TN',
+      },
+      areaServed: locationsData.map((location) => ({
+        '@type': location.name.includes('Aéroport') ? 'Airport' : 'City',
+        name: location.name,
+        url: `https://plany.tn/search?pickupLocation=${location._id}`,
+      })),
+      hasOfferCatalog: {
+        '@type': 'OfferCatalog',
+        name: 'Offres de Location de Voitures',
+        itemListElement: [
+          {
+            '@type': 'Offer',
+            name: 'Location de Voiture Économique',
+            description: 'Voiture compacte idéale pour une conduite en ville.',
+            price: '65',
+            priceCurrency: 'TND',
+            availability: 'http://schema.org/InStock',
+            url: 'https://plany.tn/location-voitute-pas-cher-a-tunis',
+          },
+          {
+            '@type': 'Offer',
+            name: 'Location de Voiture Premium',
+            description: 'Voiture de luxe pour un confort exceptionnel.',
+            price: '200',
+            priceCurrency: 'TND',
+            availability: 'http://schema.org/InStock',
+            url: 'https://plany.tn/search',
+          },
+        ],
+      },
+    },
+  }
+
   return (
     <Layout onLoad={onLoad} strict={false}>
+      <Helmet>
+        <meta charSet="utf-8" />
+        <title>Accueil - Plany.tn</title>
+        <meta
+          name="description"
+          content="Plany.tn : La plateforme leader de location de voitures en Tunisie. Louez une voiture facilement avec notre comparateur d’agences locales."
+        />
+        <link rel="canonical" href="https://plany.tn/" />
 
+        {/* Balises Open Graph */}
+        <meta property="og:title" content="Accueil - Plany.tn" />
+        <meta
+          property="og:description"
+          content="Plany.tn : La plateforme leader de location de voitures en Tunisie. Louez une voiture facilement avec notre comparateur d’agences locales."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://plany.tn/" />
+        <meta property="og:image" content="https://plany.tn/home-image.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:site_name" content="Plany" />
+
+        {/* Balises Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta property="twitter:title" content="Accueil - Plany.tn" />
+        <meta
+          name="twitter:description"
+          content="Plany.tn : La plateforme leader de location de voitures en Tunisie. Louez une voiture facilement avec notre comparateur d’agences locales."
+        />
+        <meta name="twitter:image" content="https://plany.tn/home-image.png" />
+        <meta name="twitter:image:width" content="1200" />
+        <meta name="twitter:image:height" content="630" />
+
+        {/* Données Structurées Schema.org */}
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData)}
+        </script>
+      </Helmet>
       <div className="home">
         <div className="home-content">
 

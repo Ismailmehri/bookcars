@@ -3,7 +3,7 @@ import * as langHelper from '@/common/langHelper'
 
 const strings = new LocalizedStrings({
   fr: {
-    BOOKING_HEADING: 'Réserver Maintenant',
+    BOOKING_HEADING: 'Louer maintenant votre voiture à ',
     BOOKING_OPTIONS: 'Vos options de réservation',
     BOOKING_DETAILS: 'Vos données de réservation',
     DAYS: 'Jours',

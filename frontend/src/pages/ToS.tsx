@@ -35,7 +35,7 @@ const ToS = () => (
     {/* SEO et données structurées */}
     <Helmet>
       <meta charSet="utf-8" />
-      <title>Conditions Générales d'Utilisation - Plany.tn</title>
+      <title>Conditions Générales d&apos;Utilisation - Plany.tn</title>
       <meta
         name="description"
         content="Consultez les Conditions Générales d'Utilisation de Plany.tn pour la location de voiture en Tunisie. Découvrez nos politiques de réservation, de paiement et d'annulation."
@@ -91,7 +91,7 @@ const ToS = () => (
             textAlign: 'center',
           }}
         >
-          Conditions Générales d'Utilisation
+          Conditions Générales d&apos;Utilisation
         </Typography>
       </Box>
 
@@ -121,7 +121,7 @@ const ToS = () => (
         <Typography variant="body1" paragraph>
           <strong>Plateforme :</strong>
           {' '}
-          Désigne l'application web et mobile Plany.tn, ainsi que tous les services associés.
+          Désigne l&apos;application web et mobile Plany.tn, ainsi que tous les services associés.
         </Typography>
 
         {/* Section 2 : Accès à la Plateforme */}
@@ -196,7 +196,7 @@ const ToS = () => (
         {/* Conclusion */}
         <Divider sx={{ my: 3 }} />
         <Typography variant="body1" paragraph>
-          En utilisant Plany.tn, vous acceptez de respecter les présentes Conditions Générales d'Utilisation. Si vous avez des questions ou des préoccupations, veuillez contacter notre support.
+          En utilisant Plany.tn, vous acceptez de respecter les présentes Conditions Générales d&apos;Utilisation. Si vous avez des questions ou des préoccupations, veuillez contacter notre support.
         </Typography>
       </Paper>
     </Container>

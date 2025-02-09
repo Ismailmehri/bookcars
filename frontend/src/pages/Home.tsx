@@ -169,7 +169,7 @@ const Home = () => {
     <Layout onLoad={onLoad} strict={false}>
       <Helmet>
         <meta charSet="utf-8" />
-        <title>Accueil - Plany.tn</title>
+        <title>Location de voitures en Tunisie – Réservez en ligne au meilleur tarif | Plany.tn</title>
         <meta
           name="description"
           content="Plany.tn : La plateforme leader de location de voitures en Tunisie. Louez une voiture facilement avec notre comparateur d’agences locales."
@@ -177,7 +177,7 @@ const Home = () => {
         <link rel="canonical" href="https://plany.tn/" />
 
         {/* Balises Open Graph */}
-        <meta property="og:title" content="Accueil - Plany.tn" />
+        <meta property="og:title" content="Location de voitures en Tunisie – Réservez en ligne au meilleur tarif | Plany.tn" />
         <meta
           property="og:description"
           content="Plany.tn : La plateforme leader de location de voitures en Tunisie. Louez une voiture facilement avec notre comparateur d’agences locales."

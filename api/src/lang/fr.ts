@@ -35,7 +35,7 @@ export const fr = {
   BOOKING_CONFIRMED_PART5: ') le ',
   BOOKING_CONFIRMED_PART6: ' (heure locale) pour récupérer votre véhicule ',
   BOOKING_CONFIRMED_PART7: '.',
-  BOOKING_CONFIRMED_PART8: "Veuillez apporter avec vous votre pièce d'identité, votre permis de conduire et le chèque de garantie.",
+  BOOKING_CONFIRMED_PART8: "Veuillez apporter avec vous votre pièce d'identité, votre permis de conduire et la caution.",
   BOOKING_CONFIRMED_PART9: 'Vous devrez rendre le véhicule à notre agence ',
   BOOKING_CONFIRMED_PART10: ' (',
   BOOKING_CONFIRMED_PART11: ') le ',

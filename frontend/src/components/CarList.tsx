@@ -49,6 +49,8 @@ interface CarListProps {
   rating?: number;
   seats?: number;
   distance?: string;
+  minPrice?: number;
+  maxPrice?: number;
   onLoad?: bookcarsTypes.DataEvent<bookcarsTypes.Car>;
 }
 
@@ -78,6 +80,8 @@ const CarList = ({
   rating,
   seats,
   distance,
+  minPrice: _minPrice,
+  maxPrice: _maxPrice,
   onLoad,
 }: CarListProps) => {
   const navigate = useNavigate()
@@ -151,7 +155,9 @@ const CarList = ({
         rating: _rating,
         seats: _seats,
         startDate: from,
-        endDate: to
+        endDate: to,
+        minPrice: _minPrice,
+        maxPrice: _maxPrice
       }
 
       const data = await CarService.getCars(payload, _page, env.CARS_PAGE_SIZE)
@@ -226,7 +232,7 @@ const CarList = ({
       setPage(1)
       fetchData(1, suppliers, pickupLocation, carSpecs, _carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats)
     } // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reload, suppliers, pickupLocation, carSpecs, _carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats])
+  }, [reload, suppliers, pickupLocation, carSpecs, _carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats, _minPrice, _maxPrice])
 
   const getExtraIcon = (option: string, extra: number) => {
     let available = false

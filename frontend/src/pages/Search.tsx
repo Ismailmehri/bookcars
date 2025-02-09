@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Box, Dialog, DialogContent, DialogTitle, IconButton } from '@mui/material'
+import { Box, Dialog, DialogContent, DialogTitle, IconButton, Paper, Slider, Typography } from '@mui/material'
 import { Close as CloseIcon } from '@mui/icons-material'
 import { Helmet } from 'react-helmet'
 import * as bookcarsTypes from ':bookcars-types'
@@ -59,6 +59,8 @@ const Search = () => {
   const [rating, setRating] = useState(-1)
   const [seats, setSeats] = useState(-1)
   const [openMapDialog, setOpenMapDialog] = useState(false)
+  const [minMax, setMinMAx] = useState<number[]>([40, 1000])
+
   // const [distance, setDistance] = useState('')
 
   useEffect(() => {
@@ -122,6 +124,41 @@ const Search = () => {
     setRating(value)
   }
 
+  const handleChange = (_event: Event, newValue: number | number[]) => {
+    setMinMAx(newValue as number[])
+  }
+
+  const handleCarFilterMinMax = () => {
+    // Vérifier que les valeurs obligatoires sont définies
+    if (!pickupLocation || !dropOffLocation || !from || !to) {
+      console.error('Certains filtres obligatoires sont manquants.')
+      return
+    }
+
+    // Créer un objet avec tous les filtres actuels
+    const updatedFilter = {
+      pickupLocation, // Assuré d'être défini
+      dropOffLocation, // Assuré d'être défini
+      from, // Assuré d'être défini
+      to, // Assuré d'être défini
+      selectedSupplier: selectedSupplier || [], // Valeur par défaut si undefined
+    }
+
+    // Appeler la fonction de soumission avec tous les filtres
+    handleCarFilterSubmit(updatedFilter)
+  }
+
+  const marks = [
+    {
+      value: 40,
+      label: '40DT',
+    },
+    {
+      value: 1000,
+      label: '1000DT',
+    }]
+
+  const valuetext = (value: number) => `${value}DT`
   const handleRangeFilterChange = (value: bookcarsTypes.CarRange[]) => {
     setRanges(value)
   }
@@ -451,6 +488,55 @@ const Search = () => {
             <LocationHeader
               location={pickupLocation}
             />
+            <Paper
+              elevation={3}
+              sx={{
+                padding: 3,
+                marginBottom: 4,
+                borderRadius: 2,
+                width: '100%',
+                maxWidth: '800px',
+                mx: 'auto',
+              }}
+            >
+              <Typography
+                variant="h2"
+                sx={{
+                  fontWeight: 'bold',
+                  fontSize: '20px',
+                  color: '#333',
+                  textAlign: 'center',
+                  mb: 2,
+                }}
+              >
+                Filtrer par prix par jour
+              </Typography>
+
+              <Box sx={{ width: '90%', mx: 'auto', mb: 2 }}>
+                <Slider
+                  getAriaLabel={() => 'Prix par jour'}
+                  value={minMax}
+                  onChange={handleChange}
+                  onChangeCommitted={handleCarFilterMinMax}
+                  getAriaValueText={valuetext}
+                  valueLabelFormat={valuetext}
+                  step={10}
+                  min={40}
+                  max={1000}
+                  marks={marks}
+                  valueLabelDisplay="on"
+                />
+              </Box>
+
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  mt: 2,
+                  px: 2,
+                }}
+              />
+            </Paper>
             <CarList
               carSpecs={carSpecs}
               suppliers={supplierIds}
@@ -469,6 +555,8 @@ const Search = () => {
               multimedia={multimedia}
               rating={rating}
               seats={seats}
+              minPrice={minMax[0]}
+              maxPrice={minMax[1]}
             // distance={distance}
             />
           </div>

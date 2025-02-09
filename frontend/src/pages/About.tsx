@@ -110,7 +110,7 @@ const About = () => (
           Notre Mission
         </Typography>
         <Typography variant="body1" paragraph>
-          Chez Plany.tn, nous croyons que louer une voiture ne devrait pas être une tâche compliquée. Nous facilitons les échanges entre professionnels loueurs de voitures et particuliers grâce à une plateforme intuitive qui met l'accent sur la rapidité, la fiabilité et la simplicité.
+          Chez Plany.tn, nous croyons que louer une voiture ne devrait pas être une tâche compliquée. Nous facilitons les échanges entre professionnels loueurs de voitures et particuliers grâce à une plateforme intuitive qui met l&apos;accent sur la rapidité, la fiabilité et la simplicité.
         </Typography>
         <Typography variant="body1" paragraph>
           Nous nous engageons à fournir une solution pratique pour les professionnels souhaitant élargir leur clientèle et pour les utilisateurs à la recherche de véhicules de qualité.
@@ -160,7 +160,7 @@ const About = () => (
         </Typography>
         <ul>
           <li>Un large choix de véhicules disponibles dans les principales villes comme Tunis, Sousse, Monastir, Nabeul et Mahdia.</li>
-          <li>Réservation simple et rapide depuis n'importe quel appareil.</li>
+          <li>Réservation simple et rapide depuis n&apos;importe quel appareil.</li>
           <li>Présence dans les principaux aéroports tunisiens : Aéroport International de Tunis-Carthage, Aéroport International de Monastir Habib-Bourguiba, Aéroport International de Djerba-Zarzis, etc.</li>
           <li>Une communication directe entre loueurs et locataires pour une expérience fluide.</li>
           <li>Accès gratuit pour les utilisateurs de la plateforme.</li>
@@ -180,7 +180,7 @@ const About = () => (
         </Typography>
         <ul>
           <li>Tunis - La capitale, idéale pour explorer la médina et les sites culturels.</li>
-          <li>Sousse - Connue pour sa médina classée au patrimoine mondial de l'UNESCO.</li>
+          <li>Sousse - Connue pour sa médina classée au patrimoine mondial de l&apos;UNESCO.</li>
           <li>Monastir - Ville historique avec son célèbre Ribat.</li>
           <li>Nabeul - Capitale de la poterie tunisienne et des agrumes.</li>
           <li>Mahdia - Une destination côtière pittoresque.</li>
@@ -204,7 +204,7 @@ const About = () => (
           Rencontrez Notre Équipe
         </Typography>
         <Typography variant="body1">
-          Notre équipe est composée de passionnés de technologie et de mobilité. Nous travaillons chaque jour pour améliorer l'expérience utilisateur et développer de nouvelles fonctionnalités qui répondent aux attentes des professionnels et des particuliers.
+          Notre équipe est composée de passionnés de technologie et de mobilité. Nous travaillons chaque jour pour améliorer l&apos;expérience utilisateur et développer de nouvelles fonctionnalités qui répondent aux attentes des professionnels et des particuliers.
         </Typography>
 
         {/* Conclusion */}

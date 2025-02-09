@@ -159,13 +159,13 @@ const Suppliers = () => {
             <Grid item xs={12} sm={6}>
               <Typography variant="h3" sx={{ fontSize: { xs: '1rem', md: '1.1rem' }, fontWeight: 'bold' }}>Large Choix de Fournisseurs</Typography>
               <Typography variant="body2" paragraph>
-                Nous collaborons avec les meilleures agences de location de voitures en Tunisie pour vous offrir un large choix d'options.
+                Nous collaborons avec les meilleures agences de location de voitures en Tunisie pour vous offrir un large choix d&apos;options.
               </Typography>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography variant="h3" sx={{ fontSize: { xs: '1rem', md: '1.1rem' }, fontWeight: 'bold' }}>Prix Compétitifs</Typography>
               <Typography variant="body2" paragraph>
-                Comparez facilement les prix et trouvez l'offre qui correspond à votre budget.
+                Comparez facilement les prix et trouvez l&apos;offre qui correspond à votre budget.
               </Typography>
             </Grid>
             <Grid item xs={12} sm={6}>

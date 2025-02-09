@@ -219,6 +219,8 @@ export interface CarSpecs {
 }
 
 export interface GetCarsPayload {
+  maxPrice?: number
+  minPrice?: number
   suppliers?: string[];
   carSpecs?: CarSpecs;
   carType?: string[];

@@ -660,10 +660,16 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       seats,
       startDate,
       endDate,
+      minPrice,
+      maxPrice,
     } = body
 
     const startDateObj = new Date(startDate || Date.now())
     const endDateObj = new Date(endDate || Date.now())
+
+    // Définir les dates limites
+    const restrictedStartDate = new Date('2025-06-01')
+    const restrictedEndDate = new Date('2025-09-15')
 
     // Filtre de base pour les voitures disponibles
     const $match: mongoose.FilterQuery<bookcarsTypes.Car> = {
@@ -834,7 +840,7 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       },
       {
         $addFields: {
-          totalPrice: {
+          dailyPrice: {
             $let: {
               vars: {
                 periodicPrices: { $ifNull: ['$periodicPrices', []] },
@@ -854,18 +860,8 @@ export const getFrontendCars = async (req: Request, res: Response) => {
               in: {
                 $cond: {
                   if: { $gt: [{ $size: { $ifNull: ['$$periodicPrice', []] } }, 0] },
-                  then: {
-                    $multiply: [
-                      { $arrayElemAt: ['$$periodicPrice.dailyPrice', 0] },
-                      { $ceil: { $divide: [{ $subtract: [endDateObj, startDateObj] }, 1000 * 60 * 60 * 24] } },
-                    ],
-                  },
-                  else: {
-                    $multiply: [
-                      '$dailyPrice',
-                      { $ceil: { $divide: [{ $subtract: [endDateObj, startDateObj] }, 1000 * 60 * 60 * 24] } },
-                    ],
-                  },
+                  then: { $arrayElemAt: ['$$periodicPrice.dailyPrice', 0] },
+                  else: '$dailyPrice',
                 },
               },
             },
@@ -874,7 +870,7 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       },
       {
         $addFields: {
-          totalPriceWithDiscount: {
+          dailyPriceWithDiscount: {
             $cond: {
               if: {
                 $and: [
@@ -886,19 +882,48 @@ export const getFrontendCars = async (req: Request, res: Response) => {
               },
               then: {
                 $multiply: [
-                  '$totalPrice',
+                  '$dailyPrice',
                   { $subtract: [1, { $divide: ['$discounts.percentage', 100] }] },
                 ],
               },
-              else: '$totalPrice',
+              else: '$dailyPrice',
             },
           },
         },
       },
       {
+        $match: {
+          $expr: {
+            $or: [
+              // Cas 1 : la période demandée est en dehors de la période restreinte
+              {
+                $or: [
+                  { $lte: [endDateObj, restrictedStartDate] },
+                  { $gte: [startDateObj, restrictedEndDate] },
+                ],
+              },
+              // Cas 2 : la période demandée chevauche la période restreinte
+              // -> la voiture doit avoir une propriété periodicPrices non vide
+              {
+                $and: [
+                  { $lt: [startDateObj, restrictedEndDate] },
+                  { $gt: [endDateObj, restrictedStartDate] },
+                  { $gt: [{ $size: { $ifNull: ['$periodicPrices', []] } }, 0] },
+                ],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $match: {
+          dailyPriceWithDiscount: { $gte: minPrice, $lte: maxPrice },
+        },
+      },
+      {
         $facet: {
           resultData: [
-            { $sort: { totalPriceWithDiscount: 1, supplierReservationCount: 1 } },
+            { $sort: { dailyPriceWithDiscount: 1, supplierReservationCount: 1 } },
             { $skip: (page - 1) * size },
             { $limit: size },
           ],
@@ -908,7 +933,6 @@ export const getFrontendCars = async (req: Request, res: Response) => {
         },
       },
     ]
-
     const data = await Car.aggregate(pipeline, {
       collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 },
     })

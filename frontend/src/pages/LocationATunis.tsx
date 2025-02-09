@@ -192,7 +192,7 @@ const LocationVoitureTunisPasCher = () => {
             Explorez la Tunisie en toute liberté avec Plany
           </Typography>
           <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 3, mb: 5 }}>
-            Que vous soyez en voyage d'affaires ou en vacances, Plany vous propose des offres de location de voitures adaptées à tous les budgets. Profitez de tarifs imbattables et d'un service de qualité pour découvrir la Tunisie en toute sérénité.
+            Que vous soyez en voyage d&apos;affaires ou en vacances, Plany vous propose des offres de location de voitures adaptées à tous les budgets. Profitez de tarifs imbattables et d&apos;un service de qualité pour découvrir la Tunisie en toute sérénité.
           </Typography>
           <div className="home custom-searsh">
             <div className="home-search">
@@ -277,7 +277,7 @@ const LocationVoitureTunisPasCher = () => {
             Explorez les Villes Tunisiennes
           </Typography>
           <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 2 }}>
-            Découvrez nos offres de location de voitures dans les principales villes de Tunisie. Profitez de tarifs compétitifs et d'un service de qualité pour explorer ces destinations en toute liberté.
+            Découvrez nos offres de location de voitures dans les principales villes de Tunisie. Profitez de tarifs compétitifs et d&apos;un service de qualité pour explorer ces destinations en toute liberté.
           </Typography>
           <Grid container spacing={4} sx={{ mt: 4 }}>
             {villesCentreVille.map((ville) => {
@@ -445,7 +445,7 @@ const LocationVoitureTunisPasCher = () => {
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body1" sx={{ color: '#7f8c8d' }}>
-                Vous aurez besoin d'un permis de conduire valide, d'une pièce d'identité et de la caution.
+                Vous aurez besoin d&apos;un permis de conduire valide, d&apos;une pièce d&apos;identité et de la caution.
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -457,7 +457,7 @@ const LocationVoitureTunisPasCher = () => {
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body1" sx={{ color: '#7f8c8d' }}>
-                Oui, la carte de crédit n'est pas obligatoire. Vous pouvez payer en espèces directement auprès de l'agence partenaire.
+                Oui, la carte de crédit n&apos;est pas obligatoire. Vous pouvez payer en espèces directement auprès de l&apos;agence partenaire.
               </Typography>
             </AccordionDetails>
           </Accordion>

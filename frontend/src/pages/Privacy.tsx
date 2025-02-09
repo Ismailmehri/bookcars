@@ -109,7 +109,7 @@ const PrivacyPolicy = () => (
         </Typography>
         <ul>
           <li>
-            <strong>Informations fournies par l'utilisateur :</strong>
+            <strong>Informations fournies par l&apos;utilisateur :</strong>
             {' '}
             telles que votre nom, votre adresse e-mail, votre numéro de téléphone, et toute autre information fournie lors de la création de votre compte.
           </li>
@@ -142,7 +142,7 @@ const PrivacyPolicy = () => (
           <li>Personnaliser votre expérience utilisateur en fonction de vos préférences et de vos interactions précédentes.</li>
           <li>Communiquer avec vous, notamment pour répondre à vos questions ou résoudre des problèmes liés à votre compte.</li>
           <li>Assurer la sécurité de notre plateforme et prévenir tout usage frauduleux.</li>
-          <li>Analyser les tendances d'utilisation pour améliorer nos offres et nos fonctionnalités.</li>
+          <li>Analyser les tendances d&apos;utilisation pour améliorer nos offres et nos fonctionnalités.</li>
         </ul>
 
         {/* Section 3 : Partage des Informations */}
@@ -177,7 +177,7 @@ const PrivacyPolicy = () => (
         </Typography>
         <ul>
           <li>Chiffrement SSL/TLS pour sécuriser les communications entre vous et notre plateforme.</li>
-          <li>Contrôles d'accès stricts pour limiter l'accès aux données sensibles.</li>
+          <li>Contrôles d&apos;accès stricts pour limiter l&apos;accès aux données sensibles.</li>
           <li>Procédures de sauvegarde régulières pour éviter toute perte de données.</li>
         </ul>
         <Typography variant="body1" paragraph>
@@ -194,18 +194,18 @@ const PrivacyPolicy = () => (
           5. Vos Droits
         </Typography>
         <Typography variant="body1" paragraph>
-          En tant qu'utilisateur, vous disposez de plusieurs droits concernant vos données personnelles, notamment :
+          En tant qu&apos;utilisateur, vous disposez de plusieurs droits concernant vos données personnelles, notamment :
         </Typography>
         <ul>
           <li>
             <strong>Accès :</strong>
             {' '}
-            Vous avez le droit de demander l'accès aux données personnelles que nous détenons sur vous.
+            Vous avez le droit de demander l&apos;accès aux données personnelles que nous détenons sur vous.
           </li>
           <li>
             <strong>Rectification :</strong>
             {' '}
-            Vous pouvez demander la correction de vos données personnelles en cas d'erreur ou d'inexactitude.
+            Vous pouvez demander la correction de vos données personnelles en cas d&apos;erreur ou d&apos;inexactitude.
           </li>
           <li>
             <strong>Suppression :</strong>
@@ -254,7 +254,7 @@ const PrivacyPolicy = () => (
         {/* Conclusion */}
         <Divider sx={{ my: 3 }} />
         <Typography variant="body1" paragraph>
-          En utilisant Plany.tn, vous acceptez cette Politique de Confidentialité. Si vous avez des questions, n'hésitez pas à nous contacter à
+          En utilisant Plany.tn, vous acceptez cette Politique de Confidentialité. Si vous avez des questions, n&apos;hésitez pas à nous contacter à
           {' '}
           <strong>contact@plany.tn</strong>
           .

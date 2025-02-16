@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Tooltip, Card, CardContent, Typography, Avatar } from '@mui/material'
+import { Button, Tooltip, Card, CardContent, Typography, Avatar, Rating } from '@mui/material'
 import { LocalGasStation as CarTypeIcon, AccountTree as GearboxIcon, Person as SeatsIcon, AcUnit as AirconIcon, DirectionsCar as MileageIcon, Check as CheckIcon, Clear as UncheckIcon, Info as InfoIcon, LocationOn as LocationIcon } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -14,10 +14,6 @@ import * as UserService from '@/services/UserService'
 import Pager from './Pager'
 import Badge from './Badge'
 import DoorsIcon from '@/assets/img/car-door.png'
-import RatingIcon from '@/assets/img/rating-icon.png'
-import CO2MinIcon from '@/assets/img/co2-min-icon.png'
-import CO2MiddleIcon from '@/assets/img/co2-middle-icon.png'
-import CO2MaxIcon from '@/assets/img/co2-max-icon.png'
 import DistanceIcon from '@/assets/img/distance-icon.png'
 import '@/assets/css/car-list.css'
 import { sendCheckoutEvent } from '@/common/gtm'
@@ -271,7 +267,23 @@ const CarList = ({
   }
 
   const fr = language === 'fr'
+  /**
+   * Transforme un score de 0 à 100 en un score de 0 à 5.
+   * @param score Le score initial (entre 0 et 100).
+   * @returns Le score transformé (entre 0 et 5).
+   */
+  const transformScore = (score: number | undefined): number => {
+    // Vérifier que le score est bien entre 0 et 100
+    if (!score || score < 0 || score > 100) {
+      return 0
+    }
 
+    // Transformer le score de 0-100 à 0-5
+    const transformedScore = (score / 100) * 5
+
+    // Arrondir à une décimale pour plus de lisibilité
+    return Math.round(transformedScore * 10) / 10
+  }
   return (
     <>
       <section className={`${className ? `${className} ` : ''}car-list`}>
@@ -413,15 +425,18 @@ const CarList = ({
             )}
             <div className="car-footer-info">
               <div className="rating">
-                {car.rating && car.rating >= 1 && (
+                {car?.supplier?.score && (
                   <>
-                    <span className="value">{car.rating.toFixed(2)}</span>
-                    <img alt="Rating" src={RatingIcon} />
+                    <Tooltip title={'Le score est basé sur la réactivité de l\'agence, le taux d\'acceptation des réservations selon leurs conditions et d\'autres critères.'} placement="top">
+                      <Typography variant="h6" className="user-info">
+                        <Rating size="small" value={transformScore(car.supplier.score)} precision={0.1} readOnly />
+                      </Typography>
+                    </Tooltip>
                   </>
                 )}
                 {car.trips >= 10 && <span className="trips">{`(${car.trips} ${strings.TRIPS})`}</span>}
               </div>
-              {car.co2 && (
+              { /* car.co2 && (
                 <div className="co2">
                   <img
                     alt="CO2 Effect"
@@ -435,7 +450,7 @@ const CarList = ({
                   />
                   <span>{strings.CO2}</span>
                 </div>
-              )}
+              ) */ }
             </div>
           </div>
         </div>

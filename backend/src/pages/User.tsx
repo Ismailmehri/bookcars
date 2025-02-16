@@ -7,7 +7,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Tooltip
+  Tooltip,
+  Rating,
+  Box
 } from '@mui/material'
 import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
@@ -86,6 +88,12 @@ const User = () => {
     setOpenDeleteDialog(false)
   }
 
+  const calculateAverageRating = (reviews: { rating: number }[] | undefined) => {
+    if (!reviews || reviews.length === 0) return 0
+    const total = reviews.reduce((sum, review) => sum + review.rating, 0)
+    return total / reviews.length
+  }
+
   const onLoad = async (_loggedUser?: bookcarsTypes.User) => {
     if (_loggedUser && _loggedUser.verified) {
       setLoading(true)
@@ -150,6 +158,9 @@ const User = () => {
     }
   }
 
+  const averageRating = user ? calculateAverageRating(user?.reviews) : 0
+  const totalReviews = user && user.reviews ? user.reviews.length : 0
+
   return (
     <Layout onLoad={onLoad} strict>
       {loggedUser && user && visible && (
@@ -172,6 +183,14 @@ const User = () => {
             </section>
             <Typography variant="h4" className="user-name">
               {user.fullName}
+            </Typography>
+            <Typography variant="h6" className="user-info">
+              <Rating value={averageRating} precision={0.1} readOnly />
+              <Box component="span" sx={{ fontSize: '15px', position: 'absolute' }}>
+                (
+                {totalReviews}
+                )
+              </Box>
             </Typography>
             {user.bio && (
               <Typography variant="h6" className="user-info">

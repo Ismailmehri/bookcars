@@ -180,6 +180,9 @@ const userSchema = new Schema<env.User>(
         default: Date.now,
       },
     }],
+    score: {
+      type: Number,
+    },
   },
   {
     timestamps: true,

@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid'
 import escapeStringRegexp from 'escape-string-regexp'
 import mongoose from 'mongoose'
 import { Request, Response } from 'express'
+import { CarStats } from 'src/models/CarStats'
 import * as bookcarsTypes from ':bookcars-types'
 import Booking from '../models/Booking'
 import Car from '../models/Car'
@@ -945,9 +946,34 @@ export const getFrontendCars = async (req: Request, res: Response) => {
           _id: car.supplier._id,
           fullName: car.supplier.fullName,
           avatar: car.supplier.avatar,
+          score: car.supplier.score,
         },
       })),
     }))
+
+    // Logging asynchrone
+    if (formattedData[0]?.resultData) {
+      const statsData = formattedData[0].resultData.map((car: bookcarsTypes.Car) => {
+        // Calcul précis du nombre de jours
+        const timeDiff = endDateObj.getTime() - startDateObj.getTime()
+        const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) || 1
+
+        return {
+          car: car._id,
+          supplier: car.supplier._id,
+          pickupLocation: body.pickupLocation,
+          startDate: startDateObj,
+          endDate: endDateObj,
+          viewedAt: new Date(),
+          days,
+          paidView: false,
+          clientId: req.signedCookies.clientId,
+        }
+      })
+
+      CarStats.insertMany(statsData)
+        .catch((err) => logger.error('Error logging car stats:', err))
+    }
 
     return res.json(formattedData)
   } catch (err: any) {

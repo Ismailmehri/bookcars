@@ -762,3 +762,42 @@ export const notifyAgenciesWithLowScores = async (req: Request, res: Response) =
       return res.status(500).send(i18n.t('DB_ERROR') + err)
     }
   }
+
+export const updateSupplierScores = async (req: Request, res: Response) => {
+try {
+    // Récupérer tous les suppliers
+    const suppliers = await User.find({ type: bookcarsTypes.UserType.Supplier }) as bookcarsTypes.User[]
+
+    // Parcourir chaque supplier
+    for (const supplier of suppliers) {
+    // Récupérer les voitures du supplier
+    const cars = (await Car.find({ supplier: supplier._id }) as bookcarsTypes.Car[]).filter((car) => car.available)
+
+    // Vérifier si le supplier a au moins une voiture
+    if (cars.length > 0) {
+        // Récupérer les réservations du supplier
+        const bookings = await Booking.find({ supplier: supplier._id }) as bookcarsTypes.Booking[]
+
+        // Calculer le score du supplier
+        const scoreBreakdown = helper.calculateAgencyScore(supplier, bookings, cars)
+        const score = scoreBreakdown.total
+
+        const user = await User.findById(supplier._id)
+        if (user) {
+        user.score = score
+        await user.save()
+        }
+
+        logger.info(`Score updated for supplier ${supplier.fullName} (ID: ${supplier._id}): ${score}`)
+    } else {
+        logger.info(`Supplier ${supplier.fullName} (ID: ${supplier._id}) has no cars. Skipping score calculation.`)
+    }
+    }
+
+    // Retourner une réponse réussie
+    return res.status(200).json({ message: 'Supplier scores updated successfully' })
+} catch (err) {
+    logger.error(`[updateSupplierScores] Error updating supplier scores: ${err}`)
+    return res.status(500).json({ message: 'Internal server error', error: err })
+}
+}

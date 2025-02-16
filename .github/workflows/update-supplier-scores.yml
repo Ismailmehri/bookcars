@@ -1,0 +1,22 @@
+name: Update Supplier Scores
+on:
+  schedule:
+    # Exécuter chaque jour à 3h du matin (UTC)
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Permet de déclencher manuellement le workflow depuis l'interface GitHub
+
+jobs:
+  update-scores:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Call API to update supplier scores
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          curl -X POST \
+            -H "Authorization: ApiKey $API_KEY" \
+            https://plany.tn/api/cron/suppliers/update-score

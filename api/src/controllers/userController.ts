@@ -351,8 +351,6 @@ export const resend = async (req: Request, res: Response) => {
       ) {
         return res.sendStatus(403)
       }
-      user.active = false
-      await user.save()
 
       // generate token and save
       const token = new Token({ user: user._id, token: helper.generateToken() })

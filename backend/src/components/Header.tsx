@@ -315,6 +315,10 @@ const Header = ({
                   <ListItemIcon><UsersIcon /></ListItemIcon>
                   <ListItemText primary={strings.USERS} />
                 </ListItemLink>
+                <ListItemLink href="/car-stats">
+                  <ListItemIcon><UsersIcon /></ListItemIcon>
+                  <ListItemText primary="Stats" />
+                </ListItemLink>
                 <ListItemLink href="/about">
                   <ListItemIcon><AboutIcon /></ListItemIcon>
                   <ListItemText primary={strings.ABOUT} />

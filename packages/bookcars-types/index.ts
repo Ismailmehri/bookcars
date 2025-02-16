@@ -412,6 +412,7 @@ export interface User {
   contracts?: Contract[]
   emailLogs?: EmailLog[]
   reviews?: Review[];
+  score?: number
 }
 
 export interface Option {
@@ -643,5 +644,71 @@ export interface ScoreBreakdown {
     bookingStatusHealth: { score: number; max: number; ratio: number };
   };
   recommendations: string[];
+}
+
+// types/bookcars.ts
+export interface CarStats {
+  _id: string
+  car: Car
+  date: string
+  views: number
+  pickupLocation: string
+  startDate: Date
+  endDate: Date
+  days: number
+  clientId?: string
+  paidView: boolean
+  viewedAt: Date
+}
+
+
+// Type pour les paramètres de la requête
+export interface GetCarStatsParams {
+  supplierId: string
+  carId?: string
+  startDate?: Date
+  endDate?: Date
+  groupBy?: 'day' | 'week' | 'month'
+}
+
+// Type pour le schéma MongoDB
+export interface ICarStats {
+  car: string
+  pickupLocation: string
+  startDate: Date
+  endDate: Date
+  viewedAt: Date
+  days: number
+  paidView: boolean
+  clientId?: string
+}
+
+// types/CarStats.ts
+export interface CarStat {
+  _id: {
+    date: string;
+    car: string;
+  };
+  views: number;
+  date: string;
+  carName: string;
+  carId: string;
+  supplierId: string;
+  supplierName: string;
+}
+
+export interface ICar {
+  id: string;
+  name: string;
+}
+
+export interface SummedStat {
+  date: string;
+  views: number;
+}
+
+export interface SuppliersStat {
+  supplierId: string;
+  supplierName: string;
 }
 

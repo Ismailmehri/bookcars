@@ -453,7 +453,8 @@ export interface User extends Document {
   contracts?: bookcarsTypes.Contract[]
   expireAt?: Date
   emailLogs?: EmailLog[]
-  reviews?: Review[];
+  reviews?: Review[]
+  score: number
 }
 
 /**
@@ -482,6 +483,7 @@ export interface UserInfo {
   type?: string
   blacklisted?: boolean
   payLater?: boolean
+  score?: number
 }
 
 /**
@@ -797,4 +799,21 @@ export interface Token extends Document {
   user: Types.ObjectId
   token: string
   expireAt?: Date
+}
+
+export interface ICarStats extends Document {
+  car: Types.ObjectId;
+  pickupLocation: Types.ObjectId;
+  supplier: Types.ObjectId;
+  startDate: Date;
+  endDate: Date;
+  viewedAt: Date;
+  days: number;
+  paidView: boolean;
+  clientId : string;
+  conversion: {
+    viewedDetails: boolean;
+    booked: boolean;
+    contacted: boolean;
+  };
 }

@@ -816,9 +816,11 @@ const UpdateBooking = () => {
                   <Button variant="contained" className="btn-primary btn-margin-bottom" size="small" type="submit">
                     {commonStrings.SAVE}
                   </Button>
+                  { helper.admin(user) && (
                   <Button variant="contained" className="btn-margin-bottom" color="error" size="small" onClick={handleDelete}>
                     {commonStrings.DELETE}
                   </Button>
+                  ) }
                   <Button variant="contained" className="btn-secondary btn-margin-bottom" size="small" href="/">
                     {commonStrings.CANCEL}
                   </Button>

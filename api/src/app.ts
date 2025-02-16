@@ -16,8 +16,10 @@ import userRoutes from './routes/userRoutes'
 import stripeRoutes from './routes/stripeRoutes'
 import countryRoutes from './routes/countryRoutes'
 import cronRoutes from './routes/cronRoutes'
+import carStatsRoutes from './routes/carStatsRoutes'
 
 import * as helper from './common/helper'
+import { setClientId } from './middlewares/setClientId'
 
 const app = express()
 
@@ -45,6 +47,7 @@ app.use(cors())
 app.options('*', cors())
 app.use(cookieParser(env.COOKIE_SECRET))
 app.use(allowedMethods)
+app.use(setClientId)
 
 app.use('/', supplierRoutes)
 app.use('/', bookingRoutes)
@@ -55,6 +58,7 @@ app.use('/', userRoutes)
 app.use('/', stripeRoutes)
 app.use('/', countryRoutes)
 app.use('/', cronRoutes)
+app.use('/', carStatsRoutes)
 
 i18n.locale = env.DEFAULT_LANGUAGE
 

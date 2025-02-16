@@ -698,3 +698,10 @@ export const carOptionAvailable = (car: bookcarsTypes.Car | undefined, option: s
  * @returns {boolean}
  */
 export const isValidURL = (url: string) => validator.isURL(url, { protocols: ['http', 'https'] })
+
+export const formatNumber = (value: number) =>
+  new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'TND',
+    maximumFractionDigits: 0
+  }).format(value).replace('TND', 'DT')

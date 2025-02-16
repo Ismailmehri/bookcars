@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { LineChart } from '@mui/x-charts'
+import { LineChart, PieChart } from '@mui/x-charts'
 import {
   Box,
   Typography,
@@ -13,7 +13,7 @@ import {
 } from '@mui/material'
 import { subMonths, subDays } from 'date-fns'
 import { strings } from '@/lang/stats'
-import { getCarStats, getUniqueSuppliers } from '@/services/CarStatsService'
+import { getBookingStats, getBookingSummary, getCarStats, getUniqueSuppliers } from '@/services/CarStatsService'
 import Layout from '@/components/Layout'
 import DateTimePicker from '@/components/DateTimePicker'
 import * as bookcarsTypes from ':bookcars-types'
@@ -24,15 +24,21 @@ const CarStats = () => {
   const ALL_CARS_VALUE = 'ALL_CARS'
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [stats, setStats] = useState<bookcarsTypes.SummedStat[]>([])
+  const [bookingStats, setBookingStats] = useState<bookcarsTypes.BookingStat[]>([])
   const [cars, setCars] = useState<bookcarsTypes.ICar[]>([])
-  const [selectedCar, setSelectedCar] = useState<string>(ALL_CARS_VALUE)
+  const [selectedCar, setSelectedCar] = useState<string>('')
   const [startDate, setStartDate] = useState<Date>(subMonths(new Date(), 6)) // 6 mois avant
   const [endDate, setEndDate] = useState<Date>(subDays(new Date(), 1)) // Hier
   const [loading, setLoading] = useState<boolean>(true)
   const [admin, setAdmin] = useState<boolean>(false)
   const [suppliers, setSuppliers] = useState<bookcarsTypes.SuppliersStat[]>([])
   const [selectedSupplier, setSelectedSupplier] = useState<string>('')
-
+  const [summary, setSummary] = useState({
+    total: 0,
+    paid: 0,
+    deposit: 0,
+    reserved: 0
+  })
   // Agréger les vues par date
   const sumViewsByDate = (data: bookcarsTypes.CarStat[]): bookcarsTypes.SummedStat[] => {
     const result: { [key: string]: number } = {}
@@ -52,6 +58,24 @@ const CarStats = () => {
     }))
   }
 
+  const fetchBookingStats = useCallback(
+    async (supplierId?: string) => {
+      try {
+        const statsData = await getBookingStats(
+          supplierId || user?._id,
+          selectedCar === ALL_CARS_VALUE ? '' : selectedCar,
+          startDate,
+          endDate
+        )
+        setBookingStats(statsData)
+      } catch (error) {
+        console.error('Error fetching booking stats:', error)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [user?._id, startDate, selectedCar, endDate]
+  )
   // Récupérer les statistiques avec useCallback
   const fetchCarStats = useCallback(
     async (supplierId?: string) => {
@@ -87,6 +111,18 @@ const CarStats = () => {
       console.error('Error fetching suppliers:', error)
     }
   }
+  useEffect(() => {
+    const loadSummary = async () => {
+      if (user?._id || selectedSupplier) {
+        const supplierId = admin && selectedSupplier ? selectedSupplier : user?._id
+        const data = await getBookingSummary(
+          supplierId
+        )
+        setSummary(data)
+      }
+    }
+    loadSummary()
+  }, [admin, selectedSupplier, user?._id, selectedCar])
 
   useEffect(() => {
     if (admin) {
@@ -96,11 +132,19 @@ const CarStats = () => {
 
   useEffect(() => {
     if (admin && selectedSupplier) {
+      fetchBookingStats(selectedSupplier)
+    } else if (user?._id) {
+      fetchBookingStats()
+    }
+  }, [fetchBookingStats, admin, selectedSupplier, user?._id, selectedCar])
+
+  useEffect(() => {
+    if (admin && selectedSupplier) {
       fetchCarStats(selectedSupplier)
     } else if (user?._id) {
       fetchCarStats()
     }
-  }, [fetchCarStats, admin, selectedSupplier, user?._id]) // Ajouter fetchCarStats aux dépendances
+  }, [fetchCarStats, admin, selectedSupplier, user?._id])
 
   // Gérer le changement de voiture
   const handleCarChange = (event: SelectChangeEvent<string>) => {
@@ -134,12 +178,55 @@ const CarStats = () => {
     const _isAdmin = helper.admin(_user)
     setAdmin(_isAdmin)
   }
+  const statusColors = {
+    [bookcarsTypes.BookingStatus.Void]: '#ff6384',
+    [bookcarsTypes.BookingStatus.Pending]: '#EF6C00',
+    [bookcarsTypes.BookingStatus.Deposit]: '#3CB371',
+    [bookcarsTypes.BookingStatus.Paid]: '#77BC23',
+    [bookcarsTypes.BookingStatus.Reserved]: '#1E88E5',
+    [bookcarsTypes.BookingStatus.Cancelled]: '#E53935'
+  }
 
   return (
     <Layout onLoad={onLoad} strict>
       {user && !loading && (
         <Box sx={{ padding: 3 }}>
-
+          <Paper elevation={3} sx={{ padding: 3, marginBottom: 3 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
+                  <Typography variant="subtitle2">Total CA</Typography>
+                  <Typography variant="h4">
+                    {helper.formatNumber(summary.total)}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper sx={{ p: 2, backgroundColor: '#e8f5e9' }}>
+                  <Typography variant="subtitle2">Payé</Typography>
+                  <Typography variant="h4">
+                    {helper.formatNumber(summary.paid)}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper sx={{ p: 2, backgroundColor: '#fff3e0' }}>
+                  <Typography variant="subtitle2">Acompte</Typography>
+                  <Typography variant="h4">
+                    {helper.formatNumber(summary.deposit)}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper sx={{ p: 2, backgroundColor: '#e3f2fd' }}>
+                  <Typography variant="subtitle2">Réservé</Typography>
+                  <Typography variant="h4">
+                    {helper.formatNumber(summary.reserved)}
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Paper>
           {/* Filtres */}
           <Paper elevation={3} sx={{ padding: 3, marginBottom: 3 }}>
             <Typography variant="h1" sx={{ fontSize: '2rem', marginBottom: 3 }} gutterBottom>
@@ -240,7 +327,51 @@ const CarStats = () => {
               height={400}
             />
           </Paper>
+
+          <Grid item xs={12} md={6}>
+            <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
+              <Typography variant="h6" gutterBottom>
+                {strings.STATUS_DISTRIBUTION}
+              </Typography>
+              <PieChart
+                series={[
+                    {
+                      data: bookingStats.map((item) => ({
+                        value: item.count,
+                        label: `${helper.getBookingStatus(item.status)} (${item.count})`,
+                        color: statusColors[item.status]
+                      })),
+                      highlightScope: { faded: 'global', highlighted: 'item' },
+                      arcLabel: (params) => `${params.label}`,
+                    }
+                  ]}
+                height={300}
+              />
+            </Paper>
+          </Grid>
+
+          <Grid item xs={12} md={6} sx={{ paddingTop: 3, marginBottom: 3 }}>
+            <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
+              <Typography variant="h6" gutterBottom>
+                {strings.REVENUE_DISTRIBUTION}
+              </Typography>
+              <PieChart
+                series={[
+                    {
+                      data: bookingStats.map((item) => ({
+                        value: item.totalPrice,
+                        label: `${item.status} (${item.totalPrice} DT)`,
+                        color: statusColors[item.status]
+                      })),
+                      arcLabel: (params) => `${params.value} DT`,
+                    }
+                  ]}
+                height={300}
+              />
+            </Paper>
+          </Grid>
         </Box>
+
       )}
       {(!user || loading) && <SimpleBackdrop text={strings.LOADING} />}
     </Layout>

@@ -35,6 +35,9 @@ const strings = new LocalizedStrings({
     SELECT_SUPPLIER: 'Sélectionner une agence',
     ALL_SUPPLIERS: 'Toutes les agences',
     NO_SUPPLIERS: 'Aucune agence disponible',
+    BOOKING_STATS: 'Statistiques des réservations',
+    STATUS_DISTRIBUTION: 'Répartition des statuts',
+    REVENUE_DISTRIBUTION: "Répartition du chiffre d'affaire"
   },
   en: {
     CAR_STATS: 'Car Statistics',
@@ -69,6 +72,9 @@ const strings = new LocalizedStrings({
     SELECT_SUPPLIER: 'Sélectionner une agence',
     ALL_SUPPLIERS: 'Toutes les agences',
     NO_SUPPLIERS: 'Aucune agence disponible',
+    BOOKING_STATS: 'Statistiques des réservations',
+    STATUS_DISTRIBUTION: 'Répartition des statuts',
+    REVENUE_DISTRIBUTION: "Répartition du chiffre d'affaire"
   },
 })
 

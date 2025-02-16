@@ -697,6 +697,13 @@ export interface CarStat {
   supplierName: string;
 }
 
+export interface BookingStat {
+  status: BookingStatus
+  count: number
+  totalPrice: number
+}
+
+
 export interface ICar {
   id: string;
   name: string;

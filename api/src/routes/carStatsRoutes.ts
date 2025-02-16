@@ -7,6 +7,8 @@ const routes = express.Router()
 
 // routes.route(routeNames.getCarStats).get(authJwt.verifyToken, carStatsController.getCarStats)
 routes.route(routeNames.getCarStats).get(authJwt.verifyToken, carStatsController.getCarStats)
+routes.route(routeNames.getBookingStats).get(carStatsController.getBookingStats)
+routes.route(routeNames.getBookingSummary).get(carStatsController.getBookingSummary)
 routes.route(routeNames.getUniqueSuppliersStats).get(carStatsController.getUniqueSuppliers)
 
 export default routes

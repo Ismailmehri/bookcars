@@ -13,10 +13,10 @@ const ToS = () => (
       {/* Titre principal */}
       <Box my={4}>
         <Typography variant="h3" gutterBottom>
-          Conditions Générales d'Utilisation
+          Conditions Générales d&apos;Utilisation
         </Typography>
         <Typography variant="body1">
-          Merci de lire attentivement les présentes conditions générales d’utilisation (CGU). Elles régissent votre accès et votre utilisation de la plateforme Plany.tn, qui met en relation des professionnels loueurs de voitures et des utilisateurs recherchant des véhicules à louer.
+          Merci de lire attentivement les présentes conditions générales d&apos;utilisation (CGU). Elles régissent votre accès et votre utilisation de la plateforme Plany.tn, qui met en relation des professionnels loueurs de voitures et des utilisateurs recherchant des véhicules à louer.
         </Typography>
       </Box>
 
@@ -36,7 +36,7 @@ const ToS = () => (
         <Typography variant="body2" paragraph>
           <strong>Plateforme :</strong>
           {' '}
-          Désigne l'application web et mobile Plany.tn, ainsi que tous les services associés.
+          Désigne l&apos;application web et mobile Plany.tn, ainsi que tous les services associés.
         </Typography>
       </Box>
 
@@ -44,7 +44,7 @@ const ToS = () => (
       <Box my={4}>
         <Typography variant="h4">2. Accès à la Plateforme et Inscription</Typography>
         <Typography variant="body2" paragraph>
-          L’accès à Plany.tn nécessite la création d’un compte utilisateur. Les professionnels loueurs sont seuls responsables de leur conformité légale pour exercer une activité de location de voitures. L'application ne vérifie pas les documents fournis et décline toute responsabilité en cas de non-conformité. Les utilisateurs doivent garantir l’exactitude des informations fournies lors de l’inscription.
+          L’accès à Plany.tn nécessite la création d’un compte utilisateur. Les professionnels loueurs sont seuls responsables de leur conformité légale pour exercer une activité de location de voitures. L&apos;application ne vérifie pas les documents fournis et décline toute responsabilité en cas de non-conformité. Les utilisateurs doivent garantir l’exactitude des informations fournies lors de l’inscription.
         </Typography>
       </Box>
 
@@ -113,7 +113,7 @@ const ToS = () => (
       {/* Conclusion */}
       <Box my={4}>
         <Typography variant="body1" paragraph>
-          En utilisant Plany.tn, vous acceptez de respecter les présentes Conditions Générales d'Utilisation. Si vous avez des questions ou des préoccupations, veuillez contacter notre support.
+          En utilisant Plany.tn, vous acceptez de respecter les présentes Conditions Générales d&apos;Utilisation. Si vous avez des questions ou des préoccupations, veuillez contacter notre support.
         </Typography>
       </Box>
     </Container>

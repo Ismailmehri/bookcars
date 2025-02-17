@@ -168,7 +168,7 @@ const UpdateSupplier = () => {
     if (_user && _user.verified) {
       setLoading(true)
       setUser(_user)
-      const isAdmin = helper.admin(_user);
+      const isAdmin = helper.admin(_user)
       const params = new URLSearchParams(window.location.search)
       if (params.has('c')) {
         const id = params.get('c')

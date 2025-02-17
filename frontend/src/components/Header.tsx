@@ -21,7 +21,6 @@ import {
   Mail as MailIcon,
   Notifications as NotificationsIcon,
   More as MoreIcon,
-  Language as LanguageIcon,
   Settings as SettingsIcon,
   Home as HomeIcon,
   InfoTwoTone as AboutIcon,
@@ -40,8 +39,6 @@ import { strings as commonStrings } from '@/lang/common'
 import * as UserService from '@/services/UserService'
 import * as NotificationService from '@/services/NotificationService'
 import Avatar from './Avatar'
-import * as langHelper from '@/common/langHelper'
-import * as helper from '@/common/helper'
 import { useGlobalContext, GlobalContextType } from '@/context/GlobalContext'
 
 import '@/assets/css/header.css'
@@ -64,7 +61,6 @@ const Header = ({
   const navigate = useNavigate()
   const { notificationCount, setNotificationCount } = useGlobalContext() as GlobalContextType
 
-  const [lang, setLang] = useState(helper.getLanguage(env.DEFAULT_LANGUAGE))
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const [langAnchorEl, setLangAnchorEl] = useState<HTMLElement | null>(null)
   const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState<HTMLElement | null>(null)
@@ -106,10 +102,6 @@ const Header = ({
     setMobileMoreAnchorEl(null)
   }
 
-  const handleLangMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setLangAnchorEl(event.currentTarget)
-  }
-
   const refreshPage = () => {
     const params = new URLSearchParams(window.location.search)
 
@@ -126,7 +118,6 @@ const Header = ({
 
     const { code } = event.currentTarget.dataset
     if (code) {
-      setLang(helper.getLanguage(code))
       const currentLang = UserService.getLanguage()
       if (isSignedIn && user) {
         // Update user language
@@ -182,12 +173,6 @@ const Header = ({
   const handleNotificationsClick = () => {
     navigate('/notifications')
   }
-
-  useEffect(() => {
-    const language = langHelper.getLanguage()
-    setLang(helper.getLanguage(language))
-    langHelper.setLanguage(strings, language)
-  }, [])
 
   useEffect(() => {
     if (!hidden) {

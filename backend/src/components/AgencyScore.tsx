@@ -125,6 +125,7 @@ const AgencyScore: React.FC<AgencyScoreProps> = ({ agencyId }) => {
       <Collapse in={showRecommendations}>
         <List>
           {scoreBreakdown.recommendations.map((recommendation, index) => (
+            // eslint-disable-next-line react/no-array-index-key
             <ListItem key={index} sx={{ paddingLeft: 0 }}>
               <ListItemIcon>
                 {scoreBreakdown.score >= 80 ? (

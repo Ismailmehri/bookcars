@@ -24,7 +24,7 @@ const About = () => (
         </Typography>
         <Typography variant="body2" paragraph>
           Chez Plany.tn, nous croyons que louer une voiture ne devrait pas être une tâche compliquée. Nous facilitons les échanges
-          entre professionnels loueurs de voitures et particuliers grâce à une plateforme intuitive qui met l'accent sur la rapidité,
+          entre professionnels loueurs de voitures et particuliers grâce à une plateforme intuitive qui met l&apos;accent sur la rapidité,
           la fiabilité et la simplicité.
         </Typography>
         <Typography variant="body2" paragraph>
@@ -84,7 +84,7 @@ const About = () => (
         </Typography>
         <Typography variant="body2">
           Notre équipe est composée de passionnés de technologie et de mobilité. Nous travaillons chaque jour pour améliorer
-          l'expérience utilisateur et développer de nouvelles fonctionnalités qui répondent aux attentes des professionnels et des particuliers.
+          l&apos;expérience utilisateur et développer de nouvelles fonctionnalités qui répondent aux attentes des professionnels et des particuliers.
         </Typography>
       </Box>
 

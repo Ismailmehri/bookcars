@@ -916,6 +916,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                     </TableHead>
                     <TableBody>
                       {pricePeriods.map((period, index) => (
+                        // eslint-disable-next-line react/no-array-index-key
                         <TableRow key={index}>
                           <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
                           <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
@@ -1060,6 +1061,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                     </TableHead>
                     <TableBody>
                       {unavailablePeriods.map((period, index) => (
+                        // eslint-disable-next-line react/no-array-index-key
                         <TableRow key={index}>
                           <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
                           <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>

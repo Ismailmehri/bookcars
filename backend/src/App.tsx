@@ -85,7 +85,7 @@ const App = () => (
             <Route path="/countries" element={<Countries />} />
             <Route path="/create-country" element={<CreateCountry />} />
             <Route path="/update-country" element={<UpdateCountry />} />
-            <Route path="/car-stats" element={<CarStats />} />
+            <Route path="/insights" element={<CarStats />} />
 
             <Route path="*" element={<NoMatch />} />
           </Routes>

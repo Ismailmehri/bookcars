@@ -31,6 +31,7 @@ import {
   DescriptionTwoTone as TosIcon,
   ExitToApp as SignoutIcon,
   Flag as CountriesIcon,
+  BarChart as StatsIcon,
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import * as bookcarsTypes from ':bookcars-types'
@@ -315,9 +316,9 @@ const Header = ({
                   <ListItemIcon><UsersIcon /></ListItemIcon>
                   <ListItemText primary={strings.USERS} />
                 </ListItemLink>
-                <ListItemLink href="/car-stats">
-                  <ListItemIcon><UsersIcon /></ListItemIcon>
-                  <ListItemText primary="Stats" />
+                <ListItemLink href="/insights">
+                  <ListItemIcon><StatsIcon /></ListItemIcon>
+                  <ListItemText primary={strings.STATS} />
                 </ListItemLink>
                 <ListItemLink href="/about">
                   <ListItemIcon><AboutIcon /></ListItemIcon>

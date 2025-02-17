@@ -174,6 +174,7 @@ export const getBookingSummary = async (req: Request, res: Response) => {
       res.status(500).send(err)
     }
   }
+
 export const getUniqueSuppliers = async (req: Request, res: Response) => {
     try {
         const suppliers = await CarStats.aggregate([

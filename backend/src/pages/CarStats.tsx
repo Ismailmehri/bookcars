@@ -19,6 +19,7 @@ import DateTimePicker from '@/components/DateTimePicker'
 import * as bookcarsTypes from ':bookcars-types'
 import SimpleBackdrop from '@/components/SimpleBackdrop'
 import * as helper from '@/common/helper'
+import env from '@/config/env.config'
 
 const CarStats = () => {
   const ALL_CARS_VALUE = 'ALL_CARS'
@@ -345,7 +346,8 @@ const CarStats = () => {
                       arcLabel: (params) => `${params.label}`,
                     }
                   ]}
-                height={300}
+                height={env.isMobile() ? 400 : 300}
+                legend={env.isMobile() ? { direction: 'row', position: { vertical: 'bottom', horizontal: 'middle' } } : {}}
               />
             </Paper>
           </Grid>
@@ -360,13 +362,15 @@ const CarStats = () => {
                     {
                       data: bookingStats.map((item) => ({
                         value: item.totalPrice,
-                        label: `${item.status} (${item.totalPrice} DT)`,
+                        label: `${helper.getBookingStatus(item.status)}`,
                         color: statusColors[item.status]
                       })),
+                      highlightScope: { faded: 'global', highlighted: 'item' },
                       arcLabel: (params) => `${params.value} DT`,
                     }
                   ]}
-                height={300}
+                height={env.isMobile() ? 400 : 300}
+                legend={env.isMobile() ? { direction: 'row', position: { vertical: 'bottom', horizontal: 'middle' } } : {}}
               />
             </Paper>
           </Grid>

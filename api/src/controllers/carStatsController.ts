@@ -1,8 +1,8 @@
 import { Request, Response } from 'express' // Import the correct types for Request and Response
 
 import mongoose from 'mongoose'
-import Booking from 'src/models/Booking'
-import { CarStats } from 'src/models/CarStats'
+import Booking from '../models/Booking'
+import { CarStats } from '../models/CarStats'
 import { BookingStatus } from ':bookcars-types'
 
 export const getCarStats = async (req: Request, res: Response) => {

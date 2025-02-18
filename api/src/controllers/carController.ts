@@ -4,7 +4,6 @@ import { nanoid } from 'nanoid'
 import escapeStringRegexp from 'escape-string-regexp'
 import mongoose from 'mongoose'
 import { Request, Response } from 'express'
-import { CarStats } from 'src/models/CarStats'
 import * as bookcarsTypes from ':bookcars-types'
 import Booking from '../models/Booking'
 import Car from '../models/Car'
@@ -12,6 +11,7 @@ import i18n from '../lang/i18n'
 import * as env from '../config/env.config'
 import * as helper from '../common/helper'
 import * as logger from '../common/logger'
+import { CarStats } from '../models/CarStats'
 
 /**
  * Create a Car.

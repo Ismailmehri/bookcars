@@ -894,6 +894,11 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       },
       {
         $match: {
+          dailyPriceWithDiscount: { $gte: minPrice, $lte: maxPrice },
+        },
+      },
+      {
+        $match: {
           $expr: {
             $or: [
               // Cas 1 : la période demandée est en dehors de la période restreinte
@@ -905,20 +910,17 @@ export const getFrontendCars = async (req: Request, res: Response) => {
               },
               // Cas 2 : la période demandée chevauche la période restreinte
               // -> la voiture doit avoir une propriété periodicPrices non vide
+              // -> et au moins une période dans periodicPrices doit chevaucher la période restreinte
               {
                 $and: [
                   { $lt: [startDateObj, restrictedEndDate] },
                   { $gt: [endDateObj, restrictedStartDate] },
                   { $gt: [{ $size: { $ifNull: ['$periodicPrices', []] } }, 0] },
+                  { $expr: { $gte: ['$dailyPriceWithDiscount', 110] } },
                 ],
               },
             ],
           },
-        },
-      },
-      {
-        $match: {
-          dailyPriceWithDiscount: { $gte: minPrice, $lte: maxPrice },
         },
       },
       {

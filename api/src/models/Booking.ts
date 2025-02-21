@@ -36,10 +36,12 @@ const bookingSchema = new Schema<env.Booking>(
     from: {
       type: Date,
       required: [true, "can't be blank"],
+      index: true,
     },
     to: {
       type: Date,
       required: [true, "can't be blank"],
+      index: true,
     },
     status: {
       type: String,
@@ -51,6 +53,7 @@ const bookingSchema = new Schema<env.Booking>(
         bookcarsTypes.BookingStatus.Reserved,
         bookcarsTypes.BookingStatus.Cancelled,
       ],
+      index: true,
       required: [true, "can't be blank"],
     },
     cancellation: {

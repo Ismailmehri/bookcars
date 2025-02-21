@@ -38,6 +38,7 @@ const carSchema = new Schema<env.Car>(
     locations: {
       type: [Schema.Types.ObjectId],
       ref: 'Location',
+      index: true,
       validate: (value: any): boolean => Array.isArray(value) && value.length > 0,
     },
 
@@ -45,6 +46,7 @@ const carSchema = new Schema<env.Car>(
     dailyPrice: {
       type: Number,
       required: [true, "can't be blank"],
+      index: true,
     },
     discountedDailyPrice: {
       type: Number,

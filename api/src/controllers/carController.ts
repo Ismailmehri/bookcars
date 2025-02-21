@@ -924,6 +924,24 @@ export const getFrontendCars = async (req: Request, res: Response) => {
         },
       },
       {
+        $group: {
+          _id: '$supplier._id',
+          cars: { $push: '$$ROOT' },
+        },
+      },
+      {
+        $project: {
+          cars: { $slice: ['$cars', 2] }, // Garde seulement 2 voitures par fournisseur
+        },
+      },
+      {
+        $unwind: '$cars',
+      },
+      {
+        $replaceRoot: { newRoot: '$cars' },
+      },
+
+      {
         $facet: {
           resultData: [
             { $sort: { dailyPriceWithDiscount: 1, supplierReservationCount: 1 } },

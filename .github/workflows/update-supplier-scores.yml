@@ -19,4 +19,4 @@ jobs:
         run: |
           curl -X POST \
             -H "Authorization: x-api-key $API_KEY" \
-            https://plany.tn/api/cron/suppliers/update-score
+            https://api.plany.tn/api/cron/suppliers/update-score

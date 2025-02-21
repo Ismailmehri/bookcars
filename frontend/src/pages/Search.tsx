@@ -471,15 +471,15 @@ const Search = () => {
                   onSubmit={handleCarFilterSubmit}
                 />
                 <SupplierFilter className="filter" suppliers={suppliers} onChange={handleSupplierFilterChange} />
-                <CarRatingFilter className="filter" onChange={handleRatingFilterChange} />
+                { /* <CarRatingFilter className="filter" onChange={handleRatingFilterChange} />
                 <CarRangeFilter className="filter" onChange={handleRangeFilterChange} />
                 <CarMultimediaFilter className="filter" onChange={handleMultimediaFilterChange} />
                 <CarSeatsFilter className="filter" onChange={handleSeatsFilterChange} />
-                <CarSpecsFilter className="filter" onChange={handleCarSpecsFilterChange} />
+                <FuelPolicyFilter className="filter" onChange={handleFuelPolicyFilterChange} />
+                <CarSpecsFilter className="filter" onChange={handleCarSpecsFilterChange} /> */}
                 <CarType className="filter" onChange={handleCarTypeFilterChange} />
                 <GearboxFilter className="filter" onChange={handleGearboxFilterChange} />
                 <MileageFilter className="filter" onChange={handleMileageFilterChange} />
-                <FuelPolicyFilter className="filter" onChange={handleFuelPolicyFilterChange} />
                 <DepositFilter className="filter" onChange={handleDepositFilterChange} />
               </>
             )}

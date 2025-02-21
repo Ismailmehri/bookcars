@@ -18,5 +18,5 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
         run: |
           curl -X POST \
-            -H "Authorization: x-api-key $API_KEY" \
+            -H "x-api-key: $API_KEY" \
             https://api.plany.tn/api/cron/suppliers/update-score

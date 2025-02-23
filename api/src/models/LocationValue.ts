@@ -18,6 +18,10 @@ const locationValueSchema = new Schema<env.LocationValue>(
       index: true,
       trim: true,
     },
+    cleanValue: {
+      type: String,
+      index: true,
+    },
   },
   {
     timestamps: true,

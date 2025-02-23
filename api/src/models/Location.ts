@@ -21,6 +21,11 @@ const locationSchema = new Schema<env.Location>(
       required: [true, "can't be blank"],
       validate: (value: any): boolean => Array.isArray(value),
     },
+    slug: {
+      type: String,
+      unique: true,
+      index: true,
+    },
     image: {
       type: String,
     },

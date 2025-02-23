@@ -411,8 +411,9 @@ export interface User {
   carCount?: number
   contracts?: Contract[]
   emailLogs?: EmailLog[]
-  reviews?: Review[];
+  reviews?: Review[]
   score?: number
+  slug?: string
 }
 
 export interface Option {
@@ -444,6 +445,7 @@ export interface Location {
   name?: string
   values?: LocationValue[]
   image?: string
+  slug?: string
   parkingSpots?: ParkingSpot[]
 }
 

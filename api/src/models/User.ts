@@ -120,6 +120,11 @@ const userSchema = new Schema<env.User>(
         default: Date.now,
       },
     }],
+    slug: {
+      type: String,
+      unique: true,
+      index: true,
+    },
     contracts: [{
       language: {
         type: String,

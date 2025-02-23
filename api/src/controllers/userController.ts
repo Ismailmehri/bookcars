@@ -36,6 +36,30 @@ const getStatusMessage = (lang: string, msg: string) => (
   `<!DOCTYPE html><html lang="'${lang}'"><head></head><body><p>${msg}</p></body></html>`
 )
 
+function generateUniqueSlug(value: string, existingSlugs?: Set<string> | undefined): string {
+  let slug = value
+    .toLowerCase()
+    .trim()
+    .normalize('NFD') // Normalisation Unicode pour décomposer les accents
+    .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+    .replace(/[^a-z0-9\s-]+/gi, '') // Supprimer tout sauf lettres, chiffres, espaces et tirets
+    .replace(/\s+/g, '-') // Remplacer les espaces par des tirets
+    .replace(/-+/g, '-') // Remplacer plusieurs tirets consécutifs par un seul tiret
+
+  const originalSlug = slug
+
+  if (existingSlugs === undefined || existingSlugs.has(slug)) {
+    const randomNumber = Math.floor(Math.random() * 10000) // Génère un nombre aléatoire entre 0 et 9999
+    const paddedNumber = String(randomNumber).padStart(4, '0') // Formate le nombre pour qu'il ait toujours 4 chiffres
+    slug = `${originalSlug}-${paddedNumber}`
+  }
+
+  if (existingSlugs) {
+    existingSlugs.add(slug)
+  }
+  return slug
+}
+
 /**
  * Sign Up.
  *
@@ -65,6 +89,7 @@ const _signup = async (req: Request, res: Response, userType: bookcarsTypes.User
     body.password = passwordHash
 
     user = new User(body)
+    user.slug = generateUniqueSlug(user.fullName)
     await user.save()
 
     if (body.avatar) {
@@ -1017,6 +1042,7 @@ export const update = async (req: Request, res: Response) => {
 
     if (fullName) {
       user.fullName = fullName
+      user.slug = generateUniqueSlug(fullName)
     }
     user.phone = phone
     user.location = location

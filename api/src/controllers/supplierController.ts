@@ -305,8 +305,8 @@ export const getSuppliers = async (req: Request, res: Response) => {
     )
 
     data[0].resultData = data[0].resultData.map((supplier: env.User) => {
-      const { _id, fullName, avatar } = supplier
-      return { _id, fullName, avatar }
+      const { _id, fullName, avatar, slug } = supplier
+      return { _id, fullName, avatar, slug }
     })
 
     return res.json(data)
@@ -360,6 +360,7 @@ export const getAllSuppliers = async (req: Request, res: Response) => {
             avatar: 1,
             verified: 1,
             active: 1,
+            slug: 1,
             carCount: 1, // Inclure le champ `carCount` dans les résultats
           },
         },
@@ -482,6 +483,7 @@ export const getFrontendSuppliers = async (req: Request, res: Response) => {
             fullName: { $first: '$supplier.fullName' },
             avatar: { $first: '$supplier.avatar' },
             score: { $first: '$supplier.score' },
+            slug: { $first: '$supplier.slug' },
             carCount: { $sum: 1 },
           },
         },

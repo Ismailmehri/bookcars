@@ -116,11 +116,10 @@ const CarFilter = ({
     if (!pickupLocation) return
 
     const domain = window.location.origin
-    let url = `${domain}/search?pickupLocation=${pickupLocation._id}`
+    let url = `${domain}/search/${pickupLocation.slug}`
 
     if (suppliers && suppliers.length > 0) {
-      const suppliersList = suppliers.join(',')
-      url += `&supplier=${suppliersList}`
+      url += `/${suppliers[0]}`
     }
 
     navigator.clipboard.writeText(url)

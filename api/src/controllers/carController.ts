@@ -931,7 +931,7 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       },
       {
         $project: {
-          cars: { $slice: ['$cars', 2] }, // Garde seulement 2 voitures par fournisseur
+          cars: { $slice: ['$cars', suppliers.length > 5 ? 2 : 20] }, // Garde seulement 2 voitures par fournisseur
         },
       },
       {

@@ -454,7 +454,8 @@ export interface User extends Document {
   expireAt?: Date
   emailLogs?: EmailLog[]
   reviews?: Review[]
-  score: number
+  score: number,
+  slug?: string;
 }
 
 /**
@@ -669,6 +670,8 @@ export interface BookingInfo {
 export interface LocationValue extends Document {
   language: string
   value: string
+  cleanValue?: string;
+  slug?: string;
 }
 
 /**
@@ -712,6 +715,7 @@ export interface Location extends Document {
   values: Types.ObjectId[]
   name?: string
   image?: string | null
+  slug?: string
   parkingSpots?: Types.ObjectId[] | null
 }
 

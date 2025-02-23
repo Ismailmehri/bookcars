@@ -42,6 +42,36 @@ export const validate = async (req: Request, res: Response) => {
   }
 }
 
+function normalizeText(text: string): string {
+  return text
+    .normalize('NFD') // Normalisation Unicode pour décomposer les accents
+    .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+    .replace(/[^a-zA-Z\s-]/g, '') // Garder uniquement lettres, espaces et tirets
+}
+
+// Fonction pour générer un slug unique
+function generateUniqueSlug(value: string, existingSlugs: Set<string>): string {
+  let slug = value
+    .toLowerCase()
+    .trim()
+    .normalize('NFD') // Normalisation Unicode pour décomposer les accents
+    .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+    .replace(/[^a-z0-9\s-]+/gi, '') // Supprimer tout sauf lettres, chiffres, espaces et tirets
+    .replace(/\s+/g, '-') // Remplacer les espaces par des tirets
+    .replace(/-+/g, '-') // Remplacer plusieurs tirets consécutifs par un seul tiret
+
+  let counter = 1
+  const originalSlug = slug
+
+  while (existingSlugs.has(slug)) {
+    slug = `${originalSlug}-${counter}`
+    counter += 1
+  }
+
+  existingSlugs.add(slug)
+  return slug
+}
+
 const createParkingSpot = async (parkingSpot: bookcarsTypes.ParkingSpot): Promise<string> => {
   const parkinSpotValues = []
   if (parkingSpot.values) {
@@ -106,6 +136,7 @@ export const create = async (req: Request, res: Response) => {
       const locationValue = new LocationValue({
         language: name.language,
         value: name.name,
+        cleanValue: normalizeText(name.name),
       })
       await locationValue.save()
       values.push(locationValue.id)
@@ -118,6 +149,7 @@ export const create = async (req: Request, res: Response) => {
       values,
       parkingSpots,
     })
+    location.slug = generateUniqueSlug(names[0].name, new Set())
     await location.save()
 
     if (image) {
@@ -171,6 +203,7 @@ export const update = async (req: Request, res: Response) => {
           const lv = new LocationValue({
             language: name.language,
             value: name.name,
+            cleanValue: normalizeText(name.name),
           })
           await lv.save()
           location.values.push(lv)
@@ -246,6 +279,7 @@ export const update = async (req: Request, res: Response) => {
         }
       }
 
+      location.slug = generateUniqueSlug(names[0].name, new Set())
       await location.save()
 
       return res.json(location)
@@ -314,9 +348,17 @@ export const deleteLocation = async (req: Request, res: Response) => {
 export const getLocation = async (req: Request, res: Response) => {
   const { id } = req.params
 
+  const isValidObjectId = (objectId: string) => mongoose.Types.ObjectId.isValid(objectId)
+
+  let query // Par défaut, on cherche par slug
+  if (isValidObjectId(id)) {
+    query = { _id: new mongoose.Types.ObjectId(id) }
+  } else {
+    query = { slug: id }
+  }
+
   try {
-    const location = await Location
-      .findById(id)
+    const location = await Location.findOne(query)
       .populate<{ country: env.CountryInfo }>({
         path: 'country',
         populate: {
@@ -385,7 +427,7 @@ export const getLocations = async (req: Request, res: Response) => {
                   $and: [
                     { $expr: { $in: ['$_id', '$$values'] } },
                     { $expr: { $eq: ['$language', language] } },
-                    { $expr: { $regexMatch: { input: '$value', regex: keyword, options } } },
+                    { $expr: { $regexMatch: { input: '$cleanValue', regex: keyword, options } } },
                   ],
                 },
               },
@@ -446,7 +488,7 @@ export const getLocations = async (req: Request, res: Response) => {
           },
         },
       ],
-      { collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 } },
+      { collation: { locale: env.DEFAULT_LANGUAGE, strength: 1 } },
     )
 
     return res.json(locations)

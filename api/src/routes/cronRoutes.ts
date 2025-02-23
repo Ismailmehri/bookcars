@@ -12,4 +12,5 @@ router.post(routeNames.notifySuppliersWithPendingBookings, apiKeyValidator, cron
 router.post(routeNames.notifySuppliersWithoutHighSeasonPrices, apiKeyValidator, cronController.notifySuppliersWithoutHighSeasonPrices)
 router.post(routeNames.notifySuppliersWithLowScores, apiKeyValidator, cronController.notifyAgenciesWithLowScores)
 router.post(routeNames.updateSupplierScores, apiKeyValidator, cronController.updateSupplierScores)
+router.get(routeNames.migrateToSlug, apiKeyValidator, cronController.migrateToSlug)
 export default router

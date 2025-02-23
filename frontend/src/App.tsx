@@ -44,7 +44,7 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<Home />} />
-            <Route path="/search" element={<Search />} />
+            <Route path="/search/:pickupLocationSlug?/:supplierSlug?" element={<Search />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/checkout-session/:sessionId" element={<CheckoutSession />} />
             <Route path="/bookings" element={<Bookings />} />

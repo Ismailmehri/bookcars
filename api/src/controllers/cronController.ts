@@ -1,5 +1,7 @@
 import { Request, Response } from 'express'
 import nodemailer from 'nodemailer'
+import LocationValue from '../models/LocationValue'
+import Location from '../models/Location'
 import * as bookcarsTypes from ':bookcars-types'
 import User from '../models/User'
 import Car from '../models/Car'
@@ -763,7 +765,7 @@ export const notifyAgenciesWithLowScores = async (req: Request, res: Response) =
     }
   }
 
-export const updateSupplierScores = async (req: Request, res: Response) => {
+export const updateSupplierScores = async (_req: Request, res: Response) => {
 try {
     // Récupérer tous les suppliers
     const suppliers = await User.find({ type: bookcarsTypes.UserType.Supplier }) as bookcarsTypes.User[]
@@ -801,3 +803,118 @@ try {
     return res.status(500).json({ message: 'Internal server error', error: err })
 }
 }
+
+// Fonction pour normaliser le texte (supprimer accents et caractères spéciaux)
+function normalizeText(text: string): string {
+    return text
+      .normalize('NFD') // Normalisation Unicode pour décomposer les accents
+      .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+      .replace(/[^a-zA-Z\s-]/g, '') // Garder uniquement lettres, espaces et tirets
+  }
+
+  // Fonction pour générer un slug unique
+function generateUniqueSlug(value: string, existingSlugs: Set<string>): string {
+    let slug = value
+      .toLowerCase()
+      .trim()
+      .normalize('NFD') // Normalisation Unicode pour décomposer les accents
+      .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+      .replace(/[^a-z0-9\s-]+/gi, '') // Supprimer tout sauf lettres, chiffres, espaces et tirets
+      .replace(/\s+/g, '-') // Remplacer les espaces par des tirets
+      .replace(/-+/g, '-') // Remplacer plusieurs tirets consécutifs par un seul tiret
+
+    let counter = 1
+    const originalSlug = slug
+
+    while (existingSlugs.has(slug)) {
+      slug = `${originalSlug}-${counter}`
+      counter += 1
+    }
+
+    existingSlugs.add(slug)
+    return slug
+  }
+
+  // Script principal pour mettre à jour la collection
+  export const migrateToSlug = async (_req: Request, res: Response) => {
+    try {
+      console.log('Démarrage de la migration de la collection LocationValue...')
+
+      // Récupérer toutes les entrées où valueAlphabet n'existe pas encore
+      const locationValues = await LocationValue.find({ cleanValue: { $exists: false } })
+
+      if (locationValues.length === 0) {
+        console.log('Aucune mise à jour nécessaire.')
+      }
+
+      for (const location of locationValues) {
+        // Générer valueAlphabet
+        const cleanValue = normalizeText(location.value)
+
+        // Mettre à jour l'entrée
+        await LocationValue.findByIdAndUpdate(location._id, {
+          $set: {
+            cleanValue,
+          },
+        })
+
+        console.log(`Mise à jour de l'entrée ${location._id} : valueAlphabet=${cleanValue}`)
+      }
+
+      console.log('Démarrage de la migration de la collection Location...')
+
+      // Récupérer toutes les entrées où valueAlphabet n'existe pas encore
+      const locations = await Location.find({ slug: { $exists: false } }).populate<{ values: env.LocationValue[] }>('values')
+
+      if (locations.length === 0) {
+        console.log('Aucune mise à jour nécessaire.')
+      }
+
+      const existingSlugs = new Set<string>() // Pour s'assurer que les slugs sont uniques
+
+      for (const location of locations) {
+        // Générer slug
+        const slug = await generateUniqueSlug(location.values[0].value, existingSlugs)
+
+        // Mettre à jour l'entrée
+        await Location.findByIdAndUpdate(location._id, {
+          $set: {
+            slug,
+          },
+        })
+
+        console.log(`Mise à jour de l'entrée ${location._id} : `)
+      }
+
+      console.log('Démarrage de la migration de la collection User...')
+
+      // Récupérer toutes les entrées où valueAlphabet n'existe pas encore
+      const suppliers = await User.find({ slug: { $exists: false }, type: 'supplier' })
+
+      if (suppliers.length === 0) {
+        console.log('Aucune mise à jour nécessaire.')
+      }
+
+      const existingSupplierSlugs = new Set<string>() // Pour s'assurer que les slugs sont uniques
+
+      for (const supplier of suppliers) {
+        // Générer slug
+        const slug = await generateUniqueSlug(supplier.fullName, existingSupplierSlugs)
+
+        // Mettre à jour l'entrée
+        await User.findByIdAndUpdate(supplier._id, {
+          $set: {
+            slug,
+          },
+        })
+
+        console.log(`Mise à jour de l'entrée ${supplier.fullName} : slug=${slug}`)
+      }
+
+      console.log('Migration terminée avec succès.')
+      return res.status(200).json({ message: 'Migration terminée avec succès.' })
+    } catch (error) {
+      console.error('Erreur lors de la migration des données :', error)
+      return res.status(500).send('Erreur lors de la migration.')
+    }
+  }

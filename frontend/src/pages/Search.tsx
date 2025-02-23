@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 import { Box, Dialog, DialogContent, DialogTitle, IconButton, Paper, Slider, Typography } from '@mui/material'
 import { Close as CloseIcon } from '@mui/icons-material'
 import { Helmet } from 'react-helmet'
@@ -14,18 +14,12 @@ import * as SupplierService from '@/services/SupplierService'
 import Layout from '@/components/Layout'
 import NoMatch from './NoMatch'
 import CarFilter from '@/components/CarFilter'
-import CarSpecsFilter from '@/components/CarSpecsFilter'
 import SupplierFilter from '@/components/SupplierFilter'
 import CarType from '@/components/CarTypeFilter'
 import GearboxFilter from '@/components/GearboxFilter'
 import MileageFilter from '@/components/MileageFilter'
-import FuelPolicyFilter from '@/components/FuelPolicyFilter'
 import DepositFilter from '@/components/DepositFilter'
 import CarList from '@/components/CarList'
-import CarRatingFilter from '@/components/CarRatingFilter'
-import CarRangeFilter from '@/components/CarRangeFilter'
-import CarMultimediaFilter from '@/components/CarMultimediaFilter'
-import CarSeatsFilter from '@/components/CarSeatsFilter'
 import Map from '@/components/Map'
 
 import ViewOnMap from '@/assets/img/view-on-map.png'
@@ -35,6 +29,7 @@ import LocationHeader from '@/components/LocationHeader'
 
 const Search = () => {
   const location = useLocation()
+  const { pickupLocationSlug, supplierSlug } = useParams()
 
   const [visible, setVisible] = useState(false)
   const [noMatch, setNoMatch] = useState(false)
@@ -117,11 +112,8 @@ const Search = () => {
 
   const handleSupplierFilterChange = (newSuppliers: string[]) => {
     setSupplierIds(newSuppliers)
-    setSelectedSupplier(newSuppliers)
-  }
-
-  const handleRatingFilterChange = (value: number) => {
-    setRating(value)
+    const filteredSuppliers = suppliers.filter((s) => s._id && newSuppliers.includes(s._id.toString())).map((s) => s.slug) as string[]
+    setSelectedSupplier(filteredSuppliers.length === suppliers.length ? [] : filteredSuppliers)
   }
 
   const handleChange = (_event: Event, newValue: number | number[]) => {
@@ -159,21 +151,6 @@ const Search = () => {
     }]
 
   const valuetext = (value: number) => `${value}DT`
-  const handleRangeFilterChange = (value: bookcarsTypes.CarRange[]) => {
-    setRanges(value)
-  }
-
-  const handleMultimediaFilterChange = (value: bookcarsTypes.CarMultimedia[]) => {
-    setMultimedia(value)
-  }
-
-  const handleSeatsFilterChange = (value: number) => {
-    setSeats(value)
-  }
-
-  const handleCarSpecsFilterChange = (value: bookcarsTypes.CarSpecs) => {
-    setCarSpecs(value)
-  }
 
   const handleCarTypeFilterChange = (values: bookcarsTypes.CarType[]) => {
     setCarType(values)
@@ -187,10 +164,6 @@ const Search = () => {
     setMileage(values)
   }
 
-  const handleFuelPolicyFilterChange = (values: bookcarsTypes.FuelPolicy[]) => {
-    setFuelPolicy(values)
-  }
-
   const handleDepositFilterChange = (value: number) => {
     setDeposit(value)
   }
@@ -199,9 +172,8 @@ const Search = () => {
     const searchParams = new URLSearchParams(window.location.search)
     const pickupLocationIdFromUrl = searchParams.get('pickupLocation') || null
     const suppliersFromUrl = searchParams.get('supplier')?.split(',').filter(Boolean) || []
-
     const { state } = location
-    const pickupLocationId = state?.pickupLocationId || pickupLocationIdFromUrl
+    const pickupLocationId = state?.pickupLocationId || pickupLocationIdFromUrl || pickupLocationSlug
     const dropOffLocationId = state?.dropOffLocationId || null
     const _from = state?.from || null
     const _to = state?.to || null
@@ -261,8 +233,9 @@ const Search = () => {
 
       if (suppliersFromUrl && suppliersFromUrl.length > 0) {
         _suppliers = _suppliers.filter((s) => s._id && suppliersFromUrl.includes(s._id))
+      } else if (supplierSlug) {
+        _suppliers = _suppliers.filter((s) => s.slug === supplierSlug)
       }
-
       const _supplierIds = bookcarsHelper.flattenSuppliers(_suppliers)
 
       setPickupLocation(_pickupLocation)

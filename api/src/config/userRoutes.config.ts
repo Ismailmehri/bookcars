@@ -40,6 +40,7 @@ const routes = {
   notifySuppliersWithoutHighSeasonPrices: '/api/cron/suppliers/high-season-prices',
   notifySuppliersWithLowScores: '/api/cron/suppliers/low-scores',
   updateSupplierScores: '/api/cron/suppliers/update-score',
+  migrateToSlug: '/api/cron/migrate-to-slug',
 }
 
 export default routes

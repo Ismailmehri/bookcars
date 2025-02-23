@@ -193,7 +193,7 @@ div.booking .btn-cancel:hover {
     padding: 5px;
     margin: 10px;
     width: 100%;
-    max-width: 360px;
+    max-width: 95%;
   }
 
   div.booking .btn-checkout,

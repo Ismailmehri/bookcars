@@ -50,10 +50,10 @@ const Footer = () => {
         {' '}
         {/* Ajout d'une clé unique */}
         <a
-          href={`/search?pickupLocation=${location._id}`} // Lien cliquable
+          href={`/search/${location.slug}`} // Lien cliquable
           onClick={(e) => {
             e.preventDefault() // Empêche le rechargement de la page
-            navigate(`/search?pickupLocation=${location._id}`) // Navigation avec React Router
+            navigate(`/search/${location.slug}`) // Navigation avec React Router
           }}
         >
           Location voiture à

@@ -1239,6 +1239,7 @@ export const getUser = async (req: Request, res: Response) => {
       customerId: 1,
       active: 1,
       reviews: 1,
+      slug: 1,
     }).lean()
 
     if (!user) {

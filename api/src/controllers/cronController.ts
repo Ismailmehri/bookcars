@@ -918,3 +918,105 @@ function generateUniqueSlug(value: string, existingSlugs: Set<string>): string {
       return res.status(500).send('Erreur lors de la migration.')
     }
   }
+
+  export const notifyAgenciesWithCarsURL = async (req: Request, res: Response) => {
+    try {
+      // Récupérer les paramètres de l'URL
+      const shouldSendMail = req.query.mail === 'true'
+      const limit = parseInt(req.query.limit as string, 10) || 0
+
+      // Récupérer tous les suppliers
+      const suppliers = await User.find({ type: bookcarsTypes.UserType.Supplier }) as bookcarsTypes.User[]
+
+      // Compteur d'e-mails envoyés
+      let emailsSent = 0
+
+      // Parcourir chaque supplier
+      for (const supplier of suppliers) {
+        try {
+          // Récupérer les voitures disponibles du supplier
+          const cars = (await Car.find({ supplier: supplier._id }) as bookcarsTypes.Car[]).filter((car) => car.available)
+
+          // Vérifier si le supplier a au moins une voiture disponible
+          if (cars.length > 0 && supplier.slug) {
+            // Générer l'URL unique de l'agence
+            const agencyUrl = `https://plany.tn/search/agence/${encodeURIComponent(supplier.slug)}`
+
+            // Préparer le contenu du mail
+            i18n.locale = supplier.language || 'fr'
+            const mailOptions = {
+                from: env.SMTP_FROM,
+                to: supplier.email,
+                subject: i18n.t('SHARE_YOUR_AGENCY'),
+                html: `
+                  <div style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto; color: #2C3E50;">
+                    <h2 style="color: #3498DB; text-align: center;">🚗 ${i18n.t('SHARE_YOUR_AGENCY_HEADER')}</h2>
+                    
+                    <p>${i18n.t('DEAR_AGENCY', { agency: supplier.fullName })}</p>
+              
+                    <p>${i18n.t('AGENCY_URL_DESCRIPTION')}</p>
+              
+                    <div style="background: #F8F9FA; padding: 15px; border-radius: 5px; text-align: center; margin: 20px 0;">
+                      <strong>${i18n.t('YOUR_UNIQUE_URL')} :</strong><br>
+                      <a href="${agencyUrl}" style="color: #3498DB; font-size: 16px; font-weight: bold; word-break: break-word;">
+                        ${agencyUrl}
+                      </a>
+                    </div>
+              
+                    <h3>${i18n.t('AGENCY_URL_BENEFITS')}</h3>
+                    <ul style="padding-left: 20px;">
+                      <li>✅ ${i18n.t('BENEFIT_VISIBILITY')}</li>
+                      <li>✅ ${i18n.t('BENEFIT_DIRECT_BOOKING')}</li>
+                      <li>✅ ${i18n.t('BENEFIT_MANAGEMENT')}</li>
+                    </ul>
+              
+                    <p style="font-size: 16px;"><strong>${i18n.t('SHARE_ON_SOCIAL_MEDIA')}</strong></p>
+                    <p>${i18n.t('INVITE_TO_SHARE', { agencyUrl })}</p>
+              
+                    <div style="text-align: center; margin: 20px 0;">
+                    <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(agencyUrl)}&quote=${encodeURIComponent(`Vous pouvez réserver votre voiture en ligne avec ${supplier.fullName}`)}" 
+                        style="display: inline-flex; align-items: center; text-decoration: none; color: #1877F2; font-weight: bold;">
+                        <img src="https://get-picto.com/wp-content/uploads/2023/08/logo-facebook-blanc-100x100.webp" 
+                            alt="Partager sur Facebook" width="40" style="margin-right: 8px;">
+                        Partager sur Facebook
+                    </a>
+                    </div>
+              
+                    <p style="font-size: 14px; color: #7F8C8D;">${i18n.t('CONTACT_US_NOW')} :</p>
+                    <p style="font-size: 14px; color: #7F8C8D;"><strong>Email :</strong> contact@plany.tn</p>
+                    <p style="font-size: 14px; color: #7F8C8D;"><strong>Site web :</strong> <a href="https://plany.tn" style="color: #3498DB;">www.plany.tn</a></p>
+              
+                    <div style="margin-top: 30px; border-top: 1px solid #ECF0F1; padding-top: 20px; text-align: center;">
+                      <img src="https://plany.tn/logo.png" alt="Plany.tn" style="max-width: 150px;"/>
+                    </div>
+                  </div>
+                `,
+              }
+
+            // Envoyer le mail si activé
+            if (shouldSendMail && supplier.active && supplier.verified) {
+              await mailHelper.sendMail(mailOptions)
+              logger.info(`Agency URL email sent to ${supplier.email}`)
+              logger.info(`URL: ${agencyUrl}`)
+              emailsSent += 1
+
+              // Arrêter si la limite est atteinte
+              if (limit > 0 && emailsSent >= limit) {
+                break
+              }
+            }
+          }
+        } catch (err) {
+          logger.error(`Failed to send email to ${supplier.email}:`, err)
+        }
+      }
+
+      // Retourner une réponse réussie
+      return res.status(200).json({
+        message: i18n.t('EMAILS_SENT', { count: emailsSent }),
+      })
+    } catch (err) {
+      logger.error(`[notification.notifyAgenciesWithCars] ${i18n.t('DB_ERROR')}`, err)
+      return res.status(500).json({ message: 'Internal server error', error: err })
+    }
+  }

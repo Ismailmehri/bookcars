@@ -49,6 +49,16 @@ div.bookings {
 }
 
 /* Device width is greater than or equal to 960px */
+.copy-link {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  margin: 8px 10px 0px 0px;
+}
+
+.copy-link button {
+  width: 100%;
+}
 
 @media only screen and (width >= 960px) {
   div.bookings {

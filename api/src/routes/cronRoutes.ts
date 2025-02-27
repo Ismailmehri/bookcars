@@ -13,4 +13,5 @@ router.post(routeNames.notifySuppliersWithoutHighSeasonPrices, apiKeyValidator, 
 router.post(routeNames.notifySuppliersWithLowScores, apiKeyValidator, cronController.notifyAgenciesWithLowScores)
 router.post(routeNames.updateSupplierScores, apiKeyValidator, cronController.updateSupplierScores)
 router.get(routeNames.migrateToSlug, apiKeyValidator, cronController.migrateToSlug)
+router.get(routeNames.notifyAgenciesWithCarsURL, apiKeyValidator, cronController.notifyAgenciesWithCarsURL)
 export default router

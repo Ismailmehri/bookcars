@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '@mui/material'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import Layout from '@/components/Layout'
@@ -46,6 +47,13 @@ const Bookings = () => {
 
   const handleBookingFilterSubmit = (_filter: bookcarsTypes.Filter | null) => {
     setFilter(_filter)
+  }
+
+  const handleCopyLink = () => {
+    if (!user) return
+
+    const url = `https://plany.tn/search/agence/${user.slug}`
+    navigator.clipboard.writeText(url)
   }
 
   const onLoad = async (_user?: bookcarsTypes.User) => {
@@ -98,6 +106,16 @@ const Bookings = () => {
                   className="cl-booking-filter"
                   collapse={!env.isMobile()}
                 />
+                <div className="copy-link">
+                  <Button
+                    startIcon={<ContentCopyIcon />}
+                    onClick={handleCopyLink}
+                    variant="outlined"
+                    size="small"
+                  >
+                    Copier et partager le lien de votre agence
+                  </Button>
+                </div>
               </>
             )}
           </div>

@@ -173,7 +173,7 @@ const Search = () => {
     const pickupLocationIdFromUrl = searchParams.get('pickupLocation') || null
     const suppliersFromUrl = searchParams.get('supplier')?.split(',').filter(Boolean) || []
     const { state } = location
-    const pickupLocationId = state?.pickupLocationId || pickupLocationIdFromUrl || pickupLocationSlug
+    const pickupLocationId = state?.pickupLocationId || pickupLocationIdFromUrl || pickupLocationSlug || 'aeroport-international-de-tunis-carthage'
     const dropOffLocationId = state?.dropOffLocationId || null
     const _from = state?.from || null
     const _to = state?.to || null
@@ -195,7 +195,7 @@ const Search = () => {
     const endDate = _to ? new Date(_to) : defaultTo
 
     try {
-      const _pickupLocation = await LocationService.getLocation(pickupLocationId)
+      const _pickupLocation = await LocationService.getLocation(pickupLocationId, supplierSlug)
       if (!_pickupLocation) {
         setLoading(false)
         setNoMatch(true)
@@ -203,7 +203,7 @@ const Search = () => {
       }
 
       const _dropOffLocation = dropOffLocationId && dropOffLocationId !== pickupLocationId
-        ? await LocationService.getLocation(dropOffLocationId)
+        ? await LocationService.getLocation(pickupLocationId, supplierSlug)
         : _pickupLocation
 
       if (!_dropOffLocation) {

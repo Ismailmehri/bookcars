@@ -35,12 +35,16 @@ export const getLocationsWithPosition = (): Promise<bookcarsTypes.Location[]> =>
  * @param {string} id
  * @returns {Promise<bookcarsTypes.Location>}
  */
-export const getLocation = (id: string): Promise<bookcarsTypes.Location> =>
-  axiosInstance
-    .get(
-      `/api/location/${encodeURIComponent(id)}/${UserService.getLanguage()}`
-    )
-    .then((res) => res.data)
+export const getLocation = (id: string, supplierSlug?: string): Promise<bookcarsTypes.Location> => {
+  let url = `/api/location/${encodeURIComponent(id)}/${UserService.getLanguage()}`
+
+  // Ajouter supplierSlug à l'URL s'il est fourni
+  if (supplierSlug) {
+    url += `/${encodeURIComponent(supplierSlug)}`
+  }
+
+  return axiosInstance.get(url).then((res) => res.data)
+}
 
 /**
  * Get Loaction ID by name (en).

@@ -3,7 +3,7 @@ const routes = {
   create: '/api/create-location',
   update: '/api/update-location/:id',
   delete: '/api/delete-location/:id',
-  getLocation: '/api/location/:id/:language',
+  getLocation: '/api/location/:id/:language/:supplierSlug?',
   getLocations: '/api/locations/:page/:size/:language',
   getLocationsWithPosition: '/api/locations-with-position/:language',
   checkLocation: '/api/check-location/:id',

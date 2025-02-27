@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid'
 import escapeStringRegexp from 'escape-string-regexp'
 import mongoose from 'mongoose'
 import { Request, Response } from 'express'
+import User from 'src/models/User'
 import * as bookcarsTypes from ':bookcars-types'
 import * as helper from '../common/helper'
 import * as env from '../config/env.config'
@@ -345,56 +346,116 @@ export const deleteLocation = async (req: Request, res: Response) => {
  * @param {Response} res
  * @returns {unknown}
  */
+
 export const getLocation = async (req: Request, res: Response) => {
-  const { id } = req.params
-
-  const isValidObjectId = (objectId: string) => mongoose.Types.ObjectId.isValid(objectId)
-
-  let query // Par défaut, on cherche par slug
-  if (isValidObjectId(id)) {
-    query = { _id: new mongoose.Types.ObjectId(id) }
-  } else {
-    query = { slug: id }
-  }
+  const { id, supplierSlug } = req.params
+  const language = 'fr' // Français par défaut
 
   try {
-    const location = await Location.findOne(query)
-      .populate<{ country: env.CountryInfo }>({
-        path: 'country',
-        populate: {
-          path: 'values',
-          model: 'LocationValue',
-        },
-      })
-      .populate<{ values: env.LocationValue[] }>('values')
-      .populate<{ parkingSpots: env.ParkingSpot[] }>({
-        path: 'parkingSpots',
-        populate: {
-          path: 'values',
-          model: 'LocationValue',
-        },
-      })
-      .lean()
+    let location
 
-    if (location) {
-      if (location.country) {
-        const countryName = ((location.country as env.CountryInfo).values as env.LocationValue[]).filter((value) => value.language === req.params.language)[0].value
-        location.country.name = countryName
-      }
-      if (location.parkingSpots && location.parkingSpots.length > 0) {
-        for (const parkingSpot of location.parkingSpots) {
-          parkingSpot.name = (parkingSpot.values as env.LocationValue[]).filter((value) => value.language === req.params.language)[0].value
-        }
-      }
-      const name = (location.values as env.LocationValue[]).filter((value) => value.language === req.params.language)[0].value
-      const l = { ...location, name }
-      return res.json(l)
+    // Cas 1 : Récupération via supplierSlug
+    if (supplierSlug) {
+      const result = await User.aggregate([
+        { $match: { slug: supplierSlug } },
+        {
+          $lookup: {
+            from: 'Car',
+            localField: '_id',
+            foreignField: 'supplier',
+            as: 'cars',
+          },
+        },
+        { $unwind: '$cars' },
+        {
+          $project: {
+            locationId: { $arrayElemAt: ['$cars.locations', 0] }, // Premier élément seulement
+          },
+        },
+        {
+          $lookup: {
+            from: 'Location',
+            localField: 'locationId',
+            foreignField: '_id',
+            as: 'location',
+          },
+        },
+        { $unwind: '$location' },
+        {
+          $lookup: {
+            from: 'LocationValue',
+            let: { values: '$location.values' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $in: ['$_id', '$$values'] },
+                      { $eq: ['$language', language] },
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'value',
+          },
+        },
+        { $unwind: { path: '$value', preserveNullAndEmptyArrays: false } },
+        { $addFields: { 'location.name': '$value.value' } },
+        { $replaceRoot: { newRoot: '$location' } },
+      ]);
+
+      [location] = result // Déstructuration de tableau
+    } else {
+      const aggregation = [
+        {
+          $match: mongoose.isValidObjectId(id)
+            ? { _id: new mongoose.Types.ObjectId(id) }
+            : { slug: id },
+        },
+        {
+          $lookup: {
+            from: 'LocationValue',
+            let: { values: '$values' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $in: ['$_id', '$$values'] },
+                      { $eq: ['$language', 'fr'] }, // Fallback FR explicite
+                    ],
+                  },
+                },
+              },
+            ],
+            as: 'value',
+          },
+        },
+        { $unwind: '$value' },
+        { $addFields: { name: '$value.value' } },
+      ]
+
+      const result = await Location.aggregate(aggregation);
+      [location] = result // Déstructuration de tableau
     }
-    logger.error('[location.getLocation] Location not found:', id)
-    return res.sendStatus(204)
-  } catch (err) {
-    logger.error(`[location.getLocation] ${i18n.t('DB_ERROR')} ${id}`, err)
-    return res.status(400).send(i18n.t('DB_ERROR') + err)
+
+    // Vérification finale
+    if (!location) {
+      return res.status(404).json({ message: 'Location non trouvée' })
+    }
+
+    // Formatage de la réponse
+    const { _id, name, value, ...rest } = location
+    return res.status(200).json({
+      _id,
+      name: name || 'Sans nom',
+      value: value?.value || 'Valeur non disponible',
+      ...rest,
+    })
+  } catch (error) {
+    console.error('Erreur dans getLocation:', error)
+    return res.status(500).json({ message: 'Erreur serveur' })
   }
 }
 

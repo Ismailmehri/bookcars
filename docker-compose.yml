@@ -84,11 +84,22 @@ services:
     volumes:
       - cdn:/usr/share/nginx/html/cdn/bookcars
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro  # Montez le fichier de configuration
+      - ./nginx-cache:/var/cache/nginx  # Volume pour le cache nginx
+    environment:
+      - NGINX_PROXY_CACHE_VALID=200 30d  # Cache les réponses 200 pendant 30 jours
+      - NGINX_PROXY_CACHE_USE_STALE=error timeout http_500 http_502 http_503 http_504  # Utilise le cache en cas d'erreur
+      - NGINX_PROXY_CACHE_MIN_USES=1  # Cache après 1 utilisation
+      - NGINX_CONF_GZIP=on  # Active la compression gzip
+      - NGINX_CONF_GZIP_TYPES=image/jpeg image/png image/gif image/webp image/jpg  # Types de fichiers à compresser
+      - NGINX_CONF_GZIP_COMP_LEVEL=6  # Niveau de compression (1-9)
+      - NGINX_CONF_GZIP_MIN_LENGTH=200  # Taille minimale pour la compression
     labels:
       - "traefik.http.routers.cdn.rule=Host(`cdn.plany.tn`)"
-      - "traefik.http.services.cdn.loadbalancer.server.port=80"
+      - "traefik.http.services.cdn.loadbalancer.server.port=80" 
       - "traefik.http.routers.cdn.entrypoints=websecure"
       - "traefik.http.routers.cdn.tls.certresolver=myresolver"
+      - "traefik.http.middlewares.cdn-cache.headers.customResponseHeaders.Cache-Control=public,max-age=2592000"  # Cache côté client 30 jours
+      - "traefik.http.middlewares.cdn-compress.compress=true"  # Active la compression au niveau de Traefik
 
 volumes:
   cdn:

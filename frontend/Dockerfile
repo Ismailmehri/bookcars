@@ -6,7 +6,7 @@ COPY ./frontend ./
 COPY ./frontend/.env.docker .env
 COPY ./packages /bookcars/packages
 RUN npm cache clean --force
-RUN npm install --silent
+RUN npm install
 RUN npm run build --silent
 
 FROM nginx:stable-alpine

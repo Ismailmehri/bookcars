@@ -77,6 +77,9 @@ services:
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=myresolver"
+      - "traefik.http.middlewares.frontend-compress.compress=true"
+      - "traefik.http.middlewares.frontend-cache.headers.customResponseHeaders.Cache-Control=public,max-age=2592000"
+      - "traefik.http.routers.frontend.middlewares=frontend-compress,frontend-cache"
 
   cdn:
     image: nginx:alpine
@@ -85,6 +88,7 @@ services:
       - cdn:/usr/share/nginx/html/cdn/bookcars
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro  # Montez le fichier de configuration
       - ./nginx-cache:/var/cache/nginx  # Volume pour le cache nginx
+      - nginx-cache:/var/cache/nginx  # Volume persistant pour le cache nginx
     environment:
       - NGINX_PROXY_CACHE_VALID=200 30d  # Cache les réponses 200 pendant 30 jours
       - NGINX_PROXY_CACHE_USE_STALE=error timeout http_500 http_502 http_503 http_504  # Utilise le cache en cas d'erreur
@@ -106,3 +110,4 @@ volumes:
   traefik-certificates:
   traefik-config:
   mongo-data:
+  nginx-cache:  # Ajout du volume persistant pour le cache nginx

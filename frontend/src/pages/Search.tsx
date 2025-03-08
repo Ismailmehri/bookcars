@@ -342,65 +342,81 @@ const Search = () => {
         <meta charSet="utf-8" />
         <title>
           {pickupLocation
-          ? `Location Voiture - Trouvez les Meilleures Offres à ${pickupLocation.name}`
-          : 'Location Voiture - Trouvez les Meilleures Offres en Tunisie'}
+          ? `Location Voiture ${pickupLocation.name} - Meilleurs Prix Garantis | Plany.tn`
+          : 'Location Voiture en Tunisie - Comparez et Réservez | Plany.tn'}
         </title>
         <meta
           name="description"
           content={
           pickupLocation
-            ? `Réservez votre voiture à ${pickupLocation.name} avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture.`
-            : 'Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture.'
+            ? `Location de voiture à ${pickupLocation.name} ✓ Prix bas garantis ✓ Réservation en ligne ✓ Large choix de véhicules ✓ Agences locales vérifiées. Réservez maintenant sur Plany.tn !`
+            : 'Location de voiture en Tunisie ✓ Prix bas garantis ✓ Réservation en ligne ✓ Large choix de véhicules ✓ Agences locales vérifiées. Comparez et réservez sur Plany.tn !'
         }
         />
         <meta
           name="keywords"
           content={
           pickupLocation
-            ? `location voiture, location de voiture, voiture à louer, location voiture pas cher, location voiture ${pickupLocation.name}`
-            : 'location voiture, location de voiture, voiture à louer, location voiture pas cher, location voiture en Tunisie'
+            ? `location voiture à ${pickupLocation.name}, louer voiture à ${pickupLocation.name}, location auto à ${pickupLocation.name}, voiture location à ${pickupLocation.name}, location véhicule à ${pickupLocation.name}`
+            : 'location voiture Tunisie, louer voiture Tunisie, location auto Tunisie, voiture location Tunisie, location véhicule Tunisie'
         }
         />
-        <link rel="canonical" href="https://plany.tn/search" />
+        <link
+          rel="canonical"
+          href={
+            pickupLocation?.slug
+              ? `https://plany.tn/search/${pickupLocation.slug}`
+              : 'https://plany.tn/search'
+          }
+        />
 
         {/* Balises Open Graph pour les réseaux sociaux */}
         <meta
           property="og:title"
           content={
           pickupLocation
-            ? `Location Voiture - Trouvez les Meilleures Offres à ${pickupLocation.name}`
-            : 'Location Voiture - Trouvez les Meilleures Offres en Tunisie'
+            ? `Location Voiture à ${pickupLocation.name} - Meilleurs Prix Garantis | Plany.tn`
+            : 'Location Voiture en Tunisie - Comparez et Réservez | Plany.tn'
         }
         />
         <meta
           property="og:description"
           content={
           pickupLocation
-            ? `Réservez votre voiture à ${pickupLocation.name} avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture.`
-            : 'Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture.'
+            ? `Location de voiture à ${pickupLocation.name} ✓ Prix bas garantis ✓ Réservation en ligne ✓ Large choix de véhicules ✓ Agences locales vérifiées. Réservez maintenant sur Plany.tn !`
+            : 'Location de voiture en Tunisie ✓ Prix bas garantis ✓ Réservation en ligne ✓ Large choix de véhicules ✓ Agences locales vérifiées. Comparez et réservez sur Plany.tn !'
         }
         />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://plany.tn/search" />
+        <meta
+          property="og:url"
+          content={
+            pickupLocation?.slug
+              ? `https://plany.tn/search/${pickupLocation.slug}`
+              : 'https://plany.tn/search'
+          }
+        />
         <meta property="og:image" content="https://plany.tn/logo.png" />
-        <meta property="og:site_name" content="Plany" />
+        <meta property="og:site_name" content="Plany.tn" />
+        <meta property="og:locale" content="fr_FR" />
 
         {/* Balises Twitter Card pour Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@plany_tn" />
         <meta
           name="twitter:title"
           content={
           pickupLocation
-            ? `Location Voiture - Trouvez les Meilleures Offres à ${pickupLocation.name}`
-            : 'Location Voiture - Trouvez les Meilleures Offres en Tunisie'
+            ? `Location Voiture ${pickupLocation.name} - Meilleurs Prix Garantis | Plany.tn`
+            : 'Location Voiture en Tunisie - Comparez et Réservez | Plany.tn'
         }
         />
         <meta
           name="twitter:description"
           content={
           pickupLocation
-            ? `Réservez votre voiture à ${pickupLocation.name} avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture.`
-            : 'Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture.'
+            ? `Location de voiture à ${pickupLocation.name} ✓ Prix bas garantis ✓ Réservation en ligne ✓ Large choix de véhicules ✓ Agences locales vérifiées. Réservez maintenant sur Plany.tn !`
+            : 'Location de voiture en Tunisie ✓ Prix bas garantis ✓ Réservation en ligne ✓ Large choix de véhicules ✓ Agences locales vérifiées. Comparez et réservez sur Plany.tn !'
         }
         />
         <meta name="twitter:image" content="https://plany.tn/logo.png" />

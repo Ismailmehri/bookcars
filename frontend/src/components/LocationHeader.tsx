@@ -35,10 +35,20 @@ const LocationHeader = ({ location }: LocationHeaderProps) => {
       </Typography>
       <Typography
         variant={isMobile ? 'body1' : 'subtitle1'} // Taille de police plus petite sur mobile
+        component="h2"
         sx={{ color: '#666', marginTop: '10px' }}
       >
-        Trouvez la voiture idéale pour vos déplacements. Profitez de tarifs compétitifs
-        et d&apos;une large sélection de véhicules adaptés à tous vos besoins.
+        Location voiture
+        {location?.name && (
+          <>
+            {' '}
+            à
+            {' '}
+            {location.name}
+          </>
+        )}
+        {' '}
+        , Trouvez la voiture idéale pour vos déplacements en Tunisie. Nous proposons des véhicules de qualité à des prix compétitifs.
       </Typography>
       {/* Vous pouvez ajouter une image de voiture et le prix ici */}
       {/* <CarImageWithPrice car={car} /> */}

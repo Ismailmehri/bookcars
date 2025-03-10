@@ -111,4 +111,9 @@ export const en = {
   SHARE_YOUR_AGENCY_HEADER: 'Votre agence sur Plany.tn',
   EMAILS_SENT: '%{count} e-mails envoyés avec succès',
   AGENCIES_WITH_CARS: '%{count} agences avec voitures trouvées',
+  PLEASE_REVIEW_CLIENT: 'Veuillez évaluer le service de %{clientName}',
+  CLICK_TO_REVIEW: 'Cliquer ici pour évaluer le service',
+  REVIEW_CLIENT_SUBJECT: 'Évaluation du service',
+  PLEASE_REVIEW_BOOKING: 'Veuillez évaluer le service de %{supplierName}',
+  REVIEW_BOOKING_SUBJECT: 'Évaluation du service',
 }

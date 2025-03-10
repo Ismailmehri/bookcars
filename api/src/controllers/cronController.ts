@@ -1020,3 +1020,131 @@ function generateUniqueSlug(value: string, existingSlugs: Set<string>): string {
       return res.status(500).json({ message: 'Internal server error', error: err })
     }
   }
+
+  export const notifySupplierAndClientToReview = async (req: Request, res: Response) => {
+    try {
+      const notifySupplier = req.query.notifySupplier === 'true'
+      const notifyClient = req.query.notifyClient === 'true'
+      const days = parseInt(req.query.days as string || '1', 10)
+      const maxNotifications = parseInt(req.query.maxNotifications as string || '3', 10)
+      const maxEmails = parseInt(req.query.maxEmails as string || '10', 10)
+      const currentDate = new Date()
+      const startDate = new Date(currentDate.getTime() - (Number(days) * 24 * 60 * 60 * 1000))
+      i18n.locale = 'fr'
+      // Get completed bookings from specified days
+      const bookings = await Booking.find({
+        to: {
+          $gte: startDate,
+          $lte: currentDate,
+        },
+      }).populate(['supplier', 'driver'])
+
+      let emailsSent = 0
+
+      for (const booking of bookings) {
+        // Vérifier si on a atteint le nombre maximum d'emails
+        if (emailsSent >= Number(maxEmails)) {
+          break
+        }
+
+        try {
+          // Initialize notifications object if it doesn't exist
+          const notifications = booking.notifications || {
+            supplier: { count: 0, lastSent: null },
+            client: { count: 0, lastSent: null },
+          }
+
+          const client = await User.findById(booking.driver)
+          const supplier = await User.findById(booking.supplier)
+
+          // Send email to supplier if notifications count is less than max
+          if (notifySupplier && (!notifications.supplier?.count || notifications.supplier.count < Number(maxNotifications))) {
+            if (supplier && supplier.active && supplier.verified && emailsSent < Number(maxEmails)) {
+              let emailContent = `
+                <div style="max-width: 600px; margin: 0 auto;">
+                  <h2>${i18n.t('HELLO')} ${supplier.fullName},</h2>`
+
+              emailContent += `
+                  <p>${i18n.t('PLEASE_REVIEW_CLIENT', { agencyName: supplier.fullName, clientName: client?.fullName })}</p>
+                  <p><a href="${env.BACKEND_HOST}review?u=${client?._id}&b=${booking._id}" style="color: #3498DB;">
+                    ${i18n.t('CLICK_TO_REVIEW')}
+                  </a></p>
+                </div>`
+
+                if (!booking.status || (booking.status !== 'paid' && booking.status !== 'cancelled' && booking.status !== 'void')) {
+                  emailContent += `
+                    <div style="border: 2px solid #e74c3c; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                      <p style="color: #333; margin: 0 0 10px 0; font-weight: bold;">
+                        Important : Cette réservation nécessite une mise à jour de son statut
+                      </p>
+                      <p style="color: #333; margin: 0 0 10px 0;">
+                        Pour finaliser cette réservation, veuillez mettre à jour son statut en "Payée" ou "Annulée".
+                      </p>
+                      <p style="text-align: center; margin: 10px 0 0 0;">
+                        <a href="${env.BACKEND_HOST}update-booking?b=${booking._id}" 
+                           style="display: inline-block; color: #3498DB; text-decoration: none; font-weight: bold;">
+                          → Mettre à jour le statut de la réservation
+                        </a>
+                      </p>
+                    </div>`
+                }
+
+              const supplierMailOptions = {
+                from: process.env.SMTP_FROM,
+                to: supplier.email,
+                subject: i18n.t('REVIEW_CLIENT_SUBJECT'),
+                html: emailContent,
+              }
+
+              await mailHelper.sendMail(supplierMailOptions)
+              notifications.supplier = {
+                count: (notifications.supplier?.count || 0) + 1,
+                lastSent: new Date(),
+              }
+              emailsSent += 1
+            }
+          }
+
+          // Send email to client if notifications count is less than max
+          if (notifyClient && (!notifications.client?.count || notifications.client.count < Number(maxNotifications))) {
+            if (client && client.active && emailsSent < Number(maxEmails)) {
+              const clientMailOptions = {
+                from: process.env.SMTP_FROM,
+                to: client.email,
+                subject: i18n.t('REVIEW_BOOKING_SUBJECT', { supplierName: supplier?.fullName }),
+                html: `
+                  <div style="max-width: 600px; margin: 0 auto;">
+                    <h2>${i18n.t('HELLO')} ${client.fullName},</h2>
+                    <p>${i18n.t('PLEASE_REVIEW_BOOKING', { clientName: client.fullName, supplierName: supplier?.fullName })}</p>
+                    <p><a href="${env.FRONTEND_HOST}/review?u=${supplier?._id}&b=${booking._id}" style="color: #3498DB;">
+                      ${i18n.t('CLICK_TO_REVIEW')}
+                    </a></p>
+                  </div>
+                `,
+              }
+
+              await mailHelper.sendMail(clientMailOptions)
+              notifications.client = {
+                count: (notifications.client?.count || 0) + 1,
+                lastSent: new Date(),
+              }
+              emailsSent += 1
+            }
+          }
+
+          // Update booking notifications
+          await Booking.findByIdAndUpdate(booking._id, { notifications }, { new: true })
+        } catch (err) {
+          logger.error(`Failed to process booking ${booking._id}:`, err)
+        }
+      }
+
+      return res.status(200).json({
+        message: i18n.t('REVIEW_EMAILS_SENT', { count: emailsSent }),
+        emailsSent,
+      })
+    } catch (err) {
+      logger.error('[notification.notifySupplierAndClientToReview]', err)
+      return res.status(500).json({ message: 'Internal server error', error: err })
+    }
+  }

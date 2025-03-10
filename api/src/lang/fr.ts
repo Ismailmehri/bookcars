@@ -112,4 +112,10 @@ export const fr = {
   INVITE_TO_SHARE: 'Augmentez votre visibilité ! Partagez ce lien avec vos clients et sur vos réseaux sociaux : %{agencyUrl}',
   TWITTER_SHARE_TEXT: 'Découvrez notre agence sur Plany.tn et réservez en ligne ! 🚗',
   CONTACT_US_NOW: '📩 Besoin d’aide ? Contactez-nous',
+  PLEASE_REVIEW_CLIENT: 'Cher partenaire %{agencyName}, votre avis sur <b>%{clientName}</b> est précieux ! En évaluant votre expérience avec ce client, vous aidez toute la communauté des agences à identifier les clients fiables et sérieux.',
+  CLICK_TO_REVIEW: 'Cliquez ici pour partager votre expérience',
+  REVIEW_CLIENT_SUBJECT: 'Votre avis compte - Évaluez votre expérience client',
+  PLEASE_REVIEW_BOOKING: 'Cher(e) %{clientName}, partagez votre expérience avec %{supplierName}',
+  REVIEW_BOOKING_SUBJECT: 'Donnez votre avis sur votre location avec %{supplierName}',
+  REVIEW_EMAILS_SENT: '%{count} demandes d\'avis envoyées avec succès',
 }

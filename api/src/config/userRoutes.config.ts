@@ -42,6 +42,7 @@ const routes = {
   updateSupplierScores: '/api/cron/suppliers/update-score',
   migrateToSlug: '/api/cron/migrate-to-slug',
   notifyAgenciesWithCarsURL: '/api/cron/suppliers/cars-url',
+  notifySupplierAndClientToReview: '/api/cron/suppliers/review',
 }
 
 export default routes

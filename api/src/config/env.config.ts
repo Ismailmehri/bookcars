@@ -532,6 +532,10 @@ export interface Booking extends Document {
   paymentIntentId?: string
   customerId?: string
   expireAt?: Date
+  notifications?: {
+    supplier?: { count: number; lastSent: Date | null };
+    client?: { count: number; lastSent: Date | null };
+  };
 }
 
 interface PricePeriod {

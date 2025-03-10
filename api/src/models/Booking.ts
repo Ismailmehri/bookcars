@@ -110,6 +110,22 @@ const bookingSchema = new Schema<env.Booking>(
       type: Date,
       index: { name: BOOKING_EXPIRE_AT_INDEX_NAME, expireAfterSeconds: env.BOOKING_EXPIRE_AT, background: true },
     },
+    notifications: {
+      type: {
+        supplier: {
+          count: { type: Number, default: 0 },
+          lastSent: { type: Date, default: null },
+        },
+        client: {
+          count: { type: Number, default: 0 },
+          lastSent: { type: Date, default: null },
+        },
+      },
+      default: {
+        supplier: { count: 0, lastSent: null },
+        client: { count: 0, lastSent: null },
+      },
+    },
   },
   {
     timestamps: true,

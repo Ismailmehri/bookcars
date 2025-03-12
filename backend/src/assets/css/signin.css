@@ -39,7 +39,7 @@ div.signin div.stay-connected input[type='checkbox'] {
 
 div.signin div.stay-connected label {
   cursor: pointer;
-  color: rgb(0 0 0 / 60%);
+  color: rgba(0, 0, 0, 0.6);
   user-select: none;
 }
 
@@ -49,28 +49,28 @@ div.signin div.forgot-password {
 
 /* Device width is less than or equal to 960px */
 
-@media only screen and (width <=960px) {
+@media only screen and (max-width: 960px) {
   .signin-form {
     align-items: center;
     justify-content: center;
     display: flex;
     width: 350px;
     height: 390px;
-    border: 1px solid rgb(0 0 0 / 12%);
+    border: 1px solid rgba(0, 0, 0, 0.12);
     padding: 15px;
   }
 }
 
 /* Device width is greater than or equal to 960px */
 
-@media only screen and (width >=960px) {
+@media only screen and (min-width: 960px) {
   .signin-form {
     align-items: center;
     justify-content: center;
     display: flex;
     width: 380px;
     height: 390px;
-    border: 1px solid rgb(0 0 0 / 12%);
+    border: 1px solid rgba(0, 0, 0, 0.12);
     padding: 15px;
   }
 }

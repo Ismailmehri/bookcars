@@ -26,7 +26,7 @@ div.contracts div.contract span.filename {
   min-width: 260px;
 }
 
-@media only screen and (width <=960px) {
+@media only screen and (max-width: 960px) {
   div.contracts div.contract {
     flex-direction: column;
   }

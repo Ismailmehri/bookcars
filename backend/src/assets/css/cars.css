@@ -15,9 +15,8 @@ div.cars div.col-1 div.info-box {
   background-color: #fff;
 }
 
-/* Device width is less than or equal to 960px */
-
-@media only screen and (width <=960px) {
+/* Écrans inférieurs ou égaux à 960px */
+@media only screen and (max-width: 960px) {
   div.cars {
     flex-direction: column;
     flex: 0 1 auto;
@@ -57,9 +56,8 @@ div.cars div.col-1 div.info-box {
   }
 }
 
-/* Device width is greater than or equal to 960px */
-
-@media only screen and (width >=960px) {
+/* Écrans supérieurs ou égaux à 961px */
+@media only screen and (min-width: 961px) {
   div.cars {
     flex-direction: row;
   }
@@ -73,15 +71,15 @@ div.cars div.col-1 div.info-box {
     display: flex;
     flex-direction: column;
     align-items: center;
-    flex: 1;
+    flex:1;
   }
 
   div.cars div.search {
-    margin-top: 15px;
+    margin-top:15px;
   }
 
   div.cars .new-car {
-    margin: 10px 5px 0 0;
-    width: 100%;
-  }
+    margin:10px 5px 0 0;
+    width:100%;
+   }
 }

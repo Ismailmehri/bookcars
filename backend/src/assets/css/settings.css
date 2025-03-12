@@ -25,7 +25,8 @@ div.settings {
 
 /* Device width is less than or equal to 960px */
 
-@media only screen and (width <=960px) {
+/* Écrans inférieurs ou égaux à 960px */
+@media only screen and (max-width: 960px) {
   .settings-form {
     width: 360px;
     height: 720px;
@@ -43,9 +44,8 @@ div.settings {
   }
 }
 
-/* Device width is greater than or equal to 960px */
-
-@media only screen and (width >=960px) {
+/* Écrans supérieurs ou égaux à 961px */
+@media only screen and (min-width: 961px) {
   .settings-form {
     width: 550px;
     height: 640px;
@@ -62,3 +62,4 @@ div.settings {
     padding: 30px;
   }
 }
+

@@ -12,7 +12,7 @@ section.location-list .empty-list {
   width: 250px;
 }
 
-@media only screen and (width <=960px) {
+@media only screen and (max-width: 960px) {
   section.location-list .location-list-items {
     width: 100%;
   }
@@ -49,7 +49,7 @@ section.location-list .location-image {
 
 /* Device width is greater than or equal to 960px */
 
-@media only screen and (width >=960px) {
+@media only screen and (min-width: 960px) {
   section.location-list .location-list-item {
     min-width: 480px;
     max-width: 600px;

@@ -7,7 +7,7 @@ div.bookings {
 
 /* Device width is lower than or equal to 960px */
 
-@media only screen and (width <= 960px) {
+@media only screen and (max-width: 960px) {
   div.bookings {
     top: 56px;
     overflow-y: auto;
@@ -60,7 +60,7 @@ div.bookings {
   width: 100%;
 }
 
-@media only screen and (width >= 960px) {
+@media only screen and (min-width: 961px) {
   div.bookings {
     top: 64px;
   }
@@ -91,22 +91,22 @@ div.bookings {
 
   div.bookings div.col-1 .cl-booking-filter div.panel,
   div.bookings div.col-1 .cl-booking-filter div.panel-collapse {
-    padding-right: 15px;
-    padding-left: 15px;
-  }
+    padding-right:15px;
+    padding-left:15px;
+   }
 
-  div.bookings div.col-1 .cl-status-filter,
-  div.bookings div.col-1 .cl-booking-filter {
-    margin-bottom: 10px;
-  }
+   div.bookings div.col-1 .cl-status-filter,
+   div.bookings div.col-1 .cl-booking-filter {
+     margin-bottom:10px;
+   }
 
-  div.bookings div.col-1 .cl-new-booking {
-    width: 265px;
-    margin-left: 5px;
-  }
+   div.bookings div.col-1 .cl-new-booking {
+     width:265px;
+     margin-left:5px;
+   }
 
-  div.bookings div.col-2 {
-    position: absolute;
-    inset: 0 0 0 300px;
-  }
+   div.bookings div.col-2 {
+     position:absolute;
+     inset:0 0 0 300px; /* si "inset" pose problème sur Chrome ancien, remplacez par : top, right, bottom, left */
+   }
 }

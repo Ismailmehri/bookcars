@@ -256,7 +256,7 @@ div.content {
   margin-bottom: 3px;
 }
 
-@media only screen and (width <=960px) {
+@media only screen and (max-width: 960px) {
   .buttons {
     margin-top: 15px;
     margin-bottom: 5px;
@@ -277,7 +277,7 @@ div.content {
   }
 }
 
-@media only screen and (width >=960px) {
+@media only screen and (min-width: 960px) {
   .buttons {
     margin-top: 15px;
     margin-bottom: 5px;

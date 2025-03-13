@@ -61,8 +61,11 @@ const Search = () => {
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const fetchedSuppliers = await SupplierService.getAllSuppliers()
+        let fetchedSuppliers = await SupplierService.getAllSuppliers()
         setAllSuppliers(fetchedSuppliers)
+        if (supplierSlug) {
+          fetchedSuppliers = fetchedSuppliers.filter((s) => s.slug === supplierSlug)
+        }
         setAllSuppliersIds(bookcarsHelper.flattenSuppliers(fetchedSuppliers))
       } catch (err) {
         helper.error(err, 'Failed to fetch suppliers')
@@ -90,13 +93,16 @@ const Search = () => {
           startDate: from,
           endDate: to
         }
-        const _suppliers = await SupplierService.getFrontendSuppliers(payload)
+        let _suppliers = await SupplierService.getFrontendSuppliers(payload)
+        if (supplierSlug) {
+          _suppliers = _suppliers.filter((s) => s.slug === supplierSlug)
+        }
         setSuppliers(_suppliers)
       }
     }
 
     updateSuppliers()
-  }, [pickupLocation, carSpecs, carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats, from, to])
+  }, [pickupLocation, carSpecs, carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats, from, to, supplierSlug])
 
   const handleCarFilterSubmit = async (filter: bookcarsTypes.CarFilter) => {
     if (suppliers.length < allSuppliers.length) {

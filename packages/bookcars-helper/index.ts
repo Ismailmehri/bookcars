@@ -57,10 +57,13 @@ export const isDate = (value?: any): boolean => {
  * @returns {string}
  */
 export const joinURL = (part1?: string, part2?: string) => {
-  if (!part1 || !part2) {
-    const msg = '[joinURL] part undefined'
+  if (!part1) {
+    const msg = '[joinURL] part1 undefined'
     console.log(msg)
     throw new Error(msg)
+  }
+  if (!part2) {
+    part2 = '6754705027ee3d7b476bc591_1736289800096.png'
   }
 
   if (part1.charAt(part1.length - 1) === '/') {

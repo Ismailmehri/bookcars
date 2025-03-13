@@ -70,14 +70,17 @@ div.notifications div.footer div.actions .icon {
 
 div.notifications div.notifications-list {
   position: absolute;
-  inset: 55px 0;
+  top: 55px;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
   padding-top: 15px;
   padding-right: 10px;
-  overflow-y: overlay;
+  overflow-y: auto;
 }
 
 div.notifications div.notifications-list div.notification-container {
@@ -127,13 +130,13 @@ div.notifications div.notifications-list div.notification-container div.notifica
   margin-left: 5px;
 }
 
-@media only screen and (width <= 960px) {
+@media only screen and (max-width: 960px) {
   div.notifications {
     top: 56px;
   }
 }
 
-@media only screen and (width >= 960px) {
+@media only screen and (min-width: 960px) {
   div.notifications {
     top: 64px;
   }

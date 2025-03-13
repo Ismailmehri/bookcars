@@ -1,6 +1,13 @@
 section.car-list {
+  display: -webkit-box;
+  display: -ms-flexbox;
   display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
   flex-direction: column;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
   align-items: center;
 }
 
@@ -12,7 +19,11 @@ section.car-list .empty-list {
 
 .copy-link {
   margin-top: 10px;
+  display: -webkit-box;
+  display: -ms-flexbox;
   display: flex;
+  -webkit-box-pack: end;
+  -ms-flex-pack: end;
   justify-content: flex-end;
 }
 
@@ -41,8 +52,15 @@ section.car-list div.bc-title div.car-count {
 }
 
 div.car-list-container {
+  display: -webkit-box;
+  display: -ms-flexbox;
   display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
   flex-direction: column;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
   align-items: center;
 }
 
@@ -50,15 +68,29 @@ section.car-list div.car-header {
   padding: 10px 0;
   border-bottom: #d9d8d9 2px solid;
   margin-bottom: 10px;
+  display: -webkit-box;
+  display: -ms-flexbox;
   display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: row;
   flex-direction: row;
+  -webkit-box-pack: justify;
+  -ms-flex-pack: justify;
   justify-content: space-between;
   width: 100%;
 }
 
 section.car-list div.car-header div.location {
+  display: -webkit-box;
+  display: -ms-flexbox;
   display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: row;
   flex-direction: row;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
   align-items: center;
   color: #232323;
   font-size: 18px;
@@ -69,8 +101,15 @@ section.car-list div.car-header div.location span.location-name {
 }
 
 section.car-list div.car-header div.distance {
+  display: -webkit-box;
+  display: -ms-flexbox;
   display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: row;
   flex-direction: row;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
   align-items: center;
 }
 
@@ -103,7 +142,7 @@ section.car-list article .btn-book[aria-disabled="true"] {
 
 /* Device width is less than or equal to 960px */
 
-@media only screen and (width <=960px) {
+@media only screen and (max-width: 960px) {
   div.car-list-container {
     width: 100%;
     max-width: 600px;
@@ -141,6 +180,7 @@ section.car-list article .btn-book[aria-disabled="true"] {
   section.car-list article div.name h2 {
     font-size: 2em;
     font-weight: 700;
+    -webkit-text-size-adjust: none;
     text-size-adjust: none;
     line-height: 1.3em;
     display: -webkit-box;
@@ -152,8 +192,14 @@ section.car-list article .btn-book[aria-disabled="true"] {
   }
 
   section.car-list article div.car {
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
     justify-content: center;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
     align-items: center;
     height: 207px;
   }
@@ -166,7 +212,12 @@ section.car-list article .btn-book[aria-disabled="true"] {
   }
 
   section.car-list article div.car div.car-footer {
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
     flex-direction: column;
     position: absolute;
     bottom: 70px;
@@ -174,7 +225,12 @@ section.car-list article .btn-book[aria-disabled="true"] {
   }
 
   section.car-list article div.car div.car-footer .car-footer-info {
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: row;
     flex-direction: row;
     padding-left: 4px;
     margin-top: 8px;
@@ -182,8 +238,15 @@ section.car-list article .btn-book[aria-disabled="true"] {
 
   section.car-list article div.car .car-footer div.rating,
   section.car-list article div.car .car-footer div.co2 {
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: row;
     flex-direction: row;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
     align-items: center;
   }
 
@@ -217,7 +280,11 @@ section.car-list article .btn-book[aria-disabled="true"] {
   }
 
   section.car-list article div.car div.car-supplier {
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
     align-items: center;
   }
 
@@ -226,9 +293,18 @@ section.car-list article .btn-book[aria-disabled="true"] {
     border-radius: 3px;
     width: 62px;
     height: 32px;
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
     flex-direction: column;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
     align-items: center;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
     justify-content: center;
   }
 
@@ -251,7 +327,11 @@ section.car-list article .btn-book[aria-disabled="true"] {
 
   section.car-list article div.car div.car-available,
   section.car-list article div.car div.car-unavailable {
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
     align-items: center;
     position: absolute;
     bottom: 50px;
@@ -303,7 +383,12 @@ section.car-list article .btn-book[aria-disabled="true"] {
     position: relative;
     list-style: none;
     padding: 0;
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -ms-flex-flow: row wrap;
     flex-flow: row wrap;
   }
 
@@ -315,6 +400,7 @@ section.car-list article .btn-book[aria-disabled="true"] {
     width: 60px;
     margin-bottom: 10px;
     padding-top: 3px;
+    -webkit-box-shadow: 0 0 0 1px #ddd inset;
     box-shadow: 0 0 0 1px #ddd inset;
     margin-left: 5px;
     border-radius: 5px;
@@ -345,6 +431,8 @@ section.car-list article .btn-book[aria-disabled="true"] {
 
   section.car-list article div.car-info ul.car-info-list li.mileage div.car-info-list-item,
   section.car-list article div.car-info ul.car-info-list li.fuel-policy div.car-info-list-item {
+    width: -webkit-fit-content;
+    width: -moz-fit-content;
     width: fit-content;
   }
 
@@ -373,7 +461,7 @@ section.car-list article .btn-book[aria-disabled="true"] {
 
 /* Device width is greater than or equal to 960px */
 
-@media only screen and (width >=960px) {
+@media only screen and (min-width: 960px) {
   section.car-list {
     padding-top: 10px;
   }
@@ -401,6 +489,7 @@ section.car-list article .btn-book[aria-disabled="true"] {
     font-size: 1.8em;
     font-weight: 700;
     margin-left: 28%;
+    -webkit-text-size-adjust: none;
     text-size-adjust: none;
     line-height: 1.3em;
     display: -webkit-box;
@@ -426,14 +515,24 @@ section.car-list article .btn-book[aria-disabled="true"] {
   }
 
   section.car-list article div.car div.car-footer {
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
     flex-direction: column;
     position: absolute;
     bottom: 20px;
   }
 
   section.car-list article div.car div.car-footer .car-footer-info {
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: row;
     flex-direction: row;
     padding-left: 4px;
     margin-top: 8px;
@@ -441,8 +540,15 @@ section.car-list article .btn-book[aria-disabled="true"] {
 
   section.car-list article div.car .car-footer div.rating,
   section.car-list article div.car .car-footer div.co2 {
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: row;
     flex-direction: row;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
     align-items: center;
   }
 
@@ -476,7 +582,11 @@ section.car-list article .btn-book[aria-disabled="true"] {
   }
 
   section.car-list article div.car div.car-supplier {
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
     align-items: center;
     margin-top: 5px;
     color: rgb(0 0 0 / 60%);
@@ -488,9 +598,18 @@ section.car-list article .btn-book[aria-disabled="true"] {
   section.car-list article div.car div.car-supplier span.car-supplier-logo {
     border: 1px solid #e6e6e6;
     border-radius: 3px;
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
     flex-direction: column;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
     align-items: center;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
     justify-content: center;
     width: 62px;
     height: 32px;
@@ -549,7 +668,12 @@ section.car-list article .btn-book[aria-disabled="true"] {
     position: relative;
     list-style: none;
     padding: 0;
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+    -ms-flex-flow: row wrap;
     flex-flow: row wrap;
   }
 
@@ -561,6 +685,7 @@ section.car-list article .btn-book[aria-disabled="true"] {
     width: 60px;
     margin-bottom: 10px;
     padding-top: 3px;
+    -webkit-box-shadow: 0 0 0 1px #ddd inset;
     box-shadow: 0 0 0 1px #ddd inset;
     margin-left: 5px;
     border-radius: 5px;
@@ -603,6 +728,8 @@ section.car-list article .btn-book[aria-disabled="true"] {
 
   section.car-list article div.car-info ul.car-info-list li.mileage div.car-info-list-item,
   section.car-list article div.car-info ul.car-info-list li.fuel-policy div.car-info-list-item {
+    width: -webkit-fit-content;
+    width: -moz-fit-content;
     width: fit-content;
   }
 

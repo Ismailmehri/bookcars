@@ -73,7 +73,7 @@ const Search = () => {
     }
 
     fetchSuppliers()
-  }, [])
+  }, [supplierSlug])
 
   useEffect(() => {
     const updateSuppliers = async () => {

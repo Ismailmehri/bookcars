@@ -5,6 +5,7 @@ div.home {
   align-items: center;
   overflow: hidden auto;
   background-color: #fff;
+  -webkit-transform: translate3d(0, 0, 0);
   transform: translate3d(0, 0, 0);
 }
 
@@ -16,7 +17,7 @@ div.home {
 
 /* Device width is less than or equal to 960px */
 
-@media only screen and (width <=960px) {
+@media only screen and (max-width: 960px) {
   div.home div.home-content {
     padding: 60px 0;
     justify-content: flex-start !important;
@@ -36,7 +37,9 @@ div.home {
   }
 
   div.home div.car-size div.boxes {
+    display: -webkit-flex;
     display: flex;
+    -webkit-flex-direction: column;
     flex-direction: column;
   }
 
@@ -47,7 +50,7 @@ div.home {
 
 /* Device width is between 500px and 960px */
 
-@media only screen and (width >=500px) and (width <=960px) {
+@media only screen and (min-width: 500px) and (max-width: 960px) {
   div.home footer div.secure-payment {
     bottom: 0;
   }
@@ -55,9 +58,13 @@ div.home {
 
 div.home div.home-content {
   position: relative;
+  display: -webkit-flex;
   display: flex;
+  -webkit-flex-direction: column;
   flex-direction: column;
+  -webkit-justify-content: center;
   justify-content: center;
+  -webkit-align-items: center;
   align-items: center;
   background-image: url('/cover.webp');
   background-size: cover;
@@ -72,7 +79,7 @@ div.home div.home-content::before {
   height: 100%;
   width: 100%;
   content: "";
-  background: rgb(51 51 51 / 22%);
+  background: rgba(51, 51, 51, 0.22);
   clear: both;
   z-index: 1;
 }
@@ -86,9 +93,13 @@ div.home div.home-cover {
 }
 
 div.home div.home-content div.home-search {
-  box-shadow: 0 3px 5px -1px #0003, 0 1px 18px 0 #0000001F, 0 6px 10px 0 #00000024;
+  -webkit-box-shadow: 0 3px 5px -1px rgba(0,0,0,0.2), 0 1px 18px 0 rgba(0,0,0,0.12), 0 6px 10px 0 rgba(0,0,0,0.14);
+  box-shadow: 0 3px 5px -1px rgba(0,0,0,0.2), 0 1px 18px 0 rgba(0,0,0,0.12), 0 6px 10px 0 rgba(0,0,0,0.14);
+  display: -webkit-flex;
   display: flex;
+  -webkit-flex-direction: column;
   flex-direction: column;
+  -webkit-align-items: center;
   align-items: center;
   border-radius: 5px;
   z-index: 2;
@@ -108,14 +119,18 @@ div.home div.home-suppliers h1 {
 
 div.home div.destinations {
   width: 100%;
+  display: -webkit-flex;
   display: flex;
+  -webkit-flex-direction: column;
   flex-direction: column;
+  -webkit-align-items: center;
   align-items: center;
   background-color: #f9f9f9;
   padding: 50px 0 60px;
 }
 
 div.home div.destinations h1 {
+  width: -webkit-fit-content;
   width: fit-content;
   font-weight: 500;
 }
@@ -126,8 +141,11 @@ div.home div.destinations div.tabs {
 
 div.home div.car-size {
   width: 100%;
+  display: -webkit-flex;
   display: flex;
+  -webkit-flex-direction: column;
   flex-direction: column;
+  -webkit-align-items: center;
   align-items: center;
   background-color: #F9F9F9;
   padding: 50px 0;
@@ -165,6 +183,7 @@ div.home div.car-size div.boxes div.box img {
 
 div.home div.car-size div.boxes div.box div.box-content {
   padding: 0 15px;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -197,7 +216,7 @@ div.home div.home-map {
 
 /* Device width is greater than or equal to 960px */
 
-@media only screen and (width >=960px) {
+@media only screen and (min-width: 960px) {
   div.home div.home-content {
     height: 650px;
   }
@@ -214,8 +233,10 @@ div.home div.home-map {
   }
 
   div.home div.car-size div.boxes {
+    display: -ms-grid;
     display: grid;
     grid-auto-rows: 1fr;
+    -ms-grid-columns: 1fr 1fr 1fr;
     grid-template-columns: 1fr 1fr 1fr;
   }
 

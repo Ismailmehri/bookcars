@@ -5,11 +5,13 @@ div.booking {
   justify-content: center;
   margin: 45px 0;
   transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
 }
 
-@media only screen and (width <=960px) {
+@media only screen and (max-width: 960px) {
   div.booking {
     flex: 0 1 auto;
+    -webkit-flex: 0 1 auto;
   }
 }
 
@@ -22,8 +24,11 @@ div.booking .booking-form-title {
 
 div.booking div.booking-info {
   display: flex;
+  display: -webkit-flex;
   align-items: center;
+  -webkit-align-items: center;
   justify-content: center;
+  -webkit-justify-content: center;
   text-align: center;
   width: 100%;
   margin-bottom: 20px;
@@ -50,19 +55,22 @@ div.booking div.payment-options-container {
 div.booking div.booking-options,
 div.booking div.payment-options {
   color: #333;
+  -webkit-user-select: none;
   user-select: none;
 }
 
 div.booking div.payment-options span.payment-info {
   margin-left: 10px;
-  color: rgb(0 0 0 / 55%);
+  color: rgba(0, 0, 0, 0.55);
   font-size: 13px;
 }
 
-@media only screen and (width <=960px) {
+@media only screen and (max-width: 960px) {
   div.booking div.payment-options span.payment-button {
     display: flex;
+    display: -webkit-flex;
     flex-direction: column;
+    -webkit-flex-direction: column;
   }
 
   div.booking div.payment-options span.payment-info {
@@ -79,7 +87,7 @@ div.booking div.booking-options span.booking-option-label::after {
 }
 
 div.booking div.booking-options span.booking-option-value {
-  color: rgb(0 0 0 / 55%);
+  color: rgba(0, 0, 0, 0.55);
 }
 
 div.booking div.booking-details {
@@ -98,7 +106,7 @@ div.booking div.booking-details div.booking-detail div.booking-detail-value {
 }
 
 div.booking div.booking-details div.booking-detail div.booking-detail-value {
-  color: rgb(0 0 0 / 55%);
+  color: rgba(0, 0, 0, 0.55);
   word-break: break-word;
 }
 
@@ -109,11 +117,13 @@ div.booking div.booking-details div.booking-detail span.booking-detail-title {
 
 div.booking div.booking-details div.booking-detail div.booking-detail-value div.car-supplier {
   display: flex;
+  display: -webkit-flex;
   align-items: center;
+  -webkit-align-items: center;
 }
 
 div.booking div.booking-details div.booking-detail div.booking-detail-value span.car-supplier-name {
-  color: rgb(0 0 0 / 60%);
+  color: rgba(0, 0, 0, 0.6);
   font-size: 0.9em;
   line-height: 1em;
   white-space: nowrap;
@@ -136,8 +146,11 @@ div.booking div.driver-details {
   padding: 25px;
   margin-bottom: 15px;
   display: flex;
+  display: -webkit-flex;
   flex-direction: column;
+  -webkit-flex-direction: column;
   align-items: center;
+  -webkit-align-items: center;
 }
 
 div.booking div.booking-tos {
@@ -188,7 +201,7 @@ div.booking .btn-cancel:hover {
 
 /* Device width is less than or equal to 960px */
 
-@media only screen and (width <=960px) {
+@media only screen and (max-width: 960px) {
   div.booking .booking-form {
     padding: 5px;
     margin: 10px;
@@ -201,10 +214,9 @@ div.booking .btn-cancel:hover {
     font-size: 13px;
   }
 
-
   div.booking div.booking-buttons button,
   div.booking div.booking-buttons a {
-   float: inline-end;
+    float: right;
   }
 
   div.booking .btn-checkout,
@@ -225,7 +237,7 @@ div.booking .btn-cancel:hover {
 
 /* Device width is greater than or equal to 960px */
 
-@media only screen and (width >=960px) {
+@media only screen and (min-width: 960px) {
   div.booking .booking-form {
     width: 860px;
     padding: 30px;

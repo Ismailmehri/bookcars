@@ -1,11 +1,16 @@
 /* Signup */
 div.signup {
   display: flex;
+  display: -webkit-flex;
   flex-direction: row;
+  -webkit-flex-direction: row;
   flex: 1 0 auto;
+  -webkit-flex: 1 0 auto;
   justify-content: center;
+  -webkit-justify-content: center;
   margin: 45px 0;
   transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
 }
 
 div.signup .signup-form-title {
@@ -20,7 +25,7 @@ div.signup div.signup-tos {
 
 /* Device width is less than or equal to 960px */
 
-@media only screen and (width <=960px) {
+@media only screen and (max-width: 960px) {
   div.signup .signup-form {
     width: 350px;
     padding: 30px;
@@ -33,24 +38,29 @@ div.signup div.signup-tos {
 }
 
 div.signup div.signup-buttons {
-  display: flex; /* Alignement horizontal */
-  gap: 10px; /* Espacement entre les boutons */
-  justify-content: center; /* Centrer les boutons horizontalement */
+  display: flex;
+  display: -webkit-flex;
+  gap: 10px;
+  -webkit-gap: 10px;
+  justify-content: center;
+  -webkit-justify-content: center;
   margin-top: 20px;
 }
+
 div.signup div.signup-buttons a,
 div.signup div.signup-buttons button {
-  border-radius: 8px; /* Coins légèrement arrondis */
-  font-size: 0.875rem; /* Taille de texte légèrement réduite */
-  font-weight: 500; /* Mettre en valeur le texte */
-  padding: 8px 16px; /* Espacement cohérent */
-  transition: background-color 0.3s ease, color 0.3s ease; /* Douce transition au survol */
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 8px 16px;
+  -webkit-transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
   width: 135px;
 }
 
 /* Device width is greater than or equal to 960px */
 
-@media only screen and (width >=960px) {
+@media only screen and (min-width: 960px) {
   div.signup .signup-form {
     width: 550px;
     padding: 30px;

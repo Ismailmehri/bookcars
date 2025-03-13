@@ -16,9 +16,11 @@ div.suppliers .info-box {
 
 /* Device width is less than or equal to 960px */
 
-@media only screen and (width <=960px) {
+@media only screen and (max-width: 960px) {
   div.suppliers {
+    display: flex;
     flex-direction: column;
+    width: 100%;
   }
 
   div.suppliers div.col-1 {
@@ -48,13 +50,15 @@ div.suppliers .info-box {
     display: flex;
     justify-content: center;
     flex-direction: column;
+    width: 100%;
   }
 }
 
 /* Device width is greater than or equal to 960px */
 
-@media only screen and (width >=960px) {
+@media only screen and (min-width: 960px) {
   div.suppliers {
+    display: flex;
     flex-direction: row;
   }
 

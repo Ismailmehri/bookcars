@@ -483,6 +483,29 @@ const Search = () => {
             <LocationHeader
               location={pickupLocation}
             />
+            <CarList
+              carSpecs={carSpecs}
+              suppliers={supplierIds}
+              carType={carType}
+              gearbox={gearbox}
+              mileage={mileage}
+              fuelPolicy={fuelPolicy}
+              deposit={deposit}
+              pickupLocation={pickupLocation._id}
+              dropOffLocation={dropOffLocation._id}
+              // pickupLocationName={pickupLocation.name}
+              loading={loading}
+              from={from}
+              to={to}
+              ranges={ranges}
+              multimedia={multimedia}
+              rating={rating}
+              seats={seats}
+              minPrice={minMax[0]}
+              maxPrice={minMax[1]}
+              boost
+            // distance={distance}
+            />
             <Paper
               elevation={3}
               sx={{
@@ -552,7 +575,7 @@ const Search = () => {
               seats={seats}
               minPrice={minMax[0]}
               maxPrice={minMax[1]}
-            // distance={distance}
+              boost={false}
             />
           </div>
         </div>

@@ -750,3 +750,22 @@ section.car-list article .btn-book[aria-disabled="true"] {
     bottom: 10px;
   }
 }
+
+.sponsored-badge {
+    background-color: #eb8b03; /* Yellow background for visibility */
+    color: #fff; /* Black text for contrast */
+    padding: 5px 10px; /* Padding for better appearance */
+    border-radius: 5px; /* Rounded corners */
+    font-weight: bold; /* Bold text */
+    text-align: center; /* Centered text */
+    position: relative; /* Positioning context for any absolute children */
+    display: inline-block; /* Inline block for proper sizing */
+    margin: 5px 5px; /* Margin for spacing */
+}
+
+@media (max-width: 600px) {
+    .sponsored-badge {
+        margin: 0px 0px;
+    }
+}
+

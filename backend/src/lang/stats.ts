@@ -17,6 +17,8 @@ const strings = new LocalizedStrings({
     FILTER_BY_CAR: 'Filtrer par voiture',
     FILTER_BY_DATE: 'Filtrer par date',
     TOTAL_VIEWS: 'Total des vues',
+    PAID_VIEWS: 'Vues payées',
+    ORGANIC_VIEWS: 'Vues organiques',
     AVERAGE_VIEWS: 'Moyenne des vues',
     MAX_VIEWS: 'Vues maximales',
     MIN_VIEWS: 'Vues minimales',

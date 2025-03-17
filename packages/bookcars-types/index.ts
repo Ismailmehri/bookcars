@@ -660,6 +660,8 @@ export interface CarStats {
   days: number
   clientId?: string
   paidView: boolean
+  organiqueViews: number; // Added organiqueViews
+  payedViews: number; // Added payedViews
   viewedAt: Date
 }
 
@@ -692,6 +694,8 @@ export interface CarStat {
     car: string;
   };
   views: number;
+  payedViews: number; // Added payedViews
+  organiqueViews: number; // Added organiqueViews
   date: string;
   carName: string;
   carId: string;
@@ -714,6 +718,8 @@ export interface ICar {
 export interface SummedStat {
   date: string;
   views: number;
+  payedViews: number;
+  organiqueViews: number;
 }
 
 export interface SuppliersStat {

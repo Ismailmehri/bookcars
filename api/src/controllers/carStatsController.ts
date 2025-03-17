@@ -35,31 +35,42 @@ export const getCarStats = async (req: Request, res: Response) => {
               supplier: '$supplier',
             },
             views: { $sum: 1 },
+            payedViews: {
+              $sum: {
+                $cond: [{ $eq: ['$paidView', true] }, 1, 0],
+              },
+            },
+            organiqueViews: {
+              $sum: {
+                $cond: [{ $eq: ['$paidView', false] }, 1, 0],
+              },
+            },
           },
         },
         {
           $lookup: {
-            from: 'Car', // Nom de la collection MongoDB des voitures
+            from: 'Car',
             localField: '_id.car',
             foreignField: '_id',
             as: 'carDetails',
           },
         },
-        { $unwind: '$carDetails' }, // Transforme l'array en objet unique
+        { $unwind: '$carDetails' },
         {
-            $lookup: {
-              from: 'User', // Nom de la collection MongoDB des voitures
-              localField: '_id.supplier',
-              foreignField: '_id',
-              as: 'suppDetails',
-            },
+          $lookup: {
+            from: 'User',
+            localField: '_id.supplier',
+            foreignField: '_id',
+            as: 'suppDetails',
           },
-          { $unwind: '$suppDetails' }, // Transforme l'array en objet unique
+        },
+        { $unwind: '$suppDetails' },
         {
           $project: {
             date: '$_id.date',
             views: 1,
-            // carStats: 1,
+            payedViews: 1,
+            organiqueViews: 1,
             carName: '$carDetails.name',
             carId: '$carDetails._id',
             supplierId: 'supplier',

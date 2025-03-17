@@ -41,23 +41,39 @@ const CarStats = () => {
     reserved: 0
   })
   // Agréger les vues par date
-  const sumViewsByDate = (data: bookcarsTypes.CarStat[]): bookcarsTypes.SummedStat[] => {
-    const result: { [key: string]: number } = {}
 
-    data.forEach((item) => {
-      const { date, views } = item
-      if (result[date]) {
-        result[date] += views
-      } else {
-        result[date] = views
-      }
-    })
+    const sumViewsByDate = (data: bookcarsTypes.CarStat[]): bookcarsTypes.SummedStat[] => {
+      const result: {
+        [key: string]: {
+          views: number;
+          payedViews: number;
+          organiqueViews: number;
+        }
+      } = {}
 
-    return Object.keys(result).map((date) => ({
-      date,
-      views: result[date],
-    }))
-  }
+      data.forEach((item) => {
+        const { date, views, payedViews, organiqueViews } = item
+
+        if (!result[date]) {
+          result[date] = {
+            views: 0,
+            payedViews: 0,
+            organiqueViews: 0
+          }
+        }
+
+        result[date].views += views
+        result[date].payedViews += (payedViews || 0) // Gestion valeurs manquantes
+        result[date].organiqueViews += (organiqueViews || 0) // Gestion valeurs manquantes
+      })
+
+      return Object.keys(result).map((date) => ({
+        date,
+        views: result[date].views,
+        payedViews: result[date].payedViews,
+        organiqueViews: result[date].organiqueViews
+      }))
+    }
 
   const fetchBookingStats = useCallback(
     async (supplierId?: string) => {
@@ -320,9 +336,28 @@ const CarStats = () => {
               ]}
               series={[
                 {
-                  data: stats.map((stat) => stat.views),
-                  label: strings.VIEWS,
+                  data: stats.map((stat) => stat.organiqueViews),
+                  label: strings.ORGANIC_VIEWS,
+                  color: '#1E88E5',
+                  stack: 'total',
                   area: true,
+                  showMark: true,
+                },
+                {
+                  data: stats.map((stat) => stat.payedViews),
+                  label: strings.PAID_VIEWS,
+                  color: '#77BC23',
+                  stack: 'total',
+                  area: true,
+                  showMark: true,
+                },
+                {
+                  data: stats.map((stat) => stat.views),
+                  label: strings.TOTAL_VIEWS,
+                  color: '#EF6C00',
+                  // stack: 'total',
+                  area: false,
+                  showMark: true,
                 },
               ]}
               height={400}

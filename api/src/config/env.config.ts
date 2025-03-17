@@ -560,6 +560,18 @@ export interface Discount {
   threshold: number;
   percentage: number;
 }
+
+export interface CarBoost {
+  active: boolean;
+  paused: boolean;
+  purchasedViews: number;
+  consumedViews: number;
+  startDate?: Date;
+  endDate?: Date;
+  createdAt?: Date;
+  lastViewAt?: Date;
+}
+
 export interface Car extends Document {
   name: string
   supplier: Types.ObjectId
@@ -601,6 +613,8 @@ export interface Car extends Document {
   unavailablePeriods?: UnavailablePeriod[];
   minimumRentalDays?: number;
   discounts?: Discount;
+  boost?: CarBoost;
+  boostHistory?: CarBoost[];
 }
 
 /**

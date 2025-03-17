@@ -47,6 +47,7 @@ interface CarListProps {
   distance?: string;
   minPrice?: number;
   maxPrice?: number;
+  boost?: boolean;
   onLoad?: bookcarsTypes.DataEvent<bookcarsTypes.Car>;
 }
 
@@ -78,6 +79,7 @@ const CarList = ({
   distance,
   minPrice: _minPrice,
   maxPrice: _maxPrice,
+  boost = false, // Default value set to false if not provided
   onLoad,
 }: CarListProps) => {
   const navigate = useNavigate()
@@ -156,7 +158,7 @@ const CarList = ({
         maxPrice: _maxPrice
       }
 
-      const data = await CarService.getCars(payload, _page, env.CARS_PAGE_SIZE)
+      const data = boost ? await CarService.getBoostedCars(payload, _page, env.CARS_PAGE_SIZE) : await CarService.getCars(payload, _page, env.CARS_PAGE_SIZE)
 
       const _data = data && data.length > 0 ? data[0] : { pageInfo: { totalRecord: 0 }, resultData: [] }
       if (!_data) {
@@ -303,7 +305,7 @@ const CarList = ({
           && (
             <>
               <div>
-                {totalRecords > 0 && (
+                {totalRecords > 0 && !boost && (
                 <div className="bc-title">
                   <div className="bookcars">
                     <span>{strings.TITLE_1}</span>
@@ -388,6 +390,11 @@ const CarList = ({
       )}
 
       <article>
+        {car.boost && (
+          <div className="sponsored-badge">
+            <span>Ce véhicule est sponsorisé</span>
+          </div>
+        )}
         <div className="name">
           <h2>{car.name}</h2>
         </div>
@@ -607,7 +614,7 @@ const CarList = ({
             </>
           )}
       </section>
-      {env.PAGINATION_MODE === Const.PAGINATION_MODE.CLASSIC && !env.isMobile() && (
+      {env.PAGINATION_MODE === Const.PAGINATION_MODE.CLASSIC && !env.isMobile() && !boost && (
         <Pager page={page} pageSize={env.CARS_PAGE_SIZE} rowCount={rowCount} totalRecords={totalRecords} onNext={() => setPage(page + 1)} onPrevious={() => setPage(page - 1)} />
       )}
     </>

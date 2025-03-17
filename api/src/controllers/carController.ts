@@ -630,6 +630,40 @@ export const getBookingCars = async (req: Request, res: Response) => {
   }
 }
 
+export const boostCar = async (req: Request, res: Response) => {
+  try {
+    const { boostData, carId } = req.body // Assuming boostData contains the boost information
+    const car = await Car.findById(carId)
+
+    if (!car) {
+      return res.status(404).send('Car not found')
+    }
+
+    if (car.boost && car.boost.active) {
+      return res.status(400).send('A boost is already activated for this car')
+    }
+
+    // Set default values for the boost
+    const newBoost = {
+      active: true,
+      paused: false,
+      purchasedViews: boostData.purchasedViews, // Get purchasedViews from the request
+      consumedViews: 0,
+      startDate: boostData.startDate || new Date(),
+      endDate: boostData.endDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // Default to 14 days
+      createdAt: new Date(),
+    }
+
+    car.boost = newBoost
+    await car.save()
+
+    return res.status(200).json(car.boost)
+  } catch (err) {
+    logger.error(`[car.boostCar] ${i18n.t('DB_ERROR')}`, err)
+    return res.status(500).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
 /**
  * Get Cars available for rental.
  *
@@ -990,6 +1024,323 @@ export const getFrontendCars = async (req: Request, res: Response) => {
           clientId: req.signedCookies.clientId,
         }
       })
+
+      CarStats.insertMany(statsData)
+        .catch((err) => logger.error('Error logging car stats:', err))
+    }
+
+    return res.json(formattedData)
+  } catch (err: any) {
+    logger.error(`[car.getFrontendCars] Error: ${err.message}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err.message)
+  }
+}
+export const getFrontendBoostedCars = async (req: Request, res: Response) => {
+  try {
+    const { body }: { body: bookcarsTypes.GetCarsPayload } = req
+    const page = Number.parseInt(req.params.page, 10)
+    const size = 1
+
+    const suppliers = body.suppliers?.map((id) => new mongoose.Types.ObjectId(id)) || []
+    const pickupLocation = new mongoose.Types.ObjectId(body.pickupLocation)
+
+    const {
+      startDate,
+      endDate,
+      minPrice,
+      maxPrice,
+    } = body
+
+    const startDateObj = new Date(startDate || Date.now())
+    const endDateObj = new Date(endDate || Date.now())
+
+    // Définir les dates limites
+    const restrictedStartDate = new Date('2025-06-01')
+    const restrictedEndDate = new Date('2025-09-15')
+
+    // Filtre de base pour les voitures disponibles
+    const $match: mongoose.FilterQuery<bookcarsTypes.Car> = {
+      $and: [
+        { locations: pickupLocation },
+        { available: true },
+        { 'boost.active': true },
+        { 'boost.paused': false },
+      ],
+    }
+
+    const pipeline: mongoose.PipelineStage[] = [
+      { $match },
+      {
+        $lookup: {
+          from: 'User',
+          let: { userId: '$supplier' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$_id', '$$userId'] },
+              },
+            },
+          ],
+          as: 'supplier',
+        },
+      },
+      { $unwind: { path: '$supplier', preserveNullAndEmptyArrays: false } },
+      {
+        $lookup: {
+          from: 'Booking',
+          let: { supplierId: '$supplier._id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$supplier', '$$supplierId'] },
+                    { $ne: ['$status', 'cancelled'] },
+                    { $ne: ['$status', 'void'] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'supplierBookings',
+        },
+      },
+      {
+        $addFields: {
+          supplierReservationCount: { $size: '$supplierBookings' },
+        },
+      },
+      {
+        $lookup: {
+          from: 'Booking',
+          let: { carId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$car', '$$carId'] },
+                    { $ne: ['$status', 'cancelled'] },
+                    { $ne: ['$status', 'void'] },
+                    { $lt: ['$from', endDateObj] },
+                    { $gt: ['$to', startDateObj] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'conflictingBookings',
+        },
+      },
+      {
+        $addFields: {
+          hasConflict: { $gt: [{ $size: '$conflictingBookings' }, 0] },
+        },
+      },
+      {
+        $match: { hasConflict: false },
+      },
+      {
+        $addFields: {
+          unavailablePeriods: { $ifNull: ['$unavailablePeriods', []] },
+        },
+      },
+      {
+        $addFields: {
+          isUnavailable: {
+            $anyElementTrue: {
+              $map: {
+                input: '$unavailablePeriods',
+                as: 'period',
+                in: {
+                  $and: [
+                    { $lte: ['$$period.startDate', endDateObj] },
+                    { $gte: ['$$period.endDate', startDateObj] },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $match: { isUnavailable: false },
+      },
+      {
+        $addFields: {
+          dailyPrice: {
+            $let: {
+              vars: {
+                periodicPrices: { $ifNull: ['$periodicPrices', []] },
+                periodicPrice: {
+                  $filter: {
+                    input: '$periodicPrices',
+                    as: 'period',
+                    cond: {
+                      $and: [
+                        { $lte: ['$$period.startDate', endDateObj] },
+                        { $gte: ['$$period.endDate', startDateObj] },
+                      ],
+                    },
+                  },
+                },
+              },
+              in: {
+                $cond: {
+                  if: { $gt: [{ $size: { $ifNull: ['$$periodicPrice', []] } }, 0] },
+                  then: { $arrayElemAt: ['$$periodicPrice.dailyPrice', 0] },
+                  else: '$dailyPrice',
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          dailyPriceWithDiscount: {
+            $cond: {
+              if: {
+                $and: [
+                  { $ne: [{ $ifNull: ['$discounts', null] }, null] },
+                  { $ne: ['$discounts.percentage', null] },
+                  { $ne: ['$discounts.threshold', null] },
+                  { $gte: [{ $ceil: { $divide: [{ $subtract: [endDateObj, startDateObj] }, 1000 * 60 * 60 * 24] } }, '$discounts.threshold'] },
+                ],
+              },
+              then: {
+                $multiply: [
+                  '$dailyPrice',
+                  { $subtract: [1, { $divide: ['$discounts.percentage', 100] }] },
+                ],
+              },
+              else: '$dailyPrice',
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          dailyPriceWithDiscount: { $gte: minPrice, $lte: maxPrice },
+        },
+      },
+      {
+        $match: {
+          $expr: {
+            $or: [
+              // Cas 1 : la période demandée est en dehors de la période restreinte
+              {
+                $or: [
+                  { $lte: [endDateObj, restrictedStartDate] },
+                  { $gte: [startDateObj, restrictedEndDate] },
+                ],
+              },
+              // Cas 2 : la période demandée chevauche la période restreinte
+              // -> la voiture doit avoir une propriété periodicPrices non vide
+              // -> et au moins une période dans periodicPrices doit chevaucher la période restreinte
+              {
+                $and: [
+                  { $lt: [startDateObj, restrictedEndDate] },
+                  { $gt: [endDateObj, restrictedStartDate] },
+                  { $gt: [{ $size: { $ifNull: ['$periodicPrices', []] } }, 0] },
+                  { $expr: { $gte: ['$dailyPriceWithDiscount', 110] } },
+                ],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $sort: {
+          'boost.lastViewAt': 1, // Sort by the smallest date of boost.lastViewAt or if null
+        },
+      },
+      {
+        $group: {
+          _id: '$supplier._id',
+          cars: { $push: '$$ROOT' },
+        },
+      },
+      {
+        $project: {
+          cars: { $slice: ['$cars', suppliers.length > 5 ? 2 : 20] }, // Garde seulement 2 voitures par fournisseur
+        },
+      },
+      {
+        $unwind: '$cars',
+      },
+      {
+        $replaceRoot: { newRoot: '$cars' },
+      },
+
+      {
+        $facet: {
+          resultData: [
+            // { $sort: { dailyPriceWithDiscount: 1, supplierReservationCount: 1 } },
+            { $skip: (page - 1) * size },
+            { $limit: size },
+          ],
+          pageInfo: [
+            { $count: 'totalRecords' },
+          ],
+        },
+      },
+    ]
+    const data = await Car.aggregate(pipeline, {
+      collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 },
+    })
+
+    const formattedData = data.map((aggregationResult) => ({
+      pageInfo: aggregationResult.pageInfo || [],
+      resultData: aggregationResult.resultData.map((car: bookcarsTypes.Car) => ({
+        ...car,
+        supplier: {
+          _id: car.supplier._id,
+          fullName: car.supplier.fullName,
+          avatar: car.supplier.avatar,
+          score: car.supplier.score,
+        },
+      })),
+    }))
+
+    // Logging asynchrone
+    if (formattedData[0]?.resultData) {
+      const statsData = formattedData[0].resultData.map((car: bookcarsTypes.Car) => {
+        // Calcul précis du nombre de jours
+        const timeDiff = endDateObj.getTime() - startDateObj.getTime()
+        const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) || 1
+
+        return {
+          car: car._id,
+          supplier: car.supplier._id,
+          pickupLocation: body.pickupLocation,
+          startDate: startDateObj,
+          endDate: endDateObj,
+          viewedAt: new Date(),
+          days,
+          paidView: true,
+          clientId: req.signedCookies.clientId,
+        }
+      })
+
+      // Incrémenter consumedViews pour chaque voiture
+      const carIds = formattedData[0].resultData.map((car: bookcarsTypes.Car) => car._id)
+      await Car.updateMany(
+        {
+          _id: { $in: carIds },
+          'boost.active': true,
+          $expr: {
+            $or: [
+              { $eq: ['$boost.purchasedViews', -1] },
+              { $lt: ['$boost.consumedViews', '$boost.purchasedViews'] },
+            ],
+          },
+        },
+        {
+          $inc: { 'boost.consumedViews': 1 },
+          $set: { 'boost.lastViewAt': new Date() },
+        },
+      ).catch((err) => logger.error('Error updating consumed views:', err))
 
       CarStats.insertMany(statsData)
         .catch((err) => logger.error('Error logging car stats:', err))

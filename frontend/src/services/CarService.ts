@@ -17,6 +17,13 @@ export const getCars = (data: bookcarsTypes.GetCarsPayload, page: number, size: 
       data
     ).then((res) => res.data)
 
+export const getBoostedCars = (data: bookcarsTypes.GetCarsPayload, page: number, size: number): Promise<bookcarsTypes.Result<bookcarsTypes.Car>> =>
+  axiosInstance
+    .post(
+      `/api/frontend-boosted-cars/${page}/${size}`,
+      data
+    ).then((res) => res.data)
+
 /**
  * Get a Car by ID.
  *

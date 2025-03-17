@@ -15,6 +15,35 @@ const discountSchema = new Schema({
   },
 })
 
+const boostSchema = new Schema({
+  active: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
+  paused: {
+    type: Boolean,
+    default: false,
+  },
+  purchasedViews: {
+    type: Number,
+    default: 0,
+    min: -1,
+  },
+  consumedViews: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  startDate: Date,
+  endDate: Date,
+  lastViewAt: Date,
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+}, { _id: false })
+
 const carSchema = new Schema<env.Car>(
   {
     name: {
@@ -218,10 +247,12 @@ const carSchema = new Schema<env.Car>(
     // Nouveaux champs
     minimumRentalDays: {
       type: Number,
-      required: [true, "Minimum rental days can't be blank"],
-      min: 1, // Au moins 1 jour
+      // required: [true, "Minimum rental days can't be blank"],
+      min: 0, // Au moins 1 jour
     },
     discounts: discountSchema, // Liste des remises
+    boost: boostSchema,
+    boostHistory: [boostSchema],
   },
   {
     timestamps: true,

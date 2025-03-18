@@ -630,6 +630,36 @@ export const getBookingCars = async (req: Request, res: Response) => {
   }
 }
 
+export const updateCarBoost = async (req: Request, res: Response) => {
+  try {
+    const { carId, boostData } = req.body
+
+    if (carId === undefined || boostData === undefined) {
+      return res.status(400).send('Missing parameters: carId and paused status are required')
+    }
+
+    const car = await Car.findById(carId)
+
+    if (!car) {
+      return res.status(404).send('Car not found')
+    }
+
+    if (!car.boost) {
+      return res.status(404).send('No boost found for this car')
+    }
+
+    // Mise à jour uniquement du champ paused
+    car.boost.paused = boostData.paused
+
+    await car.save()
+
+    return res.status(200).json(car.boost)
+  } catch (err) {
+    logger.error(`[car.updateCarBoostPause] ${i18n.t('DB_ERROR')}`, err)
+    return res.status(500).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
 export const boostCar = async (req: Request, res: Response) => {
   try {
     const { boostData, carId } = req.body // Assuming boostData contains the boost information
@@ -652,6 +682,7 @@ export const boostCar = async (req: Request, res: Response) => {
       startDate: boostData.startDate || new Date(),
       endDate: boostData.endDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // Default to 14 days
       createdAt: new Date(),
+      lastViewAt: new Date(),
     }
 
     car.boost = newBoost
@@ -1041,7 +1072,6 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
     const page = Number.parseInt(req.params.page, 10)
     const size = 1
 
-    const suppliers = body.suppliers?.map((id) => new mongoose.Types.ObjectId(id)) || []
     const pickupLocation = new mongoose.Types.ObjectId(body.pickupLocation)
 
     const {
@@ -1261,11 +1291,11 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
           cars: { $push: '$$ROOT' },
         },
       },
-      {
+      /** {
         $project: {
           cars: { $slice: ['$cars', suppliers.length > 5 ? 2 : 20] }, // Garde seulement 2 voitures par fournisseur
         },
-      },
+      }, */
       {
         $unwind: '$cars',
       },
@@ -1276,7 +1306,7 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
       {
         $facet: {
           resultData: [
-            // { $sort: { dailyPriceWithDiscount: 1, supplierReservationCount: 1 } },
+            { $sort: { 'boost.lastViewAt': 1 } },
             { $skip: (page - 1) * size },
             { $limit: size },
           ],

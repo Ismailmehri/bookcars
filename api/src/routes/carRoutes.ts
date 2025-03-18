@@ -20,5 +20,6 @@ routes.route(routeNames.getBookingCars).post(authJwt.verifyToken, carController.
 routes.route(routeNames.getFrontendCars).post(carController.getFrontendCars)
 routes.route(routeNames.getFrontendBoostedCars).post(carController.getFrontendBoostedCars)
 routes.route(routeNames.boostCar).post(carController.boostCar)
+routes.route(routeNames.boostCar).put(carController.updateCarBoost)
 
 export default routes

@@ -390,7 +390,7 @@ const CarList = ({
       )}
 
       <article>
-        {car.boost && (
+        {boost && car.boost && (
           <div className="sponsored-badge">
             <span>Ce véhicule est sponsorisé</span>
           </div>

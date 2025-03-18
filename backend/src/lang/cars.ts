@@ -81,6 +81,7 @@ const strings = new LocalizedStrings({
     PRICE_PER_DAY: 'Prix par jour :',
     TRIPS: 'locations',
     CO2: 'Effet CO2',
+    BOOST_OPTIONS: 'Boostez votre voiture pour apparaître en priorité dans les résultats de recherche.'
   },
   en: {
     NEW_CAR: 'New car',
@@ -155,6 +156,7 @@ const strings = new LocalizedStrings({
     PRICE_PER_DAY: 'Price per day:',
     TRIPS: 'trips',
     CO2: 'CO2 effect',
+    BOOST_OPTIONS: 'text'
   },
 })
 

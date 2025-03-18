@@ -475,6 +475,16 @@ export interface Discount {
   percentage: number;
 }
 
+export interface CarBoost {
+  active: boolean;
+  paused: boolean;
+  purchasedViews: number;
+  consumedViews: number;
+  startDate?: Date;
+  endDate?: Date;
+  createdAt?: Date;
+  lastViewAt?: Date;
+}
 export interface Car {
   _id: string
   name: string
@@ -517,6 +527,8 @@ export interface Car {
   minimumDrivingLicenseYears?: number
   minimumRentalDays: number;
   discounts: Discount;
+  boost?: CarBoost;
+  boostHistory?: CarBoost[];
   [propKey: string]: any
 }
 

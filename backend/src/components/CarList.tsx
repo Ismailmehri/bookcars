@@ -9,7 +9,15 @@ import {
   Tooltip,
   Card,
   CardContent,
-  Typography
+  Typography,
+  Switch,
+  FormControlLabel,
+  TextField,
+  CircularProgress,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
 } from '@mui/material'
 import {
   LocalGasStation as CarTypeIcon,
@@ -23,6 +31,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Info as InfoIcon,
+  TrendingUp as BoostIcon
 } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -108,6 +117,15 @@ const CarList = ({
   const [carId, setCarId] = useState('')
   const [carIndex, setCarIndex] = useState(-1)
   const [openInfoDialog, setOpenInfoDialog] = useState(false)
+  const [openBoostDialog, setOpenBoostDialog] = useState(false)
+  const [currentBoostCar, setCurrentBoostCar] = useState<bookcarsTypes.Car | null>(null)
+  const [boostData, setBoostData] = useState<bookcarsTypes.CarBoost>({
+    active: false,
+    paused: false,
+    purchasedViews: 0,
+    consumedViews: 0,
+  })
+  const [isNewBoost, setIsNewBoost] = useState(false)
 
   useEffect(() => {
     if (env.PAGINATION_MODE === Const.PAGINATION_MODE.INFINITE_SCROLL || env.isMobile()) {
@@ -332,6 +350,92 @@ const CarList = ({
     } catch (err) {
       helper.error(err)
     }
+  }
+
+  const handleBoost = (car: bookcarsTypes.Car) => {
+    setCurrentBoostCar(car)
+
+    // Détermine si c'est un nouveau boost ou une mise à jour
+    const isNew = !car.boost
+    setIsNewBoost(isNew)
+
+    // Date actuelle pour nouvelle entrée
+    const today = new Date()
+
+    // Date de fin (3 mois après la date de début)
+    const endDateValue = car.boost?.startDate
+      ? new Date(new Date(car.boost.startDate).setMonth(new Date(car.boost.startDate).getMonth() + 3))
+      : new Date(new Date().setMonth(today.getMonth() + 3))
+
+    // Initialiser avec les données de boost existantes ou des valeurs par défaut
+    setBoostData({
+      active: car.boost?.active || false,
+      paused: car.boost?.paused || false,
+      purchasedViews: car.boost?.purchasedViews || 2500,
+      consumedViews: car.boost?.consumedViews || 0,
+      startDate: car.boost?.startDate || new Date(),
+      endDate: car.boost?.endDate || endDateValue,
+    })
+
+    setOpenBoostDialog(true)
+  }
+
+  const handleBoostChange = (field: string, value: any) => {
+    setBoostData((prevData) => ({
+      ...prevData,
+      [field]: value,
+    }))
+  }
+
+  const handleSaveBoost = async () => {
+    try {
+      setLoading(true)
+
+      if (!currentBoostCar) {
+        helper.error()
+        setLoading(false)
+        return
+      }
+
+      let status
+
+      // Si boost existe déjà, utiliser PUT, sinon POST
+      if (currentBoostCar.boost) {
+        // Mettre à jour un boost existant
+        status = await CarService.updateCarBoost(currentBoostCar._id, boostData)
+      } else {
+        // Créer un nouveau boost
+        status = await CarService.createCarBoost(currentBoostCar._id, boostData)
+      }
+
+      if (status === 200) {
+        // Mise à jour de la voiture dans l'état local
+        const updatedRows = [...rows]
+        const currentCarIndex = updatedRows.findIndex((c) => c._id === currentBoostCar._id)
+
+        if (currentCarIndex !== -1) {
+          updatedRows[currentCarIndex] = {
+            ...updatedRows[currentCarIndex],
+            boost: boostData
+          }
+          setRows(updatedRows)
+        }
+
+        setOpenBoostDialog(false)
+        setCurrentBoostCar(null)
+      } else {
+        helper.error()
+      }
+    } catch (err) {
+      helper.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCloseBoostDialog = () => {
+    setOpenBoostDialog(false)
+    setCurrentBoostCar(null)
   }
 
   const handleCloseInfo = () => {
@@ -580,6 +684,11 @@ const CarList = ({
                   <div className="action">
                     {edit && (
                       <>
+                        <Tooltip title="Options de Boost">
+                          <IconButton onClick={() => handleBoost(car)}>
+                            <BoostIcon />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title={strings.VIEW_CAR}>
                           <IconButton href={`/car?cr=${car._id}`}>
                             <ViewIcon />
@@ -620,6 +729,147 @@ const CarList = ({
               </Button>
               <Button onClick={handleConfirmDelete} variant="contained" color="error">
                 {commonStrings.DELETE}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Dialog for Boost Options */}
+          <Dialog
+            disableEscapeKeyDown
+            maxWidth="md"
+            open={openBoostDialog}
+            fullScreen={env.isMobile()}
+            PaperProps={{
+              style: env.isMobile() ? {
+                top: 30,
+                margin: 0,
+                height: '90%',
+                maxHeight: '90%',
+                borderRadius: 0
+              } : {}
+            }}
+          >
+            <DialogTitle
+              className="dialog-header"
+              style={env.isMobile() ? {
+                position: 'sticky',
+                top: 0,
+                zIndex: 1,
+                paddingTop: '16px',
+                backgroundColor: '#fff'
+              } : {}}
+            >
+              {strings.BOOST_OPTIONS || 'Options de Boost'}
+            </DialogTitle>
+            <DialogContent>
+              {currentBoostCar && (
+                <div className="boost-form" style={{ minWidth: env.isMobile() ? '100%' : '500px', padding: '10px 0' }}>
+                  {/* Première ligne: Active et Pause */}
+                  <div style={{ display: 'flex', flexDirection: env.isMobile() ? 'column' : 'row', gap: '20px' }}>
+                    {/* Option Active uniquement visible pour admin */}
+                    {admin && (
+                      <FormControlLabel
+                        control={(
+                          <Switch
+                            checked={boostData.active}
+                            onChange={(e) => handleBoostChange('active', e.target.checked)}
+                            color="primary"
+                          />
+                        )}
+                        label="Actif"
+                        style={{ flex: 1 }}
+                      />
+                    )}
+
+                    <FormControlLabel
+                      control={(
+                        <Switch
+                          checked={boostData.paused}
+                          onChange={(e) => handleBoostChange('paused', e.target.checked)}
+                          color="primary"
+                          disabled={!boostData.active}
+                        />
+                      )}
+                      label="En pause"
+                      style={{ flex: 1 }}
+                    />
+                  </div>
+
+                  {/* Deuxième ligne: Vues achetées et Vues consommées */}
+                  <div style={{ display: 'flex', flexDirection: env.isMobile() ? 'column' : 'row', gap: '20px', marginTop: '20px' }}>
+                    <FormControl fullWidth style={{ flex: 1, margin: 0 }}>
+                      <InputLabel>Vues achetées</InputLabel>
+                      <Select
+                        value={boostData.purchasedViews}
+                        onChange={(e) => handleBoostChange('purchasedViews', e.target.value)}
+                        label="Vues achetées"
+                        // Désactivé si c'est une mise à jour et non admin
+                        disabled={(!isNewBoost && !admin) || !admin}
+                      >
+                        <MenuItem value={2500}>2500</MenuItem>
+                        <MenuItem value={5000}>5000</MenuItem>
+                        <MenuItem value={7500}>7500</MenuItem>
+                        <MenuItem value={10000}>10000</MenuItem>
+                      </Select>
+                    </FormControl>
+
+                    <TextField
+                      label="Vues consommées"
+                      type="number"
+                      value={boostData.consumedViews}
+                      disabled
+                      fullWidth
+                      margin="normal"
+                      InputProps={{
+                        inputProps: { min: 0 }
+                      }}
+                      style={{ flex: 1, margin: 0 }}
+                    />
+                  </div>
+
+                  {/* Troisième ligne: Date de début et Date de fin */}
+                  <div style={{ display: 'flex', flexDirection: env.isMobile() ? 'column' : 'row', gap: '20px', marginTop: '20px' }}>
+                    <TextField
+                      label="Date de début"
+                      type="date"
+                      value={boostData.startDate ? new Date(boostData.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+                      onChange={(e) => handleBoostChange('startDate', e.target.value ? new Date(e.target.value) : new Date())}
+                      disabled={!admin}
+                      fullWidth
+                      margin="normal"
+                      InputLabelProps={{ shrink: true }}
+                      style={{ flex: 1, margin: 0 }}
+                    />
+
+                    <TextField
+                      label="Date de fin"
+                      type="date"
+                      value={boostData.endDate ? new Date(boostData.endDate).toISOString().split('T')[0]
+                        : new Date(boostData.startDate
+                          ? new Date(boostData.startDate).setMonth(new Date(boostData.startDate).getMonth() + 3)
+                          : new Date().setMonth(new Date().getMonth() + 3)).toISOString().split('T')[0]}
+                      onChange={(e) => handleBoostChange('endDate', e.target.value ? new Date(e.target.value) : undefined)}
+                      disabled={!admin}
+                      fullWidth
+                      margin="normal"
+                      InputLabelProps={{ shrink: true }}
+                      style={{ flex: 1, margin: 0 }}
+                    />
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+            <DialogActions className="dialog-actions">
+              <Button onClick={handleCloseBoostDialog} variant="contained" className="btn-secondary">
+                {commonStrings.CANCEL}
+              </Button>
+              <Button
+                onClick={handleSaveBoost}
+                variant="contained"
+                color="primary"
+                disabled={loading || !admin}
+              >
+                {loading ? <CircularProgress size={24} /> : commonStrings.SAVE}
               </Button>
             </DialogActions>
           </Dialog>

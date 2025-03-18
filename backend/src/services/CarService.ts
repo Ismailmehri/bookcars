@@ -32,6 +32,34 @@ export const update = (data: bookcarsTypes.UpdateCarPayload): Promise<number> =>
     )
     .then((res) => res.status)
 
+    export const updateCarBoost = async (carId: string, boostData: bookcarsTypes.CarBoost): Promise<number> => {
+      const data = { carId, boostData }
+
+      return axiosInstance.put('/api/boost-car', data, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      })
+        .then((res) => res.status)
+        .catch((err) => {
+          throw err
+        })
+    }
+
+    export const createCarBoost = async (carId: string, boostData: bookcarsTypes.CarBoost): Promise<number> => {
+      const data = { carId, boostData }
+
+      return axiosInstance.post('/api/boost-car', data, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      })
+        .then((res) => res.status)
+        .catch((err) => {
+          throw err
+        })
+    }
+
 /**
  * Check if a Car is related to a booking.
  *

@@ -295,11 +295,13 @@ const CarList = ({
           && !loading
           && !carListLoading
           && (
-            <Card variant="outlined" className="empty-list">
-              <CardContent>
-                <Typography color="textSecondary">{strings.EMPTY_LIST}</Typography>
-              </CardContent>
-            </Card>
+          <Card variant="outlined" className="empty-list">
+            {!boost && (
+            <CardContent>
+              <Typography color="textSecondary">{strings.EMPTY_LIST}</Typography>
+            </CardContent>
+            )}
+          </Card>
           )
           : ((from && to && pickupLocation && dropOffLocation) || hidePrice) // || (hidePrice && booking))
           && (

@@ -264,6 +264,19 @@ const Search = () => {
     }
   }
 
+  const getCanonicalUrl = () => {
+    if (supplierSlug && pickupLocationSlug) {
+      return `https://plany.tn/search/${pickupLocationSlug}/${supplierSlug}`
+    } if (pickupLocationSlug) {
+      return `https://plany.tn/search/${pickupLocationSlug}`
+    } if (supplierSlug) {
+      return `https://plany.tn/search/agence/${supplierSlug}`
+    }
+
+    // Pour les recherches générales
+    return 'https://plany.tn/search'
+  }
+
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
@@ -367,14 +380,6 @@ const Search = () => {
             : 'location voiture Tunisie, louer voiture Tunisie, location auto Tunisie, voiture location Tunisie, location véhicule Tunisie'
         }
         />
-        <link
-          rel="canonical"
-          href={
-            pickupLocation?.slug
-              ? `https://plany.tn/search/${pickupLocation.slug}`
-              : 'https://plany.tn/search'
-          }
-        />
 
         {/* Balises Open Graph pour les réseaux sociaux */}
         <meta
@@ -394,17 +399,12 @@ const Search = () => {
         }
         />
         <meta property="og:type" content="website" />
-        <meta
-          property="og:url"
-          content={
-            pickupLocation?.slug
-              ? `https://plany.tn/search/${pickupLocation.slug}`
-              : 'https://plany.tn/search'
-          }
-        />
         <meta property="og:image" content="https://plany.tn/logo.png" />
         <meta property="og:site_name" content="Plany.tn" />
         <meta property="og:locale" content="fr_FR" />
+
+        <link rel="canonical" href={getCanonicalUrl()} />
+        <meta property="og:url" content={getCanonicalUrl()} />
 
         {/* Balises Twitter Card pour Twitter */}
         <meta name="twitter:card" content="summary_large_image" />

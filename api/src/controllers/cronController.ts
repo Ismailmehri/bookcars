@@ -1111,12 +1111,12 @@ function generateUniqueSlug(value: string, existingSlugs: Set<string>): string {
               const clientMailOptions = {
                 from: process.env.SMTP_FROM,
                 to: client.email,
-                subject: i18n.t('REVIEW_BOOKING_SUBJECT', { supplierName: supplier?.fullName }),
+                subject: i18n.t('REVIEW_BOOKING_SUBJECT', { clientName: client.fullName, supplierName: supplier?.fullName }),
                 html: `
                   <div style="max-width: 600px; margin: 0 auto;">
                     <h2>${i18n.t('HELLO')} ${client.fullName},</h2>
                     <p>${i18n.t('PLEASE_REVIEW_BOOKING', { clientName: client.fullName, supplierName: supplier?.fullName })}</p>
-                    <p><a href="${env.FRONTEND_HOST}/review?u=${supplier?._id}&b=${booking._id}" style="color: #3498DB;">
+                    <p><a href="${env.FRONTEND_HOST}review?u=${supplier?._id}&b=${booking._id}" style="color: #3498DB;">
                       ${i18n.t('CLICK_TO_REVIEW')}
                     </a></p>
                   </div>

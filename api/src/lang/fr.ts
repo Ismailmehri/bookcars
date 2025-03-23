@@ -115,7 +115,7 @@ export const fr = {
   PLEASE_REVIEW_CLIENT: 'Cher partenaire %{agencyName}, votre avis sur <b>%{clientName}</b> est précieux ! En évaluant votre expérience avec ce client, vous aidez toute la communauté des agences à identifier les clients fiables et sérieux.',
   CLICK_TO_REVIEW: 'Cliquez ici pour partager votre expérience',
   REVIEW_CLIENT_SUBJECT: 'Votre avis compte - Évaluez votre expérience client',
-  PLEASE_REVIEW_BOOKING: 'Cher(e) %{clientName}, partagez votre expérience avec %{supplierName}',
-  REVIEW_BOOKING_SUBJECT: 'Donnez votre avis sur votre location avec %{supplierName}',
+  PLEASE_REVIEW_BOOKING: 'Cher(e) %{clientName}, nous vous invitons à partager votre expérience avec %{supplierName}. Votre avis est essentiel pour nous aider à améliorer notre service et à garantir la satisfaction de nos clients. Merci de prendre un moment pour nous faire part de vos impressions.',
+  REVIEW_BOOKING_SUBJECT: '%{clientName}, Donnez votre avis sur votre location avec %{supplierName}',
   REVIEW_EMAILS_SENT: '%{count} demandes d\'avis envoyées avec succès',
 }

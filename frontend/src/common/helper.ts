@@ -86,6 +86,8 @@ export const getCarTypeShort = (type: string) => {
   }
 }
 
+export const admin = (user?: bookcarsTypes.User): boolean => (user && user.type === bookcarsTypes.RecordType.Admin) ?? false
+
 /**
  * Get gearbox type label.
  *

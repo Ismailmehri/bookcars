@@ -17,6 +17,15 @@ export const signup = (data: bookcarsTypes.SignUpPayload): Promise<number> =>
     )
     .then((res) => res.status)
 
+  export const addReview = (data: bookcarsTypes.AddReviewPayload): Promise<number> =>
+    axiosInstance
+      .post(
+        '/api/add-review',
+        data,
+        { withCredentials: true }
+      )
+      .then((res) => res.status)
+
 /**
  * Check validation token.
  *

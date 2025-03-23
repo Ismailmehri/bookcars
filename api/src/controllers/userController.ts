@@ -1097,8 +1097,7 @@ export const addReview = async (req: Request, res: Response) => {
 
     // Vérifier si l'utilisateur connecté est autorisé à ajouter un avis
     const isAdmin = helper.admin(connectedUser) // Vérifie si l'utilisateur est un admin
-    const isSupplier = connectedUser.type === bookcarsTypes.RecordType.Supplier // Vérifie si l'utilisateur est un supplier
-    const isAuthorized = isAdmin || (isSupplier && review && connectedUser._id && review.user === connectedUser._id.toString()) // Autorisation si admin ou supplier correspondant
+    const isAuthorized = isAdmin || (review && connectedUser._id && review.user === connectedUser._id.toString()) // Autorisation si admin ou supplier correspondant
 
     if (!isAuthorized) {
       throw new Error('You are not authorized to add a review for this user')

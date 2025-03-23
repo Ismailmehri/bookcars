@@ -1,0 +1,53 @@
+.user-avatar-sec {
+    display: flex;
+    justify-content: center;
+  }
+
+  /* styles.css */
+.notification-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+
+.avatar, .avatar-large {
+  max-width: 170px; /* Limit the width to 170px */
+  width: 100% !important; /* Allow the image to take full width */
+  height: auto !important; /* Maintain aspect ratio for large images */
+  object-fit: contain; /* Ensure part of the image is displayed if it's large */
+}
+
+.notification-card {
+  padding: 2rem;
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+}
+
+.avatar-ctn {
+  position: relative;
+  margin: 20px 0;
+  height: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.notification-title {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.review-notification-button {
+  margin-top: 1rem !important;
+}

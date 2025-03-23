@@ -24,7 +24,8 @@ import {
   Visibility as ViewIcon,
   Check as CheckIcon,
   Cancel as CancelIcon,
-  Pending as PendingIcon
+  Pending as PendingIcon,
+  Star as StarIcon
 } from '@mui/icons-material'
 import { format } from 'date-fns'
 import { fr as dfnsFR, enUS as dfnsENUS } from 'date-fns/locale'
@@ -273,6 +274,13 @@ const BookingList = ({
                     </IconButton>
                   </Tooltip>
                 )}
+              {!(row.cancellation || (row.status === bookcarsTypes.BookingStatus.Pending && new Date(new Date(row.to).setDate(new Date(row.to).getDate() + 1)) > new Date())) && !row.cancelRequest && (
+                <Tooltip title={strings.ADD_REVIEW}>
+                  <IconButton href={`/review?u=${(row.supplier as bookcarsTypes.User)._id}&b=${row._id}`}>
+                    <StarIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
             </>
           )
         },

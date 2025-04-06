@@ -3,7 +3,7 @@ name: Notify Review
 on:
   schedule:
     # Exécuter chaque jour de la semaine à 8h du matin (UTC)
-    - cron: '0 8 * * 1-5'
+    - cron: '0 8 * * 1-6'
   workflow_dispatch: # Permet de déclencher manuellement le workflow depuis l'interface GitHub
 
 jobs:
@@ -19,4 +19,4 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
         run: |
           curl -H "x-api-key: $API_KEY" \
-            "https://api.plany.tn/api/cron/suppliers/review?notifySupplier=true&notifyClient=false&days=1&maxNotifications=1&maxEmails=50"
+            "https://api.plany.tn/api/cron/suppliers/review?notifySupplier=true&notifyClient=true&days=1&maxNotifications=1&maxEmails=50"

@@ -1,5 +1,3 @@
-import { getUsersReviews } from "src/controllers/userController"
-
 const routes = {
   create: '/api/create-user',
   checkToken: '/api/check-token/:type/:userId/:email/:token',

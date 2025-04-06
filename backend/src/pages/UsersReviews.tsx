@@ -24,11 +24,13 @@ import Rating from '@mui/material/Rating'
 import { CommentOutlined, PersonOutline, DateRangeOutlined } from '@mui/icons-material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import CancelIcon from '@mui/icons-material/Cancel'
+import * as bookcarsTypes from ':bookcars-types'
 import Avatar from '@/components/Avatar'
 import Pager from '@/components/Pager'
 import * as UserService from '@/services/UserService'
 import Layout from '@/components/Layout'
 import { strings as commonStrings } from '@/lang/common'
+import * as helper from '@/common/helper'
 
 import '@/assets/css/users-reviews.css'
 
@@ -68,6 +70,16 @@ const UsersReviews = () => {
   const [limit] = useState(12)
   const [totalRecords, setTotalRecords] = useState(0)
   const [toastOpen, setToastOpen] = useState(false)
+  const [user, setUser] = useState<bookcarsTypes.User>()
+  const [admin, setAdmin] = useState(false)
+
+const onLoad = (_user?: bookcarsTypes.User) => {
+  if (_user) {
+    setUser(_user)
+    setAdmin(helper.admin(_user))
+  }
+}
+
 // Mémoriser fetchReviews avec useCallback
 const fetchReviews = useCallback(async () => {
   setLoading(true)
@@ -146,7 +158,7 @@ useEffect(() => {
   }
 
   return (
-    <Layout>
+    <Layout onLoad={onLoad} user={user} strict>
       <Container maxWidth="xl">
         <Box sx={{ mt: 4, mb: 6 }}>
           <Typography variant="h4" gutterBottom fontWeight="bold" color="primary">
@@ -220,7 +232,7 @@ useEffect(() => {
           </Paper>
 
           {/* Section d'affichage des avis */}
-          {loading ? (
+          {loading || !admin ? (
             <Box sx={{ textAlign: 'center', mt: 8, mb: 8 }}>
               <CircularProgress size={60} />
               <Typography variant="h6" sx={{ mt: 2 }}>

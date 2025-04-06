@@ -40,6 +40,6 @@ routes.route(routeNames.addReview).post(authJwt.verifyToken, userController.addR
 routes.route(routeNames.verifyRecaptcha).post(userController.verifyRecaptcha)
 routes.route(routeNames.sendEmail).post(userController.sendEmail)
 routes.route(routeNames.hasPassword).get(authJwt.verifyToken, userController.hasPassword)
-routes.route(routeNames.getUsersReviews).get(userController.getUsersReviews)
+routes.route(routeNames.getUsersReviews).get(authJwt.verifyToken, userController.getUsersReviews)
 
 export default routes

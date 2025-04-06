@@ -538,3 +538,16 @@ export const deleteUsers = (ids: string[]): Promise<number> => (
     )
     .then((res) => res.status)
 )
+export const getUsersReviews = async (params: { type?: string; search?: string; page?: number; limit?: number }): Promise<any> => {
+  const { type, search, page = 1, limit = 1 } = params
+  const response = await axiosInstance.get('/api/get-users-reviews', {
+    params: {
+      type,
+      search,
+      page,
+      limit,
+    },
+    withCredentials: true,
+  })
+  return response.data
+}

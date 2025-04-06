@@ -8,6 +8,7 @@ import { CookieOptions, Request, Response } from 'express'
 import nodemailer from 'nodemailer'
 import axios from 'axios'
 import validator from 'validator'
+
 import { templateAfterValidation } from '../lang/template/emailTemplateAfterValidation'
 import * as bookcarsTypes from ':bookcars-types'
 import i18n from '../lang/i18n'
@@ -1876,5 +1877,98 @@ export const hasPassword = async (req: Request, res: Response) => {
   } catch (err) {
     logger.error(`[user.hasPassword] ${i18n.t('DB_ERROR')} ${id}`, err)
     return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+} // Modèle MongoDB
+
+export const getUsersReviews = async (req: Request, res: Response) => {
+  try {
+    const { type, search, page = 1, limit = 10 } = req.query
+
+    // Construire les filtres dynamiques
+    const filters: Record<string, any> = {}
+
+    // Filtrer par type (user ou supplier)
+    if (type && typeof type === 'string') {
+      filters.type = type
+    } else {
+      filters.type = { $in: ['user', 'supplier'] }
+    }
+
+    // Recherche partielle par nom ou email
+    if (search && typeof search === 'string') {
+      const regex = new RegExp(search, 'i')
+      filters.$or = [
+        { fullName: regex },
+        { email: regex },
+      ]
+    }
+
+    // Pagination
+    const pageNumber = parseInt(page as string, 10)
+    const pageSize = parseInt(limit as string, 10)
+    const offset = (pageNumber - 1) * pageSize
+
+    // Pipeline d'agrégation pour récupérer les avis avec le nom de l'auteur
+    const reviewsData = await User.aggregate([
+      { $match: filters }, // Appliquer les filtres sur les utilisateurs
+      { $unwind: '$reviews' }, // Séparer chaque avis dans un document distinct
+      {
+        $lookup: {
+          from: 'User', // Attention: utilisez le nom correct de la collection
+          localField: 'reviews.user',
+          foreignField: '_id',
+          as: 'reviewerInfo',
+        },
+      },
+      { $unwind: '$reviewerInfo' }, // Extraire l'objet utilisateur joint
+      {
+        $project: {
+          receiverFullName: '$fullName',
+          receiverEmail: '$email',
+          reviewerFullName: '$reviewerInfo.fullName',
+          reviewerEmail: '$reviewerInfo.email',
+          reviewerAvatar: '$reviewerInfo.avatar',
+          reviewerType: '$reviewerInfo.type',
+          rating: '$reviews.rating',
+          comments: '$reviews.comments',
+          createdAt: '$reviews.createdAt',
+          booking: '$reviews.booking',
+          rentedCar: '$reviews.rentedCar',
+          answeredCall: '$reviews.answeredCall',
+          canceledLastMinute: '$reviews.canceledLastMinute',
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      { $skip: offset },
+      { $limit: pageSize },
+    ])
+
+    // Pipeline d'agrégation pour compter le nombre total d'avis
+    const totalCountPipeline = [
+      { $match: filters },
+      { $unwind: '$reviews' },
+      {
+        $lookup: {
+          from: 'User',
+          localField: 'reviews.user',
+          foreignField: '_id',
+          as: 'reviewerInfo',
+        },
+      },
+      { $unwind: '$reviewerInfo' },
+      { $count: 'total' },
+    ]
+
+    const totalResults = await User.aggregate(totalCountPipeline)
+    const totalReviews = totalResults.length > 0 ? totalResults[0].total : 0
+
+    return res.json({
+      currentPage: pageNumber,
+      totalReviews,
+      reviews: reviewsData,
+    })
+  } catch (err) {
+    console.error('[getUsersReviews] Error:', err)
+    return res.status(500).json({ error: 'Erreur serveur' })
   }
 }

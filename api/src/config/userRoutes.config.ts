@@ -1,3 +1,5 @@
+import { getUsersReviews } from "src/controllers/userController"
+
 const routes = {
   create: '/api/create-user',
   checkToken: '/api/check-token/:type/:userId/:email/:token',
@@ -33,6 +35,7 @@ const routes = {
   sendEmail: '/api/send-email',
   hasPassword: '/api/has-password/:id',
   addReview: '/api/add-review',
+  getUsersReviews: '/api/get-users-reviews',
   notifySuppliersWithoutCars: '/api/cron/suppliers/reminder',
   notifySuppliersWithoutPhone: '/api/cron/suppliers/phone',
   notifyClientsWithoutPhone: '/api/cron/clients/phone',

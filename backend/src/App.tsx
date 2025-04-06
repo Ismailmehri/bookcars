@@ -33,6 +33,7 @@ const CreateUser = lazy(() => import('@/pages/CreateUser'))
 const UpdateUser = lazy(() => import('@/pages/UpdateUser'))
 const Settings = lazy(() => import('@/pages/Settings'))
 const Review = lazy(() => import('@/pages/Review'))
+const UsersReviews = lazy(() => import('@/pages/UsersReviews'))
 const Notifications = lazy(() => import('@/pages/Notifications'))
 const ToS = lazy(() => import('@/pages/ToS'))
 const Privacy = lazy(() => import('@/pages/Privacy'))
@@ -86,6 +87,7 @@ const App = () => (
             <Route path="/create-country" element={<CreateCountry />} />
             <Route path="/update-country" element={<UpdateCountry />} />
             <Route path="/insights" element={<CarStats />} />
+            <Route path="/users-reviews" element={<UsersReviews />} />
 
             <Route path="*" element={<NoMatch />} />
           </Routes>

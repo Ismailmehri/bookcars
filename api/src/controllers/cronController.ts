@@ -1066,7 +1066,7 @@ function generateUniqueSlug(value: string, existingSlugs: Set<string>): string {
 
               emailContent += `
                   <p>${i18n.t('PLEASE_REVIEW_CLIENT', { agencyName: supplier.fullName, clientName: client?.fullName })}</p>
-                  <p><a href="${env.BACKEND_HOST}review?u=${client?._id}&b=${booking._id}" style="color: #3498DB;">
+                  <p><a href="${env.BACKEND_HOST}/review?u=${client?._id}&b=${booking._id}" style="color: #3498DB;">
                     ${i18n.t('CLICK_TO_REVIEW')}
                   </a></p>
                 </div>`
@@ -1081,7 +1081,7 @@ function generateUniqueSlug(value: string, existingSlugs: Set<string>): string {
                         Pour finaliser cette réservation, veuillez mettre à jour son statut en "Payée" ou "Annulée".
                       </p>
                       <p style="text-align: center; margin: 10px 0 0 0;">
-                        <a href="${env.BACKEND_HOST}update-booking?b=${booking._id}" 
+                        <a href="${env.BACKEND_HOST}/update-booking?b=${booking._id}" 
                            style="display: inline-block; color: #3498DB; text-decoration: none; font-weight: bold;">
                           → Mettre à jour le statut de la réservation
                         </a>
@@ -1116,7 +1116,7 @@ function generateUniqueSlug(value: string, existingSlugs: Set<string>): string {
                   <div style="max-width: 600px; margin: 0 auto;">
                     <h2>${i18n.t('HELLO')} ${client.fullName},</h2>
                     <p>${i18n.t('PLEASE_REVIEW_BOOKING', { clientName: client.fullName, supplierName: supplier?.fullName })}</p>
-                    <p><a href="${env.FRONTEND_HOST}review?u=${supplier?._id}&b=${booking._id}" style="color: #3498DB;">
+                    <p><a href="${env.FRONTEND_HOST}/review?u=${supplier?._id}&b=${booking._id}" style="color: #3498DB;">
                       ${i18n.t('CLICK_TO_REVIEW')}
                     </a></p>
                   </div>

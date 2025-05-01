@@ -1884,6 +1884,12 @@ export const getUsersReviews = async (req: Request, res: Response) => {
   try {
     const { type, search, page = 1, limit = 10 } = req.query
 
+    // Récupérer les données de session et l'utilisateur connecté
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser: bookcarsTypes.User | null = await User.findById(sessionData.id)
+
+    const isAdmin = connectedUser ? helper.admin(connectedUser) : false
+
     // Construire les filtres dynamiques
     const filters: Record<string, any> = {}
 
@@ -1908,19 +1914,38 @@ export const getUsersReviews = async (req: Request, res: Response) => {
     const pageSize = parseInt(limit as string, 10)
     const offset = (pageNumber - 1) * pageSize
 
-    // Pipeline d'agrégation pour récupérer les avis avec le nom de l'auteur
-    const reviewsData = await User.aggregate([
-      { $match: filters }, // Appliquer les filtres sur les utilisateurs
-      { $unwind: '$reviews' }, // Séparer chaque avis dans un document distinct
+    // Pipeline d'agrégation de base
+    const basePipeline = [
+      { $match: filters },
+      { $unwind: '$reviews' },
       {
         $lookup: {
-          from: 'User', // Attention: utilisez le nom correct de la collection
+          from: 'User', // Nom de la collection
           localField: 'reviews.user',
           foreignField: '_id',
           as: 'reviewerInfo',
         },
       },
-      { $unwind: '$reviewerInfo' }, // Extraire l'objet utilisateur joint
+      { $unwind: '$reviewerInfo' },
+    ]
+
+    // Si l'utilisateur n'est pas admin, filtrer les avis
+    if (!isAdmin) {
+      const userId = new mongoose.Types.ObjectId(sessionData.id)
+
+      basePipeline.push({
+        $match: {
+          $or: [
+            { _id: userId }, // L'utilisateur est le destinataire de l'avis
+            { 'reviews.user': userId }, // L'utilisateur est l'auteur de l'avis
+          ],
+        },
+      })
+    }
+
+    // Pipeline pour obtenir les avis paginés
+    const reviewPipeline = [...basePipeline]
+    reviewPipeline.push(
       {
         $project: {
           receiverFullName: '$fullName',
@@ -1941,25 +1966,13 @@ export const getUsersReviews = async (req: Request, res: Response) => {
       { $sort: { createdAt: -1 } },
       { $skip: offset },
       { $limit: pageSize },
-    ])
+    )
 
-    // Pipeline d'agrégation pour compter le nombre total d'avis
-    const totalCountPipeline = [
-      { $match: filters },
-      { $unwind: '$reviews' },
-      {
-        $lookup: {
-          from: 'User',
-          localField: 'reviews.user',
-          foreignField: '_id',
-          as: 'reviewerInfo',
-        },
-      },
-      { $unwind: '$reviewerInfo' },
-      { $count: 'total' },
-    ]
+    const reviewsData = await User.aggregate(reviewPipeline)
 
-    const totalResults = await User.aggregate(totalCountPipeline)
+    // Pipeline pour compter le nombre total d'avis
+    const countPipeline = [...basePipeline, { $count: 'total' }]
+    const totalResults = await User.aggregate(countPipeline)
     const totalReviews = totalResults.length > 0 ? totalResults[0].total : 0
 
     return res.json({

@@ -34,16 +34,16 @@ const DriverReviewPage = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const queryParams = new URLSearchParams(location.search)
-  const userId = queryParams.get('u') // ID du conducteur
-  const bookingId = queryParams.get('b') // ID de la réservation
+  const userId = queryParams.get('u')
+  const bookingId = queryParams.get('b')
 
   const [user, setUser] = useState<bookcarsTypes.User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [rating, setRating] = useState<number | null>(4.5)
+  const [rating, setRating] = useState<number | null>(null)
   const [comments, setComments] = useState<string>('')
-  const [rentedCar, setRentedCar] = useState<string>('') // "Oui" ou "Non"
-  const [answeredCall, setAnsweredCall] = useState<string>('') // "Oui" ou "Non"
-  const [canceledLastMinute, setCanceledLastMinute] = useState<string>('') // "Oui" ou "Non"
+  const [rentedCar, setRentedCar] = useState<string>('')
+  const [answeredCall, setAnsweredCall] = useState<string>('')
+  const [canceledLastMinute, setCanceledLastMinute] = useState<string>('')
   const [currentUser, setCurrentUser] = useState<bookcarsTypes.User | null>(null)
   const [submitted, setSubmitted] = useState<boolean>(false)
   const [isValidBooking, setIsValidBooking] = useState<boolean>(false)
@@ -52,14 +52,21 @@ const DriverReviewPage = () => {
   const [toastMessage, setToastMessage] = useState('')
   const [toastSeverity, setToastSeverity] = useState<'success' | 'error'>('success')
 
-  // Gestion des erreurs
+  // Gestion des erreurs par champ
+  const [errors, setErrors] = useState({
+    rating: false,
+    comments: false,
+    rentedCar: false,
+    answeredCall: false,
+    canceledLastMinute: false,
+  })
+
   const handleError = (message: string) => {
     setToastMessage(message)
     setToastSeverity('error')
     setToastOpen(true)
   }
 
-  // Récupérer les informations du conducteur, de la réservation et vérifier la validité
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -69,7 +76,6 @@ const DriverReviewPage = () => {
           return
         }
 
-        // Récupérer les informations du conducteur
         const driver = await UserService.getUser(userId) as bookcarsTypes.User
         if (!driver) {
           handleError(commonStrings.DRIVER_NOT_FOUND)
@@ -78,7 +84,6 @@ const DriverReviewPage = () => {
         }
         setUser(driver)
 
-        // Récupérer les informations de la réservation
         const _booking = await BookingService.getBooking(bookingId) as bookcarsTypes.Booking
         if (!_booking || !_booking._id) {
           handleError(commonStrings.BOOKING_NOT_FOUND)
@@ -88,7 +93,6 @@ const DriverReviewPage = () => {
         _booking.supplier = _booking.supplier as bookcarsTypes.User
         _booking.driver = _booking.driver as bookcarsTypes.User
 
-        // Vérifier que la réservation est liée à l'agence connectée
         const _currentUser = UserService.getCurrentUser()
         setCurrentUser(_currentUser)
         const connectedUser = await UserService.getUser(_currentUser?._id)
@@ -103,7 +107,6 @@ const DriverReviewPage = () => {
           handleError(commonStrings.BOOKING_NOT_ASSOCIATED)
         }
 
-        // Vérifier si l'agence a déjà soumis un avis pour cette réservation
         const existingReview = driver.reviews?.find((review) => review.booking === bookingId && review.user === _currentUser?._id)
         if (existingReview && !admin) {
           setSubmitted(true)
@@ -120,24 +123,25 @@ const DriverReviewPage = () => {
     fetchData()
   }, [userId, bookingId])
 
-  // Navigation vers la page d'accueil
   const handleGoHome = () => {
     navigate('/')
   }
 
-  // Soumettre l'avis
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
 
-    if (!rating || (rating < 3 && !comments)) {
-      handleError(commonStrings.RATING_REQUIRED)
-      setIsSubmitting(false)
-      return
+    // Validation par champ
+    const newErrors = {
+      rating: !rating,
+      comments: rating !== null && rating < 3 && !comments,
+      rentedCar: !rentedCar,
+      answeredCall: !answeredCall,
+      canceledLastMinute: !canceledLastMinute,
     }
+    setErrors(newErrors)
 
-    if (!rentedCar || !answeredCall || !canceledLastMinute) {
-      handleError(commonStrings.ANSWER_ALL_QUESTIONS)
+    if (Object.values(newErrors).some(Boolean)) {
       setIsSubmitting(false)
       return
     }
@@ -145,9 +149,9 @@ const DriverReviewPage = () => {
     try {
       const review: bookcarsTypes.Review = {
         booking: bookingId!,
-        user: currentUser && currentUser._id ? currentUser._id : '', // ID de l'agence connectée
+        user: currentUser && currentUser._id ? currentUser._id : '',
         type: currentUser && currentUser.type ? currentUser.type : 'plany',
-        rating,
+        rating: rating || 5,
         comments,
         rentedCar: rentedCar === 'Oui',
         answeredCall: answeredCall === 'Oui',
@@ -281,7 +285,7 @@ const DriverReviewPage = () => {
                 </Typography>
 
                 <form onSubmit={handleSubmit}>
-                  <FormControl fullWidth margin="normal">
+                  <FormControl fullWidth margin="normal" error={errors.rating}>
                     <Typography component="legend">{commonStrings.RATING}</Typography>
                     <Rating
                       size="large"
@@ -290,6 +294,11 @@ const DriverReviewPage = () => {
                       value={rating}
                       onChange={(_, newValue) => setRating(newValue)}
                     />
+                    {errors.rating && (
+                      <Typography color="error" variant="caption">
+                        {commonStrings.RATING_REQUIRED}
+                      </Typography>
+                    )}
                   </FormControl>
 
                   <FormControl fullWidth margin="normal">
@@ -300,12 +309,12 @@ const DriverReviewPage = () => {
                       value={comments}
                       onChange={(e) => setComments(e.target.value)}
                       required={rating !== null && rating < 3}
-                      error={rating !== null && rating < 3 && !comments}
-                      helperText={rating !== null && rating < 3 && !comments ? commonStrings.COMMENTS_REQUIRED : ''}
+                      error={errors.comments}
+                      helperText={errors.comments ? commonStrings.COMMENTS_REQUIRED : ''}
                     />
                   </FormControl>
 
-                  <FormControl fullWidth margin="normal">
+                  <FormControl fullWidth margin="normal" error={errors.answeredCall}>
                     <Typography component="legend">{commonStrings.ANSWERED_CALL_QUESTION}</Typography>
                     <RadioGroup
                       value={answeredCall}
@@ -314,9 +323,14 @@ const DriverReviewPage = () => {
                       <FormControlLabel value="Oui" control={<Radio />} label="Oui" />
                       <FormControlLabel value="Non" control={<Radio />} label="Non" />
                     </RadioGroup>
+                    {errors.answeredCall && (
+                      <Typography color="error" variant="caption">
+                        {commonStrings.ANSWER_ALL_QUESTIONS}
+                      </Typography>
+                    )}
                   </FormControl>
 
-                  <FormControl fullWidth margin="normal">
+                  <FormControl fullWidth margin="normal" error={errors.canceledLastMinute}>
                     <Typography component="legend">{commonStrings.CANCELED_LAST_MINUTE_QUESTION}</Typography>
                     <RadioGroup
                       value={canceledLastMinute}
@@ -325,9 +339,14 @@ const DriverReviewPage = () => {
                       <FormControlLabel value="Oui" control={<Radio />} label="Oui" />
                       <FormControlLabel value="Non" control={<Radio />} label="Non" />
                     </RadioGroup>
+                    {errors.canceledLastMinute && (
+                      <Typography color="error" variant="caption">
+                        {commonStrings.ANSWER_ALL_QUESTIONS}
+                      </Typography>
+                    )}
                   </FormControl>
 
-                  <FormControl fullWidth margin="normal">
+                  <FormControl fullWidth margin="normal" error={errors.rentedCar}>
                     <Typography component="legend">{commonStrings.RENTED_CAR_QUESTION}</Typography>
                     <RadioGroup
                       value={rentedCar}
@@ -336,6 +355,11 @@ const DriverReviewPage = () => {
                       <FormControlLabel value="Oui" control={<Radio />} label="Oui" />
                       <FormControlLabel value="Non" control={<Radio />} label="Non" />
                     </RadioGroup>
+                    {errors.rentedCar && (
+                      <Typography color="error" variant="caption">
+                        {commonStrings.ANSWER_ALL_QUESTIONS}
+                      </Typography>
+                    )}
                   </FormControl>
 
                   <Box sx={{ mt: 2 }}>

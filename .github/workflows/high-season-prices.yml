@@ -1,4 +1,4 @@
-name: high-season-prices
+name: High season prices notification
 on:
   schedule:
     # Exécuter chaque mardi à 7h du matin (UTC)
@@ -6,7 +6,7 @@ on:
   workflow_dispatch: # Permet de déclencher manuellement le workflow depuis l'interface GitHub
 
 jobs:
-  update-scores:
+  high-season-prices:
     runs-on: ubuntu-latest
 
     steps:

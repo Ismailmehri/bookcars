@@ -108,6 +108,14 @@ const marksDays = [
     value: 5,
     label: '5 jours',
     disabled: true
+  },
+  {
+    value: 6,
+    label: '6 jours',
+  },
+  {
+    value: 7,
+    label: '7 jours',
   }
 ]
 
@@ -715,7 +723,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                     step={1}
                     marks={marksDays}
                     min={1}
-                    max={3}
+                    max={7}
                   />
                 </Box>
               </FormControl>

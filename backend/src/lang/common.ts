@@ -96,7 +96,7 @@ const strings = new LocalizedStrings({
     // Nouveaux textes pour DriverReviewPage
     NOT_AUTHORIZED: 'Vous n\'êtes pas autorisé à évaluer cette réservation.',
     THANK_YOU: 'Merci pour votre avis !',
-    RATING_REQUIRED: 'Veuillez fournir une note et des commentaires (obligatoire si la note est inférieure à 3).',
+    RATING_REQUIRED: 'Veuillez cliquer sur les étoiles pour donner une note. Veuillez également fournir un commentaire si la note est inférieure à 3',
     ANSWER_ALL_QUESTIONS: 'Veuillez répondre à toutes les questions.',
     SUBMIT_REVIEW_ERROR: 'Échec de la soumission de l\'avis. Veuillez réessayer.',
     GENERIC_ERROR_MESSAGE: 'Une erreur est survenue',

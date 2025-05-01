@@ -161,9 +161,6 @@ useEffect(() => {
     <Layout onLoad={onLoad} user={user} strict>
       <Container maxWidth="xl">
         <Box sx={{ mt: 4, mb: 6 }}>
-          <Typography variant="h4" gutterBottom fontWeight="bold" color="primary">
-            {commonStrings.USER_REVIEWS}
-          </Typography>
           <Divider sx={{ mb: 4 }} />
 
           {/* Section de filtres */}
@@ -232,7 +229,7 @@ useEffect(() => {
           </Paper>
 
           {/* Section d'affichage des avis */}
-          {loading || !admin ? (
+          {loading ? (
             <Box sx={{ textAlign: 'center', mt: 8, mb: 8 }}>
               <CircularProgress size={60} />
               <Typography variant="h6" sx={{ mt: 2 }}>
@@ -297,6 +294,7 @@ useEffect(() => {
                             />
                             <Typography variant="h6" sx={{ ml: 1, fontWeight: 'bold' }}>
                               {review?.rating}
+                              /5
                             </Typography>
                           </Box>
                         </Box>

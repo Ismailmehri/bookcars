@@ -30,7 +30,6 @@ import Pager from '@/components/Pager'
 import * as UserService from '@/services/UserService'
 import Layout from '@/components/Layout'
 import { strings as commonStrings } from '@/lang/common'
-import * as helper from '@/common/helper'
 
 import '@/assets/css/users-reviews.css'
 
@@ -71,12 +70,10 @@ const UsersReviews = () => {
   const [totalRecords, setTotalRecords] = useState(0)
   const [toastOpen, setToastOpen] = useState(false)
   const [user, setUser] = useState<bookcarsTypes.User>()
-  const [admin, setAdmin] = useState(false)
 
 const onLoad = (_user?: bookcarsTypes.User) => {
   if (_user) {
     setUser(_user)
-    setAdmin(helper.admin(_user))
   }
 }
 

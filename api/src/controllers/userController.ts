@@ -1915,7 +1915,7 @@ export const getUsersReviews = async (req: Request, res: Response) => {
     const offset = (pageNumber - 1) * pageSize
 
     // Pipeline d'agrégation de base
-    const basePipeline = [
+    const basePipeline: mongoose.PipelineStage[] = [
       { $match: filters },
       { $unwind: '$reviews' },
       {
@@ -1944,8 +1944,8 @@ export const getUsersReviews = async (req: Request, res: Response) => {
     }
 
     // Pipeline pour obtenir les avis paginés
-    const reviewPipeline = [...basePipeline]
-    reviewPipeline.push(
+    const reviewPipeline: mongoose.PipelineStage[] = [
+      ...basePipeline,
       {
         $project: {
           receiverFullName: '$fullName',
@@ -1966,12 +1966,15 @@ export const getUsersReviews = async (req: Request, res: Response) => {
       { $sort: { createdAt: -1 } },
       { $skip: offset },
       { $limit: pageSize },
-    )
+    ]
 
     const reviewsData = await User.aggregate(reviewPipeline)
 
     // Pipeline pour compter le nombre total d'avis
-    const countPipeline = [...basePipeline, { $count: 'total' }]
+    const countPipeline: mongoose.PipelineStage[] = [
+      ...basePipeline,
+      { $count: 'total' },
+    ]
     const totalResults = await User.aggregate(countPipeline)
     const totalReviews = totalResults.length > 0 ? totalResults[0].total : 0
 

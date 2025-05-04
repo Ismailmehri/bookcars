@@ -105,9 +105,48 @@ services:
       - "traefik.http.middlewares.cdn-cache.headers.customResponseHeaders.Cache-Control=public,max-age=2592000"  # Cache côté client 30 jours
       - "traefik.http.middlewares.cdn-compress.compress=true"  # Active la compression au niveau de Traefik
 
+  db-wordpress:
+    image: mysql:8.0
+    restart: always
+    volumes:
+      - db-wordpress-data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress_password  # À changer pour la production
+      MYSQL_ROOT_PASSWORD: root_password  # À changer pour la production
+    healthcheck:
+      test: mysqladmin ping -h localhost -u wordpress -p$$MYSQL_PASSWORD
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  wordpress:
+    image: wordpress:latest
+    restart: always
+    depends_on:
+      - db-wordpress
+    environment:
+      WORDPRESS_DB_HOST: db-wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress_password  # Même que ci-dessus
+      WORDPRESS_TABLE_PREFIX: wp_
+    volumes:
+      - wordpress-data:/var/www/html
+    labels:
+      - "traefik.http.routers.wordpress.rule=Host(`blog.plany.tn`)"
+      - "traefik.http.services.wordpress.loadbalancer.server.port=80"
+      - "traefik.http.routers.wordpress.entrypoints=websecure"
+      - "traefik.http.routers.wordpress.tls.certresolver=myresolver"
+      - "traefik.http.middlewares.wordpress-compress.compress=true"
+      - "traefik.http.routers.wordpress.middlewares=wordpress-compress"
+
 volumes:
   cdn:
   traefik-certificates:
   traefik-config:
   mongo-data:
   nginx-cache:  # Ajout du volume persistant pour le cache nginx
+  db-wordpress-data:  # Volume pour les données MySQL de WordPress
+  wordpress-data:     # Volume pour les fichiers WordPress

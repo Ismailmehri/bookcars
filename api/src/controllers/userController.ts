@@ -297,7 +297,7 @@ export const checkToken = async (req: Request, res: Response) => {
         ![bookcarsTypes.AppType.Frontend, bookcarsTypes.AppType.Backend].includes(type)
         || (type === bookcarsTypes.AppType.Backend && user.type === bookcarsTypes.UserType.User)
         || (type === bookcarsTypes.AppType.Frontend && user.type !== bookcarsTypes.UserType.User)
-        || user.active
+        // || user.active
       ) {
         return res.sendStatus(204)
       }

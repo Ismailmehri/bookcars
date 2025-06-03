@@ -28,7 +28,7 @@ const CarStats = () => {
   const [bookingStats, setBookingStats] = useState<bookcarsTypes.BookingStat[]>([])
   const [cars, setCars] = useState<bookcarsTypes.ICar[]>([])
   const [selectedCar, setSelectedCar] = useState<string>('')
-  const [startDate, setStartDate] = useState<Date>(subMonths(new Date(), 6)) // 6 mois avant
+  const [startDate, setStartDate] = useState<Date>(subMonths(new Date(), 2)) // 6 mois avant
   const [endDate, setEndDate] = useState<Date>(subDays(new Date(), 1)) // Hier
   const [loading, setLoading] = useState<boolean>(true)
   const [admin, setAdmin] = useState<boolean>(false)

@@ -4,13 +4,14 @@ import mongoose from 'mongoose'
 import Booking from '../models/Booking'
 import { CarStats } from '../models/CarStats'
 import { BookingStatus } from ':bookcars-types'
+import User from '../models/User'
 
 export const getCarStats = async (req: Request, res: Response) => {
     try {
       const { supplierId, carId } = req.params
       const { start, end } = req.query
 
-      const startDate = start ? new Date(start as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      const startDate = start ? new Date(start as string) : new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
       const endDate = end ? new Date(end as string) : new Date()
 
       const match: any = {
@@ -186,37 +187,23 @@ export const getBookingSummary = async (req: Request, res: Response) => {
     }
   }
 
-export const getUniqueSuppliers = async (req: Request, res: Response) => {
+  export const getUniqueSuppliers = async (req: Request, res: Response) => {
     try {
-        const suppliers = await CarStats.aggregate([
-        {
-            $lookup: {
-            from: 'User', // Nom de la collection User
-            localField: 'supplier',
-            foreignField: '_id',
-            as: 'supplierInfo',
-            },
-        },
-        { $unwind: '$supplierInfo' }, // Déstructure l'objet récupéré
-        {
-            $group: {
-            _id: '$supplierInfo._id',
-            supplierName: { $first: '$supplierInfo.fullName' }, // Prend le premier nom trouvé
-            },
-        },
-        {
-            $project: {
-            _id: 0,
-            supplierId: '$_id', // Renomme _id en supplierId
-            supplierName: 1,
-            },
-        },
-        { $sort: { supplierName: 1 } }, // Trie les résultats par ordre alphabétique
-        ])
+      const supplierIds = await CarStats.distinct('supplier')
 
-        return res.json(suppliers)
+      const suppliers = await User.find(
+        { _id: { $in: supplierIds } },
+        { _id: 1, fullName: 1 },
+      ).sort({ fullName: 1 })
+
+      const result = suppliers.map((s) => ({
+        supplierId: s._id,
+        supplierName: s.fullName,
+      }))
+
+      return res.json(result)
     } catch (err) {
-        console.error(err)
-        return res.status(500).json({ message: 'Error fetching suppliers' })
+      console.error(err)
+      return res.status(500).json({ message: 'Error fetching suppliers' })
     }
-}
+  }

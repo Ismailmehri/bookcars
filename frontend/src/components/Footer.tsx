@@ -39,6 +39,7 @@ const Footer = () => {
             <li onClick={() => navigate('/about')}>{strings.ABOUT}</li>
             <li onClick={() => navigate('/tos')}>{strings.TOS}</li>
             <li onClick={() => navigate('/privacy')}>{strings.PRIVACY}</li>
+            <li onClick={() => window.open('https://blog.plany.tn', '_blank')}>Blog</li>
           </ul>
         </div>
         <div className="main-section">

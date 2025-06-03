@@ -25,6 +25,7 @@ const Footer = () => {
           <ul className="links">
             <li onClick={() => navigate('/suppliers')}>{strings.SUPPLIERS}</li>
             <li onClick={() => navigate('/locations')}>{strings.LOCATIONS}</li>
+            <li onClick={() => window.open('https://blog.plany.tn', '_blank')}>Blog</li>
           </ul>
         </div>
         <div className="main-section">

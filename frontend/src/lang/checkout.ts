@@ -23,7 +23,7 @@ const strings = new LocalizedStrings({
     SIGN_IN2: 'Se connecter',
     SECURE_PAYMENT_INFO: 'Vos données sont protégées par le paiement sécurisé SSL.',
     SUCCESS: 'Votre paiement a été effectué avec succès. Nous vous avons envoyé un e-mail de confirmation.',
-    PAY_LATER_SUCCESS: 'Votre réservation a bien été effectuée ! L\'agence vous contactera par e-mail ou téléphone pour confirmation. Assurez-vous que vos informations sont à jour ou modifiez-les dans votre profil pour éviter l\'annulation de votre réservation.',
+    PAY_LATER_SUCCESS: "Votre réservation a bien été effectuée ! Pour obtenir une réponse rapide, vous pouvez contacter directement l'agence par téléphone au numéro indiqué dans l'e-mail de confirmation. Assurez-vous que vos informations sont à jour ou modifiez-les dans votre profil pour éviter l'annulation de votre réservation.",
     PAYMENT_OPTIONS: 'Options de paiement',
     PAY_LATER: 'Payer plus tard',
     PAY_LATER_INFO: ' Le paiement se fait directement auprès de l\'agence de location',
@@ -32,7 +32,7 @@ const strings = new LocalizedStrings({
     PAYMENT_FAILED: 'Paiement échoué.',
     CHECKING: 'Vérification en cours...',
     CONFIRM_RESERVATION_TITLE: 'Confirmer la réservation',
-    CONFIRM_RESERVATION_MESSAGE: 'Votre réservation sera envoyée à l\'agence après confirmation. L\'agence vous contactera pour finaliser votre réservation. Merci de rester joignable sur votre téléphone pour toute communication.',
+    CONFIRM_RESERVATION_MESSAGE: "Votre réservation a bien été prise en compte et sera transmise à l'agence pour validation. L'agence vous contactera pour finaliser la réservation. Pour une réponse plus rapide, vous pouvez également la joindre directement au numéro indiqué dans l'e-mail de confirmation. Merci de rester joignable par téléphone.",
   },
   en: {
     BOOKING_HEADING: 'Book now',

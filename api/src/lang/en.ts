@@ -27,6 +27,7 @@ export const en = {
   PASSWORD_RESET_LINK: 'Please reset your password by clicking the link:',
   BOOKING_CONFIRMED_SUBJECT_PART1: 'Your booking',
   BOOKING_CONFIRMED_SUBJECT_PART2: 'is confirmed.',
+  BOOKING_CONFIRMED_PART0: "Pour une réponse rapide, vous pouvez contacter directement l'agence au ",
   BOOKING_CONFIRMED_PART1: 'Your booking',
   BOOKING_CONFIRMED_PART2: 'is confirmed and the payment was successfully done.',
   BOOKING_CONFIRMED_PART3: ' Please present yourself to our agency ',

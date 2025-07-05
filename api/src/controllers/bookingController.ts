@@ -152,22 +152,23 @@ export const confirm = async (user: env.User, supplier: env.User, booking: env.B
     from: env.SMTP_FROM,
     to: user.email,
     subject: `${i18n.t('BOOKING_CONFIRMED_SUBJECT_PART1')} ${booking._id} ${i18n.t('BOOKING_CONFIRMED_SUBJECT_PART2')}`,
-    html:
-      `<p>
-        ${i18n.t('HELLO')}${user.fullName},<br><br>
-        ${!payLater ? `${i18n.t('BOOKING_CONFIRMED_PART1')} ${booking._id} ${i18n.t('BOOKING_CONFIRMED_PART2')}`
-        + '<br><br>' : ''}
-        ${i18n.t('BOOKING_CONFIRMED_PART3')}${car.supplier.fullName}${i18n.t('BOOKING_CONFIRMED_PART4')}${pickupLocationName}${i18n.t('BOOKING_CONFIRMED_PART5')}`
+    html: `<p>
+      ${i18n.t('HELLO')}${user.fullName},<br><br>
+      ${payLater ? `
+        ${i18n.t('BOOKING_CONFIRMED_PART1')} <b>${car.supplier.fullName}</b>${i18n.t('BOOKING_CONFIRMED_PART2')}<br>
+        ${car.supplier.phone ? `${i18n.t('BOOKING_CONFIRMED_PART0')}<a href="tel:${car.supplier.phone}"><b>${car.supplier.phone}</b></a>.<br><br>` : '<br>'}
+      ` : ''}
+      ${i18n.t('BOOKING_CONFIRMED_PART3')}${car.supplier.fullName}${i18n.t('BOOKING_CONFIRMED_PART4')}${pickupLocationName}${i18n.t('BOOKING_CONFIRMED_PART5')}`
       + `${from} ${i18n.t('BOOKING_CONFIRMED_PART6')}`
       + `${car.name}${i18n.t('BOOKING_CONFIRMED_PART7')}`
       + `<br><br>${i18n.t('BOOKING_CONFIRMED_PART8')}<br><br>`
       + `${i18n.t('BOOKING_CONFIRMED_PART9')}${car.supplier.fullName}${i18n.t('BOOKING_CONFIRMED_PART10')}${dropOffLocationName}${i18n.t('BOOKING_CONFIRMED_PART11')}`
       + `${to} ${i18n.t('BOOKING_CONFIRMED_PART12')}`
       + `<br><br>${i18n.t('BOOKING_CONFIRMED_PART13')}<br><br>`
-      + `${car.supplier.phone ? `${i18n.t('BOOKING_CONFIRMED_PART15')}<b>${car.supplier.phone}</b>.<br><br>` : ''}`
+      + `${car.supplier.phone ? `${i18n.t('BOOKING_CONFIRMED_PART15')}<a href="tel:${car.supplier.phone}"><b>${car.supplier.phone}</b></a>.<br><br>` : ''}`
       + `${i18n.t('BOOKING_CONFIRMED_PART14')}<a href="${env.FRONTEND_HOST}">Plany.tn</a><br><br>
-        ${i18n.t('REGARDS')}<br>
-        </p>`,
+      ${i18n.t('REGARDS')}<br>
+      </p>`,
   }
 
   if (contractFile) {
@@ -311,6 +312,10 @@ export const checkout = async (req: Request, res: Response) => {
     }
 
     if (body.payLater || (booking.status === bookcarsTypes.BookingStatus.Paid && body.paymentIntentId && body.customerId)) {
+      const days = Math.ceil((new Date(booking.to).getTime() - new Date(booking.from).getTime()) / (1000 * 60 * 60 * 24))
+      const price = Math.min(booking.price, 9999.99).toFixed(2) // ✅ Max 9999.99 DT
+
+      // Notify supplier
       const supplier = await User.findById(booking.supplier)
       if (!supplier) {
         throw new Error(`Supplier ${booking.supplier} not found`)
@@ -323,19 +328,26 @@ export const checkout = async (req: Request, res: Response) => {
 
       // Notify supplier
       i18n.locale = supplier.language
-      let message = body.payLater ? i18n.t('BOOKING_PAY_LATER_NOTIFICATION') : i18n.t('BOOKING_PAID_NOTIFICATION')
+      let message = body.payLater
+        ? i18n.t('BOOKING_PAY_LATER_NOTIFICATION', { days, price })
+        : i18n.t('BOOKING_PAID_NOTIFICATION', { days, price })
       await notify(user, booking.id, supplier, message)
 
       // Notify admin
       const admin = !!env.ADMIN_EMAIL && await User.findOne({ email: env.ADMIN_EMAIL, type: bookcarsTypes.UserType.Admin })
       if (admin) {
         i18n.locale = admin.language
-        message = body.payLater ? i18n.t('BOOKING_PAY_LATER_NOTIFICATION') : i18n.t('BOOKING_PAID_NOTIFICATION')
+        message = body.payLater
+          ? i18n.t('BOOKING_PAY_LATER_NOTIFICATION', { days, price })
+          : i18n.t('BOOKING_PAID_NOTIFICATION', { days, price })
         await notify(user, booking.id, admin, message)
       }
+
+      // Envoi SMS professionnel (max 160 caractères)
       const result = validateAndFormatPhoneNumber(supplier.phone)
       if (result.isValide) {
-        sendSms(result.phone, 'Vous avez des réservations à valider. Contactez le client et accédez aux infos en cliquant sur son nom via https://admin.plany.tn Plany!')
+        const smsMessage = `Plany.tn: Réservation de voiture pour ${days} jours (${price} DT). Connectez-vous sur admin.plany.tn pour valider.`.slice(0, 160)
+        sendSms(result.phone, smsMessage)
       }
     }
 

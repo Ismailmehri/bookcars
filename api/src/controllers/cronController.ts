@@ -1069,6 +1069,10 @@ function generateUniqueSlug(value: string, existingSlugs: Set<string>): string {
                   <p><a href="${env.BACKEND_HOST}/review?u=${client?._id}&b=${booking._id}" style="color: #3498DB;">
                     ${i18n.t('CLICK_TO_REVIEW')}
                   </a></p>
+            
+                  <p><a href="https://g.page/r/Ca8izG7F15lVEBM/review" style="color: #3498DB;">
+                    Laisser un avis sur Google Maps
+                  </a></p>
                 </div>`
 
                 if (!booking.status || (booking.status !== 'paid' && booking.status !== 'cancelled' && booking.status !== 'void')) {
@@ -1118,6 +1122,10 @@ function generateUniqueSlug(value: string, existingSlugs: Set<string>): string {
                     <p>${i18n.t('PLEASE_REVIEW_BOOKING', { clientName: client.fullName, supplierName: supplier?.fullName })}</p>
                     <p><a href="${env.FRONTEND_HOST}/review?u=${supplier?._id}&b=${booking._id}" style="color: #3498DB;">
                       ${i18n.t('CLICK_TO_REVIEW')}
+                    </a></p>
+           
+                    <p><a href="https://g.page/r/Ca8izG7F15lVEBM/review" style="color: #3498DB;">
+                      Laisser un avis sur Google Maps
                     </a></p>
                   </div>
                 `,

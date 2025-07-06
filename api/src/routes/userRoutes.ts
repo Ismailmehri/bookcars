@@ -2,6 +2,7 @@ import express from 'express'
 import multer from 'multer'
 import routeNames from '../config/userRoutes.config'
 import authJwt from '../middlewares/authJwt'
+import apiKeyValidator from '../middlewares/apiKey'
 import * as userController from '../controllers/userController'
 
 const routes = express.Router()
@@ -35,6 +36,7 @@ routes.route(routeNames.deleteTempAvatar).post(authJwt.verifyToken, userControll
 routes.route(routeNames.changePassword).post(authJwt.verifyToken, userController.changePassword)
 routes.route(routeNames.checkPassword).get(authJwt.verifyToken, userController.checkPassword)
 routes.route(routeNames.getUsers).post(authJwt.verifyToken, userController.getUsers)
+routes.route(routeNames.getVerifiedUsers).get(apiKeyValidator, userController.getVerifiedUsers)
 routes.route(routeNames.delete).post(authJwt.verifyToken, userController.deleteUsers)
 routes.route(routeNames.addReview).post(authJwt.verifyToken, userController.addReview)
 routes.route(routeNames.verifyRecaptcha).post(userController.verifyRecaptcha)

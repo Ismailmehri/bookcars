@@ -515,3 +515,21 @@ export const hasPassword = async (id: string): Promise<number> => {
     )
     .then((res) => res.status)
 }
+
+/**
+ * Get verified users (clients or suppliers).
+ *
+ * @async
+ * @param {string} [type]
+ * @returns {Promise<bookcarsTypes.User[]>}
+ */
+export const getVerifiedUsers = async (type?: string): Promise<bookcarsTypes.User[]> => {
+  const headers = await authHeader()
+
+  return axiosInstance
+    .get(
+      `/api/verified-users${type ? `?type=${encodeURIComponent(type)}` : ''}`,
+      { headers }
+    )
+    .then((res) => res.data)
+}

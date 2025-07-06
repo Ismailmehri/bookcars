@@ -1988,3 +1988,41 @@ export const getUsersReviews = async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Erreur serveur' })
   }
 }
+
+export const getVerifiedUsers = async (req: Request, res: Response) => {
+  try {
+    const { type } = req.query
+
+    let selectedTypes: bookcarsTypes.UserType[] = [
+      bookcarsTypes.UserType.User,
+      bookcarsTypes.UserType.Supplier,
+    ]
+
+    if (type === bookcarsTypes.UserType.User) {
+      selectedTypes = [bookcarsTypes.UserType.User]
+    } else if (type === bookcarsTypes.UserType.Supplier) {
+      selectedTypes = [bookcarsTypes.UserType.Supplier]
+    }
+
+    const users = await User.find(
+      {
+        verified: true,
+        expireAt: null,
+        type: { $in: selectedTypes },
+      },
+      {
+        fullName: 1,
+        phone: 1,
+        email: 1,
+        avatar: 1,
+        type: 1,
+        slug: 1,
+      },
+    ).sort({ fullName: 1 })
+
+    return res.json(users)
+  } catch (err) {
+    logger.error(`[user.getVerifiedUsers] ${i18n.t('DB_ERROR')}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}

@@ -3327,6 +3327,20 @@ export const sendEmail = (payload: bookcarsTypes.SendEmailPayload): Promise<numb
     .then((res) => res.status)
 
 /**
+ * Get verified users (clients or suppliers).
+ *
+ * @param {string} [type]
+ * @returns {Promise<bookcarsTypes.User[]>}
+ */
+export const getVerifiedUsers = (type?: string): Promise<bookcarsTypes.User[]> =>
+  axiosInstance
+    .get(
+      `/api/verified-users${type ? `?type=${encodeURIComponent(type)}` : ''}`,
+      { withCredentials: true }
+    )
+    .then((res) => res.data)
+
+/**
 * Parse JWT token.
 * @param {string} token
 * @returns {any}

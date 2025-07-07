@@ -59,12 +59,13 @@ const Pricing = () => {
                   <Typography variant="h5" gutterBottom>Free Plan</Typography>
                   <Typography variant="h6" color="primary">
                     {prices.free[period]}
-                    DT/{period === 'monthly' ? 'mois' : 'an'}
+                    DT/
+                    {period === 'monthly' ? 'mois' : 'an'}
                   </Typography>
                   <Typography variant="body2">1 voiture affichée dans les résultats</Typography>
                 </CardContent>
                 <CardActions>
-                  <FormControlLabel value={bookcarsTypes.SubscriptionPlan.Free} control={<Radio />} label="Choisir" />
+                  <FormControlLabel value="free" control={<Radio />} label="Choisir" />
                 </CardActions>
               </Card>
             </Grid>
@@ -74,12 +75,13 @@ const Pricing = () => {
                   <Typography variant="h5" gutterBottom>Basic Plan</Typography>
                   <Typography variant="h6" color="primary">
                     {prices.basic[period]}
-                    DT/{period === 'monthly' ? 'mois' : 'an'}
+                    DT/
+                    {period === 'monthly' ? 'mois' : 'an'}
                   </Typography>
                   <Typography variant="body2">3 voitures dans les résultats + 1 sponsorisée</Typography>
                 </CardContent>
                 <CardActions>
-                  <FormControlLabel value={bookcarsTypes.SubscriptionPlan.Basic} control={<Radio />} label="Choisir" />
+                  <FormControlLabel value="basic" control={<Radio />} label="Choisir" />
                 </CardActions>
               </Card>
             </Grid>
@@ -89,12 +91,13 @@ const Pricing = () => {
                   <Typography variant="h5" gutterBottom>Premium Plan</Typography>
                   <Typography variant="h6" color="primary">
                     {prices.premium[period]}
-                    DT/{period === 'monthly' ? 'mois' : 'an'}
+                    DT/
+                    {period === 'monthly' ? 'mois' : 'an'}
                   </Typography>
                   <Typography variant="body2">Toutes les voitures dans les résultats + 3 sponsorisées</Typography>
                 </CardContent>
                 <CardActions>
-                  <FormControlLabel value={bookcarsTypes.SubscriptionPlan.Premium} control={<Radio />} label="Choisir" />
+                  <FormControlLabel value="premium" control={<Radio />} label="Choisir" />
                 </CardActions>
               </Card>
             </Grid>

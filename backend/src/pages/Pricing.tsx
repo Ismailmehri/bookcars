@@ -47,8 +47,8 @@ const Pricing = () => {
         <Box my={4} textAlign="center">
           <Typography variant="h4" gutterBottom>Tarification</Typography>
           <FormControlLabel
-            control={<Switch checked={period === bookcarsTypes.SubscriptionPeriod.Yearly} onChange={handleToggle} />}
-            label={period === bookcarsTypes.SubscriptionPeriod.Monthly ? 'Mensuel' : 'Annuel'}
+            control={<Switch checked={period === 'yearly'} onChange={handleToggle} />}
+            label={period === 'monthly' ? 'Mensuel' : 'Annuel'}
           />
         </Box>
         <RadioGroup row value={plan} onChange={handlePlanChange}>
@@ -59,7 +59,7 @@ const Pricing = () => {
                   <Typography variant="h5" gutterBottom>Free Plan</Typography>
                   <Typography variant="h6" color="primary">
                     {prices.free[period]}
-                    DT/{period === bookcarsTypes.SubscriptionPeriod.Monthly ? 'mois' : 'an'}
+                    DT/{period === 'monthly' ? 'mois' : 'an'}
                   </Typography>
                   <Typography variant="body2">1 voiture affichée dans les résultats</Typography>
                 </CardContent>
@@ -74,7 +74,7 @@ const Pricing = () => {
                   <Typography variant="h5" gutterBottom>Basic Plan</Typography>
                   <Typography variant="h6" color="primary">
                     {prices.basic[period]}
-                    DT/{period === bookcarsTypes.SubscriptionPeriod.Monthly ? 'mois' : 'an'}
+                    DT/{period === 'monthly' ? 'mois' : 'an'}
                   </Typography>
                   <Typography variant="body2">3 voitures dans les résultats + 1 sponsorisée</Typography>
                 </CardContent>
@@ -89,7 +89,7 @@ const Pricing = () => {
                   <Typography variant="h5" gutterBottom>Premium Plan</Typography>
                   <Typography variant="h6" color="primary">
                     {prices.premium[period]}
-                    DT/{period === bookcarsTypes.SubscriptionPeriod.Monthly ? 'mois' : 'an'}
+                    DT/{period === 'monthly' ? 'mois' : 'an'}
                   </Typography>
                   <Typography variant="body2">Toutes les voitures dans les résultats + 3 sponsorisées</Typography>
                 </CardContent>

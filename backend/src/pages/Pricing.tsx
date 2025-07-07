@@ -20,11 +20,11 @@ import '@/assets/css/pricing.css'
 
 const Pricing = () => {
   const navigate = useNavigate()
-  const [period, setPeriod] = useState<bookcarsTypes.SubscriptionPeriod>(bookcarsTypes.SubscriptionPeriod.Monthly)
-  const [plan, setPlan] = useState<bookcarsTypes.SubscriptionPlan>(bookcarsTypes.SubscriptionPlan.Free)
+  const [period, setPeriod] = useState<bookcarsTypes.SubscriptionPeriod>('monthly' as bookcarsTypes.SubscriptionPeriod)
+  const [plan, setPlan] = useState<bookcarsTypes.SubscriptionPlan>('free' as bookcarsTypes.SubscriptionPlan)
 
   const handleToggle = (_: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
-    setPeriod(checked ? bookcarsTypes.SubscriptionPeriod.Yearly : bookcarsTypes.SubscriptionPeriod.Monthly)
+    setPeriod(checked ? ('yearly' as bookcarsTypes.SubscriptionPeriod) : ('monthly' as bookcarsTypes.SubscriptionPeriod))
   }
 
   const handlePlanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,9 +36,9 @@ const Pricing = () => {
   }
 
   const prices = {
-    [bookcarsTypes.SubscriptionPlan.Free]: { monthly: 0, yearly: 0 },
-    [bookcarsTypes.SubscriptionPlan.Basic]: { monthly: 10, yearly: 100 },
-    [bookcarsTypes.SubscriptionPlan.Premium]: { monthly: 30, yearly: 290 },
+    free: { monthly: 0, yearly: 0 },
+    basic: { monthly: 10, yearly: 100 },
+    premium: { monthly: 30, yearly: 290 },
   }
 
   return (

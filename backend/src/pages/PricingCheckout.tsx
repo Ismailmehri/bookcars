@@ -37,7 +37,7 @@ const PricingCheckout = () => {
     if (!user || !plan || !period) return
     const startDate = new Date()
     const endDate = new Date(startDate)
-    if (period === bookcarsTypes.SubscriptionPeriod.Monthly) {
+    if (period === 'monthly') {
       endDate.setMonth(endDate.getMonth() + 1)
     } else {
       endDate.setFullYear(endDate.getFullYear() + 1)

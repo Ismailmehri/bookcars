@@ -739,3 +739,32 @@ export interface SuppliersStat {
   supplierName: string;
 }
 
+
+export enum SubscriptionPlan {
+  Free = 'free',
+  Basic = 'basic',
+  Premium = 'premium',
+}
+
+export enum SubscriptionPeriod {
+  Monthly = 'monthly',
+  Yearly = 'yearly',
+}
+
+export interface Subscription {
+  _id?: string
+  supplier: string | User
+  plan: SubscriptionPlan
+  period: SubscriptionPeriod
+  startDate: Date
+  endDate: Date
+}
+
+export interface CreateSubscriptionPayload {
+  supplier: string
+  plan: SubscriptionPlan
+  period: SubscriptionPeriod
+  startDate: Date
+  endDate: Date
+}
+

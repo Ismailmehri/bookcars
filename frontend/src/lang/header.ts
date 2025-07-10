@@ -14,6 +14,7 @@ const strings = new LocalizedStrings({
     SIGN_OUT: 'Déconnexion',
     SUPPLIERS: 'Fournisseurs',
     LOCATIONS: 'Lieux',
+    PRICING: 'Tarifs',
   },
   en: {
     SIGN_IN: 'Sign in',
@@ -27,6 +28,7 @@ const strings = new LocalizedStrings({
     SIGN_OUT: 'Sign out',
     SUPPLIERS: 'Suppliers',
     LOCATIONS: 'Locations',
+    PRICING: 'Pricing',
   },
   es: {
     SIGN_IN: 'Iniciar sesión',
@@ -40,6 +42,7 @@ const strings = new LocalizedStrings({
     SIGN_OUT: 'Cerrar sesión',
     SUPPLIERS: 'Proveedores',
     LOCATIONS: 'Ubicaciones',
+    PRICING: 'Precios',
   },
 })
 

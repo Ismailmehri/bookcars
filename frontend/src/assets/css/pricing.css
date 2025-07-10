@@ -1,0 +1,52 @@
+.pricing-page {
+  padding: 40px 20px;
+}
+
+.pricing-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.pricing-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.pricing-card {
+  flex: 1 1 300px;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pricing-card.premium {
+  border: 2px solid #ff9800;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+
+.pricing-features {
+  list-style: none;
+  padding-left: 0;
+  margin: 20px 0;
+}
+
+.pricing-features li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.pricing-features li.disabled {
+  color: #888;
+  text-decoration: line-through;
+}
+
+@media only screen and (max-width: 600px) {
+  .pricing-card {
+    max-width: none;
+    width: 100%;
+  }
+}

@@ -27,8 +27,14 @@
   background-color: #115293;
 }
 
+.btn-orange {
+  background-color: #ff9800;
+  color: #fff;
+  border: none;
+}
+
 .btn-orange:hover {
-  opacity: 0.95;
+  background-color: #fb8c00;
 }
 
 .btn-margin {

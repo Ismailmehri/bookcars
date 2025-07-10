@@ -32,6 +32,7 @@ const Locations = lazy(() => import('@/pages/Locations'))
 const Suppliers = lazy(() => import('@/pages/Suppliers'))
 const LocationATunis = lazy(() => import('@/pages/LocationATunis'))
 const Review = lazy(() => import('@/pages/Review'))
+const Pricing = lazy(() => import('@/pages/Pricing'))
 
 const App = () => (
   <GlobalProvider>
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/tos" element={<ToS />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/locations" element={<Locations />} />
             <Route path="/suppliers" element={<Suppliers />} />
             <Route path="/review" element={<Review />} />

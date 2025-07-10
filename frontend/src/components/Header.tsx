@@ -30,6 +30,7 @@ import {
   EventSeat as BookingsIcon,
   CarRental as SupplierIcon,
   LocationOn as LocationIcon,
+  LocalOffer as PricingIcon,
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import * as bookcarsTypes from ':bookcars-types'
@@ -315,6 +316,10 @@ const Header = ({
                 <ListItemLink href="/contact">
                   <ListItemIcon><MailIcon /></ListItemIcon>
                   <ListItemText primary={strings.CONTACT} />
+                </ListItemLink>
+                <ListItemLink href="/pricing">
+                  <ListItemIcon><PricingIcon /></ListItemIcon>
+                  <ListItemText primary={strings.PRICING} />
                 </ListItemLink>
                 {env.isMobile() && !hideSignin && !isSignedIn && isLoaded && !loading && (
                   <ListItemLink href="/sign-in">

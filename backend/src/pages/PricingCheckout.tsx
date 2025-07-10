@@ -18,6 +18,21 @@ const PricingCheckout = () => {
   const [period, setPeriod] = useState<bookcarsTypes.SubscriptionPeriod>()
   const [user, setUser] = useState<bookcarsTypes.User>()
 
+  const basePrices = {
+    free: 0,
+    basic: 10,
+    premium: 30,
+  }
+
+  const getPrice = (
+    p: bookcarsTypes.SubscriptionPlan,
+    per: bookcarsTypes.SubscriptionPeriod,
+  ) => {
+    const monthly = basePrices[p]
+    const total = per === 'monthly' ? monthly : monthly * 12 * 0.8
+    return Math.round(total)
+  }
+
   const onLoad = (_user?: bookcarsTypes.User) => {
     setUser(_user)
   }
@@ -58,6 +73,8 @@ const PricingCheckout = () => {
     }
   }
 
+  const finalPrice = plan && period ? getPrice(plan, period) : 0
+
   return (
     <Layout onLoad={onLoad} strict>
       <Container maxWidth="sm">
@@ -68,6 +85,9 @@ const PricingCheckout = () => {
             <Typography>Plan: {plan}</Typography>
             <Typography>Période: {period}</Typography>
             <Typography>Date de début: {new Date().toLocaleDateString()}</Typography>
+            <Typography sx={{ mt: 1 }}>
+              Prix: {finalPrice.toFixed(2)}DT
+            </Typography>
             <Button variant="contained" className="btn-primary" onClick={handlePay} sx={{ mt: 2 }}>
               Confirmer le paiement
             </Button>

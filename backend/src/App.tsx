@@ -45,6 +45,8 @@ const Countries = lazy(() => import('@/pages/Countries'))
 const CreateCountry = lazy(() => import('@/pages/CreateCountry'))
 const UpdateCountry = lazy(() => import('@/pages/UpdateCountry'))
 const CarStats = lazy(() => import('@/pages/CarStats'))
+const Pricing = lazy(() => import('@/pages/Pricing'))
+const PricingCheckout = lazy(() => import('@/pages/PricingCheckout'))
 
 const App = () => (
   <GlobalProvider>
@@ -87,6 +89,8 @@ const App = () => (
             <Route path="/create-country" element={<CreateCountry />} />
             <Route path="/update-country" element={<UpdateCountry />} />
             <Route path="/insights" element={<CarStats />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/pricing/checkout" element={<PricingCheckout />} />
             <Route path="/users-reviews" element={<UsersReviews />} />
 
             <Route path="*" element={<NoMatch />} />

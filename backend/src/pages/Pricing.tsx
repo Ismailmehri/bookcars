@@ -23,15 +23,32 @@ import {
 import { useNavigate } from 'react-router-dom'
 import Layout from '@/components/Layout'
 import * as bookcarsTypes from ':bookcars-types'
+import * as SubscriptionService from '@/services/SubscriptionService'
 import '@/assets/css/pricing.css'
 
 const Pricing = () => {
   const navigate = useNavigate()
   const [period, setPeriod] = useState<bookcarsTypes.SubscriptionPeriod>('monthly' as bookcarsTypes.SubscriptionPeriod)
+  const [user, setUser] = useState<bookcarsTypes.User>()
+  const [subscription, setSubscription] = useState<bookcarsTypes.Subscription>()
 
   const handlePeriodChange = (_: React.MouseEvent<HTMLElement>, value: bookcarsTypes.SubscriptionPeriod | null) => {
     if (value) {
       setPeriod(value)
+    }
+  }
+
+  const onLoad = async (_user?: bookcarsTypes.User) => {
+    if (_user) {
+      setUser(_user)
+      try {
+        const sub = await SubscriptionService.getCurrent()
+        if (sub) {
+          setSubscription(sub)
+        }
+      } catch {
+        // Ignore errors
+      }
     }
   }
 
@@ -95,21 +112,40 @@ const Pricing = () => {
     },
   ] as const
 
+  const planOrder: Record<bookcarsTypes.SubscriptionPlan, number> = {
+    free: 0,
+    basic: 1,
+    premium: 2,
+  }
+
   const handleChoose = (p: bookcarsTypes.SubscriptionPlan) => {
     navigate(`/pricing/checkout?plan=${p}&period=${period}`)
   }
 
+  const isExpired = subscription ? new Date(subscription.endDate) < new Date() : false
+
   return (
-    <Layout strict>
+    <Layout onLoad={onLoad} strict>
       <Container maxWidth="lg">
         <Box my={4} textAlign="center">
           <Typography variant="h4" gutterBottom>
             Plans adaptés à vos besoins
           </Typography>
-          <Typography variant="subtitle1" gutterBottom>
-            Essayez gratuitement pendant 14 jours. Aucune carte bancaire nécessaire.
+        <Typography variant="subtitle1" gutterBottom>
+          Essayez gratuitement pendant 14 jours. Aucune carte bancaire nécessaire.
+        </Typography>
+        {subscription && (
+          <Typography
+            variant="body2"
+            color={new Date(subscription.endDate) < new Date() ? 'error' : 'textPrimary'}
+            gutterBottom
+          >
+            {new Date(subscription.endDate) < new Date()
+              ? `Votre plan ${subscription.plan} a expiré. Vous êtes maintenant sur le plan gratuit.`
+              : `Plan actuel : ${subscription.plan} (fin le ${new Date(subscription.endDate).toLocaleDateString()})`}
           </Typography>
-          <ToggleButtonGroup
+        )}
+        <ToggleButtonGroup
             exclusive
             value={period}
             onChange={handlePeriodChange}
@@ -148,10 +184,15 @@ const Pricing = () => {
                 <CardActions sx={{ justifyContent: 'center' }}>
                   <Button
                     variant="contained"
+                    disabled={subscription && !isExpired && planOrder[p.id as bookcarsTypes.SubscriptionPlan] <= planOrder[subscription.plan]}
                     onClick={() => handleChoose(p.id as bookcarsTypes.SubscriptionPlan)}
                     sx={{ backgroundColor: p.color, '&:hover': { backgroundColor: p.hover } }}
                   >
-                    {p.cta}
+                    {subscription && !isExpired && planOrder[p.id as bookcarsTypes.SubscriptionPlan] === planOrder[subscription.plan]
+                      ? 'Plan choisi'
+                      : subscription && !isExpired && planOrder[p.id as bookcarsTypes.SubscriptionPlan] < planOrder[subscription.plan]
+                        ? 'Indisponible'
+                        : p.cta}
                   </Button>
                 </CardActions>
               </Card>

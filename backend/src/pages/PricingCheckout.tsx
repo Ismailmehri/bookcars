@@ -17,6 +17,7 @@ const PricingCheckout = () => {
   const [plan, setPlan] = useState<bookcarsTypes.SubscriptionPlan>()
   const [period, setPeriod] = useState<bookcarsTypes.SubscriptionPeriod>()
   const [user, setUser] = useState<bookcarsTypes.User>()
+  const [currentSub, setCurrentSub] = useState<bookcarsTypes.Subscription>()
 
   const basePrices = {
     free: 0,
@@ -33,8 +34,18 @@ const PricingCheckout = () => {
     return Math.round(total)
   }
 
-  const onLoad = (_user?: bookcarsTypes.User) => {
+  const onLoad = async (_user?: bookcarsTypes.User) => {
     setUser(_user)
+    if (_user) {
+      try {
+        const sub = await SubscriptionService.getCurrent()
+        if (sub) {
+          setCurrentSub(sub)
+        }
+      } catch {
+        // Ignore errors
+      }
+    }
   }
 
   useEffect(() => {
@@ -73,7 +84,39 @@ const PricingCheckout = () => {
     }
   }
 
-  const finalPrice = plan && period ? getPrice(plan, period) : 0
+  const calculateFinalPrice = (
+    sub: bookcarsTypes.Subscription | undefined,
+    newPlan: bookcarsTypes.SubscriptionPlan | undefined,
+    newPeriod: bookcarsTypes.SubscriptionPeriod | undefined,
+  ) => {
+    if (!newPlan || !newPeriod) {
+      return 0
+    }
+
+    const priceNew = getPrice(newPlan, newPeriod)
+
+    if (!sub) {
+      return priceNew
+    }
+
+    const now = new Date()
+    const endDate = new Date(sub.endDate)
+    if (endDate <= now) {
+      return priceNew
+    }
+
+    const totalDays = sub.period === 'monthly' ? 30 : 365
+    const remainingDays = Math.max(
+      Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+      0,
+    )
+    const priceOld = getPrice(sub.plan, sub.period)
+    const credit = (remainingDays / totalDays) * priceOld
+    const final = priceNew - credit
+    return final > 0 ? final : 0
+  }
+
+  const finalPrice = calculateFinalPrice(currentSub, plan, period)
 
   return (
     <Layout onLoad={onLoad} strict>

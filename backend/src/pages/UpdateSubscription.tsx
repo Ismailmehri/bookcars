@@ -6,6 +6,8 @@ import * as bookcarsTypes from ':bookcars-types'
 import * as SubscriptionService from '@/services/SubscriptionService'
 import * as helper from '@/common/helper'
 
+import '@/assets/css/update-subscription.css'
+
 const UpdateSubscription = () => {
   const [params] = useSearchParams()
   const navigate = useNavigate()
@@ -23,7 +25,11 @@ const UpdateSubscription = () => {
     const id = params.get('id')
     if (id) {
       SubscriptionService.getSubscription(id)
-        .then((sub) => setSubscription(sub))
+        .then((sub) => setSubscription({
+          ...sub,
+          resultsCars: sub.resultsCars ?? 0,
+          sponsoredCars: sub.sponsoredCars ?? 0,
+        }))
         .catch(() => helper.error())
     }
   }, [params])
@@ -38,8 +44,8 @@ const UpdateSubscription = () => {
       period: subscription.period,
       startDate: subscription.startDate,
       endDate: subscription.endDate,
-      resultsCars: subscription.resultsCars,
-      sponsoredCars: subscription.sponsoredCars,
+      resultsCars: Number(subscription.resultsCars),
+      sponsoredCars: Number(subscription.sponsoredCars),
     }
     const status = await SubscriptionService.update(payload)
     if (status === 200) {
@@ -50,15 +56,24 @@ const UpdateSubscription = () => {
     }
   }
 
-  const handleChange = (field: keyof bookcarsTypes.Subscription) => (e: any) => {
-    if (!subscription) return
-    setSubscription({ ...subscription, [field]: e.target.value })
+const handleChange = (field: keyof bookcarsTypes.Subscription) => (e: any) => {
+  if (!subscription) return
+  let value: any = e.target.value
+  if (field === 'resultsCars' || field === 'sponsoredCars') {
+    value = value === '' ? '' : Number(value)
   }
+  setSubscription({ ...subscription, [field]: value })
+}
 
   return (
     <Layout onLoad={onLoad} strict admin>
       {user && subscription && (
-        <Box component="form" onSubmit={handleSubmit} sx={{ p: 2 }}>
+        <div className="update-subscription">
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            className="subscription-form update-subscription-form-wrapper"
+          >
           <TextField
             select
             margin="normal"
@@ -86,7 +101,7 @@ const UpdateSubscription = () => {
             margin="normal"
             label="Voitures"
             type="number"
-            value={subscription.resultsCars}
+            value={subscription.resultsCars ?? ''}
             onChange={handleChange('resultsCars')}
             fullWidth
           />
@@ -94,7 +109,7 @@ const UpdateSubscription = () => {
             margin="normal"
             label="Sponsorisées"
             type="number"
-            value={subscription.sponsoredCars}
+            value={subscription.sponsoredCars ?? ''}
             onChange={handleChange('sponsoredCars')}
             fullWidth
           />
@@ -120,6 +135,7 @@ const UpdateSubscription = () => {
             Mettre à jour
           </Button>
         </Box>
+        </div>
       )}
     </Layout>
   )

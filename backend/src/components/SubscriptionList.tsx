@@ -6,6 +6,8 @@ import env from '@/config/env.config'
 import * as helper from '@/common/helper'
 import * as SubscriptionService from '@/services/SubscriptionService'
 
+import '@/assets/css/subscription-list.css'
+
 interface SubscriptionListProps {
   onLoad?: bookcarsTypes.DataEvent<bookcarsTypes.Subscription>
 }
@@ -51,7 +53,7 @@ const SubscriptionList = ({ onLoad }: SubscriptionListProps) => {
       field: 'supplier',
       headerName: 'Agence',
       flex: 1,
-      valueGetter: (params) => (params.row.supplier as bookcarsTypes.User).fullName,
+      valueGetter: (params) => ((params.value as bookcarsTypes.User)?.fullName ?? ''),
     },
     { field: 'plan', headerName: 'Plan', width: 100 },
     { field: 'period', headerName: 'Période', width: 100 },
@@ -81,19 +83,21 @@ const SubscriptionList = ({ onLoad }: SubscriptionListProps) => {
   ]
 
   return (
-    <DataGrid
-      getRowId={(row) => row._id as string}
-      columns={columns}
-      rows={rows}
-      rowCount={rowCount}
-      loading={loading}
-      initialState={{ pagination: { paginationModel: { pageSize } } }}
-      pageSizeOptions={[pageSize]}
-      pagination
-      paginationMode="server"
-      paginationModel={paginationModel}
-      onPaginationModelChange={setPaginationModel}
-    />
+    <div className="sub-list">
+      <DataGrid
+        getRowId={(row) => row._id as string}
+        columns={columns}
+        rows={rows}
+        rowCount={rowCount}
+        loading={loading}
+        initialState={{ pagination: { paginationModel: { pageSize } } }}
+        pageSizeOptions={[pageSize]}
+        pagination
+        paginationMode="server"
+        paginationModel={paginationModel}
+        onPaginationModelChange={setPaginationModel}
+      />
+    </div>
   )
 }
 

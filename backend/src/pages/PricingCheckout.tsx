@@ -34,6 +34,17 @@ const PricingCheckout = () => {
     return Math.round(total)
   }
 
+  const getPlanLimits = (p: bookcarsTypes.SubscriptionPlan) => {
+    switch (p) {
+      case 'basic':
+        return { resultsCars: 3, sponsoredCars: 1 }
+      case 'premium':
+        return { resultsCars: -1, sponsoredCars: -1 }
+      default:
+        return { resultsCars: 1, sponsoredCars: 0 }
+    }
+  }
+
   const onLoad = async (_user?: bookcarsTypes.User) => {
     setUser(_user)
     if (_user) {
@@ -68,12 +79,15 @@ const PricingCheckout = () => {
     } else {
       endDate.setFullYear(endDate.getFullYear() + 1)
     }
+    const limits = getPlanLimits(plan)
     const payload: bookcarsTypes.CreateSubscriptionPayload = {
       supplier: user._id as string,
       plan,
       period,
       startDate,
       endDate,
+      resultsCars: limits.resultsCars,
+      sponsoredCars: limits.sponsoredCars,
     }
     const status = await SubscriptionService.create(payload)
     if (status === 200) {

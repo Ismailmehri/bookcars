@@ -50,6 +50,30 @@ afterAll(async () => {
   }
 })
 
+describe('POST /api/create-subscription', () => {
+  it('should create a subscription with limits', async () => {
+    const token = await signin(SUPPLIER_EMAIL)
+    const payload: bookcarsTypes.CreateSubscriptionPayload = {
+      supplier: SUPPLIER_ID,
+      plan: bookcarsTypes.SubscriptionPlan.Basic,
+      period: bookcarsTypes.SubscriptionPeriod.Monthly,
+      startDate: new Date('2025-05-01'),
+      endDate: new Date('2025-06-01'),
+      resultsCars: 3,
+      sponsoredCars: 1,
+    }
+    const res = await request(app)
+      .post('/api/create-subscription')
+      .set(env.X_ACCESS_TOKEN, token)
+      .send(payload)
+    expect(res.statusCode).toBe(200)
+    const sub = await Subscription.findOne({ supplier: SUPPLIER_ID, plan: bookcarsTypes.SubscriptionPlan.Basic }).lean()
+    expect(sub?.resultsCars).toBe(3)
+    expect(sub?.sponsoredCars).toBe(1)
+    await testHelper.signout(token)
+  })
+})
+
 describe('GET /api/my-subscription', () => {
   it('should return 403 when no token provided', async () => {
     const res = await request(app).get('/api/my-subscription')
@@ -72,6 +96,8 @@ describe('GET /api/my-subscription', () => {
       period: bookcarsTypes.SubscriptionPeriod.Monthly,
       startDate: new Date('2025-01-01'),
       endDate: new Date('2025-02-01'),
+      resultsCars: 3,
+      sponsoredCars: 1,
     })
     await sub1.save()
 
@@ -81,6 +107,8 @@ describe('GET /api/my-subscription', () => {
       period: bookcarsTypes.SubscriptionPeriod.Monthly,
       startDate: new Date('2025-02-01'),
       endDate: new Date('2025-03-01'),
+      resultsCars: -1,
+      sponsoredCars: -1,
     })
     await sub2.save()
 
@@ -90,6 +118,8 @@ describe('GET /api/my-subscription', () => {
       .set(env.X_ACCESS_TOKEN, token)
     expect(res.statusCode).toBe(200)
     expect(res.body.plan).toBe(bookcarsTypes.SubscriptionPlan.Premium)
+    expect(res.body.resultsCars).toBe(-1)
+    expect(res.body.sponsoredCars).toBe(-1)
     await testHelper.signout(token)
   })
 })

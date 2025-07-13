@@ -107,7 +107,7 @@ const PricingCheckout = () => {
 
     const totalDays = sub.period === 'monthly' ? 30 : 365
     const remainingDays = Math.max(
-      Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+      Math.floor((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
       0,
     )
     const priceOld = getPrice(sub.plan, sub.period)

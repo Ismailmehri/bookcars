@@ -53,7 +53,7 @@ const SubscriptionList = ({ onLoad }: SubscriptionListProps) => {
       field: 'supplier',
       headerName: 'Agence',
       flex: 1,
-      valueGetter: (params) => ((params.value as bookcarsTypes.User)?.fullName ?? ''),
+      valueGetter: (params) => ((params.row.supplier as bookcarsTypes.User)?.fullName ?? ''),
     },
     { field: 'plan', headerName: 'Plan', width: 100 },
     { field: 'period', headerName: 'Période', width: 100 },

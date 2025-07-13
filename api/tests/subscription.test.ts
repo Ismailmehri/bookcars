@@ -141,6 +141,7 @@ describe('GET /api/subscriptions', () => {
       .set(env.X_ACCESS_TOKEN, token)
     expect(res.statusCode).toBe(200)
     expect(Array.isArray(res.body.resultData)).toBe(true)
+    expect(res.body.resultData[0].supplier.password).toBeUndefined()
     await testHelper.signout(token)
   })
 })
@@ -189,6 +190,20 @@ describe('POST /api/update-subscription', () => {
       .set(env.X_ACCESS_TOKEN, token)
       .send(payload)
     expect(res.statusCode).toBe(403)
+    await testHelper.signout(token)
+  })
+})
+
+describe('GET /api/subscription/:id', () => {
+  it('should return a subscription without password field', async () => {
+    const sub = await Subscription.findOne({ supplier: SUPPLIER_ID }).lean()
+    expect(sub).toBeTruthy()
+    const token = await testHelper.signinAsAdmin()
+    const res = await request(app)
+      .get(`/api/subscription/${sub!._id.toString()}`)
+      .set(env.X_ACCESS_TOKEN, token)
+    expect(res.statusCode).toBe(200)
+    expect(res.body.supplier.password).toBeUndefined()
     await testHelper.signout(token)
   })
 })

@@ -32,7 +32,7 @@ export const getSubscriptions = async (req: Request, res: Response) => {
       .sort({ startDate: -1 })
       .skip((page - 1) * size)
       .limit(size)
-      .populate('supplier')
+      .populate('supplier', '-password')
       .lean()
     const total = await Subscription.countDocuments()
     return res.json({ resultData: subscriptions, pageInfo: [{ totalRecords: total }] })
@@ -96,7 +96,7 @@ export const getCurrentById = async (req: Request, res: Response) => {
       return res.sendStatus(403)
     }
     const { id } = req.params
-    const subscription = await Subscription.findById(id).populate('supplier').lean()
+    const subscription = await Subscription.findById(id).populate('supplier', '-password').lean()
     if (!subscription) {
       return res.sendStatus(404)
     }

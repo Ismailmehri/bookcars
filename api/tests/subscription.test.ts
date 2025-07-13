@@ -123,3 +123,72 @@ describe('GET /api/my-subscription', () => {
     await testHelper.signout(token)
   })
 })
+
+describe('GET /api/subscriptions', () => {
+  it('should deny access to non-admin users', async () => {
+    const token = await signin(SUPPLIER_EMAIL)
+    const res = await request(app)
+      .get(`/api/subscriptions/1/10`)
+      .set(env.X_ACCESS_TOKEN, token)
+    expect(res.statusCode).toBe(403)
+    await testHelper.signout(token)
+  })
+
+  it('should return subscriptions for admin', async () => {
+    const token = await testHelper.signinAsAdmin()
+    const res = await request(app)
+      .get(`/api/subscriptions/1/10`)
+      .set(env.X_ACCESS_TOKEN, token)
+    expect(res.statusCode).toBe(200)
+    expect(Array.isArray(res.body.resultData)).toBe(true)
+    await testHelper.signout(token)
+  })
+})
+
+describe('POST /api/update-subscription', () => {
+  it('should update a subscription when admin', async () => {
+    const sub = await Subscription.findOne({ supplier: SUPPLIER_ID }).lean()
+    expect(sub).toBeTruthy()
+    const token = await testHelper.signinAsAdmin()
+    const payload: bookcarsTypes.UpdateSubscriptionPayload = {
+      _id: sub!._id.toString(),
+      supplier: SUPPLIER_ID,
+      plan: sub!.plan,
+      period: sub!.period,
+      startDate: sub!.startDate,
+      endDate: sub!.endDate,
+      resultsCars: 5,
+      sponsoredCars: 2,
+    }
+    const res = await request(app)
+      .post('/api/update-subscription')
+      .set(env.X_ACCESS_TOKEN, token)
+      .send(payload)
+    expect(res.statusCode).toBe(200)
+    const updated = await Subscription.findById(sub!._id).lean()
+    expect(updated?.resultsCars).toBe(5)
+    expect(updated?.sponsoredCars).toBe(2)
+    await testHelper.signout(token)
+  })
+
+  it('should deny update when not admin', async () => {
+    const sub = await Subscription.findOne({ supplier: SUPPLIER_ID }).lean()
+    const token = await signin(SUPPLIER_EMAIL)
+    const payload: bookcarsTypes.UpdateSubscriptionPayload = {
+      _id: sub!._id.toString(),
+      supplier: SUPPLIER_ID,
+      plan: sub!.plan,
+      period: sub!.period,
+      startDate: sub!.startDate,
+      endDate: sub!.endDate,
+      resultsCars: 6,
+      sponsoredCars: 3,
+    }
+    const res = await request(app)
+      .post('/api/update-subscription')
+      .set(env.X_ACCESS_TOKEN, token)
+      .send(payload)
+    expect(res.statusCode).toBe(403)
+    await testHelper.signout(token)
+  })
+})

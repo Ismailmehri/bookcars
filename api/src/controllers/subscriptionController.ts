@@ -1,8 +1,10 @@
 import { Request, Response } from 'express'
 import Subscription from '../models/Subscription'
+import User from '../models/User'
 import * as bookcarsTypes from ':bookcars-types'
 import * as logger from '../common/logger'
 import * as authHelper from '../common/authHelper'
+import * as helper from '../common/helper'
 
 export const create = async (req: Request, res: Response) => {
   try {
@@ -18,8 +20,9 @@ export const create = async (req: Request, res: Response) => {
 
 export const getSubscriptions = async (req: Request, res: Response) => {
   try {
-    const session = await authHelper.getSessionData(req)
-    const isAdmin = session.type === bookcarsTypes.RecordType.Admin
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser: bookcarsTypes.User|null = await User.findById(sessionData.id)
+    const isAdmin = connectedUser ? helper.admin(connectedUser) : false
     if (!isAdmin) {
       return res.sendStatus(403)
     }
@@ -42,8 +45,9 @@ export const getSubscriptions = async (req: Request, res: Response) => {
 export const update = async (req: Request, res: Response) => {
   try {
     const body: bookcarsTypes.UpdateSubscriptionPayload = req.body
-    const session = await authHelper.getSessionData(req)
-    const isAdmin = session.type === bookcarsTypes.RecordType.Admin
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser: bookcarsTypes.User|null = await User.findById(sessionData.id)
+    const isAdmin = connectedUser ? helper.admin(connectedUser) : false
     if (!isAdmin) {
       return res.sendStatus(403)
     }
@@ -85,8 +89,9 @@ export const getCurrent = async (req: Request, res: Response) => {
 
 export const getCurrentById = async (req: Request, res: Response) => {
   try {
-    const session = await authHelper.getSessionData(req)
-    const isAdmin = session.type === bookcarsTypes.RecordType.Admin
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser: bookcarsTypes.User|null = await User.findById(sessionData.id)
+    const isAdmin = connectedUser ? helper.admin(connectedUser) : false
     if (!isAdmin) {
       return res.sendStatus(403)
     }

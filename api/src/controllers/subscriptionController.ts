@@ -44,7 +44,7 @@ export const getSubscriptions = async (req: Request, res: Response) => {
 
 export const update = async (req: Request, res: Response) => {
   try {
-    const body: bookcarsTypes.UpdateSubscriptionPayload = req.body
+    const { body } = req
     const sessionData = await authHelper.getSessionData(req)
     const connectedUser: bookcarsTypes.User|null = await User.findById(sessionData.id)
     const isAdmin = connectedUser ? helper.admin(connectedUser) : false

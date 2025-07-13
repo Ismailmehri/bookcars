@@ -52,7 +52,6 @@ const Pricing = () => {
     }
   }
 
-
   const basePrices = {
     free: 0,
     basic: 10,
@@ -140,10 +139,10 @@ const Pricing = () => {
           <Typography variant="h4" gutterBottom>
             Plans adaptés à vos besoins
           </Typography>
-        <Typography variant="subtitle1" gutterBottom>
-          Essayez gratuitement pendant 14 jours. Aucune carte bancaire nécessaire.
-        </Typography>
-        {subscription && (
+          <Typography variant="subtitle1" gutterBottom>
+            Essayez gratuitement pendant 14 jours. Aucune carte bancaire nécessaire.
+          </Typography>
+          {subscription && (
           <Typography
             variant="body2"
             color={new Date(subscription.endDate) < new Date() ? 'error' : 'textPrimary'}
@@ -154,7 +153,7 @@ const Pricing = () => {
               : `Plan actuel : ${subscription.plan} (fin le ${new Date(subscription.endDate).toLocaleDateString()})`}
           </Typography>
         )}
-        <ToggleButtonGroup
+          <ToggleButtonGroup
             exclusive
             value={period}
             onChange={handlePeriodChange}
@@ -183,8 +182,12 @@ const Pricing = () => {
                     {p.name}
                   </Typography>
                   <Typography variant="h4" align="center" gutterBottom>
-                    {getPrice(p.id as bookcarsTypes.SubscriptionPlan, period)}DT
-                    <Typography component="span" variant="subtitle2">/{period === 'monthly' ? 'mois' : 'an'}</Typography>
+                    {getPrice(p.id as bookcarsTypes.SubscriptionPlan, period)}
+                    DT
+                    <Typography component="span" variant="subtitle2">
+                      /
+                      {period === 'monthly' ? 'mois' : 'an'}
+                    </Typography>
                   </Typography>
                   <List className="plan-features">
                     {features.map((f) => renderFeature(f, p.id as bookcarsTypes.SubscriptionPlan))}

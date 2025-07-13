@@ -15,7 +15,7 @@ const Subscriptions = () => {
   }
 
   return (
-    <Layout onLoad={onLoad} strict>
+    <Layout onLoad={onLoad} strict admin>
       {user && helper.admin(user) && (
         <SubscriptionList />
       )}

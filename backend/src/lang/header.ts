@@ -19,6 +19,7 @@ const strings = new LocalizedStrings({
     SIGN_OUT: 'Déconnexion',
     COUNTRIES: 'Pays',
     PRICING: 'Tarification',
+    SUBSCRIPTIONS: 'Abonnements',
   },
   en: {
     DASHBOARD: 'Dashboard',
@@ -37,6 +38,7 @@ const strings = new LocalizedStrings({
     SIGN_OUT: 'Sign out',
     COUNTRIES: 'Countries',
     PRICING: 'Pricing',
+    SUBSCRIPTIONS: 'Subscriptions',
   },
 })
 

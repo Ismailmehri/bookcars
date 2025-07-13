@@ -56,7 +56,7 @@ const UpdateSubscription = () => {
   }
 
   return (
-    <Layout onLoad={onLoad} strict>
+    <Layout onLoad={onLoad} strict admin>
       {user && subscription && (
         <Box component="form" onSubmit={handleSubmit} sx={{ p: 2 }}>
           <TextField

@@ -17,9 +17,46 @@ const PricingCheckout = () => {
   const [plan, setPlan] = useState<bookcarsTypes.SubscriptionPlan>()
   const [period, setPeriod] = useState<bookcarsTypes.SubscriptionPeriod>()
   const [user, setUser] = useState<bookcarsTypes.User>()
+  const [currentSub, setCurrentSub] = useState<bookcarsTypes.Subscription>()
 
-  const onLoad = (_user?: bookcarsTypes.User) => {
+  const basePrices = {
+    free: 0,
+    basic: 10,
+    premium: 30,
+  }
+
+  const getPrice = (
+    p: bookcarsTypes.SubscriptionPlan,
+    per: bookcarsTypes.SubscriptionPeriod,
+  ) => {
+    const monthly = basePrices[p]
+    const total = per === 'monthly' ? monthly : monthly * 12 * 0.8
+    return Math.round(total)
+  }
+
+  const getPlanLimits = (p: bookcarsTypes.SubscriptionPlan) => {
+    switch (p) {
+      case 'basic':
+        return { resultsCars: 3, sponsoredCars: 1 }
+      case 'premium':
+        return { resultsCars: -1, sponsoredCars: -1 }
+      default:
+        return { resultsCars: 1, sponsoredCars: 0 }
+    }
+  }
+
+  const onLoad = async (_user?: bookcarsTypes.User) => {
     setUser(_user)
+    if (_user) {
+      try {
+        const sub = await SubscriptionService.getCurrent()
+        if (sub) {
+          setCurrentSub(sub)
+        }
+      } catch {
+        // Ignore errors
+      }
+    }
   }
 
   useEffect(() => {
@@ -42,12 +79,15 @@ const PricingCheckout = () => {
     } else {
       endDate.setFullYear(endDate.getFullYear() + 1)
     }
+    const limits = getPlanLimits(plan)
     const payload: bookcarsTypes.CreateSubscriptionPayload = {
       supplier: user._id as string,
       plan,
       period,
       startDate,
       endDate,
+      resultsCars: limits.resultsCars,
+      sponsoredCars: limits.sponsoredCars,
     }
     const status = await SubscriptionService.create(payload)
     if (status === 200) {
@@ -57,6 +97,40 @@ const PricingCheckout = () => {
       helper.error()
     }
   }
+
+  const calculateFinalPrice = (
+    sub: bookcarsTypes.Subscription | undefined,
+    newPlan: bookcarsTypes.SubscriptionPlan | undefined,
+    newPeriod: bookcarsTypes.SubscriptionPeriod | undefined,
+  ) => {
+    if (!newPlan || !newPeriod) {
+      return 0
+    }
+
+    const priceNew = getPrice(newPlan, newPeriod)
+
+    if (!sub) {
+      return priceNew
+    }
+
+    const now = new Date()
+    const endDate = new Date(sub.endDate)
+    if (endDate <= now) {
+      return priceNew
+    }
+
+    const totalDays = sub.period === 'monthly' ? 30 : 365
+    const remainingDays = Math.max(
+      Math.floor((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+      0,
+    )
+    const priceOld = getPrice(sub.plan, sub.period)
+    const credit = (remainingDays / totalDays) * priceOld
+    const final = priceNew - credit
+    return final > 0 ? final : 0
+  }
+
+  const finalPrice = calculateFinalPrice(currentSub, plan, period)
 
   return (
     <Layout onLoad={onLoad} strict>
@@ -68,6 +142,9 @@ const PricingCheckout = () => {
             <Typography>Plan: {plan}</Typography>
             <Typography>Période: {period}</Typography>
             <Typography>Date de début: {new Date().toLocaleDateString()}</Typography>
+            <Typography sx={{ mt: 1 }}>
+              Prix: {finalPrice.toFixed(2)}DT
+            </Typography>
             <Button variant="contained" className="btn-primary" onClick={handlePay} sx={{ mt: 2 }}>
               Confirmer le paiement
             </Button>

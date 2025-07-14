@@ -758,6 +758,8 @@ export interface Subscription {
   period: SubscriptionPeriod
   startDate: Date
   endDate: Date
+  resultsCars: number
+  sponsoredCars: number
 }
 
 export interface CreateSubscriptionPayload {
@@ -766,5 +768,11 @@ export interface CreateSubscriptionPayload {
   period: SubscriptionPeriod
   startDate: Date
   endDate: Date
+  resultsCars: number
+  sponsoredCars: number
+}
+
+export interface UpdateSubscriptionPayload extends CreateSubscriptionPayload {
+  _id: string
 }
 

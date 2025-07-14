@@ -9,6 +9,8 @@ const subscriptionSchema = new Schema<bookcarsTypes.Subscription>(
     period: { type: String, enum: Object.values(bookcarsTypes.SubscriptionPeriod), required: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
+    resultsCars: { type: Number, required: true },
+    sponsoredCars: { type: Number, required: true },
   },
   {
     timestamps: true,

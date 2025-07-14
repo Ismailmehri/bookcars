@@ -29,7 +29,6 @@ import '@/assets/css/pricing.css'
 const Pricing = () => {
   const navigate = useNavigate()
   const [period, setPeriod] = useState<bookcarsTypes.SubscriptionPeriod>('monthly' as bookcarsTypes.SubscriptionPeriod)
-  const [user, setUser] = useState<bookcarsTypes.User>()
   const [subscription, setSubscription] = useState<bookcarsTypes.Subscription>()
 
   const handlePeriodChange = (_: React.MouseEvent<HTMLElement>, value: bookcarsTypes.SubscriptionPeriod | null) => {
@@ -40,7 +39,6 @@ const Pricing = () => {
 
   const onLoad = async (_user?: bookcarsTypes.User) => {
     if (_user) {
-      setUser(_user)
       try {
         const sub = await SubscriptionService.getCurrent()
         if (sub) {
@@ -52,11 +50,19 @@ const Pricing = () => {
     }
   }
 
+  const basePrices = {
+    free: 0,
+    basic: 10,
+    premium: 30,
+  }
 
-  const prices = {
-    free: { monthly: 0, yearly: 0 },
-    basic: { monthly: 10, yearly: 96 },
-    premium: { monthly: 30, yearly: 288 },
+  const getPrice = (
+    plan: bookcarsTypes.SubscriptionPlan,
+    p: bookcarsTypes.SubscriptionPeriod,
+  ) => {
+    const monthly = basePrices[plan]
+    const total = p === 'monthly' ? monthly : monthly * 12 * 0.8
+    return Math.round(total)
   }
 
   const features = [
@@ -94,6 +100,7 @@ const Pricing = () => {
       color: '#9ca3af',
       hover: '#6b7280',
       cta: 'Choisir',
+      badge: false,
     },
     {
       id: 'basic',
@@ -101,6 +108,7 @@ const Pricing = () => {
       color: '#3B82F6',
       hover: '#1d4ed8',
       cta: 'Essayer gratuitement',
+      badge: false
     },
     {
       id: 'premium',
@@ -131,10 +139,10 @@ const Pricing = () => {
           <Typography variant="h4" gutterBottom>
             Plans adaptés à vos besoins
           </Typography>
-        <Typography variant="subtitle1" gutterBottom>
-          Essayez gratuitement pendant 14 jours. Aucune carte bancaire nécessaire.
-        </Typography>
-        {subscription && (
+          <Typography variant="subtitle1" gutterBottom>
+            Essayez gratuitement pendant 14 jours. Aucune carte bancaire nécessaire.
+          </Typography>
+          {subscription && (
           <Typography
             variant="body2"
             color={new Date(subscription.endDate) < new Date() ? 'error' : 'textPrimary'}
@@ -145,7 +153,7 @@ const Pricing = () => {
               : `Plan actuel : ${subscription.plan} (fin le ${new Date(subscription.endDate).toLocaleDateString()})`}
           </Typography>
         )}
-        <ToggleButtonGroup
+          <ToggleButtonGroup
             exclusive
             value={period}
             onChange={handlePeriodChange}
@@ -174,8 +182,12 @@ const Pricing = () => {
                     {p.name}
                   </Typography>
                   <Typography variant="h4" align="center" gutterBottom>
-                    {prices[p.id as keyof typeof prices][period]}DT
-                    <Typography component="span" variant="subtitle2">/{period === 'monthly' ? 'mois' : 'an'}</Typography>
+                    {getPrice(p.id as bookcarsTypes.SubscriptionPlan, period)}
+                    DT
+                    <Typography component="span" variant="subtitle2">
+                      /
+                      {period === 'monthly' ? 'mois' : 'an'}
+                    </Typography>
                   </Typography>
                   <List className="plan-features">
                     {features.map((f) => renderFeature(f, p.id as bookcarsTypes.SubscriptionPlan))}

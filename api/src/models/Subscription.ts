@@ -11,6 +11,7 @@ const subscriptionSchema = new Schema<bookcarsTypes.Subscription>(
     endDate: { type: Date, required: true },
     resultsCars: { type: Number, required: true },
     sponsoredCars: { type: Number, required: true },
+    invoice: { type: String },
   },
   {
     timestamps: true,

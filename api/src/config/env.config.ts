@@ -288,6 +288,13 @@ export const CDN_CONTRACTS = __env__('BC_CDN_CONTRACTS', true)
 export const CDN_TEMP_CONTRACTS = __env__('BC_CDN_TEMP_CONTRACTS', true)
 
 /**
+ * Invoices' cdn folder path.
+ *
+ * @type {string}
+ */
+export const CDN_INVOICES = __env__('BC_CDN_INVOICES', true)
+
+/**
  * Backend host.
  *
  * @type {string}

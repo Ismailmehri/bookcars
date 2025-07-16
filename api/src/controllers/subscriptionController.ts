@@ -31,8 +31,12 @@ export const create = async (req: Request, res: Response) => {
         to: supplier.email,
         subject: 'Subscription confirmed',
         html: `<p>Hello ${supplier.fullName},<br>Your subscription is confirmed.<br>Regards</p>`,
-        attachments: [{ path: file }],
       }
+
+      if (await helper.exists(file)) {
+        mailOptions.attachments = [{ path: file }]
+      }
+
       await mailHelper.sendMail(mailOptions)
     }
 

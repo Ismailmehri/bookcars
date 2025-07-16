@@ -760,6 +760,7 @@ export interface Subscription {
   endDate: Date
   resultsCars: number
   sponsoredCars: number
+  invoice?: string
 }
 
 export interface CreateSubscriptionPayload {

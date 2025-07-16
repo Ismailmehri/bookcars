@@ -1,16 +1,41 @@
 import { Request, Response } from 'express'
+import nodemailer from 'nodemailer'
+import path from 'node:path'
 import Subscription from '../models/Subscription'
 import User from '../models/User'
 import * as bookcarsTypes from ':bookcars-types'
 import * as logger from '../common/logger'
 import * as authHelper from '../common/authHelper'
 import * as helper from '../common/helper'
+import * as mailHelper from '../common/mailHelper'
+import * as invoiceHelper from '../common/invoiceHelper'
+import * as env from '../config/env.config'
 
 export const create = async (req: Request, res: Response) => {
   try {
     const data: bookcarsTypes.CreateSubscriptionPayload = req.body
     const subscription = new Subscription(data)
+    subscription.invoice = `invoice_${subscription._id}.pdf`
     await subscription.save()
+
+    const supplier = await User.findById(subscription.supplier)
+    if (supplier) {
+      await invoiceHelper.generateInvoice(
+        subscription.toObject() as bookcarsTypes.Subscription,
+        supplier.toObject() as bookcarsTypes.User,
+      )
+
+      const file = path.join(env.CDN_INVOICES, subscription.invoice)
+      const mailOptions: nodemailer.SendMailOptions = {
+        from: env.SMTP_FROM,
+        to: supplier.email,
+        subject: 'Subscription confirmed',
+        html: `<p>Hello ${supplier.fullName},<br>Your subscription is confirmed.<br>Regards</p>`,
+        attachments: [{ path: file }],
+      }
+      await mailHelper.sendMail(mailOptions)
+    }
+
     return res.sendStatus(200)
   } catch (err) {
     logger.error('[subscription.create]', err)

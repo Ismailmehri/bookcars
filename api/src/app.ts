@@ -72,5 +72,6 @@ await helper.mkdir(env.CDN_LOCATIONS)
 await helper.mkdir(env.CDN_TEMP_LOCATIONS)
 await helper.mkdir(env.CDN_CONTRACTS)
 await helper.mkdir(env.CDN_TEMP_CONTRACTS)
+await helper.mkdir(env.CDN_INVOICES)
 
 export default app

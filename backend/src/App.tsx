@@ -91,8 +91,10 @@ const App = () => (
             <Route path="/create-country" element={<CreateCountry />} />
             <Route path="/update-country" element={<UpdateCountry />} />
             <Route path="/insights" element={<CarStats />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/pricing/checkout" element={<PricingCheckout />} />
+            {env.PRICING_ENABLED && <Route path="/pricing" element={<Pricing />} />}
+            {env.PRICING_ENABLED && (
+              <Route path="/pricing/checkout" element={<PricingCheckout />} />
+            )}
             <Route path="/subscriptions" element={<Subscriptions />} />
             <Route path="/update-subscription" element={<UpdateSubscription />} />
             <Route path="/users-reviews" element={<UsersReviews />} />

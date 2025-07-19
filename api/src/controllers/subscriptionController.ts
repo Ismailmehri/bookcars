@@ -41,15 +41,67 @@ export const create = async (req: Request, res: Response) => {
       )
 
       const file = path.join(env.CDN_INVOICES, subscription.invoice)
+
+      const basePrices: Record<bookcarsTypes.SubscriptionPlan, number> = {
+        [bookcarsTypes.SubscriptionPlan.Free]: 0,
+        [bookcarsTypes.SubscriptionPlan.Basic]: 10,
+        [bookcarsTypes.SubscriptionPlan.Premium]: 30,
+      }
+
+      const computePrice = (
+        p: bookcarsTypes.SubscriptionPlan,
+        per: bookcarsTypes.SubscriptionPeriod,
+      ) => {
+        const monthly = basePrices[p]
+        const total =
+          per === bookcarsTypes.SubscriptionPeriod.Monthly
+            ? monthly
+            : monthly * 12 * 0.8
+        return Math.round(total)
+      }
+
+      const price = computePrice(
+        subscription.plan as bookcarsTypes.SubscriptionPlan,
+        subscription.period as bookcarsTypes.SubscriptionPeriod,
+      )
+      const planLabel = subscription.plan === bookcarsTypes.SubscriptionPlan.Premium
+        ? 'Premium'
+        : subscription.plan === bookcarsTypes.SubscriptionPlan.Basic
+          ? 'Basic'
+          : 'Gratuit'
+      const periodLabel = subscription.period === bookcarsTypes.SubscriptionPeriod.Yearly
+        ? 'Annuel'
+        : 'Mensuel'
+
       const mailOptions: nodemailer.SendMailOptions = {
         from: env.SMTP_FROM,
         to: supplier.email,
-        subject: 'Subscription confirmed',
-        html: `<p>Hello ${supplier.fullName},<br>Your subscription is confirmed.<br>Regards</p>`,
+        subject: '✅ Confirmation de votre abonnement Plany',
+        html: `
+          <p>Bonjour ${supplier.fullName},<br>
+          Nous vous confirmons que votre abonnement a bien été activé avec succès.<br><br>
+          Voici les détails de votre souscription :</p>
+          <ul>
+            <li><b>Formule choisie</b> : ${planLabel} (${periodLabel})</li>
+            <li><b>Date de début</b> : ${new Date(subscription.startDate).toLocaleDateString('fr-FR')}</li>
+            <li><b>Date de fin</b> : ${new Date(subscription.endDate).toLocaleDateString('fr-FR')}</li>
+            <li><b>Montant</b> : ${price.toFixed(2)} DT</li>
+            <li><b>Statut</b> : Payé</li>
+          </ul>
+          <p>📄 Votre facture est jointe à ce mail au format PDF.</p>
+          <p>Merci de faire confiance à Plany.<br>
+          Pour toute question, n'hésitez pas à nous contacter à <b>contact@plany.tn</b></p>
+        `,
       }
 
       if (await helper.exists(file)) {
-        mailOptions.attachments = [{ path: file }]
+        mailOptions.attachments = [
+          {
+            filename: subscription.invoice,
+            path: file,
+            contentType: 'application/pdf',
+          },
+        ]
       }
 
       await mailHelper.sendMail(mailOptions)

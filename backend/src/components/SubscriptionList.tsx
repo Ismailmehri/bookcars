@@ -37,7 +37,13 @@ const SubscriptionList = ({ onLoad }: SubscriptionListProps) => {
   const fetchData = async (_page: number) => {
     try {
       setLoading(true)
-      const _data = await SubscriptionService.getSubscriptions(_page + 1, pageSize)
+
+      const data = await SubscriptionService.getSubscriptions(_page + 1, pageSize)
+      const _data = data && data.length > 0 ? data[0] : { pageInfo: { totalRecords: 0 }, resultData: [] }
+      if (!_data) {
+        helper.error()
+        return
+      }
       const total = Array.isArray(_data.pageInfo) && _data.pageInfo.length > 0 ? _data.pageInfo[0].totalRecords : 0
       setRows(_data.resultData)
       setRowCount(total)

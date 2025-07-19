@@ -85,7 +85,7 @@ describe('POST /api/create-subscription', () => {
       startDate: new Date('2025-05-01'),
       endDate: new Date('2025-07-01'),
       resultsCars: -1,
-      sponsoredCars: -1,
+      sponsoredCars: 5,
     }
     const res = await request(app)
       .post('/api/create-subscription')

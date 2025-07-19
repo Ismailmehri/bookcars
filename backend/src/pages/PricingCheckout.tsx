@@ -21,13 +21,12 @@ const PricingCheckout = () => {
   const [currentSub, setCurrentSub] = useState<bookcarsTypes.Subscription>()
   const [processing, setProcessing] = useState(false)
 
-
   const getPlanLimits = (p: bookcarsTypes.SubscriptionPlan) => {
     switch (p) {
       case 'basic':
         return { resultsCars: 3, sponsoredCars: 1 }
       case 'premium':
-        return { resultsCars: -1, sponsoredCars: -1 }
+        return { resultsCars: -1, sponsoredCars: 5 }
       default:
         return { resultsCars: 1, sponsoredCars: 0 }
     }
@@ -80,9 +79,9 @@ const PricingCheckout = () => {
     }
     let status: number
     if (
-      currentSub &&
-      new Date(currentSub.endDate) > new Date() &&
-      currentSub._id
+      currentSub
+      && new Date(currentSub.endDate) > new Date()
+      && currentSub._id
     ) {
       const updatePayload: bookcarsTypes.UpdateSubscriptionPayload = {
         ...payload,
@@ -117,12 +116,27 @@ const PricingCheckout = () => {
         {user && plan && period && (
           <Box mt={4} textAlign="center">
             <Typography variant="h5" gutterBottom>Récapitulatif</Typography>
-            <Typography>Agence: {user.fullName}</Typography>
-            <Typography>Plan: {plan}</Typography>
-            <Typography>Période: {period}</Typography>
-            <Typography>Date de début: {new Date().toLocaleDateString()}</Typography>
+            <Typography>
+              Agence:
+              {user.fullName}
+            </Typography>
+            <Typography>
+              Plan:
+              {plan}
+            </Typography>
+            <Typography>
+              Période:
+              {period}
+            </Typography>
+            <Typography>
+              Date de début:
+              {new Date().toLocaleDateString()}
+            </Typography>
             <Typography sx={{ mt: 1 }}>
-              Prix: {finalPrice.toFixed(2)}DT
+              Prix:
+              {' '}
+              {finalPrice.toFixed(2)}
+              DT
             </Typography>
             <Button
               variant="contained"

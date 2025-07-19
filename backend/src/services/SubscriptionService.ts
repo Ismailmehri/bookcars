@@ -11,7 +11,7 @@ export const getCurrent = (): Promise<bookcarsTypes.Subscription> =>
     .get('/api/my-subscription', { withCredentials: true })
     .then((res) => res.data)
 
-export const getSubscriptions = (page: number, size: number): Promise<bookcarsTypes.Result<bookcarsTypes.Subscription>> =>
+export const getSubscriptions = (page: number, size: number): Promise<bookcarsTypes.PaginatedResult<bookcarsTypes.Subscription>> =>
   axiosInstance
     .get(`/api/subscriptions/${page}/${size}`, { withCredentials: true })
     .then((res) => res.data)

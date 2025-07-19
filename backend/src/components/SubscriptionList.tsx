@@ -11,6 +11,7 @@ import {
 import * as bookcarsTypes from ':bookcars-types'
 import env from '@/config/env.config'
 import * as helper from '@/common/helper'
+import * as bookcarsHelper from ':bookcars-helper'
 import * as SubscriptionService from '@/services/SubscriptionService'
 
 import '@/assets/css/subscription-list.css'
@@ -38,13 +39,8 @@ const SubscriptionList = ({ onLoad }: SubscriptionListProps) => {
     try {
       setLoading(true)
 
-      const data = await SubscriptionService.getSubscriptions(_page + 1, pageSize)
-      const _data = data && data.length > 0 ? data[0] : { pageInfo: { totalRecords: 0 }, resultData: [] }
-      if (!_data) {
-        helper.error()
-        return
-      }
-      const total = Array.isArray(_data.pageInfo) && _data.pageInfo.length > 0 ? _data.pageInfo[0].totalRecords : 0
+      const _data = await SubscriptionService.getSubscriptions(_page + 1, pageSize)
+      const total = _data?.pageInfo?.totalRecords ?? 0
       setRows(_data.resultData)
       setRowCount(total)
       if (onLoad) {
@@ -99,7 +95,7 @@ const SubscriptionList = ({ onLoad }: SubscriptionListProps) => {
           {row.invoice && (
             <Tooltip title="Télécharger la facture">
               <IconButton
-                href={`${helper.trimEnd(env.CDN_INVOICES, '/')}/${row.invoice}`}
+                href={`${bookcarsHelper.joinURL(env.CDN_INVOICES, '/')}/${row.invoice}`}
                 target="_blank"
                 size="small"
               >

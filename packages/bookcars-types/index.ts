@@ -565,6 +565,13 @@ export interface ResultData<T> {
 
 export type Result<T> = [ResultData<T>] | [] | undefined | null
 
+export interface PaginatedResult<T> {
+  resultData: T[]
+  pageInfo: {
+    totalRecords: number
+  }
+}
+
 export interface GetUsersBody {
   user: string
   types: UserType[]

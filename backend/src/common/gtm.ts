@@ -59,7 +59,7 @@ export const sendPurchaseEvent = (transactionId: string, value: number, currency
     event: 'Purchase', // Événement standard Pixel Facebook
     transaction_id: transactionId,
     value,
-    currency,
+    currency: 'TND',
     contents: items.map((item) => ({
       id: item.item_id,
       name: item.item_name,
@@ -89,7 +89,7 @@ export const sendViewContentEvent = (item: { id: string; name: string; price: nu
     content_id: item.id,
     content_name: item.name,
     value: item.price,
-    currency: item.currency,
+    currency: 'TND',
   }
 
   pushEvent('ViewContent', viewContentData)

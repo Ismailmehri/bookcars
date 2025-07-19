@@ -14,7 +14,22 @@ import * as env from '../config/env.config'
 export const create = async (req: Request, res: Response) => {
   try {
     const data: bookcarsTypes.CreateSubscriptionPayload = req.body
-    const subscription = new Subscription(data)
+    const now = new Date()
+    let subscription = await Subscription.findOne({
+      supplier: data.supplier,
+      endDate: { $gt: now },
+    }).sort({ endDate: -1 })
+
+    if (subscription) {
+      subscription.plan = data.plan
+      subscription.period = data.period
+      subscription.endDate = data.endDate
+      subscription.resultsCars = data.resultsCars
+      subscription.sponsoredCars = data.sponsoredCars
+    } else {
+      subscription = new Subscription(data)
+    }
+
     subscription.invoice = `invoice_${subscription._id}.pdf`
     await subscription.save()
 

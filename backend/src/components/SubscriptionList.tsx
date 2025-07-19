@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { DataGrid, GridColDef, GridPaginationModel } from '@mui/x-data-grid'
-import { Button } from '@mui/material'
+import {
+  IconButton,
+  Tooltip,
+} from '@mui/material'
+import {
+  Edit as EditIcon,
+  Download as DownloadIcon,
+} from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import env from '@/config/env.config'
 import * as helper from '@/common/helper'
@@ -77,7 +84,24 @@ const SubscriptionList = ({ onLoad }: SubscriptionListProps) => {
       sortable: false,
       width: 120,
       renderCell: ({ row }) => (
-        <Button variant="contained" size="small" href={`/update-subscription?id=${row._id}`}>Modifier</Button>
+        <>
+          <Tooltip title="Modifier">
+            <IconButton href={`/update-subscription?id=${row._id}`} size="small">
+              <EditIcon />
+            </IconButton>
+          </Tooltip>
+          {row.invoice && (
+            <Tooltip title="Télécharger la facture">
+              <IconButton
+                href={`${helper.trimEnd(env.CDN_INVOICES, '/')}/${row.invoice}`}
+                target="_blank"
+                size="small"
+              >
+                <DownloadIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+        </>
       ),
     },
   ]

@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { calculateSubscriptionFinalPrice } from '../../packages/bookcars-helper'
+import { calculateSubscriptionFinalPrice } from '../../packages/bookcars-helper/index.ts'
 import * as bookcarsTypes from ':bookcars-types'
 
 describe('calculateSubscriptionFinalPrice', () => {

@@ -72,6 +72,33 @@ describe('POST /api/create-subscription', () => {
     expect(sub?.sponsoredCars).toBe(1)
     await testHelper.signout(token)
   })
+
+  it('should update the current subscription when called twice', async () => {
+    const first = await Subscription.findOne({ supplier: SUPPLIER_ID }).lean()
+    expect(first).toBeTruthy()
+
+    const token = await signin(SUPPLIER_EMAIL)
+    const payload: bookcarsTypes.CreateSubscriptionPayload = {
+      supplier: SUPPLIER_ID,
+      plan: bookcarsTypes.SubscriptionPlan.Premium,
+      period: bookcarsTypes.SubscriptionPeriod.Monthly,
+      startDate: new Date('2025-05-01'),
+      endDate: new Date('2025-07-01'),
+      resultsCars: -1,
+      sponsoredCars: -1,
+    }
+    const res = await request(app)
+      .post('/api/create-subscription')
+      .set(env.X_ACCESS_TOKEN, token)
+      .send(payload)
+    expect(res.statusCode).toBe(200)
+
+    const subs = await Subscription.find({ supplier: SUPPLIER_ID }).lean()
+    expect(subs.length).toBe(1)
+    expect(subs[0]._id.toString()).toBe(first!._id.toString())
+    expect(subs[0].plan).toBe(bookcarsTypes.SubscriptionPlan.Premium)
+    await testHelper.signout(token)
+  })
 })
 
 describe('GET /api/my-subscription', () => {

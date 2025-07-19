@@ -10,6 +10,7 @@ import Layout from '@/components/Layout'
 import * as bookcarsTypes from ':bookcars-types'
 import * as SubscriptionService from '@/services/SubscriptionService'
 import * as helper from '@/common/helper'
+import { calculateSubscriptionFinalPrice } from ':bookcars-helper'
 
 const PricingCheckout = () => {
   const navigate = useNavigate()
@@ -18,21 +19,8 @@ const PricingCheckout = () => {
   const [period, setPeriod] = useState<bookcarsTypes.SubscriptionPeriod>()
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [currentSub, setCurrentSub] = useState<bookcarsTypes.Subscription>()
+  const [processing, setProcessing] = useState(false)
 
-  const basePrices = {
-    free: 0,
-    basic: 10,
-    premium: 30,
-  }
-
-  const getPrice = (
-    p: bookcarsTypes.SubscriptionPlan,
-    per: bookcarsTypes.SubscriptionPeriod,
-  ) => {
-    const monthly = basePrices[p]
-    const total = per === 'monthly' ? monthly : monthly * 12 * 0.8
-    return Math.round(total)
-  }
 
   const getPlanLimits = (p: bookcarsTypes.SubscriptionPlan) => {
     switch (p) {
@@ -71,7 +59,8 @@ const PricingCheckout = () => {
   }, [params, navigate])
 
   const handlePay = async () => {
-    if (!user || !plan || !period) return
+    if (!user || !plan || !period || processing) return
+    setProcessing(true)
     const startDate = new Date()
     const endDate = new Date(startDate)
     if (period === 'monthly') {
@@ -89,48 +78,38 @@ const PricingCheckout = () => {
       resultsCars: limits.resultsCars,
       sponsoredCars: limits.sponsoredCars,
     }
-    const status = await SubscriptionService.create(payload)
+    let status: number
+    if (
+      currentSub &&
+      new Date(currentSub.endDate) > new Date() &&
+      currentSub._id
+    ) {
+      const updatePayload: bookcarsTypes.UpdateSubscriptionPayload = {
+        ...payload,
+        _id: currentSub._id,
+      }
+      status = await SubscriptionService.update(updatePayload)
+    } else {
+      status = await SubscriptionService.create(payload)
+    }
     if (status === 200) {
+      try {
+        const sub = await SubscriptionService.getCurrent()
+        if (sub) {
+          setCurrentSub(sub)
+        }
+      } catch {
+        // ignore
+      }
       helper.info('Abonnement enregistré')
       navigate('/')
     } else {
       helper.error()
     }
+    setProcessing(false)
   }
 
-  const calculateFinalPrice = (
-    sub: bookcarsTypes.Subscription | undefined,
-    newPlan: bookcarsTypes.SubscriptionPlan | undefined,
-    newPeriod: bookcarsTypes.SubscriptionPeriod | undefined,
-  ) => {
-    if (!newPlan || !newPeriod) {
-      return 0
-    }
-
-    const priceNew = getPrice(newPlan, newPeriod)
-
-    if (!sub) {
-      return priceNew
-    }
-
-    const now = new Date()
-    const endDate = new Date(sub.endDate)
-    if (endDate <= now) {
-      return priceNew
-    }
-
-    const totalDays = sub.period === 'monthly' ? 30 : 365
-    const remainingDays = Math.max(
-      Math.floor((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
-      0,
-    )
-    const priceOld = getPrice(sub.plan, sub.period)
-    const credit = (remainingDays / totalDays) * priceOld
-    const final = priceNew - credit
-    return final > 0 ? final : 0
-  }
-
-  const finalPrice = calculateFinalPrice(currentSub, plan, period)
+  const finalPrice = calculateSubscriptionFinalPrice(currentSub, plan, period)
 
   return (
     <Layout onLoad={onLoad} strict>
@@ -145,7 +124,13 @@ const PricingCheckout = () => {
             <Typography sx={{ mt: 1 }}>
               Prix: {finalPrice.toFixed(2)}DT
             </Typography>
-            <Button variant="contained" className="btn-primary" onClick={handlePay} sx={{ mt: 2 }}>
+            <Button
+              variant="contained"
+              className="btn-primary"
+              onClick={handlePay}
+              disabled={processing}
+              sx={{ mt: 2 }}
+            >
               Confirmer le paiement
             </Button>
           </Box>

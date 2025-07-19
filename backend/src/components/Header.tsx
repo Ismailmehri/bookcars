@@ -325,6 +325,18 @@ const Header = ({
                   <ListItemIcon><StatsIcon /></ListItemIcon>
                   <ListItemText primary={strings.STATS} />
                 </ListItemLink>
+                {env.PRICING_ENABLED && (
+                <ListItemLink href="/pricing">
+                  <ListItemIcon><StatsIcon /></ListItemIcon>
+                  <ListItemText primary={strings.PRICING} />
+                </ListItemLink>
+                )}
+                {isAdmin && (
+                <ListItemLink href="/subscriptions">
+                  <ListItemIcon><StatsIcon /></ListItemIcon>
+                  <ListItemText primary={strings.SUBSCRIPTIONS} />
+                </ListItemLink>
+                )}
                 <ListItemLink href="/about">
                   <ListItemIcon><AboutIcon /></ListItemIcon>
                   <ListItemText primary={strings.ABOUT} />

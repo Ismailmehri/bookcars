@@ -565,6 +565,13 @@ export interface ResultData<T> {
 
 export type Result<T> = [ResultData<T>] | [] | undefined | null
 
+export interface PaginatedResult<T> {
+  resultData: T[]
+  pageInfo: {
+    totalRecords: number
+  }
+}
+
 export interface GetUsersBody {
   user: string
   types: UserType[]
@@ -737,5 +744,43 @@ export interface SummedStat {
 export interface SuppliersStat {
   supplierId: string;
   supplierName: string;
+}
+
+
+export enum SubscriptionPlan {
+  Free = 'free',
+  Basic = 'basic',
+  Premium = 'premium',
+}
+
+export enum SubscriptionPeriod {
+  Monthly = 'monthly',
+  Yearly = 'yearly',
+}
+
+export interface Subscription {
+  _id?: string
+  supplier: string | User
+  plan: SubscriptionPlan
+  period: SubscriptionPeriod
+  startDate: Date
+  endDate: Date
+  resultsCars: number
+  sponsoredCars: number
+  invoice?: string
+}
+
+export interface CreateSubscriptionPayload {
+  supplier: string
+  plan: SubscriptionPlan
+  period: SubscriptionPeriod
+  startDate: Date
+  endDate: Date
+  resultsCars: number
+  sponsoredCars: number
+}
+
+export interface UpdateSubscriptionPayload extends CreateSubscriptionPayload {
+  _id: string
 }
 

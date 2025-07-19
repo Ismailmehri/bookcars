@@ -486,3 +486,64 @@ export const trim = (str: string, char: string): string => {
   res = trimEnd(res, char)
   return res
 }
+
+/**
+ * Calculate the final price when upgrading a subscription.
+ *
+ * @export
+ * @param {(bookcarsTypes.Subscription | undefined)} sub
+ * @param {(bookcarsTypes.SubscriptionPlan | undefined)} newPlan
+ * @param {(bookcarsTypes.SubscriptionPeriod | undefined)} newPeriod
+ * @returns {number}
+ */
+export const calculateSubscriptionFinalPrice = (
+  sub: bookcarsTypes.Subscription | undefined,
+  newPlan: bookcarsTypes.SubscriptionPlan | undefined,
+  newPeriod: bookcarsTypes.SubscriptionPeriod | undefined,
+): number => {
+  if (!newPlan || !newPeriod) {
+    return 0
+  }
+
+  const basePrices: Record<bookcarsTypes.SubscriptionPlan, number> = {
+    [bookcarsTypes.SubscriptionPlan.Free]: 0,
+    [bookcarsTypes.SubscriptionPlan.Basic]: 10,
+    [bookcarsTypes.SubscriptionPlan.Premium]: 30,
+  }
+
+  const getPrice = (
+    p: bookcarsTypes.SubscriptionPlan,
+    per: bookcarsTypes.SubscriptionPeriod,
+  ) => {
+    const monthly = basePrices[p]
+    const total =
+      per === bookcarsTypes.SubscriptionPeriod.Monthly
+        ? monthly
+        : monthly * 12 * 0.8
+    return Math.round(total)
+  }
+
+  const priceNew = getPrice(newPlan, newPeriod)
+
+  if (!sub) {
+    return priceNew
+  }
+
+  const now = new Date()
+  const endDate = new Date(sub.endDate)
+  if (endDate <= now) {
+    return priceNew
+  }
+
+  const startDate = new Date(sub.startDate)
+  const oneDay = 24 * 60 * 60 * 1000
+  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / oneDay)
+  const remainingDays = Math.max(
+    Math.floor((endDate.getTime() - now.getTime()) / oneDay),
+    0,
+  )
+  const priceOld = getPrice(sub.plan as bookcarsTypes.SubscriptionPlan, sub.period as bookcarsTypes.SubscriptionPeriod)
+  const credit = (remainingDays / totalDays) * priceOld
+  const final = priceNew - credit
+  return final > 0 ? final : 0
+}

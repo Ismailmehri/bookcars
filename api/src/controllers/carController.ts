@@ -7,6 +7,7 @@ import { Request, Response } from 'express'
 import * as bookcarsTypes from ':bookcars-types'
 import Booking from '../models/Booking'
 import Car from '../models/Car'
+import Subscription from '../models/Subscription'
 import i18n from '../lang/i18n'
 import * as env from '../config/env.config'
 import * as helper from '../common/helper'
@@ -823,6 +824,34 @@ export const getFrontendCars = async (req: Request, res: Response) => {
         },
       },
       { $unwind: { path: '$supplier', preserveNullAndEmptyArrays: false } },
+      ...(env.SUBSCRIPTION_ACTIVE
+        ? [
+            {
+              $lookup: {
+                from: 'Subscription',
+                let: { supplierId: '$supplier._id', now: new Date() },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ['$supplier', '$$supplierId'] },
+                          { $lte: ['$startDate', '$$now'] },
+                          { $gte: ['$endDate', '$$now'] },
+                        ],
+                      },
+                    },
+                  },
+                  { $sort: { endDate: -1 } },
+                  { $limit: 1 },
+                ],
+                as: 'subscription',
+              },
+            },
+            { $unwind: { path: '$subscription', preserveNullAndEmptyArrays: true } },
+            { $addFields: { resultsCars: '$subscription.resultsCars' } },
+          ]
+        : []),
       {
         $lookup: {
           from: 'Booking',
@@ -992,11 +1021,16 @@ export const getFrontendCars = async (req: Request, res: Response) => {
         $group: {
           _id: '$supplier._id',
           cars: { $push: '$$ROOT' },
+          ...(env.SUBSCRIPTION_ACTIVE
+            ? { resultsCars: { $first: { $ifNull: ['$resultsCars', 1] } } }
+            : {}),
         },
       },
       {
         $project: {
-          cars: { $slice: ['$cars', suppliers.length > 5 ? 2 : 20] }, // Garde seulement 2 voitures par fournisseur
+          cars: env.SUBSCRIPTION_ACTIVE
+            ? { $slice: ['$cars', '$resultsCars'] }
+            : { $slice: ['$cars', suppliers.length > 5 ? 2 : 20] },
         },
       },
       {

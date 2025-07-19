@@ -385,6 +385,7 @@ export const SMS_API_URL = __env__('BC_SMS_API_URL', true, 'https://app.tunisies
 export const SMS_SENDER = __env__('BC_SMS_SENDER', true, 'PLANY.TN')
 export const INFO_EMAIL = __env__('BC_INFO_EMAIL', true, 'info@plany.tn')
 export const SMS_ACTIVE = __env__('BC_SMS_ACTIVE', true, 'false') === 'true' // Convert to boolean
+export const SUBSCRIPTION_ACTIVE = __env__('BC_SUBSCRIPTION_ACTIVE', false, 'false') === 'true'
 
 export enum EmailType {
   Promotional = 'promotional',

@@ -1,5 +1,4 @@
 import { Schema, model } from 'mongoose'
-import * as env from '../config/env.config'
 import * as bookcarsTypes from ':bookcars-types'
 
 const subscriptionSchema = new Schema<bookcarsTypes.Subscription>(

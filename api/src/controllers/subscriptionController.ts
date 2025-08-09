@@ -53,8 +53,7 @@ export const create = async (req: Request, res: Response) => {
         per: bookcarsTypes.SubscriptionPeriod,
       ) => {
         const monthly = basePrices[p]
-        const total =
-          per === bookcarsTypes.SubscriptionPeriod.Monthly
+        const total = per === bookcarsTypes.SubscriptionPeriod.Monthly
             ? monthly
             : monthly * 12 * 0.8
         return Math.round(total)
@@ -64,14 +63,19 @@ export const create = async (req: Request, res: Response) => {
         subscription.plan as bookcarsTypes.SubscriptionPlan,
         subscription.period as bookcarsTypes.SubscriptionPeriod,
       )
-      const planLabel = subscription.plan === bookcarsTypes.SubscriptionPlan.Premium
-        ? 'Premium'
-        : subscription.plan === bookcarsTypes.SubscriptionPlan.Basic
-          ? 'Basic'
-          : 'Gratuit'
+
+      let planLabel: string
+      if (subscription.plan === bookcarsTypes.SubscriptionPlan.Premium) {
+        planLabel = 'Premium'
+      } else if (subscription.plan === bookcarsTypes.SubscriptionPlan.Basic) {
+        planLabel = 'Basic'
+      } else {
+        planLabel = 'Gratuit'
+      }
+
       const periodLabel = subscription.period === bookcarsTypes.SubscriptionPeriod.Yearly
-        ? 'Annuel'
-        : 'Mensuel'
+          ? 'Annuel'
+          : 'Mensuel'
 
       const mailOptions: nodemailer.SendMailOptions = {
         from: env.SMTP_FROM,

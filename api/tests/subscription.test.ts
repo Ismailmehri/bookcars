@@ -155,7 +155,7 @@ describe('GET /api/subscriptions', () => {
   it('should deny access to non-admin users', async () => {
     const token = await signin(SUPPLIER_EMAIL)
     const res = await request(app)
-      .get(`/api/subscriptions/1/10`)
+      .get('/api/subscriptions/1/10')
       .set(env.X_ACCESS_TOKEN, token)
     expect(res.statusCode).toBe(403)
     await testHelper.signout(token)
@@ -164,7 +164,7 @@ describe('GET /api/subscriptions', () => {
   it('should return subscriptions for admin', async () => {
     const token = await testHelper.signinAsAdmin()
     const res = await request(app)
-      .get(`/api/subscriptions/1/10`)
+      .get('/api/subscriptions/1/10')
       .set(env.X_ACCESS_TOKEN, token)
     expect(res.statusCode).toBe(200)
     expect(Array.isArray(res.body.resultData)).toBe(true)

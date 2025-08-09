@@ -58,7 +58,7 @@ const UpdateSubscription = () => {
 
 const handleChange = (field: keyof bookcarsTypes.Subscription) => (e: any) => {
   if (!subscription) return
-  let value: any = e.target.value
+  let { value } = e.target
   if (field === 'resultsCars' || field === 'sponsoredCars') {
     value = value === '' ? '' : Number(value)
   }
@@ -74,67 +74,67 @@ const handleChange = (field: keyof bookcarsTypes.Subscription) => (e: any) => {
             onSubmit={handleSubmit}
             className="subscription-form update-subscription-form-wrapper"
           >
-          <TextField
-            select
-            margin="normal"
-            label="Plan"
-            value={subscription.plan}
-            onChange={handleChange('plan')}
-            fullWidth
-          >
-            <MenuItem value="free">Free</MenuItem>
-            <MenuItem value="basic">Basic</MenuItem>
-            <MenuItem value="premium">Premium</MenuItem>
-          </TextField>
-          <TextField
-            select
-            margin="normal"
-            label="Période"
-            value={subscription.period}
-            onChange={handleChange('period')}
-            fullWidth
-          >
-            <MenuItem value="monthly">Mensuel</MenuItem>
-            <MenuItem value="yearly">Annuel</MenuItem>
-          </TextField>
-          <TextField
-            margin="normal"
-            label="Voitures"
-            type="number"
-            value={subscription.resultsCars ?? ''}
-            onChange={handleChange('resultsCars')}
-            fullWidth
-          />
-          <TextField
-            margin="normal"
-            label="Sponsorisées"
-            type="number"
-            value={subscription.sponsoredCars ?? ''}
-            onChange={handleChange('sponsoredCars')}
-            fullWidth
-          />
-          <TextField
-            margin="normal"
-            label="Date début"
-            type="date"
-            value={subscription.startDate.toString().substring(0,10)}
-            onChange={handleChange('startDate')}
-            fullWidth
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            margin="normal"
-            label="Date fin"
-            type="date"
-            value={subscription.endDate.toString().substring(0,10)}
-            onChange={handleChange('endDate')}
-            fullWidth
-            InputLabelProps={{ shrink: true }}
-          />
-          <Button type="submit" variant="contained" className="btn-primary" sx={{ mt: 2 }}>
-            Mettre à jour
-          </Button>
-        </Box>
+            <TextField
+              select
+              margin="normal"
+              label="Plan"
+              value={subscription.plan}
+              onChange={handleChange('plan')}
+              fullWidth
+            >
+              <MenuItem value="free">Free</MenuItem>
+              <MenuItem value="basic">Basic</MenuItem>
+              <MenuItem value="premium">Premium</MenuItem>
+            </TextField>
+            <TextField
+              select
+              margin="normal"
+              label="Période"
+              value={subscription.period}
+              onChange={handleChange('period')}
+              fullWidth
+            >
+              <MenuItem value="monthly">Mensuel</MenuItem>
+              <MenuItem value="yearly">Annuel</MenuItem>
+            </TextField>
+            <TextField
+              margin="normal"
+              label="Voitures"
+              type="number"
+              value={subscription.resultsCars ?? ''}
+              onChange={handleChange('resultsCars')}
+              fullWidth
+            />
+            <TextField
+              margin="normal"
+              label="Sponsorisées"
+              type="number"
+              value={subscription.sponsoredCars ?? ''}
+              onChange={handleChange('sponsoredCars')}
+              fullWidth
+            />
+            <TextField
+              margin="normal"
+              label="Date début"
+              type="date"
+              value={subscription.startDate.toString().substring(0, 10)}
+              onChange={handleChange('startDate')}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              margin="normal"
+              label="Date fin"
+              type="date"
+              value={subscription.endDate.toString().substring(0, 10)}
+              onChange={handleChange('endDate')}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+            <Button type="submit" variant="contained" className="btn-primary" sx={{ mt: 2 }}>
+              Mettre à jour
+            </Button>
+          </Box>
         </div>
       )}
     </Layout>

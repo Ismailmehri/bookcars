@@ -67,8 +67,8 @@ const env = {
   RECAPTCHA_ENABLED: (import.meta.env.VITE_BC_RECAPTCHA_ENABLED && import.meta.env.VITE_BC_RECAPTCHA_ENABLED.toLowerCase()) === 'true',
   RECAPTCHA_SITE_KEY: String(import.meta.env.VITE_BC_RECAPTCHA_SITE_KEY),
   PRICING_ENABLED:
-    (import.meta.env.VITE_BC_PRICING_ENABLED &&
-      import.meta.env.VITE_BC_PRICING_ENABLED.toLowerCase()) === 'true',
+    (import.meta.env.VITE_BC_PRICING_ENABLED
+      && import.meta.env.VITE_BC_PRICING_ENABLED.toLowerCase()) === 'true',
   CONTACT_EMAIL: import.meta.env.VITE_BC_CONTACT_EMAIL,
 }
 

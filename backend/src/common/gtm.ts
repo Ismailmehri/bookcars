@@ -59,7 +59,7 @@ export const sendPurchaseEvent = (transactionId: string, value: number, currency
     event: 'Purchase', // Événement standard Pixel Facebook
     transaction_id: transactionId,
     value,
-    currency: 'TND',
+    currency: currency ?? 'TND',
     contents: items.map((item) => ({
       id: item.item_id,
       name: item.item_name,

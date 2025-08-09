@@ -7,7 +7,6 @@ import { Request, Response } from 'express'
 import * as bookcarsTypes from ':bookcars-types'
 import Booking from '../models/Booking'
 import Car from '../models/Car'
-import Subscription from '../models/Subscription'
 import i18n from '../lang/i18n'
 import * as env from '../config/env.config'
 import * as helper from '../common/helper'
@@ -842,7 +841,7 @@ export const getFrontendCars = async (req: Request, res: Response) => {
                       },
                     },
                   },
-                  { $sort: { endDate: -1 } },
+                  { $sort: { endDate: -1 as const } },
                   { $limit: 1 },
                 ],
                 as: 'subscription',

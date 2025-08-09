@@ -56,7 +56,7 @@ export const generateInvoice = async (
       doc.fontSize(20).text('FACTURE', { align: 'center' })
       doc.moveDown()
 
-      const invoiceNumber = subscription.invoice.replace('.pdf', '')
+      const invoiceNumber = subscription.invoice ? subscription.invoice.replace('.pdf', '') : ''
       doc.fontSize(12).text(`Numéro de facture : ${invoiceNumber}`)
       doc.text(`Date d'émission : ${new Date().toLocaleDateString()}`)
       doc.moveDown()

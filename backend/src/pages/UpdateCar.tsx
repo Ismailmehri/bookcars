@@ -52,6 +52,7 @@ interface PricePeriod {
   startDate: null | Date
   endDate: null | Date
   dailyPrice: null | number
+  reason?: string
 }
 
 interface UnavailablePeriod {
@@ -180,7 +181,8 @@ const UpdateCar = () => {
   const [newPeriod, setNewPeriod] = useState<PricePeriod>({
     startDate: null,
     endDate: null,
-    dailyPrice: null
+    dailyPrice: null,
+    reason: '',
   })
 
   const handleAddUnavailablePeriod = () => {
@@ -212,7 +214,7 @@ const UpdateCar = () => {
       const end = new Date(newPeriod.endDate)
       if (start <= end) {
         setPricePeriods([...pricePeriods, { ...newPeriod, startDate: start, endDate: end }])
-        setNewPeriod({ startDate: null, endDate: null, dailyPrice: null })
+        setNewPeriod({ startDate: null, endDate: null, dailyPrice: null, reason: '' })
       }
     }
     setPeriodPriceError(false)
@@ -230,8 +232,75 @@ const UpdateCar = () => {
       startDate: periodToEdit.startDate,
       endDate: periodToEdit.endDate,
       dailyPrice: periodToEdit.dailyPrice,
+      reason: periodToEdit.reason || '',
     })
     handleDeletePeriod(index)
+    setPeriodPriceError(false)
+  }
+
+  const handleApplyDefaultPeriods = () => {
+    const base = Number(dailyPrice)
+    if (Number.isNaN(base)) {
+      setPricePeriods([])
+      return
+    }
+
+    const year = new Date().getFullYear()
+    const defaults: PricePeriod[] = [
+      {
+        startDate: new Date(year, 0, 2),
+        endDate: new Date(year, 2, 15),
+        dailyPrice: base,
+      },
+      {
+        startDate: new Date(year, 2, 16),
+        endDate: new Date(year, 2, 25),
+        dailyPrice: base + 50,
+        reason: strings.EID_AL_FITR,
+      },
+      {
+        startDate: new Date(year, 2, 26),
+        endDate: new Date(year, 4, 20),
+        dailyPrice: base,
+      },
+      {
+        startDate: new Date(year, 4, 21),
+        endDate: new Date(year, 4, 31),
+        dailyPrice: base + 50,
+        reason: strings.EID_AL_ADHA,
+      },
+      {
+        startDate: new Date(year, 5, 1),
+        endDate: new Date(year, 5, 30),
+        dailyPrice: base + 50,
+        reason: strings.SUMMER,
+      },
+      {
+        startDate: new Date(year, 6, 1),
+        endDate: new Date(year, 7, 31),
+        dailyPrice: base + 80,
+        reason: strings.SUMMER,
+      },
+      {
+        startDate: new Date(year, 8, 1),
+        endDate: new Date(year, 8, 30),
+        dailyPrice: base + 50,
+        reason: strings.SUMMER,
+      },
+      {
+        startDate: new Date(year, 9, 1),
+        endDate: new Date(year, 11, 15),
+        dailyPrice: base,
+      },
+      {
+        startDate: new Date(year, 11, 15),
+        endDate: new Date(year + 1, 0, 1),
+        dailyPrice: base + 50,
+        reason: strings.YEAR_END,
+      },
+    ]
+
+    setPricePeriods(defaults)
     setPeriodPriceError(false)
   }
 
@@ -909,6 +978,9 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                     >
                       Ajouter
                     </Button>
+                    <Button size="medium" onClick={handleApplyDefaultPeriods} sx={{ ml: 1 }}>
+                      {strings.ADD_DEFAULT_PERIODS}
+                    </Button>
                   </div>
                 </div>
                 {pricePeriods.length > 0 && (
@@ -918,6 +990,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                       <TableRow>
                         <TableCell>{strings.START_DATE}</TableCell>
                         <TableCell>{strings.END_DATE}</TableCell>
+                        <TableCell>{strings.REASON}</TableCell>
                         <TableCell>{`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}</TableCell>
                         <TableCell>{strings.ACTIONS_BUTTON}</TableCell>
                       </TableRow>
@@ -928,6 +1001,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                         <TableRow key={index}>
                           <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
                           <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
+                          <TableCell>{period.reason || ''}</TableCell>
                           <TableCell>{`${period.dailyPrice} (${commonStrings.CURRENCY})`}</TableCell>
                           <TableCell>
                             <IconButton onClick={() => handleEditPeriod(index)}>

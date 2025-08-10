@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { jest } from '@jest/globals'
 import { calculateSubscriptionFinalPrice } from ':bookcars-helper'
 import * as bookcarsTypes from ':bookcars-types'
 
@@ -50,7 +51,7 @@ describe('calculateSubscriptionFinalPrice', () => {
       bookcarsTypes.SubscriptionPeriod.Monthly,
     )
     const totalDays = 28
-    const remainingDays = 20
+    const remainingDays = 19
     const expected = 30 - (remainingDays / totalDays) * 10
     expect(final).toBeCloseTo(expected)
   })

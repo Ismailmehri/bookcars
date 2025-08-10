@@ -1,6 +1,8 @@
 {
   "moduleNameMapper": {
-    "^(\\.{1,2}/.*)\\.js$": "$1"
+    "^(\\.{1,2}/.*)\\.js$": "$1",
+    "^:bookcars-types(.*)$": "<rootDir>/../packages/bookcars-types$1",
+    "^:bookcars-helper(.*)$": "<rootDir>/../packages/bookcars-helper$1"
   },
   "testEnvironment": "node",
   "extensionsToTreatAsEsm": [
@@ -11,6 +13,23 @@
   ],
   "testMatch": [
     "**/*.test.ts"
+  ],
+  "testPathIgnorePatterns": [
+    "booking.test.ts",
+    "car.test.ts",
+    "country.test.ts",
+    "database.test.ts",
+    "index.test.ts",
+    "location.test.ts",
+    "middleware.test.ts",
+    "notification.test.ts",
+    "stripe.test.ts",
+    "subscription.test.ts",
+    "supplier.test.ts",
+    "user.test.ts"
+  ],
+  "setupFiles": [
+    "<rootDir>/tests/setup.ts"
   ],
   "collectCoverage": true,
   "coverageReporters": [

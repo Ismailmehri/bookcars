@@ -239,7 +239,6 @@ const CreateCar = () => {
         startDate: new Date(year, 8, 1),
         endDate: new Date(year, 8, 30),
         dailyPrice: base + 50,
-        reason: strings.SUMMER,
       },
       {
         startDate: new Date(year, 9, 1),

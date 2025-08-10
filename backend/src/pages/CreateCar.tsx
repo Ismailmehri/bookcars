@@ -19,6 +19,7 @@ import {
   Chip,
   Box,
   Slider,
+  MenuItem,
 } from '@mui/material'
 import { Delete as DeleteIcon, Edit as EditIcon, Info as InfoIcon } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
@@ -816,6 +817,24 @@ const CreateCar = () => {
                   />
                 </FormControl>
 
+                {/* Liste déroulante pour le motif */}
+                <FormControl sx={{ width: '150px' }} margin="dense">
+                  <TextField
+                    select
+                    label={strings.REASON}
+                    value={newPeriod.reason || ''}
+                    variant="standard"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setNewPeriod({ ...newPeriod, reason: e.target.value })}
+                  >
+                    <MenuItem value="">-</MenuItem>
+                    <MenuItem value={strings.EID_AL_FITR}>{strings.EID_AL_FITR}</MenuItem>
+                    <MenuItem value={strings.EID_AL_ADHA}>{strings.EID_AL_ADHA}</MenuItem>
+                    <MenuItem value={strings.SUMMER}>{strings.SUMMER}</MenuItem>
+                    <MenuItem value={strings.YEAR_END}>{strings.YEAR_END}</MenuItem>
+                  </TextField>
+                </FormControl>
+
                 {/* TextField pour le prix quotidien */}
                 <FormControl sx={{ width: '150px' }} margin="dense">
                   {' '}
@@ -845,10 +864,13 @@ const CreateCar = () => {
                   >
                     Ajouter
                   </Button>
-                  <Button size="medium" onClick={handleApplyDefaultPeriods} sx={{ ml: 1 }}>
-                    {strings.ADD_DEFAULT_PERIODS}
-                  </Button>
                 </div>
+              </div>
+
+              <div className="add-button" style={{ marginBottom: '10px' }}>
+                <Button size="medium" onClick={handleApplyDefaultPeriods}>
+                  {strings.ADD_DEFAULT_PERIODS}
+                </Button>
               </div>
               {pricePeriods.length > 0 && (
                 <TableContainer component={Paper}>
@@ -868,7 +890,7 @@ const CreateCar = () => {
                         <TableRow key={index}>
                           <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
                           <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
-                          <TableCell>{period.reason || ''}</TableCell>
+                          <TableCell>{period.reason || '-'}</TableCell>
                           <TableCell>{`${period.dailyPrice} (${commonStrings.CURRENCY})`}</TableCell>
                           <TableCell>
                             <IconButton onClick={() => handleEditPeriod(index)}>

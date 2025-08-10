@@ -19,6 +19,7 @@ import {
   Chip,
   Box,
   Slider,
+  MenuItem,
 } from '@mui/material'
 import { Delete as DeleteIcon, Edit as EditIcon, Info as InfoIcon } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
@@ -32,7 +33,7 @@ import { strings } from '@/lang/create-car'
 import * as CarService from '@/services/CarService'
 import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
-import Error from '@/components/Error'
+import ErrorMessage from '@/components/Error'
 import Backdrop from '@/components/SimpleBackdrop'
 import Avatar from '@/components/Avatar'
 import SupplierSelectList from '@/components/SupplierSelectList'
@@ -52,6 +53,19 @@ interface PricePeriod {
   startDate: null | Date;
   endDate: null | Date;
   dailyPrice: null | number;
+}
+
+type Motif =
+  | 'Aïd Sghir'
+  | 'Aïd Kbir'
+  | 'Saison estivale'
+  | 'Fin d’année'
+  | 'Basse saison'
+  | 'Autre'
+  | string
+
+interface PricePeriodUI extends PricePeriod {
+  motif?: Motif
 }
 
 interface UnavailablePeriod {
@@ -143,18 +157,23 @@ const CreateCar = () => {
   const [minimumAge, setMinimumAge] = useState(String(env.MINIMUM_AGE))
   const [minimumAgeValid, setMinimumAgeValid] = useState(true)
   const [formError, setFormError] = useState(false)
+  const [periodPriceError, setPeriodPriceError] = useState(false)
+  const [periodErrorMsg, setPeriodErrorMsg] = useState<string>('')
   const [deposit, setDeposit] = useState('')
-  const [pricePeriods, setPricePeriods] = useState<PricePeriod[]>([])
+  const [pricePeriods, setPricePeriods] = useState<PricePeriodUI[]>([])
   const [unavailablePeriods, setUnavailablePeriods] = useState<UnavailablePeriod[]>([])
   const [minimumRentalDays, setMinimumRentalDays] = useState<number>(1)
   const [days, setDays] = useState<string>('') // Utiliser "" au lieu de undefined
   const [discountPercentage, setDiscountPercentage] = useState<string>('')
   const [daysValid, setDaysValid] = useState<boolean>(true)
   const [discountPercentageValid, setDiscountPercentageValid] = useState<boolean>(true)
-  const [newPeriod, setNewPeriod] = useState<PricePeriod>({
+  const MOTIFS: Motif[] = ['Aïd Sghir', 'Aïd Kbir', 'Saison estivale', 'Fin d’année', 'Basse saison', 'Autre']
+
+  const [newPeriod, setNewPeriod] = useState<PricePeriodUI>({
     startDate: null,
     endDate: null,
     dailyPrice: null,
+    motif: undefined,
   })
   const [newUnavailablePeriod, setNewUnavailablePeriod] = useState<UnavailablePeriod>({
     startDate: null,
@@ -162,20 +181,47 @@ const CreateCar = () => {
   })
   const [locationsError, setLocationsError] = useState<string | null>(null) // État pour l'erreur des localisations
 
+  const rangesOverlap = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) =>
+    aStart <= bEnd && bStart <= aEnd
+
+  const hasAnyOverlap = (start: Date, end: Date, periods: PricePeriodUI[]) =>
+    periods.some(
+      (p) =>
+        p.startDate && p.endDate && rangesOverlap(start, end, p.startDate, p.endDate)
+    )
+
   const handleAddPeriod = () => {
-    if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice) {
-      const start = new Date(newPeriod.startDate)
-      const end = new Date(newPeriod.endDate)
-      if (start <= end) {
-        setPricePeriods([...pricePeriods, { ...newPeriod, startDate: start, endDate: end }])
-        setNewPeriod({ startDate: null, endDate: null, dailyPrice: null })
-      }
+    if (!newPeriod.startDate || !newPeriod.endDate || !newPeriod.dailyPrice) {
+      setPeriodPriceError(true)
+      setPeriodErrorMsg('Veuillez compléter la période et le prix final.')
+      return
     }
+
+    const start = new Date(newPeriod.startDate)
+    const end = new Date(newPeriod.endDate)
+    if (start > end) {
+      setPeriodPriceError(true)
+      setPeriodErrorMsg('La date de début doit être antérieure ou égale à la date de fin.')
+      return
+    }
+
+    if (hasAnyOverlap(start, end, pricePeriods)) {
+      setPeriodPriceError(true)
+      setPeriodErrorMsg('Chevauchement détecté avec une période existante. Modifiez vos dates.')
+      return
+    }
+
+    setPricePeriods([...pricePeriods, { ...newPeriod, startDate: start, endDate: end }])
+    setNewPeriod({ startDate: null, endDate: null, dailyPrice: null, motif: undefined })
+    setPeriodPriceError(false)
+    setPeriodErrorMsg('')
   }
 
   const handleDeletePeriod = (index: number) => {
     const updatedPeriods = pricePeriods.filter((_, i) => i !== index)
     setPricePeriods(updatedPeriods)
+    setPeriodPriceError(false)
+    setPeriodErrorMsg('')
   }
 
   const handleEditPeriod = (index: number) => {
@@ -184,8 +230,11 @@ const CreateCar = () => {
       startDate: periodToEdit.startDate,
       endDate: periodToEdit.endDate,
       dailyPrice: periodToEdit.dailyPrice,
+      motif: periodToEdit.motif,
     })
     handleDeletePeriod(index)
+    setPeriodPriceError(false)
+    setPeriodErrorMsg('')
   }
 
   const handleAddUnavailablePeriod = () => {
@@ -352,6 +401,12 @@ const CreateCar = () => {
 
       setLoading(true)
 
+      if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice) {
+        setPeriodPriceError(true)
+        setPeriodErrorMsg('')
+        return
+      }
+
       const _minimumAgeValid = validateMinimumAge(minimumAge)
       if (!_minimumAgeValid) {
         setFormError(true)
@@ -434,7 +489,11 @@ const CreateCar = () => {
         multimedia,
         rating: Number(rating) || undefined,
         co2: Number(co2) || undefined,
-        periodicPrices: pricePeriods,
+        periodicPrices: pricePeriods.map(({ startDate, endDate, dailyPrice: price }) => ({
+          startDate,
+          endDate,
+          dailyPrice: price,
+        })),
         minimumDrivingLicenseYears,
         unavailablePeriods,
         minimumRentalDays,
@@ -722,7 +781,6 @@ const CreateCar = () => {
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
                 {/* DateTimePicker pour la date de début */}
                 <FormControl sx={{ width: '200px' }} margin="dense">
-                  {' '}
                   {/* Largeur réduite */}
                   <DateTimePicker
                     label={strings.START_DATE}
@@ -736,7 +794,6 @@ const CreateCar = () => {
 
                 {/* DateTimePicker pour la date de fin */}
                 <FormControl sx={{ width: '200px' }} margin="dense">
-                  {' '}
                   {/* Largeur réduite */}
                   <DateTimePicker
                     label={strings.END_DATE}
@@ -748,37 +805,51 @@ const CreateCar = () => {
                   />
                 </FormControl>
 
-                {/* TextField pour le prix quotidien */}
-                <FormControl sx={{ width: '150px' }} margin="dense">
-                  {' '}
-                  {/* Largeur réduite */}
+                <TextField
+                  label="Prix final (DT/jour)"
+                  slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' } }}
+                  value={newPeriod.dailyPrice ?? ''}
+                  variant="standard"
+                  autoComplete="off"
+                  onChange={(e) => setNewPeriod({ ...newPeriod, dailyPrice: Number(e.target.value) })}
+                />
+
+                <FormControl sx={{ width: '220px' }} margin="dense">
                   <TextField
-                    label={`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}
-                    slotProps={{
-                        htmlInput: {
-                          inputMode: 'numeric',
-                          pattern: '^\\d+(.\\d+)?$',
-                        },
-                      }}
-                    value={newPeriod.dailyPrice !== null ? newPeriod.dailyPrice : ''}
+                    select
+                    label="Motif"
+                    value={newPeriod.motif ?? ''}
+                    onChange={(e) => setNewPeriod({ ...newPeriod, motif: e.target.value })}
                     variant="standard"
-                    autoComplete="off"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setNewPeriod({ ...newPeriod, dailyPrice: Number(e.target.value) })}
-                  />
+                  >
+                    {MOTIFS.map((m) => (
+                      <MenuItem key={m} value={m}>
+                        {m}
+                      </MenuItem>
+                    ))}
+                  </TextField>
                 </FormControl>
 
-                {/* Bouton pour ajouter la période */}
+                {newPeriod.motif === 'Autre' && (
+                  <FormControl sx={{ width: '240px' }} margin="dense">
+                    <TextField
+                      label="Motif personnalisé"
+                      value={typeof newPeriod.motif === 'string' ? newPeriod.motif : ''}
+                      onChange={(e) => setNewPeriod({ ...newPeriod, motif: e.target.value })}
+                      variant="standard"
+                    />
+                  </FormControl>
+                )}
+
                 <div className="add-button">
-                  <Button
-                    size="medium"
-                    onClick={handleAddPeriod}
-                    disabled={!newPeriod.startDate || !newPeriod.endDate || !newPeriod.dailyPrice}
-                  >
+                  <Button size="medium" onClick={handleAddPeriod}>
                     Ajouter
                   </Button>
                 </div>
               </div>
+              {periodPriceError && periodErrorMsg && (
+                <ErrorMessage message={periodErrorMsg} />
+              )}
               {pricePeriods.length > 0 && (
                 <TableContainer component={Paper}>
                   <Table>
@@ -786,7 +857,8 @@ const CreateCar = () => {
                       <TableRow>
                         <TableCell>{strings.START_DATE}</TableCell>
                         <TableCell>{strings.END_DATE}</TableCell>
-                        <TableCell>{`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}</TableCell>
+                        <TableCell>Motif</TableCell>
+                        <TableCell>{`Prix final (${commonStrings.CURRENCY})`}</TableCell>
                         <TableCell>{strings.ACTIONS_BUTTON}</TableCell>
                       </TableRow>
                     </TableHead>
@@ -796,6 +868,7 @@ const CreateCar = () => {
                         <TableRow key={index}>
                           <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
                           <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
+                          <TableCell>{period.motif ? <Chip label={period.motif} size="small" /> : '-'}</TableCell>
                           <TableCell>{`${period.dailyPrice} (${commonStrings.CURRENCY})`}</TableCell>
                           <TableCell>
                             <IconButton onClick={() => handleEditPeriod(index)}>
@@ -1040,9 +1113,17 @@ const CreateCar = () => {
             </div>
 
             <div className="form-error">
-              {imageError && <Error message={commonStrings.IMAGE_REQUIRED} />}
-              {imageSizeError && <Error message={strings.CAR_IMAGE_SIZE_ERROR} />}
-              {formError && <Error message={commonStrings.FORM_ERROR} />}
+              {imageError && <ErrorMessage message={commonStrings.IMAGE_REQUIRED} />}
+              {imageSizeError && <ErrorMessage message={strings.CAR_IMAGE_SIZE_ERROR} />}
+              {formError && <ErrorMessage message={commonStrings.FORM_ERROR} />}
+              {periodPriceError && (
+                <ErrorMessage
+                  message={
+                    periodErrorMsg
+                    || "Veuillez cliquer sur 'Ajouter' pour enregistrer la période avant de soumettre le formulaire."
+                  }
+                />
+              )}
             </div>
           </form>
         </Paper>

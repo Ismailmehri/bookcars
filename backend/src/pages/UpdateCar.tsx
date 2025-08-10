@@ -19,6 +19,7 @@ import {
   Chip,
   Slider,
   Box,
+  MenuItem,
 } from '@mui/material'
 import { Delete as DeleteIcon, Edit as EditIcon, Info as InfoIcon } from '@mui/icons-material'
 import DateTimePicker from '@/components/DateTimePicker'
@@ -52,6 +53,19 @@ interface PricePeriod {
   startDate: null | Date
   endDate: null | Date
   dailyPrice: null | number
+}
+
+type Motif =
+  | 'Aïd Sghir'
+  | 'Aïd Kbir'
+  | 'Saison estivale'
+  | 'Fin d’année'
+  | 'Basse saison'
+  | 'Autre'
+  | string
+
+interface PricePeriodUI extends PricePeriod {
+  motif?: Motif
 }
 
 interface UnavailablePeriod {
@@ -163,9 +177,10 @@ const UpdateCar = () => {
   const [minimumAgeValid, setMinimumAgeValid] = useState(true)
   const [formError, setFormError] = useState(false)
   const [periodPriceError, setPeriodPriceError] = useState(false)
+  const [periodErrorMsg, setPeriodErrorMsg] = useState<string>('')
   const [periodUnvalableError, setPeriodUnvalableError] = useState(false)
   const [deposit, setDeposit] = useState('')
-  const [pricePeriods, setPricePeriods] = useState<PricePeriod[]>([])
+  const [pricePeriods, setPricePeriods] = useState<PricePeriodUI[]>([])
   const [unavailablePeriods, setUnavailablePeriods] = useState<UnavailablePeriod[]>([])
   const [minimumRentalDays, setMinimumRentalDays] = useState<number>(1)
   const [days, setDays] = useState<string>('') // Utiliser "" au lieu de undefined
@@ -177,10 +192,13 @@ const UpdateCar = () => {
     endDate: null,
   })
 
-  const [newPeriod, setNewPeriod] = useState<PricePeriod>({
+  const MOTIFS: Motif[] = ['Aïd Sghir', 'Aïd Kbir', 'Saison estivale', 'Fin d’année', 'Basse saison', 'Autre']
+
+  const [newPeriod, setNewPeriod] = useState<PricePeriodUI>({
     startDate: null,
     endDate: null,
-    dailyPrice: null
+    dailyPrice: null,
+    motif: undefined,
   })
 
   const handleAddUnavailablePeriod = () => {
@@ -206,22 +224,46 @@ const UpdateCar = () => {
     handleDeleteUnavailablePeriod(index)
     setPeriodUnvalableError(false)
   }
+
+  const rangesOverlap = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) =>
+    aStart <= bEnd && bStart <= aEnd
+
+  const hasAnyOverlap = (start: Date, end: Date, periods: PricePeriodUI[]) =>
+    periods.some((p) =>
+      p.startDate && p.endDate && rangesOverlap(start, end, p.startDate, p.endDate))
+
   const handleAddPeriod = () => {
-    if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice) {
-      const start = new Date(newPeriod.startDate)
-      const end = new Date(newPeriod.endDate)
-      if (start <= end) {
-        setPricePeriods([...pricePeriods, { ...newPeriod, startDate: start, endDate: end }])
-        setNewPeriod({ startDate: null, endDate: null, dailyPrice: null })
-      }
+    if (!newPeriod.startDate || !newPeriod.endDate || !newPeriod.dailyPrice) {
+      setPeriodPriceError(true)
+      setPeriodErrorMsg('Veuillez compléter la période et le prix final.')
+      return
     }
+
+    const start = new Date(newPeriod.startDate)
+    const end = new Date(newPeriod.endDate)
+    if (start > end) {
+      setPeriodPriceError(true)
+      setPeriodErrorMsg('La date de début doit être antérieure ou égale à la date de fin.')
+      return
+    }
+
+    if (hasAnyOverlap(start, end, pricePeriods)) {
+      setPeriodPriceError(true)
+      setPeriodErrorMsg('Chevauchement détecté avec une période existante. Modifiez vos dates.')
+      return
+    }
+
+    setPricePeriods([...pricePeriods, { ...newPeriod, startDate: start, endDate: end }])
+    setNewPeriod({ startDate: null, endDate: null, dailyPrice: null, motif: undefined })
     setPeriodPriceError(false)
+    setPeriodErrorMsg('')
   }
 
   const handleDeletePeriod = (index: number) => {
     const updatedPeriods = pricePeriods.filter((_, i) => i !== index)
     setPricePeriods(updatedPeriods)
     setPeriodPriceError(false)
+    setPeriodErrorMsg('')
   }
 
   const handleEditPeriod = (index: number) => {
@@ -230,9 +272,11 @@ const UpdateCar = () => {
       startDate: periodToEdit.startDate,
       endDate: periodToEdit.endDate,
       dailyPrice: periodToEdit.dailyPrice,
+      motif: periodToEdit.motif,
     })
     handleDeletePeriod(index)
     setPeriodPriceError(false)
+    setPeriodErrorMsg('')
   }
 
   const handleBeforeUpload = () => {
@@ -379,6 +423,7 @@ const UpdateCar = () => {
 
       if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice) {
         setPeriodPriceError(true)
+        setPeriodErrorMsg('')
         return
       }
 
@@ -441,7 +486,11 @@ const discount: Discount | undefined = dayValue && discountValue ? {
         discountedWeeklyPrice: getPrice(discountedWeeklyPrice),
         monthlyPrice: getPrice(monthlyPrice),
         discountedMonthlyPrice: getPrice(discountedMonthlyPrice),
-        periodicPrices: pricePeriods,
+        periodicPrices: pricePeriods.map(({ startDate, endDate, dailyPrice: price }) => ({
+          startDate,
+          endDate,
+          dailyPrice: price,
+        })),
         deposit: Number(deposit),
         available,
         type,
@@ -530,6 +579,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                       ...period,
                       startDate: period.startDate ? new Date(period.startDate) : null,
                       endDate: period.endDate ? new Date(period.endDate) : null,
+                      motif: undefined,
                     }))
                   : []
               )
@@ -854,7 +904,6 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
                   {/* DateTimePicker pour la date de début */}
                   <FormControl sx={{ width: '200px' }} margin="dense">
-                    {' '}
                     {/* Largeur réduite */}
                     <DateTimePicker
                       label={strings.START_DATE}
@@ -868,7 +917,6 @@ const discount: Discount | undefined = dayValue && discountValue ? {
 
                   {/* DateTimePicker pour la date de fin */}
                   <FormControl sx={{ width: '200px' }} margin="dense">
-                    {' '}
                     {/* Largeur réduite */}
                     <DateTimePicker
                       label={strings.END_DATE}
@@ -881,36 +929,51 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                   </FormControl>
 
                   {/* TextField pour le prix quotidien */}
-                  <FormControl sx={{ width: '150px' }} margin="dense">
-                    {' '}
-                    {/* Largeur réduite */}
+                  <TextField
+                    label="Prix final (DT/jour)"
+                    slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' } }}
+                    value={newPeriod.dailyPrice ?? ''}
+                    variant="standard"
+                    autoComplete="off"
+                    onChange={(e) => setNewPeriod({ ...newPeriod, dailyPrice: Number(e.target.value) })}
+                  />
+
+                  <FormControl sx={{ width: '220px' }} margin="dense">
                     <TextField
-                      label={`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}
-                      slotProps={{
-                        htmlInput: {
-                          inputMode: 'numeric',
-                          pattern: '^\\d+(.\\d+)?$',
-                        },
-                      }}
-                      value={newPeriod.dailyPrice !== null ? newPeriod.dailyPrice : ''}
+                      select
+                      label="Motif"
+                      value={newPeriod.motif ?? ''}
+                      onChange={(e) => setNewPeriod({ ...newPeriod, motif: e.target.value })}
                       variant="standard"
-                      autoComplete="off"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setNewPeriod({ ...newPeriod, dailyPrice: Number(e.target.value) })}
-                    />
+                    >
+                      {MOTIFS.map((m) => (
+                        <MenuItem key={m} value={m}>
+                          {m}
+                        </MenuItem>
+                    ))}
+                    </TextField>
                   </FormControl>
 
-                  {/* Bouton pour ajouter la période */}
+                  {newPeriod.motif === 'Autre' && (
+                  <FormControl sx={{ width: '240px' }} margin="dense">
+                    <TextField
+                      label="Motif personnalisé"
+                      value={typeof newPeriod.motif === 'string' ? newPeriod.motif : ''}
+                      onChange={(e) => setNewPeriod({ ...newPeriod, motif: e.target.value })}
+                      variant="standard"
+                    />
+                  </FormControl>
+                )}
+
                   <div className="add-button">
-                    <Button
-                      size="medium"
-                      onClick={handleAddPeriod}
-                      disabled={!newPeriod.startDate || !newPeriod.endDate || !newPeriod.dailyPrice}
-                    >
+                    <Button size="medium" onClick={handleAddPeriod}>
                       Ajouter
                     </Button>
                   </div>
                 </div>
+                {periodPriceError && periodErrorMsg && (
+                <ErrorMessage message={periodErrorMsg} />
+              )}
                 {pricePeriods.length > 0 && (
                 <TableContainer component={Paper}>
                   <Table>
@@ -918,7 +981,8 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                       <TableRow>
                         <TableCell>{strings.START_DATE}</TableCell>
                         <TableCell>{strings.END_DATE}</TableCell>
-                        <TableCell>{`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}</TableCell>
+                        <TableCell>Motif</TableCell>
+                        <TableCell>{`Prix final (${commonStrings.CURRENCY})`}</TableCell>
                         <TableCell>{strings.ACTIONS_BUTTON}</TableCell>
                       </TableRow>
                     </TableHead>
@@ -928,6 +992,9 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                         <TableRow key={index}>
                           <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
                           <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
+                          <TableCell>
+                            {period.motif ? <Chip label={period.motif} size="small" /> : '-'}
+                          </TableCell>
                           <TableCell>{`${period.dailyPrice} (${commonStrings.CURRENCY})`}</TableCell>
                           <TableCell>
                             <IconButton onClick={() => handleEditPeriod(index)}>
@@ -1210,8 +1277,17 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                 {imageRequired && <ErrorMessage message={commonStrings.IMAGE_REQUIRED} />}
                 {imageSizeError && <ErrorMessage message={strings.CAR_IMAGE_SIZE_ERROR} />}
                 {formError && <ErrorMessage message={commonStrings.FORM_ERROR} />}
-                {periodPriceError && <ErrorMessage message="Veuillez cliquer sur 'Ajouter' pour enregistrer la période avant de soumettre le formulaire." />}
-                {periodUnvalableError && <ErrorMessage message="Veuillez cliquer sur 'Ajouter' pour enregistrer la période avant de soumettre le formulaire." />}
+                {periodPriceError && (
+                  <ErrorMessage
+                    message={
+                      periodErrorMsg
+                      || "Veuillez cliquer sur 'Ajouter' pour enregistrer la période avant de soumettre le formulaire."
+                    }
+                  />
+                )}
+                {periodUnvalableError && (
+                  <ErrorMessage message="Veuillez cliquer sur 'Ajouter' pour enregistrer la période avant de soumettre le formulaire." />
+                )}
               </div>
             </form>
           </Paper>

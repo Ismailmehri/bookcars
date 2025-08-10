@@ -36,6 +36,7 @@ const strings = new LocalizedStrings({
     MULTIMEDIA: 'Multimédia',
     RATING: 'Notation',
     CO2: 'CO2 (g/km)',
+    DEFAULT_PRICE: 'Prix par défaut',
   },
   en: {
     NEW_CAR_HEADING: 'New car',
@@ -70,6 +71,7 @@ const strings = new LocalizedStrings({
     MULTIMEDIA: 'Multimedia',
     RATING: 'Rating',
     CO2: 'CO2 (g/km)',
+    DEFAULT_PRICE: 'Default price',
   },
 })
 

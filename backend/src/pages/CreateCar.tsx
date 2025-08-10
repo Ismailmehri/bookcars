@@ -850,7 +850,7 @@ const CreateCar = () => {
               {periodPriceError && periodErrorMsg && (
                 <ErrorMessage message={periodErrorMsg} />
               )}
-              {pricePeriods.length > 0 && (
+              {(dailyPrice || pricePeriods.length > 0) && (
                 <TableContainer component={Paper}>
                   <Table>
                     <TableHead>
@@ -863,6 +863,15 @@ const CreateCar = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
+                      <TableRow key="default-price">
+                        <TableCell>-</TableCell>
+                        <TableCell>-</TableCell>
+                        <TableCell>
+                          <Chip label={strings.DEFAULT_PRICE} size="small" />
+                        </TableCell>
+                        <TableCell>{dailyPrice ? `${dailyPrice} (${commonStrings.CURRENCY})` : '-'}</TableCell>
+                        <TableCell />
+                      </TableRow>
                       {pricePeriods.map((period, index) => (
                         // eslint-disable-next-line react/no-array-index-key
                         <TableRow key={index}>
@@ -879,7 +888,7 @@ const CreateCar = () => {
                             </IconButton>
                           </TableCell>
                         </TableRow>
-              ))}
+                      ))}
                     </TableBody>
                   </Table>
                 </TableContainer>

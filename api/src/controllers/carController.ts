@@ -7,10 +7,12 @@ import { Request, Response } from 'express'
 import * as bookcarsTypes from ':bookcars-types'
 import Booking from '../models/Booking'
 import Car from '../models/Car'
+import User from '../models/User'
 import i18n from '../lang/i18n'
 import * as env from '../config/env.config'
 import * as helper from '../common/helper'
 import * as logger from '../common/logger'
+import * as authHelper from '../common/authHelper'
 import { CarStats } from '../models/CarStats'
 
 /**
@@ -632,6 +634,13 @@ export const getBookingCars = async (req: Request, res: Response) => {
 
 export const updateCarBoost = async (req: Request, res: Response) => {
   try {
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser: bookcarsTypes.User | null = await User.findById(sessionData.id)
+    const isAllowed = connectedUser ? helper.admin(connectedUser) || helper.supplier(connectedUser) : false
+    if (!isAllowed) {
+      return res.sendStatus(403)
+    }
+
     const { carId, boostData } = req.body
 
     if (carId === undefined || boostData === undefined) {
@@ -662,6 +671,13 @@ export const updateCarBoost = async (req: Request, res: Response) => {
 
 export const boostCar = async (req: Request, res: Response) => {
   try {
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser: bookcarsTypes.User | null = await User.findById(sessionData.id)
+    const isAllowed = connectedUser ? helper.admin(connectedUser) || helper.supplier(connectedUser) : false
+    if (!isAllowed) {
+      return res.sendStatus(403)
+    }
+
     const { boostData, carId } = req.body // Assuming boostData contains the boost information
     const car = await Car.findById(carId)
 

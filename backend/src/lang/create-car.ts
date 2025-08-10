@@ -17,7 +17,7 @@ const strings = new LocalizedStrings({
     END_DATE: 'Date de fin',
     REASON: 'Motif',
     DAILY_PRICE: 'Prix/jour',
-    ADD_DEFAULT_PERIODS: 'Ajouter périodes par défaut',
+    ADD_DEFAULT_PERIODS: 'Ajouter les prix par défaut',
     DISCOUNTED_DAILY_PRICE: 'Prix discount/jour',
     BI_WEEKLY_PRICE: 'Prix/mi-semaine (3 jours)',
     DISCOUNTED_BI_WEEKLY_PRICE: 'Prix discount/mi-semaine',

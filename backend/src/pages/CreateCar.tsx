@@ -153,6 +153,7 @@ const CreateCar = () => {
   const [discountPercentage, setDiscountPercentage] = useState<string>('')
   const [daysValid, setDaysValid] = useState<boolean>(true)
   const [discountPercentageValid, setDiscountPercentageValid] = useState<boolean>(true)
+  const [autoDefaultsApplied, setAutoDefaultsApplied] = useState<boolean>(false)
   const [newPeriod, setNewPeriod] = useState<PricePeriod>({
     startDate: null,
     endDate: null,
@@ -254,6 +255,14 @@ const CreateCar = () => {
     ]
 
     setPricePeriods(defaults)
+  }
+
+  const handleDailyPriceBlur = () => {
+    const base = Number(dailyPrice)
+    if (!autoDefaultsApplied && pricePeriods.length === 0 && Number.isFinite(base) && base > 0) {
+      handleApplyDefaultPeriods()
+      setAutoDefaultsApplied(true)
+    }
   }
 
   const handleAddUnavailablePeriod = () => {
@@ -681,87 +690,13 @@ const CreateCar = () => {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setDailyPrice(e.target.value)
                 }}
+                onBlur={handleDailyPriceBlur}
                 required
                 variant="standard"
                 autoComplete="off"
                 value={dailyPrice}
               />
             </FormControl>
-            <div className="add-border">
-              <span className="text-title">
-                Ajouter une remise pour les longues durées
-                <Chip
-                  label="Optionnel"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                  sx={{
-                    height: 'auto',
-                    margin: '0 0px 4px 10px',
-                    '& .MuiChip-label': {
-                      display: 'block',
-                      whiteSpace: 'normal',
-                      paddingBottom: '3px'
-                    },
-                  }}
-                />
-                <br />
-                <small>
-                  Offrez une réduction aux clients qui réservent pour une période prolongée.
-                  Par exemple, appliquez
-                  {' '}
-                  <strong>5% de remise</strong>
-                  {' '}
-                  pour toute réservation de
-                  {' '}
-                  <strong>14 jours ou plus</strong>
-                  .
-                </small>
-              </span>
-
-              <Box
-                component="form"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                  mt: 2,
-                  p: 2,
-                  border: '1px solid #ccc',
-                  borderRadius: '8px'
-                }}
-                noValidate
-                autoComplete="off"
-              >
-                <TextField
-                  id="min-days"
-                  label="Nombre de jours minimum"
-                  type="number"
-                  value={days}
-                  onChange={handleDaysChange}
-                  error={!daysValid}
-                  helperText={!daysValid ? 'Doit être entre 3 et 30 jours.' : `À partir de ${days || 0} jours, une remise est appliquée.`}
-                  slotProps={{
-                    inputLabel: { shrink: true },
-                  }}
-                  sx={{ flex: 1 }}
-                />
-
-                <TextField
-                  id="discount-percentage"
-                  label="Pourcentage de remise"
-                  type="number"
-                  value={discountPercentage}
-                  onChange={handleDiscountPercentageChange}
-                  error={!discountPercentageValid}
-                  helperText={!discountPercentageValid ? 'Doit être inférieur à 50%.' : `Une remise de ${discountPercentage || 0}% de réduction sur les ${days || 0} jours.`}
-                  slotProps={{
-                    inputLabel: { shrink: true },
-                  }}
-                  sx={{ flex: 1 }}
-                />
-              </Box>
-            </div>
 
             <div className="add-border">
               <span className="text-title">
@@ -786,7 +721,11 @@ const CreateCar = () => {
                   (par exemple, haute saison en juin, juillet, août, ou périodes festives comme fin décembre)
                 </small>
               </span>
-
+              <div style={{ margin: 13, textAlign: 'center' }}>
+                <Button variant="contained" size="medium" onClick={handleApplyDefaultPeriods}>
+                  {strings.ADD_DEFAULT_PERIODS}
+                </Button>
+              </div>
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
                 {/* DateTimePicker pour la date de début */}
                 <FormControl sx={{ width: '200px' }} margin="dense">
@@ -866,11 +805,6 @@ const CreateCar = () => {
                 </div>
               </div>
 
-              <div className="add-button" style={{ marginBottom: '10px' }}>
-                <Button size="medium" onClick={handleApplyDefaultPeriods}>
-                  {strings.ADD_DEFAULT_PERIODS}
-                </Button>
-              </div>
               {pricePeriods.length > 0 && (
                 <TableContainer component={Paper}>
                   <Table>
@@ -905,6 +839,82 @@ const CreateCar = () => {
                   </Table>
                 </TableContainer>
               )}
+            </div>
+
+            <div className="add-border">
+              <span className="text-title">
+                Ajouter une remise pour les longues durées
+                <Chip
+                  label="Optionnel"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  sx={{
+                    height: 'auto',
+                    margin: '0 0px 4px 10px',
+                    '& .MuiChip-label': {
+                      display: 'block',
+                      whiteSpace: 'normal',
+                      paddingBottom: '3px'
+                    },
+                  }}
+                />
+                <br />
+                <small>
+                  Offrez une réduction aux clients qui réservent pour une période prolongée.
+                  Par exemple, appliquez
+                  {' '}
+                  <strong>5% de remise</strong>
+                  {' '}
+                  pour toute réservation de
+                  {' '}
+                  <strong>14 jours ou plus</strong>
+                  .
+                </small>
+              </span>
+
+              <Box
+                component="form"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  mt: 2,
+                  p: 2,
+                  border: '1px solid #ccc',
+                  borderRadius: '8px'
+                }}
+                noValidate
+                autoComplete="off"
+              >
+                <TextField
+                  id="min-days"
+                  label="Nombre de jours minimum"
+                  type="number"
+                  value={days}
+                  onChange={handleDaysChange}
+                  error={!daysValid}
+                  helperText={!daysValid ? 'Doit être entre 3 et 30 jours.' : `À partir de ${days || 0} jours, une remise est appliquée.`}
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                  }}
+                  sx={{ flex: 1 }}
+                />
+
+                <TextField
+                  id="discount-percentage"
+                  label="Pourcentage de remise"
+                  type="number"
+                  value={discountPercentage}
+                  onChange={handleDiscountPercentageChange}
+                  error={!discountPercentageValid}
+                  helperText={!discountPercentageValid ? 'Doit être inférieur à 50%.' : `Une remise de ${discountPercentage || 0}% de réduction sur les ${days || 0} jours.`}
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                  }}
+                  sx={{ flex: 1 }}
+                />
+              </Box>
             </div>
 
             <FormControl fullWidth margin="dense">

@@ -42,6 +42,7 @@ const env = {
   CDN_TEMP_LOCATIONS: String(import.meta.env.VITE_BC_CDN_TEMP_LOCATIONS),
   CDN_CONTRACTS: String(import.meta.env.VITE_BC_CDN_CONTRACTS),
   CDN_TEMP_CONTRACTS: String(import.meta.env.VITE_BC_CDN_TEMP_CONTRACTS),
+  CDN_INVOICES: String(import.meta.env.VITE_BC_CDN_INVOICES),
   PAGE_OFFSET: 200,
   INFINITE_SCROLL_OFFSET: 40,
   SUPPLIER_IMAGE_WIDTH: Number.parseInt(String(import.meta.env.VITE_BC_SUPPLIER_IMAGE_WIDTH), 10) || 60,
@@ -65,6 +66,9 @@ const env = {
   DEPOSIT_FILTER_VALUE_3: Number.parseInt(String(import.meta.env.VITE_BC_DEPOSIT_FILTER_VALUE_3), 10),
   RECAPTCHA_ENABLED: (import.meta.env.VITE_BC_RECAPTCHA_ENABLED && import.meta.env.VITE_BC_RECAPTCHA_ENABLED.toLowerCase()) === 'true',
   RECAPTCHA_SITE_KEY: String(import.meta.env.VITE_BC_RECAPTCHA_SITE_KEY),
+  PRICING_ENABLED:
+    (import.meta.env.VITE_BC_PRICING_ENABLED
+      && import.meta.env.VITE_BC_PRICING_ENABLED.toLowerCase()) === 'true',
   CONTACT_EMAIL: import.meta.env.VITE_BC_CONTACT_EMAIL,
 }
 

@@ -112,6 +112,9 @@ const carSchema = new Schema<env.Car>(
           type: Number,
           required: [true, "Daily price can't be blank"],
         },
+        reason: {
+          type: String,
+        },
       },
     ],
     // --------- end of price fields ---------

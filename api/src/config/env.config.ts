@@ -550,6 +550,7 @@ interface PricePeriod {
   startDate: null | Date
   endDate: null | Date
   dailyPrice: null | number
+  reason?: string | null
 }
 
 interface UnavailablePeriod {

@@ -19,6 +19,7 @@ import {
   Chip,
   Slider,
   Box,
+  MenuItem,
 } from '@mui/material'
 import { Delete as DeleteIcon, Edit as EditIcon, Info as InfoIcon } from '@mui/icons-material'
 import DateTimePicker from '@/components/DateTimePicker'
@@ -52,6 +53,7 @@ interface PricePeriod {
   startDate: null | Date
   endDate: null | Date
   dailyPrice: null | number
+  reason?: string
 }
 
 interface UnavailablePeriod {
@@ -180,7 +182,8 @@ const UpdateCar = () => {
   const [newPeriod, setNewPeriod] = useState<PricePeriod>({
     startDate: null,
     endDate: null,
-    dailyPrice: null
+    dailyPrice: null,
+    reason: '',
   })
 
   const handleAddUnavailablePeriod = () => {
@@ -212,7 +215,7 @@ const UpdateCar = () => {
       const end = new Date(newPeriod.endDate)
       if (start <= end) {
         setPricePeriods([...pricePeriods, { ...newPeriod, startDate: start, endDate: end }])
-        setNewPeriod({ startDate: null, endDate: null, dailyPrice: null })
+        setNewPeriod({ startDate: null, endDate: null, dailyPrice: null, reason: '' })
       }
     }
     setPeriodPriceError(false)
@@ -230,8 +233,74 @@ const UpdateCar = () => {
       startDate: periodToEdit.startDate,
       endDate: periodToEdit.endDate,
       dailyPrice: periodToEdit.dailyPrice,
+      reason: periodToEdit.reason || '',
     })
     handleDeletePeriod(index)
+    setPeriodPriceError(false)
+  }
+
+  const handleApplyDefaultPeriods = () => {
+    const base = Number(dailyPrice)
+    if (Number.isNaN(base)) {
+      setPricePeriods([])
+      return
+    }
+
+    const year = new Date().getFullYear()
+    const defaults: PricePeriod[] = [
+      {
+        startDate: new Date(year, 0, 2),
+        endDate: new Date(year, 2, 15),
+        dailyPrice: base,
+      },
+      {
+        startDate: new Date(year, 2, 16),
+        endDate: new Date(year, 2, 25),
+        dailyPrice: base + 50,
+        reason: strings.EID_AL_FITR,
+      },
+      {
+        startDate: new Date(year, 2, 26),
+        endDate: new Date(year, 4, 20),
+        dailyPrice: base,
+      },
+      {
+        startDate: new Date(year, 4, 21),
+        endDate: new Date(year, 4, 31),
+        dailyPrice: base + 50,
+        reason: strings.EID_AL_ADHA,
+      },
+      {
+        startDate: new Date(year, 5, 1),
+        endDate: new Date(year, 5, 30),
+        dailyPrice: base + 50,
+        reason: strings.SUMMER,
+      },
+      {
+        startDate: new Date(year, 6, 1),
+        endDate: new Date(year, 7, 31),
+        dailyPrice: base + 80,
+        reason: strings.SUMMER,
+      },
+      {
+        startDate: new Date(year, 8, 1),
+        endDate: new Date(year, 8, 30),
+        dailyPrice: base + 50,
+      },
+      {
+        startDate: new Date(year, 9, 1),
+        endDate: new Date(year, 11, 15),
+        dailyPrice: base,
+      },
+      {
+        startDate: new Date(year, 11, 15),
+        endDate: new Date(year + 1, 0, 1),
+        dailyPrice: base + 50,
+        reason: strings.YEAR_END,
+      },
+    ]
+
+    setPricePeriods(defaults)
     setPeriodPriceError(false)
   }
 
@@ -530,6 +599,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                       ...period,
                       startDate: period.startDate ? new Date(period.startDate) : null,
                       endDate: period.endDate ? new Date(period.endDate) : null,
+                      reason: period.reason ?? undefined,
                     }))
                   : []
               )
@@ -753,6 +823,147 @@ const discount: Discount | undefined = dayValue && discountValue ? {
 
               <div className="add-border">
                 <span className="text-title">
+                  Ajouter un tarif spécial pour des périodes spécifiques
+                  <Chip
+                    label="optionnel"
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    sx={{
+                    height: 'auto',
+                    margin: '0 0px 4px 10px',
+                    '& .MuiChip-label': {
+                      display: 'block',
+                      whiteSpace: 'normal',
+                      paddingBottom: '3px'
+                    },
+                  }}
+                  />
+                  <br />
+                  <small>
+                    (par exemple, haute saison en juin, juillet, août, ou périodes festives comme fin décembre)
+                  </small>
+                </span>
+                <div style={{ margin: 13, textAlign: 'center' }}>
+                  <Button variant="contained" size="medium" onClick={handleApplyDefaultPeriods}>
+                    {strings.ADD_DEFAULT_PERIODS}
+                  </Button>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+                  {/* DateTimePicker pour la date de début */}
+                  <FormControl sx={{ width: '200px' }} margin="dense">
+                    {' '}
+                    {/* Largeur réduite */}
+                    <DateTimePicker
+                      label={strings.START_DATE}
+                      value={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
+                      maxDate={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined} // Limite la date max en fonction de la date de fin
+                      onChange={(date) => setNewPeriod({ ...newPeriod, startDate: date })}
+                      language={UserService.getLanguage()}
+                      showTime={false}
+                    />
+                  </FormControl>
+
+                  {/* DateTimePicker pour la date de fin */}
+                  <FormControl sx={{ width: '200px' }} margin="dense">
+                    {' '}
+                    {/* Largeur réduite */}
+                    <DateTimePicker
+                      label={strings.END_DATE}
+                      value={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
+                      minDate={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined} // Limite la date min en fonction de la date de début
+                      onChange={(date) => setNewPeriod({ ...newPeriod, endDate: date })}
+                      language={UserService.getLanguage()}
+                      showTime={false}
+                    />
+                  </FormControl>
+
+                  {/* Liste déroulante pour le motif */}
+                  <FormControl sx={{ width: '150px' }} margin="dense">
+                    <TextField
+                      select
+                      label={strings.REASON}
+                      value={newPeriod.reason || ''}
+                      variant="standard"
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setNewPeriod({ ...newPeriod, reason: e.target.value })}
+                    >
+                      <MenuItem value="">-</MenuItem>
+                      <MenuItem value={strings.EID_AL_FITR}>{strings.EID_AL_FITR}</MenuItem>
+                      <MenuItem value={strings.EID_AL_ADHA}>{strings.EID_AL_ADHA}</MenuItem>
+                      <MenuItem value={strings.SUMMER}>{strings.SUMMER}</MenuItem>
+                      <MenuItem value={strings.YEAR_END}>{strings.YEAR_END}</MenuItem>
+                    </TextField>
+                  </FormControl>
+
+                  {/* TextField pour le prix quotidien */}
+                  <FormControl sx={{ width: '150px' }} margin="dense">
+                    {' '}
+                    {/* Largeur réduite */}
+                    <TextField
+                      label={`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}
+                      slotProps={{
+                        htmlInput: {
+                          inputMode: 'numeric',
+                          pattern: '^\\d+(.\\d+)?$',
+                        },
+                      }}
+                      value={newPeriod.dailyPrice !== null ? newPeriod.dailyPrice : ''}
+                      variant="standard"
+                      autoComplete="off"
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setNewPeriod({ ...newPeriod, dailyPrice: Number(e.target.value) })}
+                    />
+                  </FormControl>
+
+                  {/* Bouton pour ajouter la période */}
+                  <div className="add-button">
+                    <Button
+                      size="medium"
+                      onClick={handleAddPeriod}
+                      disabled={!newPeriod.startDate || !newPeriod.endDate || !newPeriod.dailyPrice}
+                    >
+                      Ajouter
+                    </Button>
+                  </div>
+                </div>
+                {pricePeriods.length > 0 && (
+                <TableContainer component={Paper}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>{strings.START_DATE}</TableCell>
+                        <TableCell>{strings.END_DATE}</TableCell>
+                        <TableCell>{strings.REASON}</TableCell>
+                        <TableCell>{`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}</TableCell>
+                        <TableCell>{strings.ACTIONS_BUTTON}</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {pricePeriods.map((period, index) => (
+                        // eslint-disable-next-line react/no-array-index-key
+                        <TableRow key={index}>
+                          <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
+                          <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
+                          <TableCell>{period.reason || '-'}</TableCell>
+                          <TableCell>{`${period.dailyPrice} (${commonStrings.CURRENCY})`}</TableCell>
+                          <TableCell>
+                            <IconButton onClick={() => handleEditPeriod(index)}>
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton onClick={() => handleDeletePeriod(index)}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+              ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+              </div>
+              <div className="add-border">
+                <span className="text-title">
                   Ajouter une remise pour les longues durées
                   <Chip
                     label="Optionnel"
@@ -827,123 +1038,6 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                 </Box>
               </div>
 
-              <div className="add-border">
-                <span className="text-title">
-                  Ajouter un tarif spécial pour des périodes spécifiques
-                  <Chip
-                    label="optionnel"
-                    size="small"
-                    color="primary"
-                    variant="outlined"
-                    sx={{
-                    height: 'auto',
-                    margin: '0 0px 4px 10px',
-                    '& .MuiChip-label': {
-                      display: 'block',
-                      whiteSpace: 'normal',
-                      paddingBottom: '3px'
-                    },
-                  }}
-                  />
-                  <br />
-                  <small>
-                    (par exemple, haute saison en juin, juillet, août, ou périodes festives comme fin décembre)
-                  </small>
-                </span>
-
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
-                  {/* DateTimePicker pour la date de début */}
-                  <FormControl sx={{ width: '200px' }} margin="dense">
-                    {' '}
-                    {/* Largeur réduite */}
-                    <DateTimePicker
-                      label={strings.START_DATE}
-                      value={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
-                      maxDate={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined} // Limite la date max en fonction de la date de fin
-                      onChange={(date) => setNewPeriod({ ...newPeriod, startDate: date })}
-                      language={UserService.getLanguage()}
-                      showTime={false}
-                    />
-                  </FormControl>
-
-                  {/* DateTimePicker pour la date de fin */}
-                  <FormControl sx={{ width: '200px' }} margin="dense">
-                    {' '}
-                    {/* Largeur réduite */}
-                    <DateTimePicker
-                      label={strings.END_DATE}
-                      value={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
-                      minDate={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined} // Limite la date min en fonction de la date de début
-                      onChange={(date) => setNewPeriod({ ...newPeriod, endDate: date })}
-                      language={UserService.getLanguage()}
-                      showTime={false}
-                    />
-                  </FormControl>
-
-                  {/* TextField pour le prix quotidien */}
-                  <FormControl sx={{ width: '150px' }} margin="dense">
-                    {' '}
-                    {/* Largeur réduite */}
-                    <TextField
-                      label={`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}
-                      slotProps={{
-                        htmlInput: {
-                          inputMode: 'numeric',
-                          pattern: '^\\d+(.\\d+)?$',
-                        },
-                      }}
-                      value={newPeriod.dailyPrice !== null ? newPeriod.dailyPrice : ''}
-                      variant="standard"
-                      autoComplete="off"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setNewPeriod({ ...newPeriod, dailyPrice: Number(e.target.value) })}
-                    />
-                  </FormControl>
-
-                  {/* Bouton pour ajouter la période */}
-                  <div className="add-button">
-                    <Button
-                      size="medium"
-                      onClick={handleAddPeriod}
-                      disabled={!newPeriod.startDate || !newPeriod.endDate || !newPeriod.dailyPrice}
-                    >
-                      Ajouter
-                    </Button>
-                  </div>
-                </div>
-                {pricePeriods.length > 0 && (
-                <TableContainer component={Paper}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>{strings.START_DATE}</TableCell>
-                        <TableCell>{strings.END_DATE}</TableCell>
-                        <TableCell>{`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}</TableCell>
-                        <TableCell>{strings.ACTIONS_BUTTON}</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {pricePeriods.map((period, index) => (
-                        // eslint-disable-next-line react/no-array-index-key
-                        <TableRow key={index}>
-                          <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
-                          <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
-                          <TableCell>{`${period.dailyPrice} (${commonStrings.CURRENCY})`}</TableCell>
-                          <TableCell>
-                            <IconButton onClick={() => handleEditPeriod(index)}>
-                              <EditIcon />
-                            </IconButton>
-                            <IconButton onClick={() => handleDeletePeriod(index)}>
-                              <DeleteIcon />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-              ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-              </div>
               <FormControl fullWidth margin="dense">
                 <TextField
                   label={`${csStrings.DEPOSIT} (${commonStrings.CURRENCY})`}

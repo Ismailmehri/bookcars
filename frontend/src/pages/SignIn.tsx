@@ -9,6 +9,8 @@ import {
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet'
+import Seo from '@/components/Seo'
+import { buildDescription } from '@/common/seo'
 import * as bookcarsTypes from ':bookcars-types'
 import { strings as commonStrings } from '@/lang/common'
 import { strings } from '@/lang/sign-in'
@@ -119,17 +121,20 @@ const SignIn = () => {
       },
     },
   }
+  const description = buildDescription(
+    'Connectez-vous à votre compte Plany.tn pour louer une voiture en Tunisie. Accédez à vos réservations et gérez vos informations personnelles.'
+  )
+
   return (
     <Layout strict={false} onLoad={onLoad}>
+      <Seo
+        title="Se connecter - Plany.tn"
+        description={description}
+        canonical="https://plany.tn/sign-in"
+        robots="noindex,nofollow"
+      />
       <Helmet>
         <meta charSet="utf-8" />
-        <title>Se connecter - Plany.tn</title>
-        <meta
-          name="description"
-          content="Connectez-vous à votre compte Plany.tn pour louer une voiture en Tunisie. Accédez à vos réservations et gérez vos informations personnelles."
-        />
-        <meta name="robots" content="noindex, nofollow" />
-        <link rel="canonical" href="https://plany.tn/sign-in" />
         {/* Balises Open Graph */}
         <meta property="og:title" content="Se connecter - Plany.tn" />
         <meta

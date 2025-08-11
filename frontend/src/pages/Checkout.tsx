@@ -33,6 +33,8 @@ import {
 } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import { Helmet } from 'react-helmet'
+import Seo from '@/components/Seo'
+import { buildDescription } from '@/common/seo'
 import CarList from '@/components/CarList'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -107,8 +109,12 @@ const Checkout = () => {
   const daysLabel = from && to && `
   ${helper.getDaysShort(days)} (${bookcarsHelper.capitalize(
     format(from, _format, { locale: _locale }),
-  )} 
+  )}
   - ${bookcarsHelper.capitalize(format(to, _format, { locale: _locale }))})`
+
+  const description = buildDescription(
+    'Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture à Tunis, Sousse, Hammamet et autres villes.'
+  )
 
   const handleCancellationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (car && from && to) {
@@ -463,20 +469,14 @@ const Checkout = () => {
   return (
     <ReCaptchaProvider>
       <Layout onLoad={onLoad} strict={false}>
+        <Seo
+          title="Location Voiture en Tunisie - Meilleures Offres | Plany.tn"
+          description={description}
+          canonical="https://plany.tn/checkout"
+          robots="noindex,nofollow"
+        />
         <Helmet>
           <meta charSet="utf-8" />
-          <title>Location Voiture en Tunisie - Meilleures Offres | Plany.tn</title>
-          <meta
-            name="description"
-            content="Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture à Tunis, Sousse, Hammamet..."
-          />
-          <meta
-            name="keywords"
-            content="location voiture tunisie, location voiture en tunisie, voiture location tunisie, location de voiture en tunisie, location de voiture tunisie, location voiture Sousse, location voiture en Hammamet, voiture location aéroport, location de voiture en tunis, location de voiture tunis"
-          />
-          <meta name="robots" content="noindex, nofollow" />
-          <link rel="canonical" href="https://plany.tn/checkout" />
-
           {/* Balises Open Graph pour les réseaux sociaux */}
           <meta
             property="og:title"

@@ -10,6 +10,8 @@ import {
 import { Helmet } from 'react-helmet'
 import Layout from '@/components/Layout'
 import Footer from '@/components/Footer'
+import Seo from '@/components/Seo'
+import { buildDescription } from '@/common/seo'
 
 // Données structurées pour Schema.org
 const structuredData = {
@@ -31,18 +33,20 @@ const structuredData = {
   },
 }
 
+const description = buildDescription(
+  'Plany.tn, la plateforme leader de location de voitures en Tunisie. Explorez nos services, notre mission et pourquoi choisir Plany.tn pour vos besoins de mobilité.'
+)
+
 const About = () => (
   <Layout>
     {/* SEO et données structurées */}
+    <Seo
+      title="À Propos de Plany.tn - Votre Plateforme de Location de Voitures"
+      description={description}
+      canonical="https://plany.tn/about"
+    />
     <Helmet>
       <meta charSet="utf-8" />
-      <title>À Propos de Plany.tn - Votre Plateforme de Location de Voitures</title>
-      <meta
-        name="description"
-        content="Plany.tn, la plateforme leader de location de voitures en Tunisie. Explorez nos services, notre mission et pourquoi choisir Plany.tn pour vos besoins de mobilité."
-      />
-      <link rel="canonical" href="https://plany.tn/about" />
-
       {/* Balises Open Graph */}
       <meta property="og:title" content="À Propos de Plany.tn - Votre Plateforme de Location de Voitures" />
       <meta

@@ -16,10 +16,10 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material'
-import { Helmet } from 'react-helmet'
 import { useLocation, useNavigate } from 'react-router-dom'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ErrorIcon from '@mui/icons-material/Error'
+import Seo from '@/components/Seo'
 import * as bookcarsTypes from ':bookcars-types'
 import * as UserService from '@/services/UserService'
 import * as BookingService from '@/services/BookingService'
@@ -240,9 +240,7 @@ const DriverReviewPage = () => {
 
   return (
     <Layout>
-      <Helmet>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+      <Seo title="Donner un avis | Plany.tn" canonical="https://plany.tn/review" robots="noindex,nofollow" />
       <Container>
         <Box sx={{ mt: 4 }}>
           <Grid container spacing={4}>

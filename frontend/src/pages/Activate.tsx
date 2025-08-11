@@ -8,8 +8,8 @@ import {
   Paper,
   Link
 } from '@mui/material'
-import { Helmet } from 'react-helmet'
 import { useNavigate } from 'react-router-dom'
+import Seo from '@/components/Seo'
 import * as bookcarsTypes from ':bookcars-types'
 import * as UserService from '@/services/UserService'
 import Layout from '@/components/Layout'
@@ -155,9 +155,7 @@ const Activate = () => {
 
   return (
     <Layout onLoad={onLoad} strict={false}>
-      <Helmet>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+      <Seo title="Activation du compte | Plany.tn" canonical="https://plany.tn/activate" robots="noindex,nofollow" />
       {resend && (
         <div className="resend">
           <Paper className="resend-form" elevation={10}>

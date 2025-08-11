@@ -9,6 +9,8 @@ import {
 import { Helmet } from 'react-helmet'
 import Layout from '@/components/Layout'
 import Footer from '@/components/Footer'
+import Seo from '@/components/Seo'
+import { buildDescription } from '@/common/seo'
 
 // Données structurées pour Schema.org
 const structuredData = {
@@ -29,19 +31,20 @@ const structuredData = {
     },
   },
 }
+const description = buildDescription(
+  'Consultez la politique de confidentialité de Plany.tn pour comprendre comment nous collectons, utilisons et protégeons vos données personnelles conformément au RGPD.'
+)
 
 const PrivacyPolicy = () => (
   <Layout>
     {/* SEO et données structurées */}
+    <Seo
+      title="Politique de Confidentialité - Plany.tn"
+      description={description}
+      canonical="https://plany.tn/privacy"
+    />
     <Helmet>
       <meta charSet="utf-8" />
-      <title>Politique de Confidentialité - Plany.tn</title>
-      <meta
-        name="description"
-        content="Consultez la politique de confidentialité de Plany.tn pour comprendre comment nous collectons, utilisons et protégeons vos données personnelles conformément au RGPD."
-      />
-      <link rel="canonical" href="https://plany.tn/privacy" />
-
       {/* Balises Open Graph */}
       <meta property="og:title" content="Politique de Confidentialité - Plany.tn" />
       <meta

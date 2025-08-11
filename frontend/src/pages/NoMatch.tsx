@@ -1,7 +1,7 @@
 import React from 'react'
-import { Helmet } from 'react-helmet'
 import { Box, Typography, Button } from '@mui/material'
 import HomeIcon from '@mui/icons-material/Home'
+import Seo from '@/components/Seo'
 import Layout from '@/components/Layout'
 import { strings as commonStrings } from '@/lang/common'
 
@@ -12,9 +12,7 @@ interface NoMatchProps {
 const NoMatch = ({ hideHeader }: NoMatchProps) => {
   const noMatch = () => (
     <>
-      <Helmet>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+      <Seo title="Page non trouvée | Plany.tn" robots="noindex,nofollow" />
       <Box
         sx={{
           display: 'flex',

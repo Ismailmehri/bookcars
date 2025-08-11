@@ -9,6 +9,8 @@ import {
 import { Helmet } from 'react-helmet'
 import Layout from '@/components/Layout'
 import Footer from '@/components/Footer'
+import Seo from '@/components/Seo'
+import { buildDescription } from '@/common/seo'
 
 // Données structurées pour Schema.org
 const structuredData = {
@@ -29,19 +31,20 @@ const structuredData = {
     },
   },
 }
+const description = buildDescription(
+  "Consultez les Conditions Générales d'Utilisation de Plany.tn pour la location de voiture en Tunisie. Découvrez nos politiques de réservation, de paiement et d'annulation."
+)
 
 const ToS = () => (
   <Layout>
     {/* SEO et données structurées */}
+    <Seo
+      title="Conditions Générales d'Utilisation - Plany.tn"
+      description={description}
+      canonical="https://plany.tn/tos"
+    />
     <Helmet>
       <meta charSet="utf-8" />
-      <title>Conditions Générales d&apos;Utilisation - Plany.tn</title>
-      <meta
-        name="description"
-        content="Consultez les Conditions Générales d'Utilisation de Plany.tn pour la location de voiture en Tunisie. Découvrez nos politiques de réservation, de paiement et d'annulation."
-      />
-      <link rel="canonical" href="https://plany.tn/tos" />
-
       {/* Balises Open Graph */}
       <meta
         property="og:title"

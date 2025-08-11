@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { Helmet } from 'react-helmet'
 import { useNavigate } from 'react-router-dom'
 import {
   Input,
@@ -25,6 +24,7 @@ import * as UserService from '@/services/UserService'
 import Backdrop from '@/components/SimpleBackdrop'
 import DatePicker from '@/components/DatePicker'
 import Avatar from '@/components/Avatar'
+import Seo from '@/components/Seo'
 import * as helper from '@/common/helper'
 import 'react-phone-number-input/style.css' // Import du style
 
@@ -188,9 +188,7 @@ const Settings = () => {
 
   return (
     <Layout onLoad={onLoad} user={user} strict>
-      <Helmet>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+      <Seo title="Paramètres du compte | Plany.tn" canonical="https://plany.tn/settings" robots="noindex,nofollow" />
       {visible && user && (
         <div className="settings">
           <Paper className="settings-form settings-form-wrapper" elevation={10}>

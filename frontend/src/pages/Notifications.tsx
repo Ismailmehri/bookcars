@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Helmet } from 'react-helmet'
+import Seo from '@/components/Seo'
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
 import NotificationList from '@/components/NotificationList'
@@ -13,9 +13,7 @@ const Notifications = () => {
 
   return (
     <Layout onLoad={onLoad} strict>
-      <Helmet>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+      <Seo title="Notifications | Plany.tn" canonical="https://plany.tn/notifications" robots="noindex,nofollow" />
       <NotificationList user={user} />
     </Layout>
   )

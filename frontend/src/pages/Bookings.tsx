@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Helmet } from 'react-helmet'
+import Seo from '@/components/Seo'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import Layout from '@/components/Layout'
@@ -45,9 +45,7 @@ const Bookings = () => {
 
   return (
     <Layout onLoad={onLoad} strict>
-      <Helmet>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+      <Seo title="Mes réservations | Plany.tn" canonical="https://plany.tn/bookings" robots="noindex,nofollow" />
       {user && (
         <div className="bookings">
           <div className="col-1">

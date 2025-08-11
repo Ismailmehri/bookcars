@@ -11,6 +11,8 @@ import { Helmet } from 'react-helmet'
 import Layout from '@/components/Layout'
 import SupplierList from '@/components/SupplierList'
 import Footer from '@/components/Footer'
+import Seo from '@/components/Seo'
+import { buildDescription } from '@/common/seo'
 
 // Données structurées pour Schema.org
 const structuredData = {
@@ -57,18 +59,20 @@ const structuredData = {
 const Suppliers = () => {
   const onLoad = () => {}
 
+  const description = buildDescription(
+    "Découvrez la liste des meilleures agences de location de voiture en Tunisie. Comparez les offres et trouvez l'agence qui correspond à vos besoins."
+  )
+
   return (
     <Layout onLoad={onLoad} strict={false}>
       {/* SEO et données structurées */}
+      <Seo
+        title="Liste des Agences de Location de Voiture en Tunisie - Plany.tn"
+        description={description}
+        canonical="https://plany.tn/suppliers"
+      />
       <Helmet>
         <meta charSet="utf-8" />
-        <title>Liste des Agences de Location de Voiture en Tunisie - Plany.tn</title>
-        <meta
-          name="description"
-          content="Découvrez la liste des meilleures agences de location de voiture en Tunisie. Comparez les offres et trouvez l'agence qui correspond à vos besoins."
-        />
-        <link rel="canonical" href="https://plany.tn/suppliers" />
-
         {/* Balises Open Graph */}
         <meta
           property="og:title"

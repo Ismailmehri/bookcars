@@ -1,9 +1,9 @@
 import React from 'react'
-import { Helmet } from 'react-helmet'
 import { Link } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ErrorIcon from '@mui/icons-material/Error'
 import InfoIcon from '@mui/icons-material/Info'
+import Seo from '@/components/Seo'
 import { strings as commonStrings } from '@/lang/common'
 
 import '@/assets/css/info.css'
@@ -33,9 +33,7 @@ const Info = ({ className, message, hideLink, style, type }: InfoProps) => {
 
   return (
     <>
-      <Helmet>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+      <Seo robots="noindex,nofollow" />
       <div style={style} className={`${className ? `${className} ` : ''}info-overlay`}>
         <div className="info-container">
           <div className="info-content">

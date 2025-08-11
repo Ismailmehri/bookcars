@@ -60,7 +60,7 @@ const App = () => (
             <Route path="/locations" element={<Locations />} />
             <Route path="/suppliers" element={<Suppliers />} />
             <Route path="/review" element={<Review />} />
-            <Route path="/location-voitute-pas-cher-a-tunis" element={<LocationATunis />} />
+            <Route path="/location-voiture-pas-cher-a-tunis" element={<LocationATunis />} />
 
             <Route path="*" element={<NoMatch />} />
           </Routes>

@@ -16,6 +16,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material'
+import { Helmet } from 'react-helmet'
 import { useLocation, useNavigate } from 'react-router-dom'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ErrorIcon from '@mui/icons-material/Error'
@@ -239,6 +240,9 @@ const DriverReviewPage = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <Container>
         <Box sx={{ mt: 4 }}>
           <Grid container spacing={4}>

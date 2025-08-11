@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { Helmet } from 'react-helmet'
 import { strings } from '@/lang/checkout'
 import Layout from '@/components/Layout'
 import NoMatch from './NoMatch'
@@ -37,6 +38,9 @@ const CheckoutSession = () => {
 
   return (
     <Layout>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       {
         loading
           ? <Info message={strings.CHECKING} hideLink />

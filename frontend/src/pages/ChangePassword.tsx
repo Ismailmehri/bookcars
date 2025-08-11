@@ -8,6 +8,7 @@ import {
   FormHelperText,
   Button
 } from '@mui/material'
+import { Helmet } from 'react-helmet'
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
 import { strings as commonStrings } from '@/lang/common'
@@ -141,6 +142,9 @@ const ChangePassword = () => {
 
   return (
     <Layout onLoad={onLoad} strict>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className="password-reset" style={visible ? {} : { display: 'none' }}>
         <Paper className="password-reset-form password-reset-form-wrapper" elevation={10}>
           <h1 className="password-reset-form-title">

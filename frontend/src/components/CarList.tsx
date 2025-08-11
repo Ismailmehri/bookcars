@@ -324,47 +324,16 @@ const CarList = ({
                 const totalPrice = bookcarsHelper.calculateTotalPrice(car, from as Date, to as Date)
 
   // Données pour le JSON-LD
-  const reservationData = {
+  const productData = {
     '@context': 'https://schema.org',
-    '@type': 'RentalCarReservation',
-    reservationId: car._id, // Utilisez l'ID de la voiture comme ID de réservation
-    reservationStatus: 'https://schema.org/ReservationConfirmed',
-    underName: {
-      '@type': 'Person',
-      name: 'Mehdi ABBASI' // Remplacez par le nom de l'utilisateur si disponible
-    },
-    reservationFor: {
-      '@type': 'Car',
-      name: car.name, // Nom de la voiture
-      // model: car.model, // Modèle de la voiture (si disponible)
-    },
-    provider: {
-      '@type': 'Organization',
-      name: car.supplier.fullName // Nom du fournisseur de location
-    },
-    pickupLocation: {
-      '@type': 'Place',
-      name: pickupLocationName, // Nom du lieu de prise en charge
-      address: {
-        '@type': 'PostalAddress',
-        streetAddress: 'Avenue Habib Bourguiba', // Adresse du lieu de prise en charge
-        addressLocality: 'Tunis',
-        addressRegion: 'Tunis',
-        postalCode: '1000',
-        addressCountry: 'TN'
-      }
-    },
-    dropoffLocation: {
-      '@type': 'Place',
-      name: pickupLocationName, // Nom du lieu de restitution
-      address: {
-        '@type': 'PostalAddress',
-        streetAddress: 'Avenue Habib Bourguiba', // Adresse du lieu de restitution
-        addressLocality: 'Tunis',
-        addressRegion: 'Tunis',
-        postalCode: '1000',
-        addressCountry: 'TN'
-      }
+    '@type': 'Product',
+    name: car.name,
+    image: bookcarsHelper.joinURL(env.CDN_CARS, car.image),
+    offers: {
+      '@type': 'Offer',
+      price: car.dailyPrice,
+      priceCurrency: 'TND',
+      availability: 'https://schema.org/InStock',
     },
   }
 
@@ -372,7 +341,7 @@ const CarList = ({
     <div key={car._id} className="car-list-container">
       {/* JSON-LD pour chaque voiture */}
       <script type="application/ld+json">
-        {JSON.stringify(reservationData)}
+        {JSON.stringify(productData)}
       </script>
 
       {/* Contenu de la carte de voiture */}

@@ -8,6 +8,7 @@ import {
   Paper,
   Link
 } from '@mui/material'
+import { Helmet } from 'react-helmet'
 import validator from 'validator'
 import * as bookcarsTypes from ':bookcars-types'
 import * as UserService from '@/services/UserService'
@@ -114,6 +115,9 @@ const ForgotPassword = () => {
 
   return (
     <Layout onLoad={onLoad} strict={false}>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       {visible && (
         <div className="forgot-password">
           <Paper className="forgot-password-form" elevation={10}>

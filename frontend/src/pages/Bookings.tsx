@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Helmet } from 'react-helmet'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import Layout from '@/components/Layout'
@@ -44,6 +45,9 @@ const Bookings = () => {
 
   return (
     <Layout onLoad={onLoad} strict>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       {user && (
         <div className="bookings">
           <div className="col-1">

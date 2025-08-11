@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Helmet } from 'react-helmet'
 import { useNavigate } from 'react-router-dom'
 import {
   Input,
@@ -187,6 +188,9 @@ const Settings = () => {
 
   return (
     <Layout onLoad={onLoad} user={user} strict>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       {visible && user && (
         <div className="settings">
           <Paper className="settings-form settings-form-wrapper" elevation={10}>

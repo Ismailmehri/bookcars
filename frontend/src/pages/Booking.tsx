@@ -5,6 +5,7 @@ import {
   Switch,
   Button
 } from '@mui/material'
+import { Helmet } from 'react-helmet'
 import { Info as InfoIcon } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -308,6 +309,9 @@ const Booking = () => {
 
   return (
     <Layout onLoad={onLoad} strict>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       {visible && booking && (
         <div className="booking">
           <div className="col-1">

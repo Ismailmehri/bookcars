@@ -58,6 +58,12 @@ const Contact = () => {
             description:
               'Utilisez notre formulaire de contact pour nous envoyer vos questions ou demandes concernant la location de voitures en Tunisie.',
             url: 'https://plany.tn/contact',
+            contactPoint: [{
+              '@type': 'ContactPoint',
+              telephone: '+216-21-170-468',
+              contactType: 'customer service',
+              email: 'contact@plany.tn'
+            }],
           })}
         </script>
       </Helmet>

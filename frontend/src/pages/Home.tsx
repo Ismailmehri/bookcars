@@ -149,7 +149,7 @@ const Home = () => {
             price: '65',
             priceCurrency: 'TND',
             availability: 'http://schema.org/InStock',
-            url: 'https://plany.tn/location-voitute-pas-cher-a-tunis',
+            url: 'https://plany.tn/location-voiture-pas-cher-a-tunis',
           },
           {
             '@type': 'Offer',

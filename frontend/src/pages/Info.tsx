@@ -1,4 +1,5 @@
 import React from 'react'
+import { Helmet } from 'react-helmet'
 import { Link } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ErrorIcon from '@mui/icons-material/Error'
@@ -31,19 +32,24 @@ const Info = ({ className, message, hideLink, style, type }: InfoProps) => {
   }
 
   return (
-    <div style={style} className={`${className ? `${className} ` : ''}info-overlay`}>
-      <div className="info-container">
-        <div className="info-content">
-          {renderIcon()}
-          <p className="info-message">{message}</p>
+    <>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+      <div style={style} className={`${className ? `${className} ` : ''}info-overlay`}>
+        <div className="info-container">
+          <div className="info-content">
+            {renderIcon()}
+            <p className="info-message">{message}</p>
+          </div>
+          {!hideLink && (
+            <Link href="/" className="info-link">
+              {commonStrings.GO_TO_HOME}
+            </Link>
+          )}
         </div>
-        {!hideLink && (
-          <Link href="/" className="info-link">
-            {commonStrings.GO_TO_HOME}
-          </Link>
-        )}
       </div>
-    </div>
+    </>
   )
 }
 

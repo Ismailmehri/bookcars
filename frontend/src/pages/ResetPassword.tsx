@@ -7,6 +7,7 @@ import {
   Button,
   Paper
 } from '@mui/material'
+import { Helmet } from 'react-helmet'
 import { useNavigate } from 'react-router-dom'
 import * as bookcarsTypes from ':bookcars-types'
 import * as UserService from '@/services/UserService'
@@ -130,6 +131,9 @@ const ResetPassword = () => {
 
   return (
     <Layout onLoad={onLoad} strict={false}>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       {visible && (
         <div className="reset-password">
           <Paper className="reset-password-form" elevation={10}>

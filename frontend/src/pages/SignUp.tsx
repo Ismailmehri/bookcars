@@ -277,10 +277,10 @@ const SignUp = () => {
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: 'Se connecter - Plany.tn',
+    name: 'Créer un compte - Plany.tn',
     description:
-      'Connectez-vous à votre compte Plany.tn pour louer une voiture en Tunisie. Accédez à vos réservations et gérez vos informations personnelles.',
-    url: 'https://plany.tn/sign-in',
+      'Inscrivez-vous sur Plany.tn pour louer une voiture en Tunisie. Créez votre compte en quelques étapes simples et découvrez nos offres exclusives.',
+    url: 'https://plany.tn/sign-up',
     publisher: {
       '@type': 'Organization',
       name: 'Plany.tn',
@@ -298,30 +298,30 @@ const SignUp = () => {
         {/* SEO et données structurées */}
         <Helmet>
           <meta charSet="utf-8" />
-          <title>Se connecter - Plany.tn</title>
+          <title>Créer un compte - Plany.tn</title>
           <meta
             name="description"
-            content="Connectez-vous à votre compte Plany.tn pour louer une voiture en Tunisie. Accédez à vos réservations et gérez vos informations personnelles."
+            content="Inscrivez-vous sur Plany.tn pour louer une voiture en Tunisie. Créez votre compte en quelques étapes simples et découvrez nos offres exclusives."
           />
-          <link rel="canonical" href="https://plany.tn/sign-in" />
+          <link rel="canonical" href="https://plany.tn/sign-up" />
           {/* Balises Open Graph */}
-          <meta property="og:title" content="Se connecter - Plany.tn" />
+          <meta property="og:title" content="Créer un compte - Plany.tn" />
           <meta
             property="og:description"
-            content="Connectez-vous à votre compte Plany.tn pour louer une voiture en Tunisie. Accédez à vos réservations et gérez vos informations personnelles."
+            content="Inscrivez-vous sur Plany.tn pour louer une voiture en Tunisie. Créez votre compte en quelques étapes simples et découvrez nos offres exclusives."
           />
           <meta property="og:type" content="website" />
-          <meta property="og:url" content="https://plany.tn/sign-in" />
+          <meta property="og:url" content="https://plany.tn/sign-up" />
           <meta property="og:image" content="https://plany.tn/logo.png" />
           <meta property="og:image:width" content="1200" />
           <meta property="og:image:height" content="630" />
           <meta property="og:site_name" content="Plany" />
           {/* Balises Twitter Card */}
           <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:title" content="Se connecter - Plany.tn" />
+          <meta name="twitter:title" content="Créer un compte - Plany.tn" />
           <meta
             name="twitter:description"
-            content="Connectez-vous à votre compte Plany.tn pour louer une voiture en Tunisie. Accédez à vos réservations et gérez vos informations personnelles."
+            content="Inscrivez-vous sur Plany.tn pour louer une voiture en Tunisie. Créez votre compte en quelques étapes simples et découvrez nos offres exclusives."
           />
           <meta name="twitter:image" content="https://plany.tn/logo.png" />
           <meta name="twitter:image:width" content="1200" />

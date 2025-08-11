@@ -8,6 +8,7 @@ import {
   Paper,
   Link
 } from '@mui/material'
+import { Helmet } from 'react-helmet'
 import { useNavigate } from 'react-router-dom'
 import * as bookcarsTypes from ':bookcars-types'
 import * as UserService from '@/services/UserService'
@@ -154,6 +155,9 @@ const Activate = () => {
 
   return (
     <Layout onLoad={onLoad} strict={false}>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       {resend && (
         <div className="resend">
           <Paper className="resend-form" elevation={10}>

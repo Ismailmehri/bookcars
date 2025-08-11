@@ -303,6 +303,7 @@ const SignUp = () => {
             name="description"
             content="Inscrivez-vous sur Plany.tn pour louer une voiture en Tunisie. Créez votre compte en quelques étapes simples et découvrez nos offres exclusives."
           />
+          <meta name="robots" content="noindex, nofollow" />
           <link rel="canonical" href="https://plany.tn/sign-up" />
           {/* Balises Open Graph */}
           <meta property="og:title" content="Créer un compte - Plany.tn" />

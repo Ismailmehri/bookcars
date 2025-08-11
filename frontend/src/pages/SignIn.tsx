@@ -128,6 +128,7 @@ const SignIn = () => {
           name="description"
           content="Connectez-vous à votre compte Plany.tn pour louer une voiture en Tunisie. Accédez à vos réservations et gérez vos informations personnelles."
         />
+        <meta name="robots" content="noindex, nofollow" />
         <link rel="canonical" href="https://plany.tn/sign-in" />
         {/* Balises Open Graph */}
         <meta property="og:title" content="Se connecter - Plany.tn" />

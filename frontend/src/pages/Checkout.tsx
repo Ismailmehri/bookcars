@@ -474,6 +474,7 @@ const Checkout = () => {
             name="keywords"
             content="location voiture tunisie, location voiture en tunisie, voiture location tunisie, location de voiture en tunisie, location de voiture tunisie, location voiture Sousse, location voiture en Hammamet, voiture location aéroport, location de voiture en tunis, location de voiture tunis"
           />
+          <meta name="robots" content="noindex, nofollow" />
           <link rel="canonical" href="https://plany.tn/checkout" />
 
           {/* Balises Open Graph pour les réseaux sociaux */}
@@ -486,7 +487,7 @@ const Checkout = () => {
             content="Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture à Tunis, Sousse, Hammamet et autres villes."
           />
           <meta property="og:type" content="website" />
-          <meta property="og:url" content="https://plany.tn/location-voiture-tunisie" />
+          <meta property="og:url" content="https://plany.tn/checkout" />
           <meta property="og:image" content="https://plany.tn/logo.png" />
           <meta property="og:site_name" content="Plany" />
 

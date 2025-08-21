@@ -1,5 +1,30 @@
 import React from 'react'
-import { Container, Typography, Box, Table, TableBody, TableCell, TableHead, TableRow, List, ListItem } from '@mui/material'
+import {
+  Container,
+  Typography,
+  Box,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  List,
+  ListItem,
+  TableContainer,
+  Paper,
+  Grid,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  ListItemIcon,
+  ListItemText
+} from '@mui/material'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import AltRouteIcon from '@mui/icons-material/AltRoute'
+import CachedIcon from '@mui/icons-material/Cached'
+import SecurityIcon from '@mui/icons-material/Security'
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import Layout from '@/components/Layout'
 import Footer from '@/components/Footer'
 import '@/assets/css/home.css'
@@ -83,6 +108,15 @@ const LocationVoitureTunisiePrixDinars = () => {
           text:
             'La majorité des offres affichent une annulation flexible, souvent gratuite jusqu\u2019à 48 h avant la prise en charge. Les conditions exactes figurent sur chaque fiche véhicule.'
         }
+      },
+      {
+        '@type': 'Question',
+        name: 'Quelle caution prévoir et comment la réduire ?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text:
+            'Préparez une caution de 800\u20131200 TND selon le modèle. Optez pour des offres avec assurance complète ou options réduisant le dépôt.'
+        }
       }
     ]
   }
@@ -151,14 +185,23 @@ const LocationVoitureTunisiePrixDinars = () => {
           <Typography variant="h2" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
             Location voiture Tunisie prix en dinars
           </Typography>
-          <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 3, mb: 5 }}>
-            Envie de parcourir la Tunisie en toute liberté ? Plany.tn compare pour vous les offres locales de location voiture pas chère Tunisie en TND, sans frais cachés, que ce soit pour une location voiture aéroport Tunis Carthage ou au centre-ville.
+          <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 3 }}>
+            Envie de parcourir la Tunisie en toute liberté ? Plany.tn compare pour vous les offres locales de location voiture pas chère Tunisie en TND, sans frais cachés.
           </Typography>
-          <div className="home custom-searsh">
-            <div className="home-search">
-              <SearchForm />
-            </div>
-          </div>
+          <List sx={{ color: '#7f8c8d', mt: 2, mb: 5, maxWidth: 600, mx: 'auto' }}>
+            <ListItem>Tarifs transparents en dinars tunisiens</ListItem>
+            <ListItem>Disponibilité à l’aéroport Tunis Carthage ou en centre-ville</ListItem>
+            <ListItem>Comparateur local avec caution et assurance visibles</ListItem>
+          </List>
+          <Box sx={{ mt: 5 }}>
+            <Paper elevation={3} sx={{ p: { xs: 2, md: 4 } }}>
+              <div className="home custom-searsh">
+                <div className="home-search">
+                  <SearchForm />
+                </div>
+              </div>
+            </Paper>
+          </Box>
         </Box>
 
         <Box sx={{ mt: 8 }}>
@@ -174,122 +217,146 @@ const LocationVoitureTunisiePrixDinars = () => {
           <Typography variant="h4" component="h2" gutterBottom sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
             Prix indicatifs par modèle (TND/jour)
           </Typography>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Modèle (catégorie)</TableCell>
-                <TableCell>Hiver (déc\u2013fév)</TableCell>
-                <TableCell>Haute saison (juil\u2013août)</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              <TableRow>
-                <TableCell>Kia Picanto (mini)</TableCell>
-                <TableCell>~56 TND/j</TableCell>
-                <TableCell>~75 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Hyundai i10 (éco)</TableCell>
-                <TableCell>~65 TND/j</TableCell>
-                <TableCell>~85 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Suzuki Swift (compacte)</TableCell>
-                <TableCell>~80 TND/j</TableCell>
-                <TableCell>~90 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Dacia Sandero (compacte)</TableCell>
-                <TableCell>~75 TND/j</TableCell>
-                <TableCell>~95 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Skoda Fabia (compacte)</TableCell>
-                <TableCell>~75 TND/j</TableCell>
-                <TableCell>~95 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Peugeot 208 (compacte)</TableCell>
-                <TableCell>~80 TND/j</TableCell>
-                <TableCell>~100 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Renault Clio 5 (compacte)</TableCell>
-                <TableCell>~85 TND/j</TableCell>
-                <TableCell>~105 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Volkswagen Polo (compacte)</TableCell>
-                <TableCell>~85 TND/j</TableCell>
-                <TableCell>~110 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Volkswagen Virtus (berline)</TableCell>
-                <TableCell>~90 TND/j</TableCell>
-                <TableCell>~115 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Kia Rio (berline)</TableCell>
-                <TableCell>~85 TND/j</TableCell>
-                <TableCell>~110 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Hyundai i20 (compacte+)</TableCell>
-                <TableCell>~85 TND/j</TableCell>
-                <TableCell>~110 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Mahindra KUV100 (SUV urbain)</TableCell>
-                <TableCell>~80 TND/j</TableCell>
-                <TableCell>~105 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Mahindra XUV300 (SUV)</TableCell>
-                <TableCell>~90 TND/j</TableCell>
-                <TableCell>~120 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>BYD F3 (berline)</TableCell>
-                <TableCell>~85 TND/j</TableCell>
-                <TableCell>~110 TND/j</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Chery Tiggo 3x (SUV urbain)</TableCell>
-                <TableCell>~85 TND/j</TableCell>
-                <TableCell>~115 TND/j</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+          <TableContainer component={Paper} sx={{ mt: 2 }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Modèle (catégorie)</TableCell>
+                  <TableCell>Hiver (déc\u2013fév)</TableCell>
+                  <TableCell>Haute saison (juil\u2013août)</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                <TableRow>
+                  <TableCell>Kia Picanto (mini)</TableCell>
+                  <TableCell>~56 TND/j</TableCell>
+                  <TableCell>~75 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Hyundai i10 (éco)</TableCell>
+                  <TableCell>~65 TND/j</TableCell>
+                  <TableCell>~85 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Suzuki Swift (compacte)</TableCell>
+                  <TableCell>~80 TND/j</TableCell>
+                  <TableCell>~90 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Dacia Sandero (compacte)</TableCell>
+                  <TableCell>~75 TND/j</TableCell>
+                  <TableCell>~95 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Skoda Fabia (compacte)</TableCell>
+                  <TableCell>~75 TND/j</TableCell>
+                  <TableCell>~95 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Peugeot 208 (compacte)</TableCell>
+                  <TableCell>~80 TND/j</TableCell>
+                  <TableCell>~100 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Renault Clio 5 (compacte)</TableCell>
+                  <TableCell>~85 TND/j</TableCell>
+                  <TableCell>~105 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Volkswagen Polo (compacte)</TableCell>
+                  <TableCell>~85 TND/j</TableCell>
+                  <TableCell>~110 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Volkswagen Virtus (berline)</TableCell>
+                  <TableCell>~90 TND/j</TableCell>
+                  <TableCell>~115 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Kia Rio (berline)</TableCell>
+                  <TableCell>~85 TND/j</TableCell>
+                  <TableCell>~110 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Hyundai i20 (compacte+)</TableCell>
+                  <TableCell>~85 TND/j</TableCell>
+                  <TableCell>~110 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Mahindra KUV100 (SUV urbain)</TableCell>
+                  <TableCell>~80 TND/j</TableCell>
+                  <TableCell>~105 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Mahindra XUV300 (SUV)</TableCell>
+                  <TableCell>~90 TND/j</TableCell>
+                  <TableCell>~120 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>BYD F3 (berline)</TableCell>
+                  <TableCell>~85 TND/j</TableCell>
+                  <TableCell>~110 TND/j</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Chery Tiggo 3x (SUV urbain)</TableCell>
+                  <TableCell>~85 TND/j</TableCell>
+                  <TableCell>~115 TND/j</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Box>
 
         <Box sx={{ mt: 8 }}>
           <Typography variant="h4" component="h2" gutterBottom sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
             Les avantages de Plany.tn
           </Typography>
-          <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', mt: 4 }}>
-            Kilométrage illimité
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 1 }}>
-            De nombreuses offres incluent le kilométrage illimité location Tunisie pour explorer le pays sans contrainte.
-          </Typography>
-          <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', mt: 4 }}>
-            Annulation flexible
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 1 }}>
-            Souvent gratuite jusqu\u2019à J-2 selon l\u2019offre, vous gardez le contrôle de votre réservation.
-          </Typography>
-          <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', mt: 4 }}>
-            Caution transparente
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 1 }}>
-            Les dépôts de garantie sont clairement indiqués. La caution location voiture Tunisie et l\u2019assurance location voiture Tunisie sont visibles pour comparer et choisir une caution faible.
-          </Typography>
-          <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', mt: 4 }}>
-            Large choix de véhicules
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 1 }}>
-            Boîte manuelle ou voiture automatique Tunisie location, citadines, SUV ou minivans pour votre location voiture touristique Tunisie : Plany.tn propose un catalogue complet avec filtres pratiques.
-          </Typography>
+          <Grid container spacing={4} sx={{ mt: 2 }}>
+            <Grid item xs={12} md={6} lg={3}>
+              <Paper elevation={3} sx={{ p: 3, textAlign: 'center', height: '100%' }}>
+                <AltRouteIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+                <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', mt: 1 }}>
+                  Kilométrage illimité
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#7f8c8d', mt: 1 }}>
+                  De nombreuses offres incluent le kilométrage illimité location Tunisie pour explorer le pays sans contrainte.
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={6} lg={3}>
+              <Paper elevation={3} sx={{ p: 3, textAlign: 'center', height: '100%' }}>
+                <CachedIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+                <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', mt: 1 }}>
+                  Annulation flexible
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#7f8c8d', mt: 1 }}>
+                  Souvent gratuite jusqu\u2019à J-2 selon l\u2019offre, vous gardez le contrôle de votre réservation.
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={6} lg={3}>
+              <Paper elevation={3} sx={{ p: 3, textAlign: 'center', height: '100%' }}>
+                <SecurityIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+                <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', mt: 1 }}>
+                  Caution transparente
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#7f8c8d', mt: 1 }}>
+                  Les dépôts de garantie et l\u2019assurance location voiture Tunisie sont clairement indiqués pour comparer facilement.
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={6} lg={3}>
+              <Paper elevation={3} sx={{ p: 3, textAlign: 'center', height: '100%' }}>
+                <DirectionsCarIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+                <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', mt: 1 }}>
+                  Large choix de véhicules
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#7f8c8d', mt: 1 }}>
+                  Boîte manuelle ou voiture automatique Tunisie location, citadines, SUV ou minivans : filtrez et choisissez facilement.
+                </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
         </Box>
 
         <Box sx={{ mt: 8 }}>
@@ -297,10 +364,30 @@ const LocationVoitureTunisiePrixDinars = () => {
             Conseils pour économiser
           </Typography>
           <List sx={{ color: '#7f8c8d', mt: 2 }}>
-            <ListItem>Réservez tôt, surtout pour juillet et août</ListItem>
-            <ListItem>Comparez les prix entre l\u2019aéroport et le centre-ville</ListItem>
-            <ListItem>Évitez les réservations de dernière minute</ListItem>
-            <ListItem>Plus la durée est longue, plus le prix par jour baisse</ListItem>
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText primary="Réservez tôt, surtout pour juillet et août" />
+            </ListItem>
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText primary="Comparez les prix entre l’aéroport et le centre-ville" />
+            </ListItem>
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText primary="Évitez les réservations de dernière minute" />
+            </ListItem>
+            <ListItem>
+              <ListItemIcon>
+                <CheckCircleIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText primary="Plus la durée est longue, plus le prix par jour baisse" />
+            </ListItem>
           </List>
         </Box>
 
@@ -308,36 +395,66 @@ const LocationVoitureTunisiePrixDinars = () => {
           <Typography variant="h4" component="h2" gutterBottom sx={{ fontWeight: 'bold', color: '#2c3e50' }}>
             FAQ
           </Typography>
-          <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', mt: 4 }}>
-            Quel est le prix moyen d\u2019une location en été en Tunisie ?
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 1 }}>
-            En haute saison, comptez généralement 100\u2013120 TND/j pour une citadine économique réservée à l\u2019avance.
-          </Typography>
-          <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', mt: 4 }}>
-            Faut-il un permis international pour louer en Tunisie ?
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 1 }}>
-            Un permis national lisible suffit pour un court séjour touristique. Le permis international n\u2019est pas toujours exigé.
-          </Typography>
-          <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', mt: 4 }}>
-            Peut-on louer une voiture automatique à Tunis (aéroport Tunis-Carthage) ?
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 1 }}>
-            Oui, de nombreuses agences proposent des voitures automatiques à Tunis et à l\u2019aéroport Tunis-Carthage.
-          </Typography>
-          <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', mt: 4 }}>
-            Quelle est la politique d\u2019annulation avec Plany.tn ?
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 1 }}>
-            La plupart des offres offrent une annulation gratuite jusqu\u201948 h avant la prise en charge.
-          </Typography>
-          <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', mt: 4 }}>
-            Quelle caution prévoir et comment la réduire ?
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 1 }}>
-            Préparez une caution de 800\u20131200 TND selon le modèle. Choisissez des offres avec assurance complète ou options r\u00E9duisant le d\u00E9p\u00F4t.
-          </Typography>
+          <Accordion sx={{ mt: 2 }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6" component="h3">
+                Quel est le prix moyen d’une location en été en Tunisie ?
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body1" sx={{ color: '#7f8c8d' }}>
+                En haute saison, comptez généralement 100–120 TND/j pour une citadine économique réservée à l’avance.
+              </Typography>
+            </AccordionDetails>
+          </Accordion>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6" component="h3">
+                Faut-il un permis international pour louer en Tunisie ?
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body1" sx={{ color: '#7f8c8d' }}>
+                Un permis national lisible suffit pour un court séjour touristique. Le permis international n’est pas toujours exigé.
+              </Typography>
+            </AccordionDetails>
+          </Accordion>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6" component="h3">
+                Peut-on louer une voiture automatique à Tunis (aéroport Tunis-Carthage) ?
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body1" sx={{ color: '#7f8c8d' }}>
+                Oui, de nombreuses agences proposent des voitures automatiques à Tunis et à l’aéroport Tunis-Carthage.
+              </Typography>
+            </AccordionDetails>
+          </Accordion>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6" component="h3">
+                Quelle est la politique d’annulation avec Plany.tn ?
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body1" sx={{ color: '#7f8c8d' }}>
+                La plupart des offres offrent une annulation gratuite jusqu’48 h avant la prise en charge.
+              </Typography>
+            </AccordionDetails>
+          </Accordion>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="h6" component="h3">
+                Quelle caution prévoir et comment la réduire ?
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body1" sx={{ color: '#7f8c8d' }}>
+                Préparez une caution de 800–1200 TND selon le modèle. Choisissez des offres avec assurance complète ou options réduisant le dépôt.
+              </Typography>
+            </AccordionDetails>
+          </Accordion>
         </Box>
 
         <Box sx={{ mt: 8, mb: 8 }}>

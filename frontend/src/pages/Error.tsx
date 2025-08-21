@@ -1,7 +1,7 @@
 import React from 'react'
-import { Helmet } from 'react-helmet'
 import { Box, Typography, Button } from '@mui/material'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
+import Seo from '@/components/Seo'
 import { strings as commonStrings } from '@/lang/common'
 
 interface ErrorProps {
@@ -10,9 +10,7 @@ interface ErrorProps {
 
 const Error = ({ style }: ErrorProps) => (
   <>
-    <Helmet>
-      <meta name="robots" content="noindex, nofollow" />
-    </Helmet>
+    <Seo robots="noindex,nofollow" title="Erreur | Plany.tn" />
     <Box
       sx={{
         display: 'flex',

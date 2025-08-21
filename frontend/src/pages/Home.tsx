@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { Button, Checkbox, Dialog, DialogContent, FormControlLabel, Tab, Tabs } from '@mui/material'
 import L from 'leaflet'
 import { Helmet } from 'react-helmet'
+import Seo from '@/components/Seo'
+import { buildDescription } from '@/common/seo'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
@@ -165,17 +167,19 @@ const Home = () => {
     },
   }
 
+  const description = buildDescription(
+    'Plany.tn : La plateforme leader de location de voitures en Tunisie. Louez une voiture facilement avec notre comparateur d’agences locales.'
+  )
+
   return (
     <Layout onLoad={onLoad} strict={false}>
+      <Seo
+        title="Location de voitures en Tunisie – Réservez en ligne au meilleur tarif | Plany.tn"
+        description={description}
+        canonical="https://plany.tn/"
+      />
       <Helmet>
         <meta charSet="utf-8" />
-        <title>Location de voitures en Tunisie – Réservez en ligne au meilleur tarif | Plany.tn</title>
-        <meta
-          name="description"
-          content="Plany.tn : La plateforme leader de location de voitures en Tunisie. Louez une voiture facilement avec notre comparateur d’agences locales."
-        />
-        <link rel="canonical" href="https://plany.tn/" />
-
         {/* Balises Open Graph */}
         <meta property="og:title" content="Location de voitures en Tunisie – Réservez en ligne au meilleur tarif | Plany.tn" />
         <meta

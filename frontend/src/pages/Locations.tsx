@@ -10,6 +10,8 @@ import Layout from '@/components/Layout'
 import Map from '@/components/Map'
 import SearchForm from '@/components/SearchForm'
 import Footer from '@/components/Footer'
+import Seo from '@/components/Seo'
+import { buildDescription } from '@/common/seo'
 import '@/assets/css/locations.css'
 
 const Locations = () => {
@@ -31,18 +33,19 @@ const Locations = () => {
     onLoad()
   }, [])
 
+  const description = buildDescription(
+    'Découvrez la carte interactive des agences de location de voiture en Tunisie. Localisez facilement les agences près de chez vous ou dans vos destinations préférées.'
+  )
+
   return (
     <Layout strict={false}>
-      {/* SEO et données structurées */}
+      <Seo
+        title="Carte des Agences de Location de Voiture en Tunisie - Plany.tn"
+        description={description}
+        canonical="https://plany.tn/locations"
+      />
       <Helmet>
         <meta charSet="utf-8" />
-        <title>Carte des Agences de Location de Voiture en Tunisie - Plany.tn</title>
-        <meta
-          name="description"
-          content="Découvrez la carte interactive des agences de location de voiture en Tunisie. Localisez facilement les agences près de chez vous ou dans vos destinations préférées."
-        />
-        <link rel="canonical" href="https://plany.tn/locations" />
-
         {/* Balises Open Graph pour les réseaux sociaux */}
         <meta
           property="og:title"

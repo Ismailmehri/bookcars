@@ -8,8 +8,8 @@ import {
   Paper,
   Link
 } from '@mui/material'
-import { Helmet } from 'react-helmet'
 import validator from 'validator'
+import Seo from '@/components/Seo'
 import * as bookcarsTypes from ':bookcars-types'
 import * as UserService from '@/services/UserService'
 import * as helper from '@/common/helper'
@@ -115,9 +115,7 @@ const ForgotPassword = () => {
 
   return (
     <Layout onLoad={onLoad} strict={false}>
-      <Helmet>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+      <Seo title="Mot de passe oublié | Plany.tn" canonical="https://plany.tn/forgot-password" robots="noindex,nofollow" />
       {visible && (
         <div className="forgot-password">
           <Paper className="forgot-password-form" elevation={10}>

@@ -346,20 +346,26 @@ const Checkout = () => {
     setUser(_user)
     setAuthenticated(_user !== undefined)
     setLanguage(UserService.getLanguage())
+    const state = (location.state as any) || (() => {
+      const stored = sessionStorage.getItem('checkout')
+      return stored ? JSON.parse(stored) : null
+    })()
 
-    const { state } = location
+    if (location.state) {
+      sessionStorage.setItem('checkout', JSON.stringify(location.state))
+    }
+
     if (!state) {
       setNoMatch(true)
       return
     }
 
-    const { carId } = state
-    const { pickupLocationId } = state
-    const { dropOffLocationId } = state
-    const { from: _from } = state
-    const { to: _to } = state
+    const { carId, pickupLocationId, dropOffLocationId, from: fromStr, to: toStr } = state
 
-    if (!carId || !pickupLocationId || !dropOffLocationId || !_from || !_to) {
+    const _from = new Date(fromStr)
+    const _to = new Date(toStr)
+
+    if (!carId || !pickupLocationId || !dropOffLocationId || Number.isNaN(_from.getTime()) || Number.isNaN(_to.getTime())) {
       setNoMatch(true)
       return
     }

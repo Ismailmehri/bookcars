@@ -64,6 +64,10 @@ const Checkout = () => {
   const location = useLocation()
   const navigate = useNavigate()
 
+  const signInUrl = `/sign-in?redirect=${encodeURIComponent(
+    location.pathname + location.search
+  )}`
+
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [car, setCar] = useState<bookcarsTypes.Car>()
   const [pickupLocation, setPickupLocation] = useState<bookcarsTypes.Location>()
@@ -640,7 +644,7 @@ const Checkout = () => {
                               <span>
                                 <span>{commonStrings.EMAIL_ALREADY_REGISTERED}</span>
                                 <span> </span>
-                                <a href={`/sign-in?c=${car._id}&p=${pickupLocation._id}&d=${dropOffLocation._id}&f=${from.getTime()}&t=${to.getTime()}&from=checkout`}>{strings.SIGN_IN}</a>
+                                <a href={signInUrl}>{strings.SIGN_IN}</a>
                               </span>
                             ))
                               || ''}
@@ -855,7 +859,7 @@ const Checkout = () => {
                     </Button>
                     )}
                     {((!clientSecret || (payLater)) && !user) && (
-                    <Button href="/sign-in" variant="contained" className="btn-checkout btn-margin-bottom" size="small" disabled={loading}>
+                    <Button href={signInUrl} variant="contained" className="btn-checkout btn-margin-bottom" size="small" disabled={loading}>
                       {
                           loading
                             ? <CircularProgress color="inherit" size={24} />

@@ -115,7 +115,7 @@ const LocationVoitureTunisiePrixDinars = () => {
         acceptedAnswer: {
           '@type': 'Answer',
           text:
-            'Préparez une caution de 800\u20131200 TND selon le modèle. Optez pour des offres avec assurance complète ou options réduisant le dépôt.'
+            'Préparez une caution de 800\u20132000 TND selon le modèle. Optez pour des offres avec assurance complète ou options réduisant le dépôt.'
         }
       }
     ]
@@ -153,21 +153,21 @@ const LocationVoitureTunisiePrixDinars = () => {
         '@type': 'OfferCatalog',
         name: 'Haute saison (juil–août)',
         itemListElement: [
-          { '@type': 'Offer', name: 'Kia Picanto', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '75', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'Hyundai i10', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '85', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'Suzuki Swift', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '90', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'Dacia Sandero', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '95', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'Skoda Fabia', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '95', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'Peugeot 208', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '100', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'Renault Clio 5', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '105', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'Volkswagen Polo', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '110', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'Volkswagen Virtus', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '115', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'Kia Rio', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '110', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'Hyundai i20', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '110', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'Mahindra KUV100', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '105', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'Mahindra XUV300', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '120', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'BYD F3', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '110', priceCurrency: 'TND' } },
-          { '@type': 'Offer', name: 'Chery Tiggo 3x', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '115', priceCurrency: 'TND' } }
+          { '@type': 'Offer', name: 'Kia Picanto', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '110', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'Hyundai i10', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '120', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'Suzuki Swift', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '130', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'Dacia Sandero', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '130', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'Skoda Fabia', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '130', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'Peugeot 208', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '130', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'Renault Clio 5', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '140', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'Volkswagen Polo', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '140', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'Volkswagen Virtus', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '145', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'Kia Rio', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '145', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'Hyundai i20', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '140', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'Mahindra KUV100', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '135', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'Mahindra XUV300', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '145', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'BYD F3', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '130', priceCurrency: 'TND' } },
+          { '@type': 'Offer', name: 'Chery Tiggo 3x', priceCurrency: 'TND', priceSpecification: { '@type': 'PriceSpecification', price: '135', priceCurrency: 'TND' } }
         ]
       }
     ]
@@ -186,11 +186,11 @@ const LocationVoitureTunisiePrixDinars = () => {
             Location voiture Tunisie prix en dinars
           </Typography>
           <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 3 }}>
-            Envie de parcourir la Tunisie en toute liberté ? Plany.tn compare pour vous les offres locales de location voiture pas chère Tunisie en TND, sans frais cachés.
+            Envie de parcourir la Tunisie en toute liberté ? Plany.tn compare pour vous les offres locales de location de voiture pas chère en Tunisie, en TND, sans frais cachés.
           </Typography>
-          <List sx={{ color: '#7f8c8d', mt: 2, mb: 5, maxWidth: 600, mx: 'auto' }}>
+          <List sx={{ color: '#7f8c8d', mt: 2, mb: 5, mx: 'auto' }}>
             <ListItem>Tarifs transparents en dinars tunisiens</ListItem>
-            <ListItem>Disponibilité à l’aéroport Tunis Carthage ou en centre-ville</ListItem>
+            <ListItem>Disponibilité à l’aéroport de Tunis-Carthage ou en centre-ville</ListItem>
             <ListItem>Comparateur local avec caution et assurance visibles</ListItem>
           </List>
           <Box sx={{ mt: 5 }}>
@@ -209,7 +209,7 @@ const LocationVoitureTunisiePrixDinars = () => {
             Variation des prix selon la saison
           </Typography>
           <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 2 }}>
-            Les prix location voiture Tunisie hiver débutent à ~56 TND/j, tandis que la location voiture juillet août Tunisie voit la demande grimper. Réserver tôt permet de profiter des meilleurs tarifs.
+            Les prix de location de voiture en Tunisie en hiver débutent à ~56 TND/j, tandis qu’en juillet–août la demande grimpe. Réserver tôt permet de profiter des meilleurs tarifs.
           </Typography>
         </Box>
 
@@ -229,78 +229,78 @@ const LocationVoitureTunisiePrixDinars = () => {
               <TableBody>
                 <TableRow>
                   <TableCell>Kia Picanto (mini)</TableCell>
-                  <TableCell>~56 TND/j</TableCell>
-                  <TableCell>~75 TND/j</TableCell>
+                  <TableCell>~60 TND/j</TableCell>
+                  <TableCell>~110 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Hyundai i10 (éco)</TableCell>
-                  <TableCell>~65 TND/j</TableCell>
-                  <TableCell>~85 TND/j</TableCell>
+                  <TableCell>~69 TND/j</TableCell>
+                  <TableCell>~110 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Suzuki Swift (compacte)</TableCell>
                   <TableCell>~80 TND/j</TableCell>
-                  <TableCell>~90 TND/j</TableCell>
+                  <TableCell>~120 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Dacia Sandero (compacte)</TableCell>
                   <TableCell>~75 TND/j</TableCell>
-                  <TableCell>~95 TND/j</TableCell>
+                  <TableCell>~120 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Skoda Fabia (compacte)</TableCell>
-                  <TableCell>~75 TND/j</TableCell>
-                  <TableCell>~95 TND/j</TableCell>
+                  <TableCell>~80 TND/j</TableCell>
+                  <TableCell>~130 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Peugeot 208 (compacte)</TableCell>
-                  <TableCell>~80 TND/j</TableCell>
-                  <TableCell>~100 TND/j</TableCell>
+                  <TableCell>~90 TND/j</TableCell>
+                  <TableCell>~135 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Renault Clio 5 (compacte)</TableCell>
-                  <TableCell>~85 TND/j</TableCell>
-                  <TableCell>~105 TND/j</TableCell>
+                  <TableCell>~90 TND/j</TableCell>
+                  <TableCell>~140 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Volkswagen Polo (compacte)</TableCell>
                   <TableCell>~85 TND/j</TableCell>
-                  <TableCell>~110 TND/j</TableCell>
+                  <TableCell>~150 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Volkswagen Virtus (berline)</TableCell>
-                  <TableCell>~90 TND/j</TableCell>
-                  <TableCell>~115 TND/j</TableCell>
+                  <TableCell>~100 TND/j</TableCell>
+                  <TableCell>~150 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Kia Rio (berline)</TableCell>
-                  <TableCell>~85 TND/j</TableCell>
-                  <TableCell>~110 TND/j</TableCell>
+                  <TableCell>~99 TND/j</TableCell>
+                  <TableCell>~145 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Hyundai i20 (compacte+)</TableCell>
                   <TableCell>~85 TND/j</TableCell>
-                  <TableCell>~110 TND/j</TableCell>
+                  <TableCell>~140 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Mahindra KUV100 (SUV urbain)</TableCell>
-                  <TableCell>~80 TND/j</TableCell>
-                  <TableCell>~105 TND/j</TableCell>
+                  <TableCell>~90 TND/j</TableCell>
+                  <TableCell>~130 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Mahindra XUV300 (SUV)</TableCell>
-                  <TableCell>~90 TND/j</TableCell>
-                  <TableCell>~120 TND/j</TableCell>
+                  <TableCell>~100 TND/j</TableCell>
+                  <TableCell>~140 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>BYD F3 (berline)</TableCell>
-                  <TableCell>~85 TND/j</TableCell>
-                  <TableCell>~110 TND/j</TableCell>
+                  <TableCell>~100 TND/j</TableCell>
+                  <TableCell>~140 TND/j</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>Chery Tiggo 3x (SUV urbain)</TableCell>
                   <TableCell>~85 TND/j</TableCell>
-                  <TableCell>~115 TND/j</TableCell>
+                  <TableCell>~130TND/j</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -316,10 +316,10 @@ const LocationVoitureTunisiePrixDinars = () => {
               <Paper elevation={3} sx={{ p: 3, textAlign: 'center', height: '100%' }}>
                 <AltRouteIcon sx={{ fontSize: 40, color: 'primary.main' }} />
                 <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold', mt: 1 }}>
-                  Kilométrage illimité
+                  Kilométrage illimité (selon l&apos;agence)
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#7f8c8d', mt: 1 }}>
-                  De nombreuses offres incluent le kilométrage illimité location Tunisie pour explorer le pays sans contrainte.
+                  De nombreuses offres incluent le kilométrage illimité pour explorer le pays sans contrainte.
                 </Typography>
               </Paper>
             </Grid>
@@ -330,7 +330,7 @@ const LocationVoitureTunisiePrixDinars = () => {
                   Annulation flexible
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#7f8c8d', mt: 1 }}>
-                  Souvent gratuite jusqu\u2019à J-2 selon l\u2019offre, vous gardez le contrôle de votre réservation.
+                  Souvent gratuite jusqu’à J−7 selon l’offre, vous gardez le contrôle de votre réservation.
                 </Typography>
               </Paper>
             </Grid>
@@ -341,7 +341,7 @@ const LocationVoitureTunisiePrixDinars = () => {
                   Caution transparente
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#7f8c8d', mt: 1 }}>
-                  Les dépôts de garantie et l\u2019assurance location voiture Tunisie sont clairement indiqués pour comparer facilement.
+                  Les dépôts de garantie et l’assurance pour la location de voiture en Tunisie sont clairement indiqués pour comparer facilement.
                 </Typography>
               </Paper>
             </Grid>
@@ -352,7 +352,7 @@ const LocationVoitureTunisiePrixDinars = () => {
                   Large choix de véhicules
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#7f8c8d', mt: 1 }}>
-                  Boîte manuelle ou voiture automatique Tunisie location, citadines, SUV ou minivans : filtrez et choisissez facilement.
+                  Boîte manuelle ou automatique, citadines, SUV ou minivans : filtrez et choisissez facilement.
                 </Typography>
               </Paper>
             </Grid>
@@ -403,7 +403,7 @@ const LocationVoitureTunisiePrixDinars = () => {
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body1" sx={{ color: '#7f8c8d' }}>
-                En haute saison, comptez généralement 100–120 TND/j pour une citadine économique réservée à l’avance.
+                En haute saison, comptez généralement 120–150 TND/j pour une citadine économique réservée à l’avance.
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -439,7 +439,7 @@ const LocationVoitureTunisiePrixDinars = () => {
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body1" sx={{ color: '#7f8c8d' }}>
-                La plupart des offres offrent une annulation gratuite jusqu’48 h avant la prise en charge.
+                La plupart des offres proposent une annulation gratuite jusqu’à 7 jours avant la prise en charge.
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -451,7 +451,7 @@ const LocationVoitureTunisiePrixDinars = () => {
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body1" sx={{ color: '#7f8c8d' }}>
-                Préparez une caution de 800–1200 TND selon le modèle. Choisissez des offres avec assurance complète ou options réduisant le dépôt.
+                Préparez une caution de 800–2000 TND selon le modèle.
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -462,8 +462,8 @@ const LocationVoitureTunisiePrixDinars = () => {
             Conclusion
           </Typography>
           <Typography variant="body1" sx={{ color: '#7f8c8d', mt: 2 }}>
-            Location voiture Tunisie prix en dinars : retenez que les tarifs varient selon la saison, mais Plany.tn garantit transparence et avantages exclusifs.
-            Comparez les offres et r\u00E9servez sur Plany.tn.
+            Location voiture Tunisie prix en dinars : retenez que les tarifs varient selon la saison, mais Plany.tn garantit la transparence et des avantages exclusifs.
+            Comparez les offres et réservez sur Plany.tn.
           </Typography>
         </Box>
 

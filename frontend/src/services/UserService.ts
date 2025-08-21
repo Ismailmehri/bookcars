@@ -152,6 +152,7 @@ export const signout = async (redirect = true, redirectSignin = false) => {
 
   sessionStorage.clear()
   localStorage.removeItem('bc-user')
+  localStorage.removeItem('checkout')
   deleteAllCookies()
 
   await axiosInstance

@@ -347,12 +347,16 @@ const Checkout = () => {
     setAuthenticated(_user !== undefined)
     setLanguage(UserService.getLanguage())
     const state = (location.state as any) || (() => {
-      const stored = sessionStorage.getItem('checkout')
-      return stored ? JSON.parse(stored) : null
+      const stored = localStorage.getItem('checkout')
+      if (stored) {
+        localStorage.removeItem('checkout')
+        return JSON.parse(stored)
+      }
+      return null
     })()
 
-    if (location.state) {
-      sessionStorage.setItem('checkout', JSON.stringify(location.state))
+    if (location.state && !_user) {
+      localStorage.setItem('checkout', JSON.stringify(location.state))
     }
 
     if (!state) {

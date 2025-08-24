@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { Dialog, DialogContent } from '@mui/material'
+// Removed Material UI imports
 import L from 'leaflet'
 import { Helmet } from 'react-helmet'
-import env from '@/config/env.config'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import * as LocationService from '@/services/LocationService'
@@ -12,7 +11,7 @@ import SearchForm from '@/components/SearchForm'
 import Footer from '@/components/Footer'
 import Seo from '@/components/Seo'
 import { buildDescription } from '@/common/seo'
-import '@/assets/css/locations.css'
+// Tailwind CSS used instead of external stylesheet
 
 const Locations = () => {
   const [locations, setLocations] = useState<bookcarsTypes.Location[]>([])
@@ -91,7 +90,7 @@ const Locations = () => {
       </Helmet>
 
       {/* Contenu principal */}
-      <div className="locations">
+      <div className="p-4">
         <Map
           position={new L.LatLng(34.0268755, 1.6528399999999976)}
           initialZoom={5}
@@ -104,24 +103,19 @@ const Locations = () => {
       </div>
 
       {/* Formulaire de recherche dans un dialogue modal */}
-      <Dialog
-        fullWidth={env.isMobile()}
-        maxWidth={false}
-        open={openSearchFormDialog}
-        onClose={() => {
-          setOpenSearchFormDialog(false)
-        }}
-      >
-        <DialogContent className="search-dialog-content">
-          <SearchForm
-            ranges={bookcarsHelper.getAllRanges()}
-            pickupLocation={pickupLocation}
-            onCancel={() => {
-              setOpenSearchFormDialog(false)
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      {openSearchFormDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded w-full max-w-lg p-4">
+            <SearchForm
+              ranges={bookcarsHelper.getAllRanges()}
+              pickupLocation={pickupLocation}
+              onCancel={() => {
+                setOpenSearchFormDialog(false)
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Pied de page */}
       <Footer />

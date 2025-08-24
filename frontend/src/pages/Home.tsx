@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Button, Checkbox, Dialog, DialogContent, FormControlLabel, Tab, Tabs } from '@mui/material'
+// Removed Material UI imports in favor of native elements with Tailwind CSS
 import L from 'leaflet'
 import { Helmet } from 'react-helmet'
 import Seo from '@/components/Seo'
@@ -15,7 +15,7 @@ import * as CountryService from '@/services/CountryService'
 import * as LocationService from '@/services/LocationService'
 import Layout from '@/components/Layout'
 import SupplierCarrousel from '@/components/SupplierCarrousel'
-import TabPanel, { a11yProps } from '@/components/TabPanel'
+// TabPanel replaced with simple conditional rendering
 import LocationCarrousel from '@/components/LocationCarrousel'
 import SearchForm from '@/components/SearchForm'
 import Map from '@/components/Map'
@@ -25,7 +25,7 @@ import Mini from '@/assets/img/mini.png'
 import Midi from '@/assets/img/midi.png'
 import Maxi from '@/assets/img/maxi.png'
 
-import '@/assets/css/home.css'
+// Tailwind CSS styles are used; removed old stylesheet
 import HowItWorks from '@/components/HowItWorks'
 import RentalAgencySection from '@/components/RentalAgencySection'
 
@@ -41,7 +41,7 @@ const Home = () => {
   const [ranges, setRanges] = useState([bookcarsTypes.CarRange.Mini, bookcarsTypes.CarRange.Midi])
   const [openRangeSearchFormDialog, setOpenRangeSearchFormDialog] = useState(false)
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (newValue: number) => {
     setTabValue(newValue)
   }
 
@@ -209,51 +209,41 @@ const Home = () => {
           {JSON.stringify(structuredData)}
         </script>
       </Helmet>
-      <div className="home">
-        <div className="home-content">
+      <div className="space-y-8">
+        <div className="text-center py-10 bg-gray-100">
+          {strings.COVER}
+        </div>
 
-          <div className="home-cover">{strings.COVER}</div>
+        <div className="flex justify-center">
+          <SearchForm />
+        </div>
 
-          <div className="home-search">
-            <SearchForm />
+        {suppliers.length > 0 && (
+          <div className="px-4">
+            <h1 className="text-xl font-bold mb-4">{strings.SUPPLIERS_TITLE}</h1>
+            <SupplierCarrousel suppliers={suppliers} />
           </div>
-
-        </div>
-
-        <div className="home-suppliers">
-          {suppliers.length > 0 && (
-            <>
-              <h1>{strings.SUPPLIERS_TITLE}</h1>
-              <SupplierCarrousel suppliers={suppliers} />
-            </>
-          )}
-        </div>
+        )}
 
         {countries.length > 0 && (
-          <div className="destinations">
-            <h1>{strings.DESTINATIONS_TITLE}</h1>
-            <div className="tabs">
-              <Tabs
-                value={tabValue}
-                onChange={handleTabChange}
-                aria-label="destinations"
-                TabIndicatorProps={{ sx: { display: env.isMobile() ? 'none' : null } }}
-                sx={{
-                  '& .MuiTabs-flexContainer': {
-                    flexWrap: 'wrap',
-                  },
-                }}
-              >
-                {
-                  countries.map((country, index) => (
-                    <Tab key={country._id} label={country.name?.toUpperCase()} {...a11yProps(index)} />
-                  ))
-                }
-              </Tabs>
-
-              {
-                countries.map((country, index) => (
-                  <TabPanel key={country._id} value={tabValue} index={index}>
+          <div className="destinations px-4">
+            <h1 className="text-xl font-bold mb-4">{strings.DESTINATIONS_TITLE}</h1>
+            <div>
+              <div className="flex flex-wrap">
+                {countries.map((country, index) => (
+                  <button
+                    type="button"
+                    key={country._id}
+                    className={`px-4 py-2 border-b-2 ${tabValue === index ? 'border-primary text-primary' : 'border-transparent'}`}
+                    onClick={() => handleTabChange(index)}
+                  >
+                    {country.name?.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              {countries.map((country, index) => (
+                tabValue === index && (
+                  <div key={country._id} className="mt-4">
                     <LocationCarrousel
                       locations={country.locations!}
                       onSelect={(location) => {
@@ -261,128 +251,119 @@ const Home = () => {
                         setOpenLocationSearchFormDialog(true)
                       }}
                     />
-                  </TabPanel>
-                ))
-              }
+                  </div>
+                )
+              ))}
             </div>
           </div>
         )}
         <HowItWorks />
-        <div className="car-size">
-          <h1>{strings.CAR_SIZE_TITLE}</h1>
-          <p>{strings.CAR_SIZE_TEXT}</p>
-          <div className="boxes">
-            <div className="box">
-              <img alt="Mini" src={Mini} />
-              <div className="box-content">
-                <FormControlLabel
-                  control={(
-                    <Checkbox
-                      defaultChecked
-                      onChange={(e) => {
-                        const _ranges = bookcarsHelper.cloneArray(ranges) || []
-                        if (e.target.checked) {
-                          _ranges.push(bookcarsTypes.CarRange.Mini)
-                        } else {
-                          _ranges.splice(_ranges.findIndex((r) => r === bookcarsTypes.CarRange.Mini), 1)
-                        }
-                        setRanges(_ranges)
-                      }}
-                    />
-                  )}
-                  label={strings.MINI}
+        <div className="car-size px-4">
+          <h1 className="text-xl font-bold mb-4">{strings.CAR_SIZE_TITLE}</h1>
+          <p className="mb-4">{strings.CAR_SIZE_TEXT}</p>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="border rounded p-4 text-center">
+              <img alt="Mini" src={Mini} className="mx-auto mb-2" />
+              <label htmlFor="rangeMini" className="flex items-center justify-center space-x-2 mb-2">
+                <input
+                  id="rangeMini"
+                  type="checkbox"
+                  defaultChecked
+                  onChange={(e) => {
+                    const _ranges = bookcarsHelper.cloneArray(ranges) || []
+                    if (e.target.checked) {
+                      _ranges.push(bookcarsTypes.CarRange.Mini)
+                    } else {
+                      _ranges.splice(_ranges.findIndex((r) => r === bookcarsTypes.CarRange.Mini), 1)
+                    }
+                    setRanges(_ranges)
+                  }}
+                  className="h-4 w-4"
                 />
-                <div>
-                  <span className="price">
-                    À partir de
-                    {' '}
-                    {bookcarsHelper.formatPrice(100, commonStrings.CURRENCY, language)}
-                    /Jour
-                  </span>
-                </div>
-                <div>
-                  Compacte et économique, parfaite pour les trajets urbains ou courts voyages.
-                </div>
+                <span>{strings.MINI}</span>
+              </label>
+              <div className="font-medium mb-1">
+                À partir de
+                {' '}
+                {bookcarsHelper.formatPrice(100, commonStrings.CURRENCY, language)}
+                /Jour
+              </div>
+              <div>
+                Compacte et économique, parfaite pour les trajets urbains ou courts voyages.
               </div>
             </div>
-            <div className="box">
-              <img alt="Midi" src={Midi} />
-              <div className="box-content">
-                <FormControlLabel
-                  control={(
-                    <Checkbox
-                      defaultChecked
-                      onChange={(e) => {
-                        const _ranges = bookcarsHelper.cloneArray(ranges) || []
-                        if (e.target.checked) {
-                          _ranges.push(bookcarsTypes.CarRange.Midi)
-                        } else {
-                          _ranges.splice(_ranges.findIndex((r) => r === bookcarsTypes.CarRange.Midi), 1)
-                        }
-                        setRanges(_ranges)
-                      }}
-                    />
-                  )}
-                  label={strings.MIDI}
+            <div className="border rounded p-4 text-center">
+              <img alt="Midi" src={Midi} className="mx-auto mb-2" />
+              <label htmlFor="rangeMidi" className="flex items-center justify-center space-x-2 mb-2">
+                <input
+                  id="rangeMidi"
+                  type="checkbox"
+                  defaultChecked
+                  onChange={(e) => {
+                    const _ranges = bookcarsHelper.cloneArray(ranges) || []
+                    if (e.target.checked) {
+                      _ranges.push(bookcarsTypes.CarRange.Midi)
+                    } else {
+                      _ranges.splice(_ranges.findIndex((r) => r === bookcarsTypes.CarRange.Midi), 1)
+                    }
+                    setRanges(_ranges)
+                  }}
+                  className="h-4 w-4"
                 />
-                <div>
-                  <span className="price">
-                    À partir de
-                    {' '}
-                    {bookcarsHelper.formatPrice(130, commonStrings.CURRENCY, language)}
-                    /Jour
-                  </span>
-                </div>
-                <div>
-                  Confortable et polyvalente, idéale pour les familles et les longs trajets
-                </div>
+                <span>{strings.MIDI}</span>
+              </label>
+              <div className="font-medium mb-1">
+                À partir de
+                {' '}
+                {bookcarsHelper.formatPrice(130, commonStrings.CURRENCY, language)}
+                /Jour
+              </div>
+              <div>
+                Confortable et polyvalente, idéale pour les familles et les longs trajets
               </div>
             </div>
-            <div className="box">
-              <img alt="Maxi" src={Maxi} />
-              <div className="box-content">
-                <FormControlLabel
-                  control={(
-                    <Checkbox
-                      onChange={(e) => {
-                        const _ranges = bookcarsHelper.cloneArray(ranges) || []
-                        if (e.target.checked) {
-                          _ranges.push(bookcarsTypes.CarRange.Maxi)
-                        } else {
-                          _ranges.splice(_ranges.findIndex((r) => r === bookcarsTypes.CarRange.Maxi), 1)
-                        }
-                        setRanges(_ranges)
-                      }}
-                    />
-                  )}
-                  label={strings.MAXI}
+            <div className="border rounded p-4 text-center">
+              <img alt="Maxi" src={Maxi} className="mx-auto mb-2" />
+              <label htmlFor="rangeMaxi" className="flex items-center justify-center space-x-2 mb-2">
+                <input
+                  id="rangeMaxi"
+                  type="checkbox"
+                  onChange={(e) => {
+                    const _ranges = bookcarsHelper.cloneArray(ranges) || []
+                    if (e.target.checked) {
+                      _ranges.push(bookcarsTypes.CarRange.Maxi)
+                    } else {
+                      _ranges.splice(_ranges.findIndex((r) => r === bookcarsTypes.CarRange.Maxi), 1)
+                    }
+                    setRanges(_ranges)
+                  }}
+                  className="h-4 w-4"
                 />
-                <div>
-                  <span className="price">
-                    À partir de
-                    {' '}
-                    {bookcarsHelper.formatPrice(160, commonStrings.CURRENCY, language)}
-                    /Jour
-                  </span>
-                </div>
-                <div>
-                  Spacieuse et pratique, idéale pour les groupes et les longs voyages.
-                </div>
+                <span>{strings.MAXI}</span>
+              </label>
+              <div className="font-medium mb-1">
+                À partir de
+                {' '}
+                {bookcarsHelper.formatPrice(160, commonStrings.CURRENCY, language)}
+                /Jour
+              </div>
+              <div>
+                Spacieuse et pratique, idéale pour les groupes et les longs voyages.
               </div>
             </div>
           </div>
-          <Button
-            variant="contained"
-            className="btn-primary btn-home"
+          <button
+            type="button"
+            className="mt-4 px-4 py-2 bg-primary text-white rounded disabled:opacity-50"
             disabled={ranges.length === 0}
             onClick={() => {
               setOpenRangeSearchFormDialog(true)
             }}
           >
             {strings.SEARCH_FOR_CAR}
-          </Button>
+          </button>
         </div>
-        <div className="home-map">
+        <div className="px-4">
           <Map
             title={strings.MAP_TITLE}
             position={new L.LatLng(33.886917, 9.537499)}
@@ -407,42 +388,32 @@ const Home = () => {
         <RentalAgencySection />
       </div>
 
-      <Dialog
-        fullWidth={env.isMobile()}
-        maxWidth={false}
-        open={openLocationSearchFormDialog}
-        onClose={() => {
-          setOpenLocationSearchFormDialog(false)
-        }}
-      >
-        <DialogContent className="search-dialog-content">
-          <SearchForm
-            ranges={bookcarsHelper.getAllRanges()}
-            pickupLocation={pickupLocation}
-            onCancel={() => {
-              setOpenLocationSearchFormDialog(false)
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      {openLocationSearchFormDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded w-full max-w-lg p-4">
+            <SearchForm
+              ranges={bookcarsHelper.getAllRanges()}
+              pickupLocation={pickupLocation}
+              onCancel={() => {
+                setOpenLocationSearchFormDialog(false)
+              }}
+            />
+          </div>
+        </div>
+      )}
 
-      <Dialog
-        fullWidth={env.isMobile()}
-        maxWidth={false}
-        open={openRangeSearchFormDialog}
-        onClose={() => {
-          setOpenRangeSearchFormDialog(false)
-        }}
-      >
-        <DialogContent className="search-dialog-content">
-          <SearchForm
-            ranges={ranges}
-            onCancel={() => {
-              setOpenRangeSearchFormDialog(false)
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      {openRangeSearchFormDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded w-full max-w-lg p-4">
+            <SearchForm
+              ranges={ranges}
+              onCancel={() => {
+                setOpenRangeSearchFormDialog(false)
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       <Footer />
     </Layout>

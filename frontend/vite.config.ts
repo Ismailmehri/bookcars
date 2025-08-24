@@ -21,6 +21,18 @@ export default ({ mode }: { mode: string }) => {
     server: {
       host: '0.0.0.0',
       port: Number.parseInt(process.env.VITE_PORT || '3002', 10),
+      fs: {
+        allow: [path.resolve(__dirname, '..')],
+      },
+    },
+
+    optimizeDeps: {
+      exclude: [
+        '@mui/material',
+        '@mui/joy',
+        '@mui/x-data-grid',
+        '@mui/x-date-pickers',
+      ],
     },
 
     build: {

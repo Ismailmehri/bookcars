@@ -1,19 +1,13 @@
 import React from 'react'
-import { Link } from '@mui/material'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import ErrorIcon from '@mui/icons-material/Error'
-import InfoIcon from '@mui/icons-material/Info'
 import Seo from '@/components/Seo'
 import { strings as commonStrings } from '@/lang/common'
 
-import '@/assets/css/info.css'
-
 interface InfoProps {
-  className?: string;
-  message: string;
-  hideLink?: boolean;
-  style?: React.CSSProperties;
-  type?: 'success' | 'warning' | 'info'; // Type pour afficher une icône spécifique
+  className?: string
+  message: string
+  hideLink?: boolean
+  style?: React.CSSProperties
+  type?: 'success' | 'warning' | 'info'
 }
 
 const Info = ({ className, message, hideLink, style, type }: InfoProps) => {
@@ -21,11 +15,11 @@ const Info = ({ className, message, hideLink, style, type }: InfoProps) => {
   const renderIcon = () => {
     switch (type) {
       case 'success':
-        return <CheckCircleIcon style={{ color: 'green', fontSize: '3rem', marginRight: '10px' }} />
+        return <span className="text-green-500 text-4xl mr-2">✔️</span>
       case 'warning':
-        return <ErrorIcon style={{ color: 'orange', fontSize: '3rem', marginRight: '10px' }} />
+        return <span className="text-orange-500 text-4xl mr-2">⚠️</span>
       case 'info':
-        return <InfoIcon style={{ color: 'blue', fontSize: '3rem', marginRight: '10px' }} />
+        return <span className="text-blue-500 text-4xl mr-2">ℹ️</span>
       default:
         return null
     }
@@ -34,16 +28,19 @@ const Info = ({ className, message, hideLink, style, type }: InfoProps) => {
   return (
     <>
       <Seo robots="noindex,nofollow" />
-      <div style={style} className={`${className ? `${className} ` : ''}info-overlay`}>
-        <div className="info-container">
-          <div className="info-content">
+      <div
+        style={style}
+        className={`${className ? `${className} ` : ''}fixed inset-0 w-screen h-screen bg-black bg-opacity-50 flex items-center justify-center z-50 p-2`}
+      >
+        <div className="bg-white p-5 rounded-lg shadow-lg text-center max-w-xl w-full">
+          <div className="flex items-center justify-center mb-4">
             {renderIcon()}
-            <p className="info-message">{message}</p>
+            <p className="text-lg text-gray-800 m-0">{message}</p>
           </div>
           {!hideLink && (
-            <Link href="/" className="info-link">
+            <a href="/" className="text-blue-600 font-bold hover:underline">
               {commonStrings.GO_TO_HOME}
-            </Link>
+            </a>
           )}
         </div>
       </div>

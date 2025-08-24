@@ -37,7 +37,7 @@ const Review = lazy(() => import('@/pages/Review'))
 const App = () => (
   <GlobalProvider>
     <SuspenseRouter window={window}>
-      <div className="app">
+      <div className="flex flex-col flex-[1_0_auto]">
         <Suspense fallback={<></>}>
           <Routes>
             <Route path="/sign-in" element={<SignIn />} />

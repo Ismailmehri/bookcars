@@ -1,19 +1,9 @@
 import React, { useCallback, useState } from 'react'
 import { GoogleReCaptcha } from 'react-google-recaptcha-v3'
-import {
-  OutlinedInput,
-  InputLabel,
-  FormControl,
-  FormHelperText,
-  Button,
-  Paper,
-  Checkbox,
-  Link,
-} from '@mui/material'
 import validator from 'validator'
 import { intervalToDuration } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
-import PhoneInput, { Value } from 'react-phone-number-input' // Import Value
+import PhoneInput, { Value } from 'react-phone-number-input'
 import fr from 'react-phone-number-input/locale/fr'
 import { Helmet } from 'react-helmet'
 import Seo from '@/components/Seo'
@@ -31,9 +21,7 @@ import Backdrop from '@/components/SimpleBackdrop'
 import DatePicker from '@/components/DatePicker'
 import ReCaptchaProvider from '@/components/ReCaptchaProvider'
 import SocialLogin from '@/components/SocialLogin'
-import 'react-phone-number-input/style.css' // Import du style
-
-import '@/assets/css/signup.css' // Votre fichier CSS personnalisé
+import 'react-phone-number-input/style.css'
 
 const SignUp = () => {
   const navigate = useNavigate()
@@ -54,7 +42,7 @@ const SignUp = () => {
   const [tosChecked, setTosChecked] = useState(false)
   const [tosError, setTosError] = useState(false)
   const [phoneValid, setPhoneValid] = useState(true)
-  const [phone, setPhone] = useState<Value>() // Utilisez Value
+  const [phone, setPhone] = useState<Value>()
   const [birthDateValid, setBirthDateValid] = useState(true)
 
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,7 +213,7 @@ const SignUp = () => {
 
       const data: bookcarsTypes.SignUpPayload = {
         email,
-        phone: phone || '', // Convertir `undefined` en chaîne vide
+        phone: phone || '',
         password,
         fullName,
         birthDate,
@@ -333,139 +321,138 @@ const SignUp = () => {
           </script>
         </Helmet>
         {visible && (
-          <div className="signup">
-            <Paper className="signup-form" elevation={10}>
-              <h1 className="signup-form-title">{strings.SIGN_UP_HEADING}</h1>
-              <form onSubmit={handleSubmit}>
+          <div className="flex justify-center p-3">
+            <div className="w-full max-w-md bg-white rounded shadow-card p-5">
+              <h1 className="text-2xl font-bold mb-4">{strings.SIGN_UP_HEADING}</h1>
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <FormControl fullWidth margin="dense">
-                    <InputLabel className="required">{commonStrings.FULL_NAME}</InputLabel>
-                    <OutlinedInput
-                      type="text"
-                      label={commonStrings.FULL_NAME}
-                      value={fullName}
-                      required
-                      onChange={handleFullNameChange}
-                      autoComplete="off"
-                    />
-                  </FormControl>
-                  <FormControl fullWidth margin="dense">
-                    <InputLabel className="required">{commonStrings.EMAIL}</InputLabel>
-                    <OutlinedInput
-                      type="text"
-                      label={commonStrings.EMAIL}
-                      error={!emailValid || emailError}
-                      value={email}
-                      onBlur={handleEmailBlur}
-                      onChange={handleEmailChange}
-                      required
-                      autoComplete="off"
-                    />
-                    <FormHelperText error={!emailValid || emailError}>
-                      {(!emailValid && commonStrings.EMAIL_NOT_VALID) || ''}
-                      {(emailError && commonStrings.EMAIL_ALREADY_REGISTERED) || ''}
-                    </FormHelperText>
-                  </FormControl>
-                  <InputLabel htmlFor="phone-input" className="required">{commonStrings.PHONE}</InputLabel>
-                  <FormControl fullWidth margin="dense">
-                    <PhoneInput
-                      labels={fr}
-                      placeholder={commonStrings.PHONE}
-                      international
-                      defaultCountry="TN"
-                      value={phone}
-                      onChange={handlePhoneChange}
-                      onBlur={handlePhoneBlur}
-                      className="phone-input" // Appliquez la classe personnalisée
-                    />
-                    <FormHelperText error={!phoneValid}>{(!phoneValid && commonStrings.PHONE_NOT_VALID) || ''}</FormHelperText>
-                  </FormControl>
-                  <FormControl fullWidth margin="dense">
-                    <DatePicker
-                      label={commonStrings.BIRTH_DATE}
-                      value={birthDate}
-                      variant="outlined"
-                      required
-                      onChange={(_birthDate) => {
-                        if (_birthDate) {
-                          const _birthDateValid = validateBirthDate(_birthDate)
-
-                          setBirthDate(_birthDate)
-                          setBirthDateValid(_birthDateValid)
-                        }
-                      }}
-                      language={language}
-                    />
-                    <FormHelperText error={!birthDateValid}>{(!birthDateValid && commonStrings.BIRTH_DATE_NOT_VALID) || ''}</FormHelperText>
-                  </FormControl>
-                  <FormControl fullWidth margin="dense">
-                    <InputLabel className="required">{commonStrings.PASSWORD}</InputLabel>
-                    <OutlinedInput
-                      label={commonStrings.PASSWORD}
-                      value={password}
-                      onChange={handlePasswordChange}
-                      required
-                      type="password"
-                      inputProps={{
-                        autoComplete: 'new-password',
-                        form: {
-                          autoComplete: 'off',
-                        },
-                      }}
-                    />
-                  </FormControl>
-                  <FormControl fullWidth margin="dense">
-                    <InputLabel className="required">{commonStrings.CONFIRM_PASSWORD}</InputLabel>
-                    <OutlinedInput
-                      label={commonStrings.CONFIRM_PASSWORD}
-                      value={confirmPassword}
-                      onChange={handleConfirmPasswordChange}
-                      required
-                      type="password"
-                      inputProps={{
-                        autoComplete: 'new-password',
-                        form: {
-                          autoComplete: 'off',
-                        },
-                      }}
-                    />
-                  </FormControl>
-
-                  {env.RECAPTCHA_ENABLED && (
-                    <div className="recaptcha">
-                      <GoogleReCaptcha onVerify={handleRecaptchaVerify} />
-                    </div>
-                  )}
-
-                  <div className="signup-tos">
-                    <table>
-                      <tbody>
-                        <tr>
-                          <td aria-label="tos">
-                            <Checkbox checked={tosChecked} onChange={handleTosChange} color="primary" />
-                          </td>
-                          <td>
-                            <Link href="/tos" target="_blank" rel="noreferrer">
-                              {commonStrings.TOS}
-                            </Link>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <SocialLogin />
-
-                  <div className="signup-buttons">
-                    <Button type="submit" variant="contained" className="btn-primary btn-margin-bottom" size="small">
-                      {strings.SIGN_UP}
-                    </Button>
-                    <Button variant="contained" className="btn-secondary btn-margin-bottom" size="small" href="/">
-                      {commonStrings.CANCEL}
-                    </Button>
+                  <label htmlFor="fullName" className="block text-sm font-medium mb-1 required">
+                    {commonStrings.FULL_NAME}
+                  </label>
+                  <input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={handleFullNameChange}
+                    required
+                    autoComplete="off"
+                    className="w-full p-2 border rounded"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium mb-1 required">
+                    {commonStrings.EMAIL}
+                  </label>
+                  <input
+                    id="email"
+                    type="text"
+                    value={email}
+                    onBlur={handleEmailBlur}
+                    onChange={handleEmailChange}
+                    required
+                    autoComplete="off"
+                    className={`w-full p-2 border rounded ${(!emailValid || emailError) ? 'border-red-500' : ''}`}
+                  />
+                  <div className="text-xs text-red-500">
+                    {(!emailValid && commonStrings.EMAIL_NOT_VALID) || ''}
+                    {(emailError && commonStrings.EMAIL_ALREADY_REGISTERED) || ''}
                   </div>
                 </div>
-                <div className="form-error">
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium mb-1 required">
+                    {commonStrings.PHONE}
+                  </label>
+                  <PhoneInput
+                    id="phone"
+                    labels={fr}
+                    placeholder={commonStrings.PHONE}
+                    international
+                    defaultCountry="TN"
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    onBlur={handlePhoneBlur}
+                    className="w-full p-2 border rounded"
+                  />
+                  <div className="text-xs text-red-500">
+                    {(!phoneValid && commonStrings.PHONE_NOT_VALID) || ''}
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="birthDate" className="block text-sm font-medium mb-1 required">
+                    {commonStrings.BIRTH_DATE}
+                  </label>
+                  <DatePicker
+                    id="birthDate"
+                    label={commonStrings.BIRTH_DATE}
+                    value={birthDate}
+                    required
+                    onChange={(_birthDate) => {
+                      if (_birthDate) {
+                        const _birthDateValid = validateBirthDate(_birthDate)
+                        setBirthDate(_birthDate)
+                        setBirthDateValid(_birthDateValid)
+                      }
+                    }}
+                    language={language}
+                  />
+                  <div className="text-xs text-red-500">
+                    {(!birthDateValid && commonStrings.BIRTH_DATE_NOT_VALID) || ''}
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium mb-1 required">
+                    {commonStrings.PASSWORD}
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={handlePasswordChange}
+                    required
+                    className="w-full p-2 border rounded"
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1 required">
+                    {commonStrings.CONFIRM_PASSWORD}
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={handleConfirmPasswordChange}
+                    required
+                    className="w-full p-2 border rounded"
+                    autoComplete="new-password"
+                  />
+                </div>
+                {env.RECAPTCHA_ENABLED && (
+                  <div className="recaptcha">
+                    <GoogleReCaptcha onVerify={handleRecaptchaVerify} />
+                  </div>
+                )}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={tosChecked}
+                    onChange={handleTosChange}
+                    className="h-4 w-4"
+                  />
+                  <a href="/tos" target="_blank" rel="noreferrer" className="text-primary underline">
+                    {commonStrings.TOS}
+                  </a>
+                </div>
+                <SocialLogin />
+                <div className="flex space-x-2">
+                  <button type="submit" className="px-4 py-2 bg-primary text-white rounded">
+                    {strings.SIGN_UP}
+                  </button>
+                  <a href="/" className="px-4 py-2 bg-secondary text-white rounded">
+                    {commonStrings.CANCEL}
+                  </a>
+                </div>
+                <div>
                   {passwordError && <Error message={commonStrings.PASSWORD_ERROR} />}
                   {passwordsDontMatch && <Error message={commonStrings.PASSWORDS_DONT_MATCH} />}
                   {recaptchaError && <Error message={commonStrings.RECAPTCHA_ERROR} />}
@@ -473,7 +460,7 @@ const SignUp = () => {
                   {error && <Error message={strings.SIGN_UP_ERROR} />}
                 </div>
               </form>
-            </Paper>
+            </div>
           </div>
         )}
         {loading && <Backdrop text={commonStrings.PLEASE_WAIT} />}

@@ -57,15 +57,11 @@ const SignIn = () => {
           setError(false)
 
           const params = new URLSearchParams(window.location.search)
-          if (params.has('from')) {
-            const from = params.get('from')
-            if (from === 'checkout') {
-              navigate(`/checkout${window.location.search}`)
-            } else {
-              navigate(0)
-            }
+          const redirect = params.get('redirect')
+          if (redirect) {
+            navigate(decodeURIComponent(redirect))
           } else {
-            navigate(0)
+            navigate(`/${window.location.search}`)
           }
         }
       } else {
@@ -89,13 +85,9 @@ const SignIn = () => {
 
     if (user) {
       const params = new URLSearchParams(window.location.search)
-      if (params.has('from')) {
-        const from = params.get('from')
-        if (from === 'checkout') {
-          navigate(`/checkout${window.location.search}`)
-        } else {
-          navigate(`/${window.location.search}`)
-        }
+      const redirect = params.get('redirect')
+      if (redirect) {
+        navigate(decodeURIComponent(redirect))
       } else {
         navigate(`/${window.location.search}`)
       }

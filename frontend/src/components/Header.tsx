@@ -94,6 +94,10 @@ const Header = ({
     },
   }
 
+  const signInUrl = `/sign-in?redirect=${encodeURIComponent(
+    window.location.pathname + window.location.search
+  )}`
+
   const handleAccountMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
   }
@@ -317,7 +321,7 @@ const Header = ({
                   <ListItemText primary={strings.CONTACT} />
                 </ListItemLink>
                 {env.isMobile() && !hideSignin && !isSignedIn && isLoaded && !loading && (
-                  <ListItemLink href="/sign-in">
+                  <ListItemLink href={signInUrl}>
                     <ListItemIcon><LoginIcon /></ListItemIcon>
                     <ListItemText primary={strings.SIGN_IN} />
                   </ListItemLink>
@@ -334,7 +338,15 @@ const Header = ({
                 </IconButton>
               )}
               {!hideSignin && !isSignedIn && isLoaded && !loading && (
-                <Button variant="contained" startIcon={<LoginIcon />} href="/sign-in" disableElevation fullWidth className="btn" style={{ minWidth: '180px' }}>
+                <Button
+                  variant="contained"
+                  startIcon={<LoginIcon />}
+                  href={signInUrl}
+                  disableElevation
+                  fullWidth
+                  className="btn"
+                  style={{ minWidth: '180px' }}
+                >
                   {strings.SIGN_IN}
                 </Button>
               )}
@@ -346,9 +358,17 @@ const Header = ({
             </div>
             <div className="header-mobile">
               {!hideSignin && !isSignedIn && isLoaded && !loading && (
-              <Button variant="contained" startIcon={<LoginIcon />} href="/sign-in" disableElevation fullWidth className="btn" style={{ minWidth: '180px' }}>
-                {strings.SIGN_IN}
-              </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<LoginIcon />}
+                  href={signInUrl}
+                  disableElevation
+                  fullWidth
+                  className="btn"
+                  style={{ minWidth: '180px' }}
+                >
+                  {strings.SIGN_IN}
+                </Button>
               )}
               {isSignedIn && (
                 <IconButton onClick={handleNotificationsClick} className="btn">

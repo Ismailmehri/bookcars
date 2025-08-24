@@ -64,6 +64,10 @@ const Checkout = () => {
   const location = useLocation()
   const navigate = useNavigate()
 
+  const signInUrl = `/sign-in?redirect=${encodeURIComponent(
+    location.pathname + location.search
+  )}`
+
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [car, setCar] = useState<bookcarsTypes.Car>()
   const [pickupLocation, setPickupLocation] = useState<bookcarsTypes.Location>()
@@ -342,20 +346,30 @@ const Checkout = () => {
     setUser(_user)
     setAuthenticated(_user !== undefined)
     setLanguage(UserService.getLanguage())
+    const state = (location.state as any) || (() => {
+      const stored = localStorage.getItem('checkout')
+      if (stored) {
+        localStorage.removeItem('checkout')
+        return JSON.parse(stored)
+      }
+      return null
+    })()
 
-    const { state } = location
+    if (location.state && !_user) {
+      localStorage.setItem('checkout', JSON.stringify(location.state))
+    }
+
     if (!state) {
       setNoMatch(true)
       return
     }
 
-    const { carId } = state
-    const { pickupLocationId } = state
-    const { dropOffLocationId } = state
-    const { from: _from } = state
-    const { to: _to } = state
+    const { carId, pickupLocationId, dropOffLocationId, from: fromStr, to: toStr } = state
 
-    if (!carId || !pickupLocationId || !dropOffLocationId || !_from || !_to) {
+    const _from = new Date(fromStr)
+    const _to = new Date(toStr)
+
+    if (!carId || !pickupLocationId || !dropOffLocationId || Number.isNaN(_from.getTime()) || Number.isNaN(_to.getTime())) {
       setNoMatch(true)
       return
     }
@@ -640,7 +654,7 @@ const Checkout = () => {
                               <span>
                                 <span>{commonStrings.EMAIL_ALREADY_REGISTERED}</span>
                                 <span> </span>
-                                <a href={`/sign-in?c=${car._id}&p=${pickupLocation._id}&d=${dropOffLocation._id}&f=${from.getTime()}&t=${to.getTime()}&from=checkout`}>{strings.SIGN_IN}</a>
+                                <a href={signInUrl}>{strings.SIGN_IN}</a>
                               </span>
                             ))
                               || ''}
@@ -855,7 +869,7 @@ const Checkout = () => {
                     </Button>
                     )}
                     {((!clientSecret || (payLater)) && !user) && (
-                    <Button href="/sign-in" variant="contained" className="btn-checkout btn-margin-bottom" size="small" disabled={loading}>
+                    <Button href={signInUrl} variant="contained" className="btn-checkout btn-margin-bottom" size="small" disabled={loading}>
                       {
                           loading
                             ? <CircularProgress color="inherit" size={24} />

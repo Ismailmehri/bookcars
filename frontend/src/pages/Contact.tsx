@@ -7,8 +7,6 @@ import Footer from '@/components/Footer'
 import Seo from '@/components/Seo'
 import { buildDescription } from '@/common/seo'
 
-import '@/assets/css/contact.css'
-
 const Contact = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
 
@@ -71,8 +69,8 @@ const Contact = () => {
           })}
         </script>
       </Helmet>
-      <div className="contact">
-        <ContactForm user={user} className="form" />
+      <div className="flex flex-col flex-1 items-center">
+        <ContactForm user={user} className="my-[100px]" />
       </div>
       <Footer />
     </Layout>

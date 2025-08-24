@@ -1,14 +1,5 @@
 import React, { useState } from 'react'
-import {
-  Input,
-  InputLabel,
-  FormControl,
-  FormHelperText,
-  Button,
-  Paper,
-  Link
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Seo from '@/components/Seo'
 import * as bookcarsTypes from ':bookcars-types'
 import * as UserService from '@/services/UserService'
@@ -20,8 +11,6 @@ import { strings as mStrings } from '@/lang/master'
 import { strings } from '@/lang/activate'
 import NoMatch from './NoMatch'
 import * as helper from '@/common/helper'
-
-import '@/assets/css/activate.css'
 
 const Activate = () => {
   const navigate = useNavigate()
@@ -46,7 +35,7 @@ const Activate = () => {
     setConfirmPassword(e.target.value)
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement> | React.KeyboardEvent<HTMLElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     try {
       e.preventDefault()
 
@@ -68,14 +57,11 @@ const Activate = () => {
       setPasswordError(false)
 
       const data: bookcarsTypes.ActivatePayload = { userId, token, password }
-
       const status = await UserService.activate(data)
       if (status === 200) {
         const signInResult = await UserService.signin({ email, password })
-
         if (signInResult.status === 200) {
           const _status = await UserService.deleteTokens(userId)
-
           if (_status === 200) {
             navigate('/')
           } else {
@@ -84,6 +70,9 @@ const Activate = () => {
         } else {
           helper.error()
         }
+      } else if (status === 204) {
+        setResend(true)
+        setVisible(false)
       } else {
         helper.error()
       }
@@ -92,16 +81,9 @@ const Activate = () => {
     }
   }
 
-  const handleConfirmPasswordKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.key === 'Enter') {
-      handleSubmit(e)
-    }
-  }
-
   const handleResend = async () => {
     try {
       const status = await UserService.resend(email, false)
-
       if (status === 200) {
         helper.info(commonStrings.ACTIVATION_EMAIL_SENT)
       } else {
@@ -124,13 +106,11 @@ const Activate = () => {
         if (_userId && _email && _token) {
           try {
             const status = await UserService.checkToken(_userId, _email, _token)
-
             if (status === 200) {
               setUserId(_userId)
               setEmail(_email)
               setToken(_token)
               setVisible(true)
-
               if (params.has('r')) {
                 const _reset = params.get('r') === 'true'
                 setReset(_reset)
@@ -157,64 +137,68 @@ const Activate = () => {
     <Layout onLoad={onLoad} strict={false}>
       <Seo title="Activation du compte | Plany.tn" canonical="https://plany.tn/activate" robots="noindex,nofollow" />
       {resend && (
-        <div className="resend">
-          <Paper className="resend-form" elevation={10}>
-            <h1>{strings.ACTIVATE_HEADING}</h1>
-            <div className="resend-form-content">
+        <div className="flex justify-center py-8">
+          <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded shadow">
+            <h1 className="text-xl font-medium mb-4">{strings.ACTIVATE_HEADING}</h1>
+            <div className="space-y-4">
               <span>{strings.TOKEN_EXPIRED}</span>
-              <Button type="button" variant="contained" size="small" className="btn-primary btn-resend" onClick={handleResend}>
+              <button type="button" className="px-4 py-2 bg-primary text-white rounded" onClick={handleResend}>
                 {mStrings.RESEND}
-              </Button>
-              <p className="go-to-home">
-                <Link href="/">{commonStrings.GO_TO_HOME}</Link>
+              </button>
+              <p className="text-center">
+                <Link to="/" className="text-primary hover:underline">{commonStrings.GO_TO_HOME}</Link>
               </p>
             </div>
-          </Paper>
+          </div>
         </div>
       )}
       {visible && (
-        <div className="activate">
-          <Paper className="activate-form" elevation={10}>
-            <h1>{reset ? rpStrings.RESET_PASSWORD_HEADING : strings.ACTIVATE_HEADING}</h1>
-            <form onSubmit={handleSubmit}>
-              <FormControl fullWidth margin="dense">
-                <InputLabel className="required" error={passwordError}>
-                  {cpStrings.NEW_PASSWORD}
-                </InputLabel>
-                <Input id="password-new" onChange={handleNewPasswordChange} type="password" value={password} error={passwordError} required />
-                <FormHelperText error={passwordError}>{(passwordError && cpStrings.NEW_PASSWORD_ERROR) || ''}</FormHelperText>
-              </FormControl>
-              <FormControl fullWidth margin="dense" error={confirmPasswordError}>
-                <InputLabel error={confirmPasswordError} className="required">
-                  {commonStrings.CONFIRM_PASSWORD}
-                </InputLabel>
-                <Input
-                  id="password-confirm"
-                  onChange={handleConfirmPasswordChange}
-                  onKeyDown={handleConfirmPasswordKeyDown}
-                  error={confirmPasswordError || passwordLengthError}
-                  type="password"
-                  value={confirmPassword}
-                  required
-                />
-                <FormHelperText error={confirmPasswordError || passwordLengthError}>
-                  {
-                    (confirmPasswordError && commonStrings.PASSWORDS_DONT_MATCH)
-                    || (passwordLengthError && commonStrings.PASSWORD_ERROR)
-                    || ''
-                  }
-                </FormHelperText>
-              </FormControl>
-              <div className="buttons">
-                <Button type="submit" className="btn-primary btn-margin btn-margin-bottom" size="small" variant="contained">
-                  {reset ? commonStrings.UPDATE : strings.ACTIVATE}
-                </Button>
-                <Button className="btn-secondary btn-margin-bottom" size="small" variant="contained" href="/">
-                  {commonStrings.CANCEL}
-                </Button>
-              </div>
-            </form>
-          </Paper>
+        <div className="flex justify-center py-8">
+          <form className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded shadow" onSubmit={handleSubmit}>
+            <h1 className="text-xl font-medium mb-4">
+              {reset ? rpStrings.RESET_PASSWORD_HEADING : strings.ACTIVATE_HEADING}
+            </h1>
+            <div className="mb-4">
+              <label htmlFor="password-new" className="block mb-1 font-medium">{cpStrings.NEW_PASSWORD}</label>
+              <input
+                id="password-new"
+                type="password"
+                className={`w-full border rounded p-2 ${passwordError ? 'border-red-500' : ''}`}
+                value={password}
+                onChange={handleNewPasswordChange}
+                required
+              />
+              {passwordError && (
+                <div className="mt-1 text-sm text-red-600">{cpStrings.NEW_PASSWORD_ERROR}</div>
+              )}
+            </div>
+            <div className="mb-4">
+              <label htmlFor="password-confirm" className="block mb-1 font-medium">{commonStrings.CONFIRM_PASSWORD}</label>
+              <input
+                id="password-confirm"
+                type="password"
+                className={`w-full border rounded p-2 ${
+                  confirmPasswordError || passwordLengthError ? 'border-red-500' : ''
+                }`}
+                value={confirmPassword}
+                onChange={handleConfirmPasswordChange}
+                required
+              />
+              {(confirmPasswordError || passwordLengthError) && (
+                <div className="mt-1 text-sm text-red-600">
+                  {confirmPasswordError ? commonStrings.PASSWORDS_DONT_MATCH : commonStrings.PASSWORD_ERROR}
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button type="submit" className="px-4 py-2 bg-primary text-white rounded">
+                {reset ? commonStrings.UPDATE : strings.ACTIVATE}
+              </button>
+              <a href="/" className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded">
+                {commonStrings.CANCEL}
+              </a>
+            </div>
+          </form>
         </div>
       )}
       {noMatch && <NoMatch hideHeader />}

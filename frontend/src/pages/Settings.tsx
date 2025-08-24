@@ -28,8 +28,6 @@ import Seo from '@/components/Seo'
 import * as helper from '@/common/helper'
 import 'react-phone-number-input/style.css' // Import du style
 
-import '@/assets/css/settings.css'
-
 const Settings = () => {
   const navigate = useNavigate()
 
@@ -190,8 +188,8 @@ const Settings = () => {
     <Layout onLoad={onLoad} user={user} strict>
       <Seo title="Paramètres du compte | Plany.tn" canonical="https://plany.tn/settings" robots="noindex,nofollow" />
       {visible && user && (
-        <div className="settings">
-          <Paper className="settings-form settings-form-wrapper" elevation={10}>
+        <div className="flex flex-col flex-1 justify-center items-center my-[45px]">
+          <Paper className="w-[360px] h-[780px] p-[30px] md:w-[550px] md:h-[700px] my-8" elevation={10}>
             <form onSubmit={handleSubmit}>
               <Avatar
                 loggedUser={user}
@@ -201,7 +199,7 @@ const Settings = () => {
                 onBeforeUpload={onBeforeUpload}
                 onChange={onAvatarChange}
                 color="disabled"
-                className="avatar-ctn"
+                className="relative my-5 h-[170px] flex items-center justify-center"
               />
               <FormControl fullWidth margin="dense">
                 <InputLabel className="required">{commonStrings.FULL_NAME}</InputLabel>
@@ -221,7 +219,7 @@ const Settings = () => {
                   value={phone}
                   onChange={handlePhoneChange}
                   onBlur={handlePhoneBlur}
-                  className="phone-input" // Appliquer une classe personnalisée
+                  className="w-full p-[2px] border-b border-[#8a8686] hover:border-[#272626]"
                 />
                 <FormHelperText error={!phoneValid}>{(!phoneValid && commonStrings.PHONE_NOT_VALID) || ''}</FormHelperText>
               </FormControl>
@@ -280,8 +278,8 @@ const Settings = () => {
               </div>
             </form>
           </Paper>
-          <Paper className="settings-net settings-net-wrapper" elevation={10}>
-            <h1 className="settings-form-title">{strings.NETWORK_SETTINGS}</h1>
+          <Paper className="w-[360px] h-[200px] p-[30px] md:w-[550px] my-8" elevation={10}>
+            <h1 className="text-center capitalize text-[#232323]">{strings.NETWORK_SETTINGS}</h1>
             <FormControl component="fieldset">
               <FormControlLabel
                 control={<Switch checked={enableEmailNotifications} onChange={handleEmailNotificationsChange} />}

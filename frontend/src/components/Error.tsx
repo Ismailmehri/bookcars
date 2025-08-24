@@ -1,9 +1,5 @@
 import React from 'react'
-import { Box, Typography, Button } from '@mui/material'
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 import { strings as commonStrings } from '@/lang/common'
-
-import '@/assets/css/error.css'
 
 interface ErrorProps {
   message: string
@@ -14,59 +10,34 @@ interface ErrorProps {
 const Error = ({ message, style, homeLink }: ErrorProps) => {
   if (homeLink) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          backgroundColor: '#f5f5f5',
-          padding: 3,
-          textAlign: 'center',
-          ...style
-        }}
+      <div
+        className="flex flex-col items-center justify-center h-screen bg-gray-100 p-3 text-center"
+        style={style}
       >
-        {/* Icône d'erreur */}
-        <ErrorOutlineIcon sx={{ fontSize: 80, color: '#f44336', marginBottom: 2 }} />
-
-        {/* Message d'erreur */}
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 'bold',
-            marginBottom: 1,
-            color: '#333'
-          }}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          className="w-20 h-20 text-red-500 mb-2"
+          fill="currentColor"
         >
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm1-11h-2v8h2V6z" />
+        </svg>
+        <h1 className="text-4xl font-bold mb-1 text-gray-800">
           {commonStrings.GENERIC_ERROR}
-        </Typography>
-
-        {/* Lien vers la page d'accueil */}
-        <Button
-          variant="contained"
-          color="primary"
+        </h1>
+        <a
           href="/"
-          sx={{
-            paddingX: 4,
-            paddingY: 1.5,
-            borderRadius: 3,
-            marginTop: 3,
-            boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)'
-          }}
+          className="mt-3 px-6 py-2 rounded-lg bg-primary text-white shadow-card"
         >
           {commonStrings.GO_TO_HOME}
-        </Button>
-      </Box>
+        </a>
+      </div>
     )
   }
 
-  // Version existante si homeLink est false
   return (
-    <div className="msg" style={style || {}}>
-      <div className="error">
-        <span className="message">{message}</span>
-      </div>
+    <div className="text-center text-red-500 p-1" style={style || {}}>
+      <span>{message}</span>
     </div>
   )
 }

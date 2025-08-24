@@ -1,12 +1,4 @@
 import React, { useState } from 'react'
-import {
-  Paper,
-  FormControl,
-  InputLabel,
-  Input,
-  Button,
-  Link
-} from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet'
 import Seo from '@/components/Seo'
@@ -18,8 +10,6 @@ import * as UserService from '@/services/UserService'
 import Error from '@/components/Error'
 import Layout from '@/components/Layout'
 import SocialLogin from '@/components/SocialLogin'
-
-import '@/assets/css/signin.css'
 
 const SignIn = () => {
   const navigate = useNavigate()
@@ -155,66 +145,90 @@ const SignIn = () => {
         </script>
       </Helmet>
       {visible && (
-        <div className="signin">
-          <Paper className="signin-form" elevation={10}>
-            <form onSubmit={handleSubmit}>
-              <h1 className="signin-form-title">{strings.SIGN_IN_HEADING}</h1>
-              <FormControl fullWidth margin="dense">
-                <InputLabel>{commonStrings.EMAIL}</InputLabel>
-                <Input type="text" onChange={handleEmailChange} autoComplete="email" required />
-              </FormControl>
-              <FormControl fullWidth margin="dense">
-                <InputLabel>{commonStrings.PASSWORD}</InputLabel>
-                <Input onChange={handlePasswordChange} onKeyDown={handlePasswordKeyDown} autoComplete="password" type="password" required />
-              </FormControl>
+        <div className="flex flex-col items-center py-12">
+          <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <h1 className="text-center text-2xl font-semibold text-gray-800">{strings.SIGN_IN_HEADING}</h1>
 
-              <div className="stay-connected">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">{commonStrings.EMAIL}</label>
+                <input
+                  id="email"
+                  type="email"
+                  onChange={handleEmailChange}
+                  autoComplete="email"
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">{commonStrings.PASSWORD}</label>
+                <input
+                  id="password"
+                  type="password"
+                  onChange={handlePasswordChange}
+                  onKeyDown={handlePasswordKeyDown}
+                  autoComplete="password"
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                />
+              </div>
+
+              <div className="flex items-center">
                 <input
                   id="stay-connected"
                   type="checkbox"
                   onChange={(e) => {
                     UserService.setStayConnected(e.currentTarget.checked)
                   }}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                 />
-                <label
-                  htmlFor="stay-connected"
-                >
+                <label htmlFor="stay-connected" className="ml-2 block cursor-pointer select-none text-sm text-gray-600">
                   {strings.STAY_CONNECTED}
                 </label>
               </div>
 
-              <div className="forgot-password">
-                <Link href="/forgot-password">{strings.RESET_PASSWORD}</Link>
+              <div className="text-right">
+                <a href="/forgot-password" className="text-sm text-primary hover:underline">
+                  {strings.RESET_PASSWORD}
+                </a>
               </div>
 
               <SocialLogin />
 
-              <div className="signin-buttons">
-                <Button variant="contained" size="small" href="/sign-up" className="btn-secondary btn-margin btn-margin-bottom">
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+                <a
+                  href="/sign-up"
+                  className="inline-flex justify-center rounded-md bg-secondary px-4 py-2 text-white hover:bg-secondary/90"
+                >
                   {strings.SIGN_UP}
-                </Button>
-                <Button type="submit" variant="contained" size="small" className="btn-primary btn-margin btn-margin-bottom">
+                </a>
+                <button
+                  type="submit"
+                  className="inline-flex justify-center rounded-md bg-primary px-4 py-2 text-white hover:bg-primary/90"
+                >
                   {strings.SIGN_IN}
-                </Button>
+                </button>
               </div>
-              <div className="separator" />
-              <div className="signin-button">
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="large"
+
+              <div className="my-6 border-t border-gray-200" />
+
+              <div className="text-center">
+                <a
                   href="https://admin.plany.tn/sign-up"
-                  sx={{ padding: '10px 20px', fontSize: '16px', borderRadius: '10px' }}
+                  className="inline-block rounded-lg bg-gradient-to-r from-primary to-secondary px-6 py-3 text-lg font-medium text-white shadow-md hover:shadow-lg transition"
                 >
                   Inscrivez votre agence maintenant
-                </Button>
+                </a>
               </div>
-              <div className="form-error">
+
+              <div className="h-16 pt-2 text-center">
                 {error && <Error message={strings.ERROR_IN_SIGN_IN} />}
                 {blacklisted && <Error message={strings.IS_BLACKLISTED} />}
               </div>
             </form>
-          </Paper>
+          </div>
         </div>
       )}
     </Layout>

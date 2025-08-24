@@ -37,7 +37,7 @@ const Review = lazy(() => import('@/pages/Review'))
 const App = () => (
   <GlobalProvider>
     <SuspenseRouter window={window}>
-      <div className="flex flex-col flex-[1_0_auto]">
+      <div className="flex min-h-screen flex-col flex-auto bg-gradient-to-br from-gray-50 to-gray-100">
         <Suspense fallback={<></>}>
           <Routes>
             <Route path="/sign-in" element={<SignIn />} />

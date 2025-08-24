@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
-import { Box, Dialog, DialogContent, DialogTitle, IconButton, Paper, Slider, Typography } from '@mui/material'
-import { Close as CloseIcon } from '@mui/icons-material'
+// Material UI components removed for Tailwind migration
 import { Helmet } from 'react-helmet'
 import Seo from '@/components/Seo'
 import { buildDescription, stripQuery, isParamSearch } from '@/common/seo'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
-import env from '@/config/env.config'
 import { strings } from '@/lang/search'
 import * as helper from '@/common/helper'
 import * as LocationService from '@/services/LocationService'
@@ -26,7 +24,7 @@ import Map from '@/components/Map'
 
 import ViewOnMap from '@/assets/img/view-on-map.png'
 
-import '@/assets/css/search.css'
+// Tailwind CSS is used for styling; former search.css has been removed
 import LocationHeader from '@/components/LocationHeader'
 
 const Search = () => {
@@ -142,10 +140,6 @@ const Search = () => {
     setSelectedSupplier(filteredSuppliers.length === suppliers.length ? [] : filteredSuppliers)
   }
 
-  const handleChange = (_event: Event, newValue: number | number[]) => {
-    setMinMAx(newValue as number[])
-  }
-
   const handleCarFilterMinMax = () => {
     // Vérifier que les valeurs obligatoires sont définies
     if (!pickupLocation || !dropOffLocation || !from || !to) {
@@ -166,17 +160,15 @@ const Search = () => {
     handleCarFilterSubmit(updatedFilter)
   }
 
-  const marks = [
-    {
-      value: 40,
-      label: '40DT',
-    },
-    {
-      value: 1000,
-      label: '1000DT',
-    }]
-
-  const valuetext = (value: number) => `${value}DT`
+  const handleRangeChange = (index: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10)
+    setMinMAx((prev) => {
+      const updated = [...prev]
+      updated[index] = value
+      return updated as number[]
+    })
+    handleCarFilterMinMax()
+  }
 
   const handleCarTypeFilterChange = (values: bookcarsTypes.CarType[]) => {
     setCarType(values)
@@ -371,8 +363,8 @@ const Search = () => {
         </script>
       </Helmet>
       {visible && supplierIds && pickupLocation && dropOffLocation && from && to && (
-        <div className="search">
-          <div className="col-1">
+        <div className="flex flex-col md:flex-row flex-1">
+          <div className="flex flex-col items-center p-1 md:ml-5 md:w-[300px] mb-1 md:mb-0">
             {!loading && (
               <>
                 {pickupLocation.latitude && pickupLocation.longitude && (
@@ -380,22 +372,22 @@ const Search = () => {
                     position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
                     initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
                     parkingSpots={pickupLocation.parkingSpots}
-                    className="map"
+                    className="map mt-5 mb-1 h-[180px] w-full"
                   >
                     <button
                       type="button"
                       onClick={() => {
                         setOpenMapDialog(true)
                       }}
-                      className="view-on-map"
+                      className="absolute top-[10px] right-[10px] z-[10000] bg-[#062638] text-white border-0 px-[10px] py-[5px] flex flex-row rounded cursor-pointer"
                     >
-                      <img alt="View On Map" src={ViewOnMap} />
-                      <span>{strings.VIEW_ON_MAP}</span>
+                      <img alt="View On Map" src={ViewOnMap} className="max-w-[20px] max-h-[20px] mr-[2px]" />
+                      <span className="mt-[2px]">{strings.VIEW_ON_MAP}</span>
                     </button>
                   </Map>
                 )}
                 <CarFilter
-                  className="filter"
+                  className="my-1 w-full max-w-[480px]"
                   pickupLocation={pickupLocation}
                   dropOffLocation={dropOffLocation}
                   from={from}
@@ -405,21 +397,21 @@ const Search = () => {
                   collapse
                   onSubmit={handleCarFilterSubmit}
                 />
-                <SupplierFilter className="filter" suppliers={suppliers} onChange={handleSupplierFilterChange} />
+                <SupplierFilter className="my-1 w-full max-w-[480px]" suppliers={suppliers} onChange={handleSupplierFilterChange} />
                 { /* <CarRatingFilter className="filter" onChange={handleRatingFilterChange} />
                 <CarRangeFilter className="filter" onChange={handleRangeFilterChange} />
                 <CarMultimediaFilter className="filter" onChange={handleMultimediaFilterChange} />
                 <CarSeatsFilter className="filter" onChange={handleSeatsFilterChange} />
                 <FuelPolicyFilter className="filter" onChange={handleFuelPolicyFilterChange} />
                 <CarSpecsFilter className="filter" onChange={handleCarSpecsFilterChange} /> */}
-                <CarType className="filter" onChange={handleCarTypeFilterChange} />
-                <GearboxFilter className="filter" onChange={handleGearboxFilterChange} />
-                <MileageFilter className="filter" onChange={handleMileageFilterChange} />
-                <DepositFilter className="filter" onChange={handleDepositFilterChange} />
+                <CarType className="my-1 w-full max-w-[480px]" onChange={handleCarTypeFilterChange} />
+                <GearboxFilter className="my-1 w-full max-w-[480px]" onChange={handleGearboxFilterChange} />
+                <MileageFilter className="my-1 w-full max-w-[480px]" onChange={handleMileageFilterChange} />
+                <DepositFilter className="my-1 w-full max-w-[480px]" onChange={handleDepositFilterChange} />
               </>
             )}
           </div>
-          <div className="col-2">
+          <div className="flex flex-col items-center flex-1 p-1">
             <LocationHeader
               location={pickupLocation}
             />
@@ -446,55 +438,45 @@ const Search = () => {
               boost
             // distance={distance}
             />
-            <Paper
-              elevation={3}
-              sx={{
-                padding: 3,
-                marginBottom: 4,
-                borderRadius: 2,
-                width: '100%',
-                maxWidth: '800px',
-                mx: 'auto',
-              }}
-            >
-              <Typography
-                variant="h2"
-                sx={{
-                  fontWeight: 'bold',
-                  fontSize: '20px',
-                  color: '#333',
-                  textAlign: 'center',
-                  mb: 2,
-                }}
-              >
+            <div className="p-3 mb-4 rounded w-full max-w-[800px] mx-auto bg-white shadow">
+              <h2 className="font-bold text-[20px] text-gray-800 text-center mb-2">
                 Filtrer par prix par jour
-              </Typography>
-
-              <Box sx={{ width: '90%', mx: 'auto', mb: 2 }}>
-                <Slider
-                  getAriaLabel={() => 'Prix par jour'}
-                  value={minMax}
-                  onChange={handleChange}
-                  onChangeCommitted={handleCarFilterMinMax}
-                  getAriaValueText={valuetext}
-                  valueLabelFormat={valuetext}
-                  step={10}
-                  min={40}
-                  max={1000}
-                  marks={marks}
-                  valueLabelDisplay="on"
-                />
-              </Box>
-
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  mt: 2,
-                  px: 2,
-                }}
-              />
-            </Paper>
+              </h2>
+              <div className="w-[90%] mx-auto mb-2">
+                <div className="flex flex-col space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="range"
+                      min={40}
+                      max={1000}
+                      step={10}
+                      value={minMax[0]}
+                      onChange={handleRangeChange(0)}
+                      className="w-full"
+                    />
+                    <span className="text-sm">
+                      {minMax[0]}
+                      DT
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="range"
+                      min={40}
+                      max={1000}
+                      step={10}
+                      value={minMax[1]}
+                      onChange={handleRangeChange(1)}
+                      className="w-full"
+                    />
+                    <span className="text-sm">
+                      {minMax[1]}
+                      DT
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
             <CarList
               carSpecs={carSpecs}
               suppliers={supplierIds}
@@ -521,55 +503,42 @@ const Search = () => {
         </div>
       )}
 
-      <Dialog
-        fullWidth={env.isMobile()}
-        maxWidth={false}
-        open={openMapDialog}
-        onClose={() => {
-          setOpenMapDialog(false)
-        }}
-        sx={{
-          '& .MuiDialog-container': {
-            '& .MuiPaper-root': {
-              width: '80%',
-              height: '800px',
-            },
-          },
-        }}
-      >
-        <DialogTitle>
-          <Box display="flex" justifyContent="flex-end">
-            <Box>
-              <IconButton
+      {openMapDialog && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="w-4/5 h-[800px] bg-white flex flex-col">
+            <div className="flex justify-end p-2">
+              <button
+                type="button"
                 onClick={() => {
                   setOpenMapDialog(false)
                 }}
+                className="text-gray-500 hover:text-gray-700"
               >
-                <CloseIcon />
-              </IconButton>
-            </Box>
-          </Box>
-        </DialogTitle>
-        <DialogContent className="map-dialog-content">
-          {pickupLocation && (
-            <Map
-              position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
-              initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
-              parkingSpots={pickupLocation.parkingSpots}
-              className="map"
-            >
-              <button
-                type="button"
-                onClick={() => { }}
-                className="view-on-map"
-              >
-                <img alt="View On Map" src={ViewOnMap} />
-                <span>{strings.VIEW_ON_MAP}</span>
+                ×
               </button>
-            </Map>
-          )}
-        </DialogContent>
-      </Dialog>
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              {pickupLocation && (
+                <Map
+                  position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
+                  initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
+                  parkingSpots={pickupLocation.parkingSpots}
+                  className="map"
+                >
+                  <button
+                    type="button"
+                    onClick={() => { }}
+                    className="view-on-map"
+                  >
+                    <img alt="View On Map" src={ViewOnMap} />
+                    <span>{strings.VIEW_ON_MAP}</span>
+                  </button>
+                </Map>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {noMatch && <NoMatch hideHeader />}
     </Layout>

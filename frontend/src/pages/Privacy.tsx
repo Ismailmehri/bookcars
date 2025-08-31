@@ -1,11 +1,4 @@
 import React from 'react'
-import {
-  Typography,
-  Container,
-  Box,
-  Paper,
-  Divider,
-} from '@mui/material'
 import { Helmet } from 'react-helmet'
 import Layout from '@/components/Layout'
 import Footer from '@/components/Footer'
@@ -76,40 +69,28 @@ const PrivacyPolicy = () => (
     </Helmet>
 
     {/* Contenu principal */}
-    <Container maxWidth="md" sx={{ px: 4, py: 6 }}>
+    <div className="max-w-3xl mx-auto px-4 py-6">
       {/* Titre principal avec <h1> */}
-      <Box mb={4}>
-        <Typography
-          variant="h1"
-          gutterBottom
-          sx={{
-            fontSize: { xs: '1.75rem', md: '2rem' },
-            fontWeight: 'bold',
-            textAlign: 'center',
-          }}
-        >
+      <div className="mb-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-center">
           Politique de Confidentialité
-        </Typography>
-      </Box>
+        </h1>
+      </div>
 
-      <Paper elevation={3} sx={{ p: 4, borderRadius: '10px' }}>
+      <div className="bg-white p-4 rounded-lg shadow">
         {/* Introduction */}
-        <Typography variant="body1" paragraph>
+        <p className="mb-4">
           Chez Plany.tn, la confidentialité et la sécurité de vos données personnelles sont une priorité. Cette Politique de Confidentialité décrit comment nous collectons, utilisons, stockons et protégeons vos informations lorsque vous utilisez notre plateforme.
-        </Typography>
+        </p>
 
         {/* Section 1 : Collecte des Informations */}
-        <Divider sx={{ my: 3 }} />
-        <Typography
-          variant="h2"
-          gutterBottom
-          sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}
-        >
+        <hr className="my-6" />
+        <h2 className="text-xl md:text-2xl font-bold mb-2">
           1. Collecte des Informations
-        </Typography>
-        <Typography variant="body1" paragraph>
+        </h2>
+        <p className="mb-4">
           Nous collectons différentes informations vous concernant lorsque vous utilisez notre plateforme, notamment :
-        </Typography>
+        </p>
         <ul>
           <li>
             <strong>Informations fournies par l&apos;utilisateur :</strong>
@@ -129,17 +110,13 @@ const PrivacyPolicy = () => (
         </ul>
 
         {/* Section 2 : Utilisation des Données Collectées */}
-        <Divider sx={{ my: 3 }} />
-        <Typography
-          variant="h2"
-          gutterBottom
-          sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}
-        >
+        <hr className="my-6" />
+        <h2 className="text-xl md:text-2xl font-bold mb-2">
           2. Utilisation des Données Collectées
-        </Typography>
-        <Typography variant="body1" paragraph>
+        </h2>
+        <p className="mb-4">
           Les données collectées sont utilisées dans le but de :
-        </Typography>
+        </p>
         <ul>
           <li>Fournir et améliorer nos services.</li>
           <li>Personnaliser votre expérience utilisateur en fonction de vos préférences et de vos interactions précédentes.</li>
@@ -149,17 +126,13 @@ const PrivacyPolicy = () => (
         </ul>
 
         {/* Section 3 : Partage des Informations */}
-        <Divider sx={{ my: 3 }} />
-        <Typography
-          variant="h2"
-          gutterBottom
-          sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}
-        >
+        <hr className="my-6" />
+        <h2 className="text-xl md:text-2xl font-bold mb-2">
           3. Partage des Informations
-        </Typography>
-        <Typography variant="body1" paragraph>
+        </h2>
+        <p className="mb-4">
           Nous ne vendons ni ne louons vos données personnelles à des tiers. Toutefois, nous pouvons partager vos informations dans les cas suivants :
-        </Typography>
+        </p>
         <ul>
           <li>Avec des prestataires tiers qui nous aident à fournir nos services (par exemple, hébergement ou analyses de données).</li>
           <li>Lorsque cela est exigé par la loi ou pour répondre à une demande légale.</li>
@@ -167,38 +140,30 @@ const PrivacyPolicy = () => (
         </ul>
 
         {/* Section 4 : Protection des Données */}
-        <Divider sx={{ my: 3 }} />
-        <Typography
-          variant="h2"
-          gutterBottom
-          sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}
-        >
+        <hr className="my-6" />
+        <h2 className="text-xl md:text-2xl font-bold mb-2">
           4. Protection des Données
-        </Typography>
-        <Typography variant="body1" paragraph>
+        </h2>
+        <p className="mb-4">
           Nous utilisons des mesures de sécurité techniques et organisationnelles pour protéger vos données personnelles contre tout accès non autorisé, perte, ou destruction. Cela inclut :
-        </Typography>
+        </p>
         <ul>
           <li>Chiffrement SSL/TLS pour sécuriser les communications entre vous et notre plateforme.</li>
           <li>Contrôles d&apos;accès stricts pour limiter l&apos;accès aux données sensibles.</li>
           <li>Procédures de sauvegarde régulières pour éviter toute perte de données.</li>
         </ul>
-        <Typography variant="body1" paragraph>
+        <p className="mb-4">
           Bien que nous mettions tout en œuvre pour garantir la sécurité de vos données, aucune méthode de transmission sur Internet ou de stockage électronique n’est entièrement sécurisée.
-        </Typography>
+        </p>
 
         {/* Section 5 : Vos Droits */}
-        <Divider sx={{ my: 3 }} />
-        <Typography
-          variant="h2"
-          gutterBottom
-          sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}
-        >
+        <hr className="my-6" />
+        <h2 className="text-xl md:text-2xl font-bold mb-2">
           5. Vos Droits
-        </Typography>
-        <Typography variant="body1" paragraph>
+        </h2>
+        <p className="mb-4">
           En tant qu&apos;utilisateur, vous disposez de plusieurs droits concernant vos données personnelles, notamment :
-        </Typography>
+        </p>
         <ul>
           <li>
             <strong>Accès :</strong>
@@ -221,49 +186,41 @@ const PrivacyPolicy = () => (
             Vous pouvez vous opposer au traitement de vos données dans certaines circonstances.
           </li>
         </ul>
-        <Typography variant="body1" paragraph>
+        <p className="mb-4">
           Pour exercer ces droits, veuillez nous contacter à l’adresse suivante :
           {' '}
           <strong>contact@plany.tn</strong>
           .
-        </Typography>
+        </p>
 
         {/* Section 6 : Cookies */}
-        <Divider sx={{ my: 3 }} />
-        <Typography
-          variant="h2"
-          gutterBottom
-          sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}
-        >
+        <hr className="my-6" />
+        <h2 className="text-xl md:text-2xl font-bold mb-2">
           6. Cookies
-        </Typography>
-        <Typography variant="body1" paragraph>
+        </h2>
+        <p className="mb-4">
           Nous utilisons des cookies pour améliorer votre expérience sur notre plateforme. Ces cookies permettent notamment de mémoriser vos préférences et d’analyser l’utilisation du site. Vous pouvez configurer votre navigateur pour refuser les cookies, bien que certaines fonctionnalités de la plateforme puissent être affectées.
-        </Typography>
+        </p>
 
         {/* Section 7 : Modifications de la Politique */}
-        <Divider sx={{ my: 3 }} />
-        <Typography
-          variant="h2"
-          gutterBottom
-          sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}
-        >
+        <hr className="my-6" />
+        <h2 className="text-xl md:text-2xl font-bold mb-2">
           7. Modifications de la Politique
-        </Typography>
-        <Typography variant="body1" paragraph>
+        </h2>
+        <p className="mb-4">
           Nous nous réservons le droit de mettre à jour cette Politique de Confidentialité à tout moment. Toute modification importante sera communiquée via la plateforme ou par e-mail.
-        </Typography>
+        </p>
 
         {/* Conclusion */}
-        <Divider sx={{ my: 3 }} />
-        <Typography variant="body1" paragraph>
+        <hr className="my-6" />
+        <p className="mb-4">
           En utilisant Plany.tn, vous acceptez cette Politique de Confidentialité. Si vous avez des questions, n&apos;hésitez pas à nous contacter à
           {' '}
           <strong>contact@plany.tn</strong>
           .
-        </Typography>
-      </Paper>
-    </Container>
+        </p>
+      </div>
+    </div>
 
     {/* Pied de page */}
     <Footer />

@@ -107,7 +107,7 @@ const Layout = ({
     <>
       <Header user={user} hidden={loading} hideSignin={hideSignin} />
       {(!user && !loading) || (user && user.verified) ? (
-        <div className="content">{children}</div>
+        <div className="flex flex-col flex-auto m-0 p-0 bg-gray-50">{children}</div>
       ) : (
         !loading && (
           <ValidateEmail

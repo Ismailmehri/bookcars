@@ -29,8 +29,6 @@ import Avatar from '@/components/Avatar'
 import Backdrop from '@/components/SimpleBackdrop'
 import { strings as commonStrings } from '@/lang/common'
 
-import '@/assets/css/review.css'
-
 const DriverReviewPage = () => {
   const location = useLocation()
   const navigate = useNavigate()
@@ -192,16 +190,16 @@ const DriverReviewPage = () => {
     return (
       <Layout>
         <Container>
-          <Box className="notification-container">
-            <Box className="notification-card">
-              <ErrorIcon className="notification-icon" style={{ color: '#d32f2f' }} />
-              <Typography variant="h5" className="notification-title">
+          <Box className="flex items-center justify-center min-h-screen">
+            <Box className="p-8 text-center max-w-md w-full rounded-lg shadow-md bg-white">
+              <ErrorIcon className="text-5xl mb-4 text-[#d32f2f]" />
+              <Typography variant="h5" className="text-2xl mb-4">
                 {currentUser ? commonStrings.NOT_AUTHORIZED : commonStrings.NOT_CONNECTED_USER}
               </Typography>
               <Button
                 variant="contained"
                 color="primary"
-                className="review-notification-button"
+                className="mt-4"
                 onClick={handleGoHome}
               >
                 {commonStrings.GO_BACK_HOME}
@@ -217,16 +215,16 @@ const DriverReviewPage = () => {
     return (
       <Layout>
         <Container>
-          <Box className="notification-container">
-            <Box className="notification-card">
-              <CheckCircleIcon className="notification-icon" style={{ color: '#2e7d32' }} />
-              <Typography variant="h5" className="notification-title">
+          <Box className="flex items-center justify-center min-h-screen">
+            <Box className="p-8 text-center max-w-md w-full rounded-lg shadow-md bg-white">
+              <CheckCircleIcon className="text-5xl mb-4 text-[#2e7d32]" />
+              <Typography variant="h5" className="text-2xl mb-4">
                 {commonStrings.THANK_YOU}
               </Typography>
               <Button
                 variant="contained"
                 color="primary"
-                className="review-notification-button"
+                className="mt-4"
                 onClick={handleGoHome}
               >
                 {commonStrings.GO_BACK_HOME}
@@ -247,12 +245,12 @@ const DriverReviewPage = () => {
             {/* Colonne de gauche : Informations de l'utilisateur */}
             <Grid item xs={12} md={3}>
               <Paper sx={{ p: 3, textAlign: 'center' }}>
-                <section className="user-avatar-sec">
+                <section className="flex justify-center">
                   <Avatar
                     loggedUser={user}
                     user={user}
                     size="large"
-                    className="avatar-ctn"
+                    className="relative my-5 h-[170px] flex items-center justify-center"
                     readonly
                   />
                 </section>

@@ -1,6 +1,4 @@
 import React from 'react'
-import { Box, Typography, Button } from '@mui/material'
-import HomeIcon from '@mui/icons-material/Home'
 import Seo from '@/components/Seo'
 import Layout from '@/components/Layout'
 import { strings as commonStrings } from '@/lang/common'
@@ -13,58 +11,17 @@ const NoMatch = ({ hideHeader }: NoMatchProps) => {
   const noMatch = () => (
     <>
       <Seo title="Page non trouvée | Plany.tn" robots="noindex,nofollow" />
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          backgroundColor: '#f5f5f5',
-          textAlign: 'center',
-          padding: 3
-        }}
-      >
-        {/* Message principal */}
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 'bold',
-            marginBottom: 2,
-            color: '#333'
-          }}
-        >
-          {commonStrings.NO_MATCH}
-        </Typography>
-
-        {/* Description */}
-        <Typography
-          variant="body1"
-          sx={{
-            color: '#757575',
-            marginBottom: 4,
-            maxWidth: '600px' // Limite la largeur pour un meilleur rendu
-          }}
-        >
-          {commonStrings.NO_MATCH_DESCRIPTION}
-        </Typography>
-
-        {/* Bouton pour revenir à la page d'accueil */}
-        <Button
-          variant="contained"
-          color="primary"
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 text-center p-3">
+        <h1 className="text-2xl font-bold mb-2 text-gray-800">{commonStrings.NO_MATCH}</h1>
+        <p className="text-gray-600 mb-4 max-w-xl">{commonStrings.NO_MATCH_DESCRIPTION}</p>
+        <a
           href="/"
-          startIcon={<HomeIcon />}
-          sx={{
-            paddingX: 4,
-            paddingY: 1.5,
-            borderRadius: 3,
-            boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)'
-          }}
+          className="inline-flex items-center px-6 py-2 rounded-md bg-primary text-white shadow hover:bg-primary/90"
         >
+          <span className="mr-2">🏠</span>
           {commonStrings.GO_TO_HOME}
-        </Button>
-      </Box>
+        </a>
+      </div>
     </>
   )
 

@@ -1,12 +1,4 @@
 import React from 'react'
-import {
-  Typography,
-  Container,
-  Box,
-  Grid,
-  Paper,
-  Divider,
-} from '@mui/material'
 import { Helmet } from 'react-helmet'
 import Layout from '@/components/Layout'
 import Footer from '@/components/Footer'
@@ -81,88 +73,62 @@ const About = () => (
     </Helmet>
 
     {/* Contenu principal */}
-    <Container maxWidth="md" sx={{ px: 4, py: 6 }}>
+    <div className="max-w-3xl mx-auto px-4 py-6">
       {/* Titre principal avec <h1> */}
-      <Box mb={4}>
-        <Typography
-          variant="h1"
-          gutterBottom
-          sx={{
-            fontSize: { xs: '1.75rem', md: '2rem' },
-            fontWeight: 'bold',
-            textAlign: 'center',
-          }}
-        >
+      <div className="mb-4">
+        <h1 className="text-center text-2xl md:text-3xl font-bold">
           À Propos de Plany.tn
-        </Typography>
-      </Box>
+        </h1>
+      </div>
 
-      <Paper elevation={3} sx={{ p: 4, borderRadius: '10px' }}>
+      <div className="p-4 rounded-lg shadow-md bg-white">
         {/* Introduction */}
-        <Typography variant="body1" paragraph>
+        <p className="mb-4">
           Plany.tn est une plateforme innovante dédiée à la mise en relation entre professionnels de la location de voitures et particuliers.
           Nous avons pour mission de simplifier le processus de réservation tout en offrant une expérience transparente et sécurisée pour les utilisateurs.
-        </Typography>
+        </p>
 
         {/* Notre Mission */}
-        <Divider sx={{ my: 3 }} />
-        <Typography
-          variant="h2"
-          gutterBottom
-          sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}
-        >
-          Notre Mission
-        </Typography>
-        <Typography variant="body1" paragraph>
+        <hr className="my-6" />
+        <h2 className="text-xl md:text-2xl font-bold mb-2">Notre Mission</h2>
+        <p className="mb-4">
           Chez Plany.tn, nous croyons que louer une voiture ne devrait pas être une tâche compliquée. Nous facilitons les échanges entre professionnels loueurs de voitures et particuliers grâce à une plateforme intuitive qui met l&apos;accent sur la rapidité, la fiabilité et la simplicité.
-        </Typography>
-        <Typography variant="body1" paragraph>
+        </p>
+        <p className="mb-4">
           Nous nous engageons à fournir une solution pratique pour les professionnels souhaitant élargir leur clientèle et pour les utilisateurs à la recherche de véhicules de qualité.
-        </Typography>
+        </p>
 
         {/* Nos Valeurs */}
-        <Divider sx={{ my: 3 }} />
-        <Typography
-          variant="h2"
-          gutterBottom
-          sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}
-        >
-          Nos Valeurs
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={4}>
-            <Typography variant="h6">Simplicité</Typography>
-            <Typography variant="body2">
+        <hr className="my-6" />
+        <h2 className="text-xl md:text-2xl font-bold mb-2">Nos Valeurs</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <div>
+            <h3 className="font-semibold">Simplicité</h3>
+            <p className="text-sm">
               Une interface intuitive pour permettre à tous de trouver ou proposer des véhicules facilement.
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Typography variant="h6">Transparence</Typography>
-            <Typography variant="body2">
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold">Transparence</h3>
+            <p className="text-sm">
               Une communication claire entre les loueurs et les locataires pour une expérience de confiance.
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Typography variant="h6">Innovation</Typography>
-            <Typography variant="body2">
+            </p>
+          </div>
+          <div>
+            <h3 className="font-semibold">Innovation</h3>
+            <p className="text-sm">
               Nous repoussons constamment les limites pour offrir des fonctionnalités modernes et efficaces.
-            </Typography>
-          </Grid>
-        </Grid>
+            </p>
+          </div>
+        </div>
 
         {/* Pourquoi nous choisir */}
-        <Divider sx={{ my: 3 }} />
-        <Typography
-          variant="h2"
-          gutterBottom
-          sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}
-        >
-          Pourquoi Choisir Plany.tn ?
-        </Typography>
-        <Typography variant="body1" paragraph>
+        <hr className="my-6" />
+        <h2 className="text-xl md:text-2xl font-bold mb-2">Pourquoi Choisir Plany.tn ?</h2>
+        <p className="mb-4">
           Que vous soyez un professionnel cherchant à optimiser la gestion de vos véhicules ou un particulier à la recherche d’une solution pratique pour vos déplacements, Plany.tn est conçu pour répondre à vos besoins. Voici ce qui nous distingue :
-        </Typography>
-        <ul>
+        </p>
+        <ul className="list-disc list-inside mb-4 space-y-2">
           <li>Un large choix de véhicules disponibles dans les principales villes comme Tunis, Sousse, Monastir, Nabeul et Mahdia.</li>
           <li>Réservation simple et rapide depuis n&apos;importe quel appareil.</li>
           <li>Présence dans les principaux aéroports tunisiens : Aéroport International de Tunis-Carthage, Aéroport International de Monastir Habib-Bourguiba, Aéroport International de Djerba-Zarzis, etc.</li>
@@ -171,53 +137,41 @@ const About = () => (
         </ul>
 
         {/* Notre Couverture Géographique */}
-        <Divider sx={{ my: 3 }} />
-        <Typography
-          variant="h2"
-          gutterBottom
-          sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}
-        >
-          Notre Couverture Géographique
-        </Typography>
-        <Typography variant="body1" paragraph>
+        <hr className="my-6" />
+        <h2 className="text-xl md:text-2xl font-bold mb-2">Notre Couverture Géographique</h2>
+        <p className="mb-4">
           Plany.tn est présent dans les principales villes et régions de Tunisie, y compris :
-        </Typography>
-        <ul>
+        </p>
+        <ul className="list-disc list-inside mb-4 space-y-2">
           <li>Tunis - La capitale, idéale pour explorer la médina et les sites culturels.</li>
           <li>Sousse - Connue pour sa médina classée au patrimoine mondial de l&apos;UNESCO.</li>
           <li>Monastir - Ville historique avec son célèbre Ribat.</li>
           <li>Nabeul - Capitale de la poterie tunisienne et des agrumes.</li>
           <li>Mahdia - Une destination côtière pittoresque.</li>
         </ul>
-        <Typography variant="body1" paragraph>
+        <p className="mb-4">
           Nous couvrons également les principaux aéroports du pays, notamment :
-        </Typography>
-        <ul>
+        </p>
+        <ul className="list-disc list-inside mb-4 space-y-2">
           <li>Aéroport International de Tunis-Carthage.</li>
           <li>Aéroport International de Monastir Habib-Bourguiba.</li>
           <li>Aéroport International de Djerba-Zarzis.</li>
         </ul>
 
         {/* Équipe */}
-        <Divider sx={{ my: 3 }} />
-        <Typography
-          variant="h2"
-          gutterBottom
-          sx={{ fontSize: { xs: '1.25rem', md: '1.5rem' }, fontWeight: 'bold' }}
-        >
-          Rencontrez Notre Équipe
-        </Typography>
-        <Typography variant="body1">
+        <hr className="my-6" />
+        <h2 className="text-xl md:text-2xl font-bold mb-2">Rencontrez Notre Équipe</h2>
+        <p className="mb-4">
           Notre équipe est composée de passionnés de technologie et de mobilité. Nous travaillons chaque jour pour améliorer l&apos;expérience utilisateur et développer de nouvelles fonctionnalités qui répondent aux attentes des professionnels et des particuliers.
-        </Typography>
+        </p>
 
         {/* Conclusion */}
-        <Divider sx={{ my: 3 }} />
-        <Typography variant="body1" paragraph>
+        <hr className="my-6" />
+        <p className="mb-4">
           Chez Plany.tn, notre objectif est de rendre chaque étape de la location de voitures plus fluide et plus agréable. Merci de faire partie de notre communauté !
-        </Typography>
-      </Paper>
-    </Container>
+        </p>
+      </div>
+    </div>
 
     {/* Pied de page */}
     <Footer />

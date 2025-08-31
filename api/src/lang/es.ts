@@ -118,4 +118,5 @@ export const es = {
     REVIEW_REQUEST_SUBJECT: '%{clientName}, por favor revise su reserva',
     REVIEW_REQUEST_BODY: 'Esperamos que su reserva del %{from} al %{to} haya ido bien, %{clientName}. ¿Podría darnos su opinión? Nos ayuda mucho.',
     GOOGLE_REVIEW_LINK: 'Deja una reseña en Google Maps',
+    REVIEW_EMAILS_SENT: 'Se enviaron correctamente %{count} solicitudes de reseña',
   }

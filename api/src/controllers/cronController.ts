@@ -10,6 +10,7 @@ import * as mailHelper from '../common/mailHelper'
 import * as env from '../config/env.config'
 import * as logger from '../common/logger'
 import Booking from '../models/Booking'
+import PayedReviewClientCount from '../models/PayedReviewClientCount'
 import { CDN_CARS_API } from '../config/env.config'
 import * as helper from '../common/helper'
 
@@ -1152,7 +1153,86 @@ function generateUniqueSlug(value: string, existingSlugs: Set<string>): string {
         emailsSent,
       })
     } catch (err) {
-      logger.error('[notification.notifySupplierAndClientToReview]', err)
-      return res.status(500).json({ message: 'Internal server error', error: err })
-    }
+  logger.error('[notification.notifySupplierAndClientToReview]', err)
+  return res.status(500).json({ message: 'Internal server error', error: err })
   }
+}
+
+/**
+ * Notify clients to review their booking on Google Maps.
+ *
+ * @export
+ * @async
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {unknown}
+ */
+export const notifyClientsReview = async (req: Request, res: Response) => {
+  try {
+    const maxNotification = parseInt(req.query.maxNotification as string || '1', 10)
+    const maxMailSend = parseInt(req.query.maxMailSend as string || '0', 10)
+
+    if (Number.isNaN(maxNotification) || maxNotification < 1) {
+      return res.status(400).json({ message: 'Invalid maxNotification parameter. It must be a positive number.' })
+    }
+
+    if (Number.isNaN(maxMailSend) || maxMailSend < 0) {
+      return res.status(400).json({ message: 'Invalid maxMailSend parameter. It must be a non-negative number.' })
+    }
+
+    const bookings = await Booking
+      .find({ status: bookcarsTypes.BookingStatus.Paid, to: { $lte: new Date() } })
+      .populate(['driver'])
+      .sort({ to: 1 })
+
+    let emailsSent = 0
+
+    for (const booking of bookings) {
+      if (maxMailSend !== 0 && emailsSent >= maxMailSend) {
+        break
+      }
+
+      try {
+        const client = booking.driver as unknown as bookcarsTypes.User
+        let counter = await PayedReviewClientCount.findOne({ user: client._id, booking: booking._id })
+        if (!counter) {
+          counter = new PayedReviewClientCount({ user: client._id, booking: booking._id, count: 0 })
+        }
+
+        if ((counter.count || 0) < maxNotification) {
+          const locale = client.language || 'fr'
+          i18n.locale = locale
+          const from = new Date(booking.from).toLocaleDateString(locale)
+          const to = new Date(booking.to).toLocaleDateString(locale)
+          const mailOptions = {
+            from: process.env.SMTP_FROM,
+            to: client.email,
+            subject: i18n.t('REVIEW_REQUEST_SUBJECT', { clientName: client.fullName }),
+            html: `
+              <div style="max-width: 600px; margin: 0 auto;">
+                <h2>${i18n.t('HELLO')} ${client.fullName},</h2>
+                <p>${i18n.t('REVIEW_REQUEST_BODY', { clientName: client.fullName, from, to })}</p>
+                <p><a href="https://g.page/r/Ca8izG7F15lVEBM/review" style="color: #3498DB;">${i18n.t('GOOGLE_REVIEW_LINK')}</a></p>
+              </div>
+            `,
+          }
+
+          await mailHelper.sendMail(mailOptions)
+          counter.count = (counter.count || 0) + 1
+          await counter.save()
+          emailsSent += 1
+        }
+      } catch (err) {
+        logger.error(`Failed to process booking ${booking._id}:`, err)
+      }
+    }
+
+    return res.status(200).json({
+      message: i18n.t('REVIEW_EMAILS_SENT', { count: emailsSent }),
+      emailsSent,
+    })
+  } catch (err) {
+    logger.error('[cron.notifyClientsReview]', err)
+    return res.status(500).json({ message: 'Internal server error', error: err })
+  }
+}

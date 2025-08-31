@@ -119,4 +119,7 @@ export const fr = {
   PLEASE_REVIEW_BOOKING: 'Cher(e) %{clientName}, nous vous invitons à partager votre expérience avec %{supplierName}. Votre avis est essentiel pour nous aider à améliorer notre service et à garantir la satisfaction de nos clients. Merci de prendre un moment pour nous faire part de vos impressions.',
   REVIEW_BOOKING_SUBJECT: '%{clientName}, Donnez votre avis sur votre location avec %{supplierName}',
   REVIEW_EMAILS_SENT: '%{count} demandes d\'avis envoyées avec succès',
+  REVIEW_REQUEST_SUBJECT: '%{clientName}, donnez votre avis sur votre réservation',
+  REVIEW_REQUEST_BODY: 'Nous espérons que votre réservation du %{from} au %{to} s\'est bien passée, %{clientName}. Pouvez-vous nous donner votre avis ? Cela nous aide beaucoup.',
+  GOOGLE_REVIEW_LINK: 'Laisser un avis sur Google Maps',
 }

@@ -15,4 +15,5 @@ router.post(routeNames.updateSupplierScores, apiKeyValidator, cronController.upd
 router.get(routeNames.migrateToSlug, apiKeyValidator, cronController.migrateToSlug)
 router.get(routeNames.notifyAgenciesWithCarsURL, apiKeyValidator, cronController.notifyAgenciesWithCarsURL)
 router.get(routeNames.notifySupplierAndClientToReview, apiKeyValidator, cronController.notifySupplierAndClientToReview)
+router.post(routeNames.notifyClientsReview, apiKeyValidator, cronController.notifyClientsReview)
 export default router

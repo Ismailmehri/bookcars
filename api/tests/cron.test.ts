@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import request from 'supertest'
 import { jest } from '@jest/globals'
+import nodemailer from 'nodemailer'
 import * as testHelper from './testHelper'
 import app from '../src/app'
 import * as env from '../src/config/env.config'
@@ -8,10 +9,9 @@ import Booking from '../src/models/Booking'
 import * as bookcarsTypes from ':bookcars-types'
 import PayedReviewClientCount from '../src/models/PayedReviewClientCount'
 import i18n from '../src/lang/i18n'
-import nodemailer from 'nodemailer'
 
 beforeAll(() => {
-  ;(nodemailer as any).createTransport = () => ({
+  (nodemailer as any).createTransport = () => ({
     sendMail: (_opts: unknown, cb: (err: unknown, info: unknown) => void) => cb(null, true),
   })
   testHelper.initializeLogger()

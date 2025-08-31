@@ -2007,6 +2007,7 @@ export const getVerifiedUsers = async (req: Request, res: Response) => {
     const users = await User.find(
       {
         verified: true,
+        active: true,
         expireAt: null,
         type: { $in: selectedTypes },
       },

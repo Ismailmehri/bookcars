@@ -806,16 +806,16 @@ export interface NotificationCounter extends Document {
 }
 
 /**
- * ReviewEmailCounter Document.
+ * PayedReviewClientCount Document.
  *
  * Tracks review email notifications per user and booking.
  *
  * @export
- * @interface ReviewEmailCounter
- * @typedef {ReviewEmailCounter}
+ * @interface PayedReviewClientCount
+ * @typedef {PayedReviewClientCount}
  * @extends {Document}
  */
-export interface ReviewEmailCounter extends Document {
+export interface PayedReviewClientCount extends Document {
   user: Types.ObjectId
   booking: Types.ObjectId
   count?: number

@@ -1,0 +1,21 @@
+name: Notify Client Review
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  notify-client-review:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Call API to notify client reviews
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          curl -X POST -H "x-api-key: $API_KEY" \
+            "https://api.plany.tn/api/cron/clients/review-request?maxMailSend=15&maxNotification=1"

@@ -1,7 +1,7 @@
 import { Schema, model } from 'mongoose'
 import * as env from '../config/env.config'
 
-const reviewEmailCounterSchema = new Schema<env.ReviewEmailCounter>(
+const payedReviewClientCountSchema = new Schema<env.PayedReviewClientCount>(
   {
     user: {
       type: Schema.Types.ObjectId,
@@ -27,12 +27,12 @@ const reviewEmailCounterSchema = new Schema<env.ReviewEmailCounter>(
   {
     timestamps: true,
     strict: true,
-    collection: 'ReviewEmailCounter',
+    collection: 'PayedReviewClientCount',
   },
 )
 
-reviewEmailCounterSchema.index({ user: 1, booking: 1 }, { unique: true })
+payedReviewClientCountSchema.index({ user: 1, booking: 1 }, { unique: true })
 
-const ReviewEmailCounter = model<env.ReviewEmailCounter>('ReviewEmailCounter', reviewEmailCounterSchema)
+const PayedReviewClientCount = model<env.PayedReviewClientCount>('PayedReviewClientCount', payedReviewClientCountSchema)
 
-export default ReviewEmailCounter
+export default PayedReviewClientCount

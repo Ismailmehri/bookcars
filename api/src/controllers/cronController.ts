@@ -10,7 +10,7 @@ import * as mailHelper from '../common/mailHelper'
 import * as env from '../config/env.config'
 import * as logger from '../common/logger'
 import Booking from '../models/Booking'
-import ReviewEmailCounter from '../models/ReviewEmailCounter'
+import PayedReviewClientCount from '../models/PayedReviewClientCount'
 import { CDN_CARS_API } from '../config/env.config'
 import * as helper from '../common/helper'
 
@@ -1194,9 +1194,9 @@ export const notifyClientsReview = async (req: Request, res: Response) => {
 
       try {
         const client = booking.driver as unknown as bookcarsTypes.User
-        let counter = await ReviewEmailCounter.findOne({ user: client._id, booking: booking._id })
+        let counter = await PayedReviewClientCount.findOne({ user: client._id, booking: booking._id })
         if (!counter) {
-          counter = new ReviewEmailCounter({ user: client._id, booking: booking._id, count: 0 })
+          counter = new PayedReviewClientCount({ user: client._id, booking: booking._id, count: 0 })
         }
 
         if ((counter.count || 0) < maxNotification) {

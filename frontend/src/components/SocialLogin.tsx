@@ -78,7 +78,7 @@ const SocialLogin = ({
   }
 
   const googleLogin = useGoogleLogin({
-    onSuccess: async ({ access_token: accessToken }) => {
+    onSuccess: async ({ access_token: accessToken }: { access_token: string }) => {
       try {
         const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: {
@@ -99,7 +99,6 @@ const SocialLogin = ({
     },
     onError: loginError,
     scope: 'openid profile email',
-    ux_mode: 'redirect',
   })
 
   return (
@@ -157,10 +156,10 @@ const SocialLogin = ({
               className="social-button"
               role="button"
               tabIndex={0}
-              onClick={() => googleLogin({ redirect_uri: REDIRECT_URI })}
+              onClick={() => googleLogin()}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  googleLogin({ redirect_uri: REDIRECT_URI })
+                  googleLogin()
                 }
               }}
             >

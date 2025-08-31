@@ -7,6 +7,7 @@ import Location from '../models/Location'
 import LocationValue from '../models/LocationValue'
 import Notification from '../models/Notification'
 import NotificationCounter from '../models/NotificationCounter'
+import ReviewEmailCounter from '../models/ReviewEmailCounter'
 import PushToken from '../models/PushToken'
 import Token, { TOKEN_EXPIRE_AT_INDEX_NAME } from '../models/Token'
 import User, { USER_EXPIRE_AT_INDEX_NAME } from '../models/User'
@@ -285,6 +286,7 @@ export const initialize = async (): Promise<boolean> => {
       await createCollection<env.Location>(Location)
       await createCollection<env.Notification>(Notification)
       await createCollection<env.NotificationCounter>(NotificationCounter)
+      await createCollection<env.ReviewEmailCounter>(ReviewEmailCounter)
       await createCollection<env.PushToken>(PushToken)
       await createCollection<env.Token>(Token)
       await createCollection<env.User>(User)

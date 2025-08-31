@@ -10,7 +10,7 @@ import * as mailHelper from '../common/mailHelper'
 import * as env from '../config/env.config'
 import * as logger from '../common/logger'
 import Booking from '../models/Booking'
-import NotificationCounter from '../models/NotificationCounter'
+import ReviewEmailCounter from '../models/ReviewEmailCounter'
 import { CDN_CARS_API } from '../config/env.config'
 import * as helper from '../common/helper'
 
@@ -1169,19 +1169,37 @@ function generateUniqueSlug(value: string, existingSlugs: Set<string>): string {
  */
 export const notifyClientsReview = async (req: Request, res: Response) => {
   try {
-    const max = parseInt(req.query.max as string || '2', 10)
+    const maxNotification = parseInt(req.query.maxNotification as string || '1', 10)
+    const maxMailSend = parseInt(req.query.maxMailSend as string || '0', 10)
+
+    if (Number.isNaN(maxNotification) || maxNotification < 1) {
+      return res.status(400).json({ message: 'Invalid maxNotification parameter. It must be a positive number.' })
+    }
+
+    if (Number.isNaN(maxMailSend) || maxMailSend < 0) {
+      return res.status(400).json({ message: 'Invalid maxMailSend parameter. It must be a non-negative number.' })
+    }
+
     const bookings = await Booking
       .find({ status: bookcarsTypes.BookingStatus.Paid, to: { $lte: new Date() } })
       .populate(['driver'])
       .sort({ to: 1 })
+
     let emailsSent = 0
 
     for (const booking of bookings) {
+      if (maxMailSend !== 0 && emailsSent >= maxMailSend) {
+        break
+      }
+
       try {
         const client = booking.driver as unknown as bookcarsTypes.User
-        const counter = await NotificationCounter.findOne({ user: client._id }) || new NotificationCounter({ user: client._id, count: 0 })
+        let counter = await ReviewEmailCounter.findOne({ user: client._id, booking: booking._id })
+        if (!counter) {
+          counter = new ReviewEmailCounter({ user: client._id, booking: booking._id, count: 0 })
+        }
 
-        if ((counter.count || 0) < max) {
+        if ((counter.count || 0) < maxNotification) {
           const locale = client.language || 'fr'
           i18n.locale = locale
           const from = new Date(booking.from).toLocaleDateString(locale)

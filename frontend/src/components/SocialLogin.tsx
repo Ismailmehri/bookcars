@@ -99,7 +99,7 @@ const SocialLogin = ({
     },
     onError: loginError,
     scope: 'openid profile email',
-    redirect_uri: REDIRECT_URI,
+    ux_mode: 'redirect',
   })
 
   return (
@@ -157,10 +157,10 @@ const SocialLogin = ({
               className="social-button"
               role="button"
               tabIndex={0}
-              onClick={() => googleLogin()}
+              onClick={() => googleLogin({ redirect_uri: REDIRECT_URI })}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  googleLogin()
+                  googleLogin({ redirect_uri: REDIRECT_URI })
                 }
               }}
             >

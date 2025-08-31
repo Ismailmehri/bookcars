@@ -1119,7 +1119,7 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
   try {
     const { body }: { body: bookcarsTypes.GetCarsPayload } = req
     const page = Number.parseInt(req.params.page, 10)
-    const size = 1
+    const size = 1 // Taille de page (peut devenir paramétrable)
 
     const pickupLocation = new mongoose.Types.ObjectId(body.pickupLocation)
 
@@ -1130,40 +1130,59 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
       maxPrice,
     } = body
 
+    // Fenêtre de recherche demandée par le client
     const startDateObj = new Date(startDate || Date.now())
     const endDateObj = new Date(endDate || Date.now())
 
-    // Définir les dates limites
+    // Période "haute saison" (ex : été) — à externaliser en config si possible
     const restrictedStartDate = new Date('2025-06-01')
     const restrictedEndDate = new Date('2025-09-15')
 
-    // Filtre de base pour les voitures disponibles
+    // --- 1) Filtre de base (uniquement voitures boost actives & non en pause, dispos et à l'agence cherchée)
     const $match: mongoose.FilterQuery<bookcarsTypes.Car> = {
       $and: [
         { locations: pickupLocation },
         { available: true },
         { 'boost.active': true },
         { 'boost.paused': false },
+
+        // --- 1.b) Budget Boost : N'AFFICHE que les voitures qui ont encore des vues (ou illimitées)
+        {
+          $or: [
+            // illimité
+            { 'boost.purchasedViews': -1 },
+            // consommé < acheté, avec garde-fous null/undefined
+            {
+              $expr: {
+                $lt: [
+                  { $ifNull: ['$boost.consumedViews', 0] },
+                  { $ifNull: ['$boost.purchasedViews', 0] }
+                ]
+              }
+            }
+          ]
+        },
       ],
     }
 
+    // --- 2) Définition du pipeline d'agrégation
     const pipeline: mongoose.PipelineStage[] = [
       { $match },
+
+      // Récupérer le fournisseur (User) pour la voiture
       {
         $lookup: {
           from: 'User',
           let: { userId: '$supplier' },
           pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ['$_id', '$$userId'] },
-              },
-            },
+            { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
           ],
           as: 'supplier',
         },
       },
       { $unwind: { path: '$supplier', preserveNullAndEmptyArrays: false } },
+
+      // Compter les réservations du fournisseur (info de contexte, pas de filtre)
       {
         $lookup: {
           from: 'Booking',
@@ -1184,11 +1203,9 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
           as: 'supplierBookings',
         },
       },
-      {
-        $addFields: {
-          supplierReservationCount: { $size: '$supplierBookings' },
-        },
-      },
+      { $addFields: { supplierReservationCount: { $size: '$supplierBookings' } } },
+
+      // Vérifier les conflits de réservations sur LA voiture dans la période demandée
       {
         $lookup: {
           from: 'Booking',
@@ -1201,8 +1218,8 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
                     { $eq: ['$car', '$$carId'] },
                     { $ne: ['$status', 'cancelled'] },
                     { $ne: ['$status', 'void'] },
-                    { $lt: ['$from', endDateObj] },
-                    { $gt: ['$to', startDateObj] },
+                    { $lt: ['$from', endDateObj] }, // début reservation existante < fin demandée
+                    { $gt: ['$to', startDateObj] }, // fin reservation existante > début demandée
                   ],
                 },
               },
@@ -1211,19 +1228,11 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
           as: 'conflictingBookings',
         },
       },
-      {
-        $addFields: {
-          hasConflict: { $gt: [{ $size: '$conflictingBookings' }, 0] },
-        },
-      },
-      {
-        $match: { hasConflict: false },
-      },
-      {
-        $addFields: {
-          unavailablePeriods: { $ifNull: ['$unavailablePeriods', []] },
-        },
-      },
+      { $addFields: { hasConflict: { $gt: [{ $size: '$conflictingBookings' }, 0] } } },
+      { $match: { hasConflict: false } }, // Exclure les voitures avec collision
+
+      // Indisponibilités manuelles
+      { $addFields: { unavailablePeriods: { $ifNull: ['$unavailablePeriods', []] } } },
       {
         $addFields: {
           isUnavailable: {
@@ -1242,9 +1251,9 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
           },
         },
       },
-      {
-        $match: { isUnavailable: false },
-      },
+      { $match: { isUnavailable: false } },
+
+      // Calcul du dailyPrice effectif (périodique prioritaire si chevauchement)
       {
         $addFields: {
           dailyPrice: {
@@ -1267,7 +1276,7 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
               in: {
                 $cond: {
                   if: { $gt: [{ $size: { $ifNull: ['$$periodicPrice', []] } }, 0] },
-                  then: { $arrayElemAt: ['$$periodicPrice.dailyPrice', 0] },
+                  then: { $arrayElemAt: ['$$periodicPrice.dailyPrice', 0] }, // Premier match périodique
                   else: '$dailyPrice',
                 },
               },
@@ -1275,6 +1284,8 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
           },
         },
       },
+
+      // Application d'une éventuelle remise (si seuil de jours atteint)
       {
         $addFields: {
           dailyPriceWithDiscount: {
@@ -1284,7 +1295,12 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
                   { $ne: [{ $ifNull: ['$discounts', null] }, null] },
                   { $ne: ['$discounts.percentage', null] },
                   { $ne: ['$discounts.threshold', null] },
-                  { $gte: [{ $ceil: { $divide: [{ $subtract: [endDateObj, startDateObj] }, 1000 * 60 * 60 * 24] } }, '$discounts.threshold'] },
+                  {
+                    $gte: [
+                      { $ceil: { $divide: [{ $subtract: [endDateObj, startDateObj] }, 1000 * 60 * 60 * 24] } },
+                      '$discounts.threshold'
+                    ]
+                  },
                 ],
               },
               then: {
@@ -1298,64 +1314,60 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
           },
         },
       },
-      {
-        $match: {
-          dailyPriceWithDiscount: { $gte: minPrice, $lte: maxPrice },
-        },
-      },
+
+      // Filtre prix min/max demandé par le client
+      { $match: { dailyPriceWithDiscount: { $gte: minPrice, $lte: maxPrice } } },
+
+      // Règles "haute saison" : si chevauchement été → periodicPrices non vide + prix min 110
       {
         $match: {
           $expr: {
             $or: [
-              // Cas 1 : la période demandée est en dehors de la période restreinte
+              // 1) Période demandée entièrement en dehors de l'été
               {
                 $or: [
                   { $lte: [endDateObj, restrictedStartDate] },
                   { $gte: [startDateObj, restrictedEndDate] },
                 ],
               },
-              // Cas 2 : la période demandée chevauche la période restreinte
-              // -> la voiture doit avoir une propriété periodicPrices non vide
-              // -> et au moins une période dans periodicPrices doit chevaucher la période restreinte
+              // 2) Période demandée chevauche l'été → exigences supplémentaires
               {
                 $and: [
                   { $lt: [startDateObj, restrictedEndDate] },
                   { $gt: [endDateObj, restrictedStartDate] },
                   { $gt: [{ $size: { $ifNull: ['$periodicPrices', []] } }, 0] },
-                  { $expr: { $gte: ['$dailyPriceWithDiscount', 110] } },
+                  { $gte: ['$dailyPriceWithDiscount', 110] },
                 ],
               },
             ],
           },
         },
       },
-      {
-        $sort: {
-          'boost.lastViewAt': 1, // Sort by the smallest date of boost.lastViewAt or if null
-        },
-      },
+
+      // --- 3) Tri par rotation boost (les moins récemment vus d'abord)
+      { $sort: { 'boost.lastViewAt': 1 } },
+
+      // --- 4) Diversité par fournisseur (groupage puis "unwind")
       {
         $group: {
           _id: '$supplier._id',
           cars: { $push: '$$ROOT' },
         },
       },
-      /** {
-        $project: {
-          cars: { $slice: ['$cars', suppliers.length > 5 ? 2 : 20] }, // Garde seulement 2 voitures par fournisseur
-        },
-      }, */
-      {
-        $unwind: '$cars',
-      },
-      {
-        $replaceRoot: { newRoot: '$cars' },
-      },
+      // Astuce optionnelle : limiter le nombre de voitures par fournisseur
+      // {
+      //   $project: {
+      //     cars: { $slice: ['$cars', 2] }, // ex: garder 2 voitures max par supplier
+      //   },
+      // },
+      { $unwind: '$cars' },
+      { $replaceRoot: { newRoot: '$cars' } },
 
+      // --- 5) Pagination
       {
         $facet: {
           resultData: [
-            { $sort: { 'boost.lastViewAt': 1 } },
+            { $sort: { 'boost.lastViewAt': 1 } }, // cohérent avec la rotation
             { $skip: (page - 1) * size },
             { $limit: size },
           ],
@@ -1365,10 +1377,12 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
         },
       },
     ]
+
     const data = await Car.aggregate(pipeline, {
       collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 },
     })
 
+    // Mise en forme de la réponse : ne renvoyer que les champs utiles du supplier
     const formattedData = data.map((aggregationResult) => ({
       pageInfo: aggregationResult.pageInfo || [],
       resultData: aggregationResult.resultData.map((car: bookcarsTypes.Car) => ({
@@ -1382,38 +1396,43 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
       })),
     }))
 
-    // Logging asynchrone
-    if (formattedData[0]?.resultData) {
-      const statsData = formattedData[0].resultData.map((car: bookcarsTypes.Car) => {
-        // Calcul précis du nombre de jours
-        const timeDiff = endDateObj.getTime() - startDateObj.getTime()
-        const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) || 1
+    // --- 6) Logging & conso des vues Boost (après avoir déterminé les résultats affichés)
+    if (formattedData[0]?.resultData?.length) {
+      // Calcul précis du nombre de jours affichés
+      const timeDiff = endDateObj.getTime() - startDateObj.getTime()
+      const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) || 1
 
-        return {
-          car: car._id,
-          supplier: car.supplier._id,
-          pickupLocation: body.pickupLocation,
-          startDate: startDateObj,
-          endDate: endDateObj,
-          viewedAt: new Date(),
-          days,
-          paidView: true,
-          clientId: req.signedCookies.clientId,
-        }
-      })
+      // Préparer stats d'affichage
+      const statsData = formattedData[0].resultData.map((car: bookcarsTypes.Car) => ({
+        car: car._id,
+        supplier: car.supplier._id,
+        pickupLocation: body.pickupLocation,
+        startDate: startDateObj,
+        endDate: endDateObj,
+        viewedAt: new Date(),
+        days,
+        paidView: true,
+        clientId: req.signedCookies.clientId,
+      }))
 
-      // Incrémenter consumedViews pour chaque voiture
+      // Incrémenter consumedViews + maj lastViewAt UNIQUEMENT si budget encore dispo (ou illimité)
       const carIds = formattedData[0].resultData.map((car: bookcarsTypes.Car) => car._id)
       await Car.updateMany(
         {
           _id: { $in: carIds },
           'boost.active': true,
-          $expr: {
-            $or: [
-              { $eq: ['$boost.purchasedViews', -1] },
-              { $lt: ['$boost.consumedViews', '$boost.purchasedViews'] },
-            ],
-          },
+          'boost.paused': false,
+          $or: [
+            { 'boost.purchasedViews': -1 },
+            {
+              $expr: {
+                $lt: [
+                  { $ifNull: ['$boost.consumedViews', 0] },
+                  { $ifNull: ['$boost.purchasedViews', 0] }
+                ]
+              }
+            }
+          ],
         },
         {
           $inc: { 'boost.consumedViews': 1 },
@@ -1421,6 +1440,7 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
         },
       ).catch((err) => logger.error('Error updating consumed views:', err))
 
+      // Logger la vue (stats)
       CarStats.insertMany(statsData)
         .catch((err) => logger.error('Error logging car stats:', err))
     }
@@ -1431,3 +1451,4 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
     return res.status(400).send(i18n.t('DB_ERROR') + err.message)
   }
 }
+

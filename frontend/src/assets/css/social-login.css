@@ -48,7 +48,7 @@ div.social-login div.social-button {
   display: inline-flex; /* Aligner logo et texte horizontalement */
   align-items: center; /* Centrer verticalement */
   justify-content: center; /* Centrer le contenu */
-  padding: 8px 50px; /* Espacement intérieur */
+  padding: 8px 20px; /* Espacement intérieur */
   border-radius: 8px; /* Coins arrondis */
   background-color: #fff; /* Fond blanc */
   border: 1px solid #ddd; /* Bordure fine */

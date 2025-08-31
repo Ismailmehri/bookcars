@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { extendTheme } from '@mui/joy/styles'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 
 import { frFR as corefrFR, enUS as coreenUS, elGR as coreelGR } from '@mui/material/locale'
 import { frFR, enUS, elGR } from '@mui/x-date-pickers/locales'
@@ -256,20 +257,22 @@ const theme = createTheme(
 )
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <ThemeProvider theme={theme}>
-    <CssBaseline>
-      <App />
-      <ToastContainer
-        position="bottom-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        pauseOnFocusLoss={false}
-        draggable={false}
-        pauseOnHover
-        theme="dark"
-      />
-    </CssBaseline>
-  </ThemeProvider>,
+  <GoogleOAuthProvider clientId={env.GG_APP_ID}>
+    <ThemeProvider theme={theme}>
+      <CssBaseline>
+        <App />
+        <ToastContainer
+          position="bottom-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          pauseOnFocusLoss={false}
+          draggable={false}
+          pauseOnHover
+          theme="dark"
+        />
+      </CssBaseline>
+    </ThemeProvider>
+  </GoogleOAuthProvider>,
 )

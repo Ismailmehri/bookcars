@@ -99,6 +99,7 @@ const SocialLogin = ({
     },
     onError: loginError,
     scope: 'openid profile email',
+    redirect_uri: REDIRECT_URI,
   })
 
   return (

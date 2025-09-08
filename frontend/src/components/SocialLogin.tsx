@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import {
   LoginSocialFacebook,
   LoginSocialApple,
-  LoginSocialGoogle,
 } from 'reactjs-social-login'
+import { useGoogleLogin } from '@react-oauth/google'
 import * as bookcarsTypes from ':bookcars-types'
 import { IResolveParams } from '@/types'
 import { strings as commonStrings } from '@/lang/common'
@@ -77,6 +77,30 @@ const SocialLogin = ({
     return email
   }
 
+  const googleLogin = useGoogleLogin({
+    onSuccess: async ({ access_token: accessToken }: { access_token: string }) => {
+      try {
+        const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        })
+        const profile = await response.json()
+        loginSuccess(
+          bookcarsTypes.SocialSignInType.Google,
+          accessToken,
+          profile.email,
+          profile.name || profile.email,
+          profile.picture,
+        )
+      } catch (err) {
+        loginError(err)
+      }
+    },
+    onError: loginError,
+    scope: 'openid profile email',
+  })
+
   return (
     <div className={`${className ? `${className} ` : ''}social-login`}>
       <div className="separator">
@@ -127,23 +151,22 @@ const SocialLogin = ({
         )}
 
         {google && (
-          <LoginSocialGoogle
-            client_id={env.GG_APP_ID}
-            redirect_uri={REDIRECT_URI}
-            scope="openid profile email"
-            discoveryDocs="claims_supported"
-            onResolve={({ data }: IResolveParams) => {
-              loginSuccess(bookcarsTypes.SocialSignInType.Google, data?.access_token, data?.email, data?.name || data?.email, data?.picture)
-            }}
-            onReject={(err: any) => {
-              loginError(err)
-            }}
-          >
-            <div className="social-button">
+          <div className="social">
+            <div
+              className="social-button"
+              role="button"
+              tabIndex={0}
+              onClick={() => googleLogin()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  googleLogin()
+                }
+              }}
+            >
               <img src={GoogleIcon} alt="Google" className="social-logo" />
               <span>Connexion avec Google</span>
             </div>
-          </LoginSocialGoogle>
+          </div>
         )}
       </div>
       <div className="separator">

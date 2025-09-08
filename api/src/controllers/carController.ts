@@ -1104,9 +1104,7 @@ export const getFrontendCars = async (req: Request, res: Response) => {
         }
       })
 
-      CarStats.insertMany(statsData).catch((err) =>
-        logger.error('Error logging car stats:', err),
-      )
+      CarStats.insertMany(statsData).catch((err) => logger.error('Error logging car stats:', err))
     }
 
     return res.json(formattedData)

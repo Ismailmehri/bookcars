@@ -1155,11 +1155,11 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
               $expr: {
                 $lt: [
                   { $ifNull: ['$boost.consumedViews', 0] },
-                  { $ifNull: ['$boost.purchasedViews', 0] }
-                ]
-              }
-            }
-          ]
+                  { $ifNull: ['$boost.purchasedViews', 0] },
+                ],
+              },
+            },
+          ],
         },
       ],
     }
@@ -1297,8 +1297,8 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
                   {
                     $gte: [
                       { $ceil: { $divide: [{ $subtract: [endDateObj, startDateObj] }, 1000 * 60 * 60 * 24] } },
-                      '$discounts.threshold'
-                    ]
+                      '$discounts.threshold',
+                    ],
                   },
                 ],
               },
@@ -1427,10 +1427,10 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
               $expr: {
                 $lt: [
                   { $ifNull: ['$boost.consumedViews', 0] },
-                  { $ifNull: ['$boost.purchasedViews', 0] }
-                ]
-              }
-            }
+                  { $ifNull: ['$boost.purchasedViews', 0] },
+                ],
+              },
+            },
           ],
         },
         {
@@ -1450,4 +1450,3 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
     return res.status(400).send(i18n.t('DB_ERROR') + err.message)
   }
 }
-

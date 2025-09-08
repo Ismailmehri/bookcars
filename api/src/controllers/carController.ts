@@ -749,11 +749,11 @@ export const getFrontendCars = async (req: Request, res: Response) => {
     const startDateObj = new Date(startDate || Date.now())
     const endDateObj = new Date(endDate || Date.now())
 
-    // Définir les dates limites
+    // Fenêtre restreinte pour forcer prix min
     const restrictedStartDate = new Date('2025-06-01')
     const restrictedEndDate = new Date('2025-09-15')
 
-    // Filtre de base pour les voitures disponibles
+    // Filtre de base
     const $match: mongoose.FilterQuery<bookcarsTypes.Car> = {
       $and: [
         { supplier: { $in: suppliers } },
@@ -764,21 +764,13 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       ],
     }
 
-    // Ajouter les conditions supplémentaires
-    if (fuelPolicy) {
-      $match.$and!.push({ fuelPolicy: { $in: fuelPolicy } })
-    }
+    // Filtres additionnels
+    if (fuelPolicy) $match.$and!.push({ fuelPolicy: { $in: fuelPolicy } })
 
     if (carSpecs) {
-      if (carSpecs.aircon) {
-        $match.$and!.push({ aircon: true })
-      }
-      if (carSpecs.moreThanFourDoors) {
-        $match.$and!.push({ doors: { $gt: 4 } })
-      }
-      if (carSpecs.moreThanFiveSeats) {
-        $match.$and!.push({ seats: { $gt: 5 } })
-      }
+      if (carSpecs.aircon) $match.$and!.push({ aircon: true })
+      if (carSpecs.moreThanFourDoors) $match.$and!.push({ doors: { $gt: 4 } })
+      if (carSpecs.moreThanFiveSeats) $match.$and!.push({ seats: { $gt: 5 } })
     }
 
     if (mileage) {
@@ -791,13 +783,8 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       }
     }
 
-    if (deposit && deposit > -1) {
-      $match.$and!.push({ deposit: { $lte: deposit } })
-    }
-
-    if (ranges) {
-      $match.$and!.push({ range: { $in: ranges } })
-    }
+    if (deposit && deposit > -1) $match.$and!.push({ deposit: { $lte: deposit } })
+    if (ranges) $match.$and!.push({ range: { $in: ranges } })
 
     if (multimedia && multimedia.length > 0) {
       for (const multimediaOption of multimedia) {
@@ -805,18 +792,11 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       }
     }
 
-    if (rating && rating > -1) {
-      $match.$and!.push({ rating: { $gte: rating } })
-    }
+    if (rating && rating > -1) $match.$and!.push({ rating: { $gte: rating } })
 
-    if (seats) {
-      if (seats > -1) {
-        if (seats === 6) {
-          $match.$and!.push({ seats: { $gt: 5 } })
-        } else {
-          $match.$and!.push({ seats })
-        }
-      }
+    if (seats && seats > -1) {
+      if (seats === 6) $match.$and!.push({ seats: { $gt: 5 } })
+      else $match.$and!.push({ seats })
     }
 
     if (carType?.length) $match.type = { $in: carType }
@@ -824,6 +804,11 @@ export const getFrontendCars = async (req: Request, res: Response) => {
 
     const pipeline: mongoose.PipelineStage[] = [
       { $match },
+
+      // ── Lookup fournisseur avec filtre score:
+      // - score >= 50 => OK
+      // - score null ou manquant (nouvelle agence) => OK
+      // - score < 50 => EXCLU
       {
         $lookup: {
           from: 'User',
@@ -834,11 +819,23 @@ export const getFrontendCars = async (req: Request, res: Response) => {
                 $expr: { $eq: ['$_id', '$$userId'] },
               },
             },
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $gte: ['$score', 65] },
+                    { $eq: [{ $ifNull: ['$score', '__NO_SCORE__'] }, '__NO_SCORE__'] }, // null ou manquant
+                  ],
+                },
+              },
+            },
           ],
           as: 'supplier',
         },
       },
       { $unwind: { path: '$supplier', preserveNullAndEmptyArrays: false } },
+
+      // ── (Optionnel) Abonnement actif
       ...(env.SUBSCRIPTION_ACTIVE
         ? [
             {
@@ -867,6 +864,8 @@ export const getFrontendCars = async (req: Request, res: Response) => {
             { $addFields: { resultsCars: '$subscription.resultsCars' } },
           ]
         : []),
+
+      // ── Stats résa fournisseur
       {
         $lookup: {
           from: 'Booking',
@@ -892,6 +891,8 @@ export const getFrontendCars = async (req: Request, res: Response) => {
           supplierReservationCount: { $size: '$supplierBookings' },
         },
       },
+
+      // ── Conflits de réservation
       {
         $lookup: {
           from: 'Booking',
@@ -914,19 +915,11 @@ export const getFrontendCars = async (req: Request, res: Response) => {
           as: 'conflictingBookings',
         },
       },
-      {
-        $addFields: {
-          hasConflict: { $gt: [{ $size: '$conflictingBookings' }, 0] },
-        },
-      },
-      {
-        $match: { hasConflict: false },
-      },
-      {
-        $addFields: {
-          unavailablePeriods: { $ifNull: ['$unavailablePeriods', []] },
-        },
-      },
+      { $addFields: { hasConflict: { $gt: [{ $size: '$conflictingBookings' }, 0] } } },
+      { $match: { hasConflict: false } },
+
+      // ── Indisponibilités manuelles
+      { $addFields: { unavailablePeriods: { $ifNull: ['$unavailablePeriods', []] } } },
       {
         $addFields: {
           isUnavailable: {
@@ -945,9 +938,9 @@ export const getFrontendCars = async (req: Request, res: Response) => {
           },
         },
       },
-      {
-        $match: { isUnavailable: false },
-      },
+      { $match: { isUnavailable: false } },
+
+      // ── Prix journalier (périodique si applicable)
       {
         $addFields: {
           dailyPrice: {
@@ -978,6 +971,8 @@ export const getFrontendCars = async (req: Request, res: Response) => {
           },
         },
       },
+
+      // ── Remise si seuil de jours atteint
       {
         $addFields: {
           dailyPriceWithDiscount: {
@@ -987,7 +982,19 @@ export const getFrontendCars = async (req: Request, res: Response) => {
                   { $ne: [{ $ifNull: ['$discounts', null] }, null] },
                   { $ne: ['$discounts.percentage', null] },
                   { $ne: ['$discounts.threshold', null] },
-                  { $gte: [{ $ceil: { $divide: [{ $subtract: [endDateObj, startDateObj] }, 1000 * 60 * 60 * 24] } }, '$discounts.threshold'] },
+                  {
+                    $gte: [
+                      {
+                        $ceil: {
+                          $divide: [
+                            { $subtract: [endDateObj, startDateObj] },
+                            1000 * 60 * 60 * 24,
+                          ],
+                        },
+                      },
+                      '$discounts.threshold',
+                    ],
+                  },
                 ],
               },
               then: {
@@ -1001,37 +1008,34 @@ export const getFrontendCars = async (req: Request, res: Response) => {
           },
         },
       },
-      {
-        $match: {
-          dailyPriceWithDiscount: { $gte: minPrice, $lte: maxPrice },
-        },
-      },
+
+      // ── Filtre min/max prix
+      { $match: { dailyPriceWithDiscount: { $gte: minPrice, $lte: maxPrice } } },
+
+      // ── Règle période restreinte (ex.: été)
       {
         $match: {
           $expr: {
             $or: [
-              // Cas 1 : la période demandée est en dehors de la période restreinte
-              {
-                $or: [
-                  { $lte: [endDateObj, restrictedStartDate] },
-                  { $gte: [startDateObj, restrictedEndDate] },
-                ],
-              },
-              // Cas 2 : la période demandée chevauche la période restreinte
-              // -> la voiture doit avoir une propriété periodicPrices non vide
-              // -> et au moins une période dans periodicPrices doit chevaucher la période restreinte
+              // Période en dehors de la fenêtre restreinte
+              { $lte: [endDateObj, restrictedStartDate] },
+              { $gte: [startDateObj, restrictedEndDate] },
+
+              // Chevauchement => voiture doit avoir periodicPrices ET prix >= 110
               {
                 $and: [
                   { $lt: [startDateObj, restrictedEndDate] },
                   { $gt: [endDateObj, restrictedStartDate] },
                   { $gt: [{ $size: { $ifNull: ['$periodicPrices', []] } }, 0] },
-                  { $expr: { $gte: ['$dailyPriceWithDiscount', 110] } },
+                  { $gte: ['$dailyPriceWithDiscount', 110] },
                 ],
               },
             ],
           },
         },
       },
+
+      // ── Limites par fournisseur (abonnement / ou fallback)
       {
         $group: {
           _id: '$supplier._id',
@@ -1048,13 +1052,10 @@ export const getFrontendCars = async (req: Request, res: Response) => {
             : { $slice: ['$cars', suppliers.length > 5 ? 2 : 20] },
         },
       },
-      {
-        $unwind: '$cars',
-      },
-      {
-        $replaceRoot: { newRoot: '$cars' },
-      },
+      { $unwind: '$cars' },
+      { $replaceRoot: { newRoot: '$cars' } },
 
+      // ── Pagination + tri
       {
         $facet: {
           resultData: [
@@ -1062,12 +1063,11 @@ export const getFrontendCars = async (req: Request, res: Response) => {
             { $skip: (page - 1) * size },
             { $limit: size },
           ],
-          pageInfo: [
-            { $count: 'totalRecords' },
-          ],
+          pageInfo: [{ $count: 'totalRecords' }],
         },
       },
     ]
+
     const data = await Car.aggregate(pipeline, {
       collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 },
     })
@@ -1080,15 +1080,14 @@ export const getFrontendCars = async (req: Request, res: Response) => {
           _id: car.supplier._id,
           fullName: car.supplier.fullName,
           avatar: car.supplier.avatar,
-          score: car.supplier.score,
+          score: car.supplier.score, // peut être undefined/null (nouvelles agences)
         },
       })),
     }))
 
-    // Logging asynchrone
+    // Logging asynchrone (CarStats)
     if (formattedData[0]?.resultData) {
       const statsData = formattedData[0].resultData.map((car: bookcarsTypes.Car) => {
-        // Calcul précis du nombre de jours
         const timeDiff = endDateObj.getTime() - startDateObj.getTime()
         const days = Math.ceil(timeDiff / (1000 * 3600 * 24)) || 1
 
@@ -1105,8 +1104,9 @@ export const getFrontendCars = async (req: Request, res: Response) => {
         }
       })
 
-      CarStats.insertMany(statsData)
-        .catch((err) => logger.error('Error logging car stats:', err))
+      CarStats.insertMany(statsData).catch((err) =>
+        logger.error('Error logging car stats:', err),
+      )
     }
 
     return res.json(formattedData)
@@ -1115,6 +1115,7 @@ export const getFrontendCars = async (req: Request, res: Response) => {
     return res.status(400).send(i18n.t('DB_ERROR') + err.message)
   }
 }
+
 export const getFrontendBoostedCars = async (req: Request, res: Response) => {
   try {
     const { body }: { body: bookcarsTypes.GetCarsPayload } = req

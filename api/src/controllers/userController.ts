@@ -1240,6 +1240,7 @@ export const getUser = async (req: Request, res: Response) => {
       active: 1,
       reviews: 1,
       slug: 1,
+      score: 1,
     }).lean()
 
     if (!user) {

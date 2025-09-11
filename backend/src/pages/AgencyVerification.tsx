@@ -10,7 +10,7 @@ import {
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
 
-const AgencyVerificationPage = () => {
+const AgencyVerification = () => {
   const [docType, setDocType] = useState<bookcarsTypes.AgencyDocumentType>(
     bookcarsTypes.AgencyDocumentType.RC,
   )
@@ -50,4 +50,4 @@ const AgencyVerificationPage = () => {
   )
 }
 
-export default AgencyVerificationPage
+export default AgencyVerification

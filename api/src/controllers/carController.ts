@@ -865,7 +865,7 @@ export const getFrontendCars = async (req: Request, res: Response) => {
           ]
         : []),
 
-      // ── Stats résa fournisseur
+      // ── Nombre de réservations par agence
       {
         $lookup: {
           from: 'Booking',
@@ -876,8 +876,10 @@ export const getFrontendCars = async (req: Request, res: Response) => {
                 $expr: {
                   $and: [
                     { $eq: ['$supplier', '$$supplierId'] },
-                    { $ne: ['$status', 'cancelled'] },
-                    { $ne: ['$status', 'void'] },
+                    { $in: ['$status', [
+                      bookcarsTypes.BookingStatus.Paid,
+                      bookcarsTypes.BookingStatus.Deposit,
+                    ]] },
                   ],
                 },
               },
@@ -886,11 +888,8 @@ export const getFrontendCars = async (req: Request, res: Response) => {
           as: 'supplierBookings',
         },
       },
-      {
-        $addFields: {
-          supplierReservationCount: { $size: '$supplierBookings' },
-        },
-      },
+      { $addFields: { trips: { $size: '$supplierBookings' } } },
+      { $project: { supplierBookings: 0 } },
 
       // ── Conflits de réservation
       {
@@ -903,8 +902,8 @@ export const getFrontendCars = async (req: Request, res: Response) => {
                 $expr: {
                   $and: [
                     { $eq: ['$car', '$$carId'] },
-                    { $ne: ['$status', 'cancelled'] },
-                    { $ne: ['$status', 'void'] },
+                    { $ne: ['$status', bookcarsTypes.BookingStatus.Cancelled] },
+                    { $ne: ['$status', bookcarsTypes.BookingStatus.Void] },
                     { $lt: ['$from', endDateObj] },
                     { $gt: ['$to', startDateObj] },
                   ],
@@ -1058,11 +1057,11 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       // ── Pagination + tri
       {
         $facet: {
-          resultData: [
-            { $sort: { dailyPriceWithDiscount: 1, supplierReservationCount: 1 } },
-            { $skip: (page - 1) * size },
-            { $limit: size },
-          ],
+            resultData: [
+              { $sort: { dailyPriceWithDiscount: 1, trips: 1 } },
+              { $skip: (page - 1) * size },
+              { $limit: size },
+            ],
           pageInfo: [{ $count: 'totalRecords' }],
         },
       },
@@ -1192,8 +1191,10 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
                 $expr: {
                   $and: [
                     { $eq: ['$supplier', '$$supplierId'] },
-                    { $ne: ['$status', 'cancelled'] },
-                    { $ne: ['$status', 'void'] },
+                    { $in: ['$status', [
+                      bookcarsTypes.BookingStatus.Paid,
+                      bookcarsTypes.BookingStatus.Deposit,
+                    ]] },
                   ],
                 },
               },
@@ -1202,7 +1203,8 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
           as: 'supplierBookings',
         },
       },
-      { $addFields: { supplierReservationCount: { $size: '$supplierBookings' } } },
+      { $addFields: { trips: { $size: '$supplierBookings' } } },
+      { $project: { supplierBookings: 0 } },
 
       // Vérifier les conflits de réservations sur LA voiture dans la période demandée
       {
@@ -1215,8 +1217,8 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
                 $expr: {
                   $and: [
                     { $eq: ['$car', '$$carId'] },
-                    { $ne: ['$status', 'cancelled'] },
-                    { $ne: ['$status', 'void'] },
+                    { $ne: ['$status', bookcarsTypes.BookingStatus.Cancelled] },
+                    { $ne: ['$status', bookcarsTypes.BookingStatus.Void] },
                     { $lt: ['$from', endDateObj] }, // début reservation existante < fin demandée
                     { $gt: ['$to', startDateObj] }, // fin reservation existante > début demandée
                   ],

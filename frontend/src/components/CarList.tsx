@@ -412,7 +412,7 @@ const CarList = ({
                     </Tooltip>
                   </>
                 )}
-                {car.trips >= 10 && <span className="trips">{`(${car.trips} ${strings.TRIPS})`}</span>}
+                {car.trips > 0 && <span className="trips">{`(${car.trips} ${strings.TRIPS})`}</span>}
               </div>
               { /* car.co2 && (
                 <div className="co2">

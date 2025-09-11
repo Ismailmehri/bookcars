@@ -647,6 +647,7 @@ describe('POST /api/frontend-cars/:page/:size', () => {
       .send(payload)
     expect(res.statusCode).toBe(200)
     expect(res.body[0].resultData.length).toBeGreaterThan(0)
+    expect(res.body[0].resultData[0]).toHaveProperty('trips')
 
     payload.rating = undefined
     payload.ranges = undefined
@@ -730,6 +731,45 @@ describe('POST /api/frontend-cars/:page/:size', () => {
       .send(payload)
     expect(res.statusCode).toBe(200)
     expect(res.body[0].resultData.length).toBeGreaterThan(0)
+  })
+
+  it('should count only paid and deposit bookings as trips', async () => {
+    const baseBooking = {
+      supplier: SUPPLIER2_ID,
+      car: CAR_ID,
+      driver: testHelper.getUserId(),
+      pickupLocation: LOCATION2_ID,
+      dropOffLocation: LOCATION2_ID,
+      from: new Date(),
+      to: new Date(Date.now() + 86400000),
+      price: 100,
+    }
+    const paid = new Booking({ ...baseBooking, status: bookcarsTypes.BookingStatus.Paid })
+    const deposit = new Booking({ ...baseBooking, status: bookcarsTypes.BookingStatus.Deposit })
+    const pending = new Booking({ ...baseBooking, status: bookcarsTypes.BookingStatus.Pending })
+    const cancelled = new Booking({ ...baseBooking, status: bookcarsTypes.BookingStatus.Cancelled })
+
+    await Promise.all([paid.save(), deposit.save(), pending.save(), cancelled.save()])
+
+    const payload: bookcarsTypes.GetCarsPayload = {
+      suppliers: [SUPPLIER2_ID],
+      pickupLocation: LOCATION2_ID,
+      carType: [bookcarsTypes.CarType.Gasoline],
+      gearbox: [bookcarsTypes.GearboxType.Manual],
+      mileage: [bookcarsTypes.Mileage.Limited],
+      deposit: -1,
+      ranges: [bookcarsTypes.CarRange.Midi],
+      multimedia: [bookcarsTypes.CarMultimedia.AndroidAuto],
+    }
+
+    const res = await request(app)
+      .post(`/api/frontend-cars/${testHelper.PAGE}/${testHelper.SIZE}`)
+      .send(payload)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body[0].resultData[0].trips).toBe(2)
+
+    await Booking.deleteMany({ _id: { $in: [paid._id, deposit._id, pending._id, cancelled._id] } })
   })
 })
 

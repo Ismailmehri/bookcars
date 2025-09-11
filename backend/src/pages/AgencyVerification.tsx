@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Box,
   Button,
@@ -15,6 +15,18 @@ const AgencyVerification = () => {
     bookcarsTypes.AgencyDocumentType.RC,
   )
   const [file, setFile] = useState<File>()
+  const [docs, setDocs] = useState<any[]>([])
+
+  const loadDocs = async () => {
+    const res = await fetch('/api/verification/my')
+    if (res.ok) {
+      setDocs(await res.json())
+    }
+  }
+
+  useEffect(() => {
+    loadDocs()
+  }, [])
 
   const upload = async () => {
     if (!file) {
@@ -25,6 +37,7 @@ const AgencyVerification = () => {
     formData.append('docType', docType)
     await fetch('/api/verification/upload', { method: 'POST', body: formData })
     setFile(undefined)
+    await loadDocs()
   }
 
   return (
@@ -48,6 +61,23 @@ const AgencyVerification = () => {
         <Button variant="contained" onClick={upload} disabled={!file}>
           Upload
         </Button>
+        {docs.map((doc) => (
+          <Box key={doc._id} display="flex" gap={1} alignItems="center">
+            <Typography>{doc.docType}</Typography>
+            {doc.latest && (
+              <>
+                <Typography>{doc.latest.status}</Typography>
+                <Button
+                  href={`/api/verification/download/${doc.latest._id}`}
+                  target="_blank"
+                  size="small"
+                >
+                  Download
+                </Button>
+              </>
+            )}
+          </Box>
+        ))}
       </Box>
     </Layout>
   )

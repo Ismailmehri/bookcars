@@ -42,7 +42,7 @@ export const upload = async (req: Request, res: Response) => {
     const ext = path.extname(file.originalname)
     const uuid = nanoid()
     const relPath = path.join(String(connectedUser._id), docType, `${uuid}${ext}`)
-    const absPath = path.join(env.AGENCY_DOCS_PATH, relPath)
+    const absPath = path.join(env.CDN_AGENCY_DOCS, relPath)
     await helper.mkdir(path.dirname(absPath))
     await fs.writeFile(absPath, file.buffer)
     const sha256 = crypto.createHash('sha256').update(file.buffer).digest('hex')

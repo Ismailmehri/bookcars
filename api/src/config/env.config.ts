@@ -295,11 +295,11 @@ export const CDN_TEMP_CONTRACTS = __env__('BC_CDN_TEMP_CONTRACTS', true)
 export const CDN_INVOICES = __env__('BC_CDN_INVOICES', true)
 
 /**
- * Agency documents folder path.
+ * Agency documents' CDN folder path.
  *
  * @type {string}
  */
-export const AGENCY_DOCS_PATH = __env__('BC_AGENCY_DOCS_PATH', false, '/var/plany/uploads')
+export const CDN_AGENCY_DOCS = __env__('BC_CDN_AGENCY_DOCS', true)
 
 /**
  * Backend host.

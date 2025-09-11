@@ -41,7 +41,10 @@ const AgencyVerification = () => {
             </MenuItem>
           ))}
         </Select>
-        <TextField type="file" onChange={(e) => setFile(e.target.files?.[0])} />
+        <TextField
+          type="file"
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFile(e.target.files?.[0])}
+        />
         <Button variant="contained" onClick={upload} disabled={!file}>
           Upload
         </Button>

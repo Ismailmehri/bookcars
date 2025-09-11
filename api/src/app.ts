@@ -18,6 +18,7 @@ import countryRoutes from './routes/countryRoutes'
 import cronRoutes from './routes/cronRoutes'
 import carStatsRoutes from './routes/carStatsRoutes'
 import subscriptionRoutes from './routes/subscriptionRoutes'
+import agencyVerificationRoutes from './routes/agencyVerificationRoutes'
 
 import * as helper from './common/helper'
 import { setClientId } from './middlewares/setClientId'
@@ -61,6 +62,7 @@ app.use('/', countryRoutes)
 app.use('/', cronRoutes)
 app.use('/', carStatsRoutes)
 app.use('/', subscriptionRoutes)
+app.use('/', agencyVerificationRoutes)
 
 i18n.locale = env.DEFAULT_LANGUAGE
 
@@ -73,5 +75,6 @@ await helper.mkdir(env.CDN_TEMP_LOCATIONS)
 await helper.mkdir(env.CDN_CONTRACTS)
 await helper.mkdir(env.CDN_TEMP_CONTRACTS)
 await helper.mkdir(env.CDN_INVOICES)
+await helper.mkdir(env.AGENCY_DOCS_PATH)
 
 export default app

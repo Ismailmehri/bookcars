@@ -26,6 +26,7 @@ process.env.BC_CDN_TEMP_LOCATIONS = process.env.BC_CDN_TEMP_LOCATIONS || path.jo
 process.env.BC_CDN_CONTRACTS = process.env.BC_CDN_CONTRACTS || path.join(cdnRoot, 'contracts')
 process.env.BC_CDN_TEMP_CONTRACTS = process.env.BC_CDN_TEMP_CONTRACTS || path.join(cdnRoot, 'temp-contracts')
 process.env.BC_CDN_INVOICES = process.env.BC_CDN_INVOICES || path.join(cdnRoot, 'invoices')
+process.env.BC_CDN_AGENCY_DOCS = process.env.BC_CDN_AGENCY_DOCS || path.join(cdnRoot, 'agency-docs')
 process.env.BC_BACKEND_HOST = process.env.BC_BACKEND_HOST || 'http://localhost:3000'
 process.env.BC_FRONTEND_HOST = process.env.BC_FRONTEND_HOST || 'http://localhost:3001'
 process.env.BC_SMS_API_KEY = process.env.BC_SMS_API_KEY || 'sms-api-key'

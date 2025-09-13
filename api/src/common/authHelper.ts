@@ -1,6 +1,5 @@
 import { Request } from 'express'
 import { jwtVerify, SignJWT } from 'jose'
-import * as helper from './helper'
 import * as env from '../config/env.config'
 
 const jwtSecret = new TextEncoder().encode(env.JWT_SECRET)
@@ -51,7 +50,21 @@ export const decryptJWT = async (input: string) => {
  * @param {Request} req
  * @returns {boolean}
  */
-export const isBackend = (req: Request): boolean => !!req.headers.origin && helper.trimEnd(req.headers.origin, '/') === helper.trimEnd(env.BACKEND_HOST, '/')
+const getHost = (req: Request) => {
+  if (req.headers.origin) {
+    try {
+      return new URL(req.headers.origin).host
+    } catch {
+      return undefined
+    }
+  }
+  return req.headers.host
+}
+
+export const isBackend = (req: Request): boolean => {
+  const host = getHost(req)
+  return !!host && host === new URL(env.BACKEND_HOST).host
+}
 
 /**
  * Check whether the request is from the frontend or not.
@@ -60,7 +73,10 @@ export const isBackend = (req: Request): boolean => !!req.headers.origin && help
  * @param {Request} req
  * @returns {boolean}
  */
-export const isFrontend = (req: Request): boolean => !!req.headers.origin && helper.trimEnd(req.headers.origin, '/') === helper.trimEnd(env.FRONTEND_HOST, '/')
+export const isFrontend = (req: Request): boolean => {
+  const host = getHost(req)
+  return !!host && host === new URL(env.FRONTEND_HOST).host
+}
 
 /**
  * Get authentification cookie name.

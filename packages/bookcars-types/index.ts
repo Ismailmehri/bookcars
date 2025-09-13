@@ -70,6 +70,27 @@ export enum RecordType {
   Country = 'country',
 }
 
+export enum AgencyDocumentType {
+  RC = 'rc',
+  MATRICULE_FISCAL = 'matricule_fiscal',
+  PATENTE = 'patente',
+  AUTORISATION_TRANSPORT = 'autorisation_transport',
+  CNSS = 'cnss',
+  ASSURANCE = 'assurance',
+  AUTRE = 'autre',
+}
+
+export enum AgencyDocumentStatus {
+  EN_REVUE = 'en_revue',
+  ACCEPTE = 'accepte',
+  REFUSE = 'refuse',
+}
+
+export const REQUIRED_AGENCY_DOCUMENTS: AgencyDocumentType[] = [
+  AgencyDocumentType.RC,
+  AgencyDocumentType.MATRICULE_FISCAL,
+]
+
 export interface Booking {
   _id?: string
   supplier: string | User
@@ -396,6 +417,7 @@ export interface User {
   birthDate?: Date
   verified?: boolean
   verifiedAt?: Date
+  agencyVerified?: boolean
   active?: boolean
   language?: string
   enableEmailNotifications?: boolean
@@ -783,5 +805,31 @@ export interface CreateSubscriptionPayload {
 
 export interface UpdateSubscriptionPayload extends CreateSubscriptionPayload {
   _id: string
+}
+
+export interface AgencyDocument {
+  _id?: string
+  agency: string
+  docType: AgencyDocumentType
+  createdAt?: Date
+}
+
+export interface AgencyDocumentVersion {
+  _id?: string
+  document: string | AgencyDocument
+  version: number
+  originalFilename: string
+  contentType: string
+  sizeBytes: number
+  sha256: string
+  absPath: string
+  relPath: string
+  status: AgencyDocumentStatus
+  statusChangedBy?: string
+  statusChangedAt?: Date
+  statusComment?: string
+  uploadedBy: string
+  uploadedAt: Date
+  note?: string
 }
 

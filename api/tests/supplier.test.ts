@@ -255,16 +255,17 @@ describe('GET /api/suppliers/:page/:size', () => {
 })
 
 describe('GET /api/all-suppliers', () => {
-  it('should get all suppliers', async () => {
-    let res = await request(app)
+  it('should get all suppliers and use cache', async () => {
+    const res1 = await request(app)
       .get('/api/all-suppliers')
-    expect(res.statusCode).toBe(200)
-    expect(res.body.length).toBeGreaterThan(1)
+    expect(res1.statusCode).toBe(200)
+    expect(res1.body.length).toBeGreaterThan(1)
 
     await databaseHelper.close()
-    res = await request(app)
+    const res2 = await request(app)
       .get('/api/all-suppliers')
-    expect(res.statusCode).toBe(400)
+    expect(res2.statusCode).toBe(200)
+    expect(res2.body).toEqual(res1.body)
     expect(await databaseHelper.connect(env.DB_URI, false, false)).toBeTruthy()
   })
 })

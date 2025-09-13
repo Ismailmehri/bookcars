@@ -382,7 +382,7 @@ const CarList = ({
           <div className="car-footer" style={hidePrice ? { bottom: 10 } : undefined}>
             {!hideSupplier && (
               <a
-                href={`/search?pickupLocation=${pickupLocation}&supplier=${car.supplier._id}`}
+                href={`/search/agence/${car.supplier.slug}`}
                 style={{ textDecoration: 'none', color: 'inherit' }}
                 title={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
                 aria-label={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}

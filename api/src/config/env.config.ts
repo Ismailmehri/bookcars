@@ -502,6 +502,7 @@ export interface UserInfo {
   blacklisted?: boolean
   payLater?: boolean
   score?: number
+  slug?: string
 }
 
 /**

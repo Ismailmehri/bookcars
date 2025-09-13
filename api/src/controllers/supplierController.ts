@@ -17,6 +17,25 @@ import * as helper from '../common/helper'
 import * as logger from '../common/logger'
 import * as authHelper from '../common/authHelper'
 
+interface CacheEntry<T> {
+  data: T
+  expiry: number
+}
+
+interface SupplierCacheData {
+  _id: mongoose.Types.ObjectId
+  fullName: string
+  avatar?: string
+  verified?: boolean
+  active?: boolean
+  agencyVerified?: boolean
+  slug?: string
+  carCount: number
+}
+
+const ALL_SUPPLIERS_TTL = 6 * 60 * 60 * 1000
+let allSuppliersCache: CacheEntry<SupplierCacheData[]> | null = null
+
 /**
  * Validate Supplier by fullname.
  *
@@ -329,7 +348,11 @@ export const getSuppliers = async (req: Request, res: Response) => {
  */
 export const getAllSuppliers = async (req: Request, res: Response) => {
   try {
-    const data = await User.aggregate(
+    if (allSuppliersCache && allSuppliersCache.expiry > Date.now()) {
+      return res.json(allSuppliersCache.data)
+    }
+
+    const data = await User.aggregate<SupplierCacheData>(
       [
         // Étape 1 : Filtrer les utilisateurs de type "Supplier" avec un avatar
         { $match: { type: bookcarsTypes.UserType.Supplier, avatar: { $ne: null } } },
@@ -370,6 +393,11 @@ export const getAllSuppliers = async (req: Request, res: Response) => {
       ],
       { collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 } }, // Options de collation pour le tri
     )
+
+    allSuppliersCache = {
+      data,
+      expiry: Date.now() + ALL_SUPPLIERS_TTL,
+    }
 
     return res.json(data)
   } catch (err) {

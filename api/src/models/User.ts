@@ -56,6 +56,10 @@ const userSchema = new Schema<env.User>(
     verifiedAt: {
       type: Date,
     },
+    agencyVerified: {
+      type: Boolean,
+      default: false,
+    },
     active: {
       type: Boolean,
       default: false,

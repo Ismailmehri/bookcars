@@ -23,6 +23,7 @@ import {
   Person as DriverIcon,
   EventSeat as BookingIcon,
   Settings as PaymentOptionsIcon,
+  Verified as VerifiedIcon,
 } from '@mui/icons-material'
 import validator from 'validator'
 import { format, intervalToDuration } from 'date-fns'
@@ -615,7 +616,12 @@ const Checkout = () => {
                         <div className="booking-detail-value">
                           <div className="car-supplier">
                             <img src={bookcarsHelper.joinURL(env.CDN_USERS, car.supplier.avatar)} alt={car.supplier.fullName} style={{ height: env.SUPPLIER_IMAGE_HEIGHT }} />
-                            <span className="car-supplier-name">{car.supplier.fullName}</span>
+                            <span className="car-supplier-name">
+                              {car.supplier.agencyVerified && (
+                                <VerifiedIcon className="agency-verified-badge" />
+                              )}
+                              {car.supplier.fullName}
+                            </span>
                           </div>
                         </div>
                       </div>

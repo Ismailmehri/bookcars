@@ -21,6 +21,23 @@ import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
 import * as AgencyVerificationService from '@/services/AgencyVerificationService'
 import type { VersionWithDocument } from '@/services/AgencyVerificationService'
+import * as SupplierService from '@/services/SupplierService'
+
+const docLabels: Record<bookcarsTypes.AgencyDocumentType, string> = {
+  [bookcarsTypes.AgencyDocumentType.RC]: 'Registre de Commerce',
+  [bookcarsTypes.AgencyDocumentType.MATRICULE_FISCAL]: 'Matricule fiscal',
+  [bookcarsTypes.AgencyDocumentType.PATENTE]: 'Patente',
+  [bookcarsTypes.AgencyDocumentType.AUTORISATION_TRANSPORT]: 'Autorisation transport',
+  [bookcarsTypes.AgencyDocumentType.CNSS]: 'CNSS',
+  [bookcarsTypes.AgencyDocumentType.ASSURANCE]: 'Assurance',
+  [bookcarsTypes.AgencyDocumentType.AUTRE]: 'Autre',
+}
+
+const statusLabels: Record<bookcarsTypes.AgencyDocumentStatus, string> = {
+  [bookcarsTypes.AgencyDocumentStatus.ACCEPTE]: 'Accepté',
+  [bookcarsTypes.AgencyDocumentStatus.REFUSE]: 'Refusé',
+  [bookcarsTypes.AgencyDocumentStatus.EN_REVUE]: 'En revue',
+}
 
 const statusChip = (status: bookcarsTypes.AgencyDocumentStatus) => {
   const map: Record<bookcarsTypes.AgencyDocumentStatus, { label: string; color: 'success' | 'error' | 'default' }> = {
@@ -36,10 +53,14 @@ const AdminVerificationDashboard = () => {
   const [versions, setVersions] = useState<VersionWithDocument[]>([])
   const [filterStatus, setFilterStatus] = useState<'all' | bookcarsTypes.AgencyDocumentStatus>('all')
   const [filterType, setFilterType] = useState<'all' | bookcarsTypes.AgencyDocumentType>('all')
+  const [filterAgency, setFilterAgency] = useState<'all' | string>('all')
+  const [suppliers, setSuppliers] = useState<bookcarsTypes.User[]>([])
   const [selected, setSelected] = useState<VersionWithDocument>()
   const [comment, setComment] = useState('')
 
   const load = async () => {
+    const s = await SupplierService.getAllSuppliers()
+    setSuppliers(s)
     const docs = await AgencyVerificationService.getDocuments()
     const vers = await Promise.all(
       docs.map(async (doc) => {
@@ -61,7 +82,8 @@ const AdminVerificationDashboard = () => {
   const filtered = versions.filter(
     (v) =>
       (filterStatus === 'all' || v.status === filterStatus)
-      && (filterType === 'all' || v.document.docType === filterType),
+      && (filterType === 'all' || v.document.docType === filterType)
+      && (filterAgency === 'all' || v.document.agency === filterAgency),
   )
 
   const download = async (versionId: string, filename: string) => {
@@ -91,7 +113,7 @@ const AdminVerificationDashboard = () => {
 
   return (
     <Layout>
-      <Box p={2} display="flex" flexDirection="column" gap={2}>
+      <Box p={2} mt={2} display="flex" flexDirection="column" gap={2}>
         <Typography variant="h5">Tableau de bord de vérification</Typography>
         <Box display="flex" gap={2}>
           <Select
@@ -103,7 +125,7 @@ const AdminVerificationDashboard = () => {
             <MenuItem value="all">Statut</MenuItem>
             {Object.values(bookcarsTypes.AgencyDocumentStatus).map((s) => (
               <MenuItem key={s} value={s}>
-                {s}
+                {statusLabels[s]}
               </MenuItem>
             ))}
           </Select>
@@ -116,7 +138,20 @@ const AdminVerificationDashboard = () => {
             <MenuItem value="all">Type de document</MenuItem>
             {Object.values(bookcarsTypes.AgencyDocumentType).map((t) => (
               <MenuItem key={t} value={t}>
-                {t}
+                {docLabels[t]}
+              </MenuItem>
+            ))}
+          </Select>
+          <Select
+            value={filterAgency}
+            onChange={(e) => setFilterAgency(e.target.value)}
+            displayEmpty
+            sx={{ minWidth: 200 }}
+          >
+            <MenuItem value="all">Agence</MenuItem>
+            {suppliers.map((s) => (
+              <MenuItem key={s._id} value={s._id!}>
+                {s.fullName}
               </MenuItem>
             ))}
           </Select>
@@ -124,6 +159,7 @@ const AdminVerificationDashboard = () => {
             onClick={() => {
               setFilterStatus('all')
               setFilterType('all')
+              setFilterAgency('all')
             }}
           >
             Réinitialiser
@@ -150,8 +186,10 @@ const AdminVerificationDashboard = () => {
                   setComment(v.statusComment || '')
                 }}
               >
-                <TableCell>{String(v.document.agency)}</TableCell>
-                <TableCell>{v.document.docType}</TableCell>
+                <TableCell>
+                  {suppliers.find((s) => s._id === v.document.agency)?.fullName || v.document.agency}
+                </TableCell>
+                <TableCell>{docLabels[v.document.docType]}</TableCell>
                 <TableCell>{`v${v.version}`}</TableCell>
                 <TableCell>
                   {new Date(v.uploadedAt).toLocaleDateString()}
@@ -174,7 +212,7 @@ const AdminVerificationDashboard = () => {
         </Table>
         <Dialog open={Boolean(selected)} onClose={() => setSelected(undefined)}>
           <DialogTitle>
-            {selected ? `Décision - ${selected.document.docType}` : ''}
+            {selected ? `Décision - ${docLabels[selected.document.docType]}` : ''}
           </DialogTitle>
           <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
             <Typography>

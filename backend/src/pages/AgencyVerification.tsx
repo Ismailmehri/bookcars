@@ -26,6 +26,8 @@ import type {
   AgencyDocumentWithLatest,
   VersionWithDocument,
 } from '@/services/AgencyVerificationService'
+import AgencyVerificationBanner, { AgencyVerificationStatus } from '@/components/AgencyVerificationBanner'
+import AgencyVerificationBenefits from '@/components/AgencyVerificationBenefits'
 
 const docLabels: Record<bookcarsTypes.AgencyDocumentType, string> = {
   [bookcarsTypes.AgencyDocumentType.RC]: 'Registre de Commerce',
@@ -105,7 +107,7 @@ const AgencyVerification = () => {
     window.URL.revokeObjectURL(url)
   }
 
-  const computeGlobalStatus = () => {
+  const computeStatus = (): AgencyVerificationStatus => {
     const statuses = requiredDocs.map(
       (t) => docs.find((d) => d.docType === t)?.latest?.status,
     )
@@ -114,10 +116,10 @@ const AgencyVerification = () => {
         (s) => s === bookcarsTypes.AgencyDocumentStatus.ACCEPTE,
       )
     ) {
-      return { label: 'Validée', color: 'success' as const }
+      return 'VALIDEE'
     }
     if (statuses.some((s) => s === bookcarsTypes.AgencyDocumentStatus.EN_REVUE)) {
-      return { label: 'En revue', color: 'default' as const }
+      return 'EN_REVUE'
     }
     if (
       statuses.some((s) => s === bookcarsTypes.AgencyDocumentStatus.REFUSE)
@@ -127,54 +129,67 @@ const AgencyVerification = () => {
           && s !== bookcarsTypes.AgencyDocumentStatus.EN_REVUE,
       )
     ) {
-      return { label: 'Refusée', color: 'error' as const }
+      return 'REFUSEE'
     }
-    return { label: 'Non soumis', color: 'default' as const }
+    return 'NON_SOUMIS'
   }
 
-  const global = computeGlobalStatus()
+  const status = computeStatus()
+
+  const globalMap: Record<AgencyVerificationStatus, { label: string; color: 'success' | 'error' | 'default' }> = {
+    VALIDEE: { label: 'Validée', color: 'success' },
+    EN_REVUE: { label: 'En revue', color: 'default' },
+    REFUSEE: { label: 'Refusée', color: 'error' },
+    NON_SOUMIS: { label: 'Non soumis', color: 'default' },
+  }
+
+  const global = globalMap[status]
 
   return (
     <Layout>
       <Box p={2} display="flex" flexDirection="column" gap={3}>
-        <Box display="flex" alignItems="center" gap={2}>
-          <Typography variant="h5">Vérification de votre agence</Typography>
-          <Chip label={global.label} color={global.color} />
-        </Box>
-        <Box display="flex" gap={2} flexWrap="wrap">
-          {requiredDocs.map((t) => {
-            const doc = docs.find((d) => d.docType === t)
-            const latest = doc?.latest
-            return (
-              <Card key={t} sx={{ flex: 1, minWidth: 250 }}>
-                <CardContent>
-                  <Typography variant="h6">
-                    {`${docLabels[t]} (obligatoire)`}
-                  </Typography>
-                  <Box mt={1} mb={1}>{statusChip(latest?.status)}</Box>
-                  {latest && (
-                    <Typography variant="body2">
-                      Dernière mise à jour :
-                      {' '}
-                      {new Date(latest.uploadedAt).toLocaleString()}
+        <AgencyVerificationBanner status={status} />
+        <AgencyVerificationBenefits />
+        <Box display="flex" flexDirection="column" gap={2}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <Typography variant="h5">Vérification de votre agence</Typography>
+            <Chip label={global.label} color={global.color} />
+          </Box>
+          <Box display="flex" gap={2} flexWrap="wrap">
+            {requiredDocs.map((t) => {
+              const doc = docs.find((d) => d.docType === t)
+              const latest = doc?.latest
+              return (
+                <Card key={t} sx={{ flex: 1, minWidth: 250 }}>
+                  <CardContent>
+                    <Typography variant="h6">
+                      {`${docLabels[t]} (obligatoire)`}
                     </Typography>
-                  )}
-                  {latest?.status === bookcarsTypes.AgencyDocumentStatus.REFUSE && (
-                    <Typography variant="body2" color="error">
-                      {latest.statusComment}
-                    </Typography>
-                  )}
-                  <Button
-                    variant="contained"
-                    sx={{ mt: 2 }}
-                    onClick={() => openModal(t)}
-                  >
-                    Téléverser une nouvelle version
-                  </Button>
-                </CardContent>
-              </Card>
-            )
-          })}
+                    <Box mt={1} mb={1}>{statusChip(latest?.status)}</Box>
+                    {latest && (
+                      <Typography variant="body2">
+                        Dernière mise à jour :
+                        {' '}
+                        {new Date(latest.uploadedAt).toLocaleString()}
+                      </Typography>
+                    )}
+                    {latest?.status === bookcarsTypes.AgencyDocumentStatus.REFUSE && (
+                      <Typography variant="body2" color="error">
+                        {latest.statusComment}
+                      </Typography>
+                    )}
+                    <Button
+                      variant="contained"
+                      sx={{ mt: 2 }}
+                      onClick={() => openModal(t)}
+                    >
+                      Téléverser une nouvelle version
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </Box>
         </Box>
         <Box display="flex" flexDirection="column" gap={1}>
           <Typography variant="h6">Autres justificatifs</Typography>

@@ -6,14 +6,15 @@ import {
 } from '@mui/material'
 import Layout from '@/components/Layout'
 import * as AgencyVerificationService from '@/services/AgencyVerificationService'
+import type { AgencyDocumentWithLatest } from '@/services/AgencyVerificationService'
 
 const AdminVerificationDashboard = () => {
-  const [docs, setDocs] = useState<any[]>([])
+  const [docs, setDocs] = useState<AgencyDocumentWithLatest[]>([])
 
   const loadDocs = async () => {
     const data = await AgencyVerificationService.getDocuments()
-    const enriched = await Promise.all(
-      data.map(async (doc: any) => {
+    const enriched: AgencyDocumentWithLatest[] = await Promise.all(
+      data.map(async (doc) => {
         const versions = await AgencyVerificationService.getVersions(doc._id)
         return { ...doc, latest: versions[0] }
       }),
@@ -25,6 +26,21 @@ const AdminVerificationDashboard = () => {
     loadDocs()
   }, [])
 
+  const download = async (
+    versionId: string,
+    filename: string,
+  ) => {
+    const res = await AgencyVerificationService.download(versionId, true)
+    const url = window.URL.createObjectURL(res.data)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  }
+
   return (
     <Layout>
       <Box p={2} display="flex" flexDirection="column" gap={2}>
@@ -34,8 +50,11 @@ const AdminVerificationDashboard = () => {
             <Typography>{doc.docType}</Typography>
             {doc.latest && (
               <Button
-                href={AgencyVerificationService.getDownloadUrl(doc.latest._id, true)}
-                target="_blank"
+                onClick={() =>
+                  download(
+                    doc.latest._id,
+                    doc.latest.originalFilename,
+                  )}
                 size="small"
               >
                 Download

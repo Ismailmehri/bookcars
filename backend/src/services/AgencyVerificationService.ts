@@ -1,11 +1,15 @@
+import { AxiosResponse } from 'axios'
 import * as bookcarsTypes from ':bookcars-types'
 import axiosInstance from './axiosInstance'
-import env from '@/config/env.config'
 
-export const getMyDocuments = (): Promise<bookcarsTypes.AgencyDocument[]> =>
+export type AgencyDocumentWithLatest = bookcarsTypes.AgencyDocument & {
+  latest?: bookcarsTypes.AgencyDocumentVersion
+}
+
+export const getMyDocuments = (): Promise<AgencyDocumentWithLatest[]> =>
   axiosInstance
     .get('/api/verification/my', { withCredentials: true })
-    .then((res) => res.data as bookcarsTypes.AgencyDocument[])
+    .then((res) => res.data as AgencyDocumentWithLatest[])
 
 export const upload = (
   docType: bookcarsTypes.AgencyDocumentType,
@@ -40,5 +44,14 @@ export const getVersions = (
     })
     .then((res) => res.data as bookcarsTypes.AgencyDocumentVersion[])
 
-export const getDownloadUrl = (versionId: string, admin = false) =>
-  `${env.API_HOST}/api/${admin ? 'admin/' : ''}verification/download/${versionId}`
+export const download = (
+  versionId: string,
+  admin = false,
+): Promise<AxiosResponse<Blob>> =>
+  axiosInstance.get(
+    `/api/${admin ? 'admin/' : ''}verification/download/${versionId}`,
+    {
+      withCredentials: true,
+      responseType: 'blob',
+    },
+  )

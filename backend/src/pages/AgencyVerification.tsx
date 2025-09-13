@@ -10,13 +10,14 @@ import {
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
 import * as AgencyVerificationService from '@/services/AgencyVerificationService'
+import type { AgencyDocumentWithLatest } from '@/services/AgencyVerificationService'
 
 const AgencyVerification = () => {
   const [docType, setDocType] = useState<bookcarsTypes.AgencyDocumentType>(
     bookcarsTypes.AgencyDocumentType.RC,
   )
   const [file, setFile] = useState<File>()
-  const [docs, setDocs] = useState<bookcarsTypes.AgencyDocument[]>([])
+  const [docs, setDocs] = useState<AgencyDocumentWithLatest[]>([])
 
   const loadDocs = async () => {
     const data = await AgencyVerificationService.getMyDocuments()
@@ -34,6 +35,21 @@ const AgencyVerification = () => {
     await AgencyVerificationService.upload(docType, file)
     setFile(undefined)
     await loadDocs()
+  }
+
+  const download = async (
+    versionId: string,
+    filename: string,
+  ) => {
+    const res = await AgencyVerificationService.download(versionId)
+    const url = window.URL.createObjectURL(res.data)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
   }
 
   return (
@@ -64,8 +80,11 @@ const AgencyVerification = () => {
               <>
                 <Typography>{doc.latest.status}</Typography>
                 <Button
-                  href={AgencyVerificationService.getDownloadUrl(doc.latest._id)}
-                  target="_blank"
+                  onClick={() =>
+                    download(
+                      doc.latest._id,
+                      doc.latest.originalFilename,
+                    )}
                   size="small"
                 >
                   Download

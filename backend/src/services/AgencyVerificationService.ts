@@ -6,6 +6,10 @@ export type AgencyDocumentWithLatest = bookcarsTypes.AgencyDocument & {
   latest?: bookcarsTypes.AgencyDocumentVersion
 }
 
+export type VersionWithDocument = bookcarsTypes.AgencyDocumentVersion & {
+  document: bookcarsTypes.AgencyDocument
+}
+
 export const getMyDocuments = (): Promise<AgencyDocumentWithLatest[]> =>
   axiosInstance
     .get('/api/verification/my', { withCredentials: true })
@@ -44,6 +48,11 @@ export const getVersions = (
     })
     .then((res) => res.data as bookcarsTypes.AgencyDocumentVersion[])
 
+export const getHistory = (): Promise<VersionWithDocument[]> =>
+  axiosInstance
+    .get('/api/verification/history', { withCredentials: true })
+    .then((res) => res.data as VersionWithDocument[])
+
 export const download = (
   versionId: string,
   admin = false,
@@ -55,3 +64,16 @@ export const download = (
       responseType: 'blob',
     },
   )
+
+export const decision = (
+  versionId: string,
+  status: bookcarsTypes.AgencyDocumentStatus,
+  comment?: string,
+): Promise<bookcarsTypes.AgencyDocumentVersion> =>
+  axiosInstance
+    .post(
+      `/api/admin/verification/${versionId}/decision`,
+      { status, comment },
+      { withCredentials: true },
+    )
+    .then((res) => res.data as bookcarsTypes.AgencyDocumentVersion)

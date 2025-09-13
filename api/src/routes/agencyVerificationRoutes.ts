@@ -10,6 +10,7 @@ const routes = express.Router()
 
 routes.route(routeNames.upload).post([authJwt.verifyToken, upload.single('file')], controller.upload)
 routes.route(routeNames.myDocuments).get(authJwt.verifyToken, controller.getMyDocuments)
+routes.route(routeNames.history).get(authJwt.verifyToken, controller.getHistory)
 routes.route(routeNames.download).get(authJwt.verifyToken, controller.download)
 routes.route(routeNames.adminList).get(authJwt.verifyToken, controller.getAllDocuments)
 routes.route(routeNames.adminVersions).get(authJwt.verifyToken, controller.getVersions)

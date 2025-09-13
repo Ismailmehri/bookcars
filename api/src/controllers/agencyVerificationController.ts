@@ -84,6 +84,22 @@ export const getMyDocuments = async (req: Request, res: Response) => {
   }
 }
 
+export const getHistory = async (req: Request, res: Response) => {
+  try {
+    const sessionData = await authHelper.getSessionData(req)
+    const docs = await AgencyDocument.find({ agency: sessionData.id })
+    const versions = await AgencyDocumentVersion.find({
+      document: { $in: docs.map((d) => d._id) },
+    })
+      .populate('document')
+      .sort({ uploadedAt: -1 })
+    return res.json(versions)
+  } catch (err) {
+    logger.error(`[agencyVerification.getHistory] ${err}`)
+    return res.status(500).send('Error')
+  }
+}
+
 export const download = async (req: Request, res: Response) => {
   try {
     const sessionData = await authHelper.getSessionData(req)

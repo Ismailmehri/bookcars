@@ -14,6 +14,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TablePagination,
   TextField,
   Typography,
 } from '@mui/material'
@@ -57,11 +58,16 @@ const AdminVerificationDashboard = () => {
   const [suppliers, setSuppliers] = useState<bookcarsTypes.User[]>([])
   const [selected, setSelected] = useState<VersionWithDocument>()
   const [comment, setComment] = useState('')
+  const [page, setPage] = useState(0)
+  const rowsPerPage = 20
 
   const load = async () => {
-    const s = await SupplierService.getAllSuppliers()
-    setSuppliers(s)
     const docs = await AgencyVerificationService.getDocuments()
+    const agencyIds = Array.from(new Set(docs.map((d) => d.agency)))
+    const s = await Promise.all(
+      agencyIds.map((id) => SupplierService.getSupplier(id)),
+    )
+    setSuppliers(s)
     const vers = await Promise.all(
       docs.map(async (doc) => {
         const v = await AgencyVerificationService.getVersions(doc._id!)
@@ -85,6 +91,7 @@ const AdminVerificationDashboard = () => {
       && (filterType === 'all' || v.document.docType === filterType)
       && (filterAgency === 'all' || v.document.agency === filterAgency),
   )
+  const paged = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
 
   const download = async (versionId: string, filename: string) => {
     const res = await AgencyVerificationService.download(versionId, true)
@@ -118,7 +125,10 @@ const AdminVerificationDashboard = () => {
         <Box display="flex" gap={2}>
           <Select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
+            onChange={(e) => {
+              setFilterStatus(e.target.value as any)
+              setPage(0)
+            }}
             displayEmpty
             sx={{ minWidth: 150 }}
           >
@@ -131,7 +141,10 @@ const AdminVerificationDashboard = () => {
           </Select>
           <Select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value as any)}
+            onChange={(e) => {
+              setFilterType(e.target.value as any)
+              setPage(0)
+            }}
             displayEmpty
             sx={{ minWidth: 180 }}
           >
@@ -144,7 +157,10 @@ const AdminVerificationDashboard = () => {
           </Select>
           <Select
             value={filterAgency}
-            onChange={(e) => setFilterAgency(e.target.value)}
+            onChange={(e) => {
+              setFilterAgency(e.target.value)
+              setPage(0)
+            }}
             displayEmpty
             sx={{ minWidth: 200 }}
           >
@@ -160,6 +176,7 @@ const AdminVerificationDashboard = () => {
               setFilterStatus('all')
               setFilterType('all')
               setFilterAgency('all')
+              setPage(0)
             }}
           >
             Réinitialiser
@@ -177,7 +194,7 @@ const AdminVerificationDashboard = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filtered.map((v) => (
+            {paged.map((v) => (
               <TableRow
                 key={v._id}
                 hover
@@ -210,6 +227,14 @@ const AdminVerificationDashboard = () => {
             ))}
           </TableBody>
         </Table>
+        <TablePagination
+          component="div"
+          count={filtered.length}
+          page={page}
+          onPageChange={(e, newPage) => setPage(newPage)}
+          rowsPerPage={rowsPerPage}
+          rowsPerPageOptions={[rowsPerPage]}
+        />
         <Dialog open={Boolean(selected)} onClose={() => setSelected(undefined)}>
           <DialogTitle>
             {selected ? `Décision - ${docLabels[selected.document.docType]}` : ''}

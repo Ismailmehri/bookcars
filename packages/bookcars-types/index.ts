@@ -86,6 +86,11 @@ export enum AgencyDocumentStatus {
   REFUSE = 'refuse',
 }
 
+export const REQUIRED_AGENCY_DOCUMENTS: AgencyDocumentType[] = [
+  AgencyDocumentType.RC,
+  AgencyDocumentType.MATRICULE_FISCAL,
+]
+
 export interface Booking {
   _id?: string
   supplier: string | User
@@ -412,6 +417,7 @@ export interface User {
   birthDate?: Date
   verified?: boolean
   verifiedAt?: Date
+  agencyVerified?: boolean
   active?: boolean
   language?: string
   enableEmailNotifications?: boolean

@@ -168,6 +168,22 @@ export const decision = async (req: Request, res: Response) => {
     version.statusChangedAt = new Date()
     version.statusComment = comment
     await version.save()
+
+    const doc = await AgencyDocument.findById(version.document)
+    if (doc) {
+      const checks = await Promise.all(
+        bookcarsTypes.REQUIRED_AGENCY_DOCUMENTS.map(async (t) => {
+          const d = await AgencyDocument.findOne({ agency: doc.agency, docType: t })
+          if (!d) {
+            return false
+          }
+          const v = await AgencyDocumentVersion.findOne({ document: d._id }).sort({ version: -1 })
+          return v?.status === bookcarsTypes.AgencyDocumentStatus.ACCEPTE
+        }),
+      )
+      const agencyVerified = checks.every((v) => v)
+      await User.findByIdAndUpdate(doc.agency, { agencyVerified })
+    }
     return res.json(version)
   } catch (err) {
     logger.error(`[agencyVerification.decision] ${err}`)

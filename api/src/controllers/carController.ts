@@ -396,12 +396,14 @@ export const getCar = async (req: Request, res: Response) => {
         fullName,
         avatar,
         payLater,
+        agencyVerified,
       } = car.supplier
       car.supplier = {
         _id,
         fullName,
         avatar,
         payLater,
+        agencyVerified,
       }
 
       for (const location of car.locations) {
@@ -577,8 +579,8 @@ export const getCars = async (req: Request, res: Response) => {
     )
 
     for (const car of data[0].resultData) {
-      const { _id, fullName, avatar } = car.supplier
-      car.supplier = { _id, fullName, avatar }
+      const { _id, fullName, avatar, agencyVerified } = car.supplier
+      car.supplier = { _id, fullName, avatar, agencyVerified }
     }
 
     return res.json(data)
@@ -1079,6 +1081,7 @@ export const getFrontendCars = async (req: Request, res: Response) => {
           _id: car.supplier._id,
           fullName: car.supplier.fullName,
           avatar: car.supplier.avatar,
+          agencyVerified: car.supplier.agencyVerified,
           score: car.supplier.score, // peut être undefined/null (nouvelles agences)
         },
       })),
@@ -1392,6 +1395,7 @@ export const getFrontendBoostedCars = async (req: Request, res: Response) => {
           _id: car.supplier._id,
           fullName: car.supplier.fullName,
           avatar: car.supplier.avatar,
+          agencyVerified: car.supplier.agencyVerified,
           score: car.supplier.score,
         },
       })),

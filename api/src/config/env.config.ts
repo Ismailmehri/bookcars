@@ -455,6 +455,7 @@ export interface User extends Document {
   birthDate?: Date
   verified?: boolean
   verifiedAt?: Date
+  agencyVerified?: boolean
   active?: boolean
   language: string
   enableEmailNotifications?: boolean
@@ -490,6 +491,7 @@ export interface UserInfo {
   birthDate?: Date
   verified?: boolean
   verifiedAt?: Date
+  agencyVerified?: boolean
   active?: boolean
   language?: string
   enableEmailNotifications?: boolean

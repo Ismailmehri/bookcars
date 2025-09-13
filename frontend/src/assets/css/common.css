@@ -159,6 +159,14 @@
   height: 32px !important;
 }
 
+.agency-verified-badge {
+  color: #1d9bf0;
+  width: 16px !important;
+  height: 16px !important;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
 .info {
   display: flex;
   align-items: center;

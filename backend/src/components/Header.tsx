@@ -32,7 +32,8 @@ import {
   ExitToApp as SignoutIcon,
   Flag as CountriesIcon,
   BarChart as StatsIcon,
-  RateReview as ReviewIcon
+  RateReview as ReviewIcon,
+  FactCheck as VerificationIcon
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import * as bookcarsTypes from ':bookcars-types'
@@ -321,6 +322,16 @@ const Header = ({
                   <ListItemIcon><UsersIcon /></ListItemIcon>
                   <ListItemText primary={strings.USERS} />
                 </ListItemLink>
+                <ListItemLink href="/agency-verification">
+                  <ListItemIcon><VerificationIcon /></ListItemIcon>
+                  <ListItemText primary={strings.VERIFICATION} />
+                </ListItemLink>
+                {isAdmin && (
+                <ListItemLink href="/admin-verification">
+                  <ListItemIcon><VerificationIcon /></ListItemIcon>
+                  <ListItemText primary={strings.ADMIN_VERIFICATION} />
+                </ListItemLink>
+                )}
                 <ListItemLink href="/insights">
                   <ListItemIcon><StatsIcon /></ListItemIcon>
                   <ListItemText primary={strings.STATS} />

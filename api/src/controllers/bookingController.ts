@@ -713,6 +713,7 @@ export const getBooking = async (req: Request, res: Response) => {
         fullName: booking.supplier.fullName,
         avatar: booking.supplier.avatar,
         payLater: booking.supplier.payLater,
+        agencyVerified: booking.supplier.agencyVerified,
       }
 
       booking.car.supplier = {
@@ -720,6 +721,7 @@ export const getBooking = async (req: Request, res: Response) => {
         fullName: booking.car.supplier.fullName,
         avatar: booking.car.supplier.avatar,
         payLater: booking.car.supplier.payLater,
+        agencyVerified: booking.car.supplier.agencyVerified,
       }
 
       booking.pickupLocation.name = booking.pickupLocation.values.filter((value) => value.language === language)[0].value
@@ -933,8 +935,8 @@ export const getBookings = async (req: Request, res: Response) => {
     const bookings: env.BookingInfo[] = data[0].resultData
 
     for (const booking of bookings) {
-      const { _id, fullName, avatar } = booking.supplier
-      booking.supplier = { _id, fullName, avatar }
+      const { _id, fullName, avatar, agencyVerified } = booking.supplier
+      booking.supplier = { _id, fullName, avatar, agencyVerified }
     }
 
     return res.json(data)

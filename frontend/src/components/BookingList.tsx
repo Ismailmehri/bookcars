@@ -25,7 +25,8 @@ import {
   Check as CheckIcon,
   Cancel as CancelIcon,
   Pending as PendingIcon,
-  Star as StarIcon
+  Star as StarIcon,
+  Verified as VerifiedIcon,
 } from '@mui/icons-material'
 import { format } from 'date-fns'
 import { fr as dfnsFR, enUS as dfnsENUS } from 'date-fns/locale'
@@ -445,7 +446,12 @@ const BookingList = ({
                     <div className="booking-detail-value">
                       <div className="car-supplier">
                         <img src={bookcarsHelper.joinURL(env.CDN_USERS, bookingSupplier.avatar)} alt={bookingSupplier.fullName} />
-                        <span className="car-supplier-name">{bookingSupplier.fullName}</span>
+                        <span className="car-supplier-name">
+                          {bookingSupplier.agencyVerified && (
+                            <VerifiedIcon className="agency-verified-badge" />
+                          )}
+                          {bookingSupplier.fullName}
+                        </span>
                       </div>
                     </div>
                   </div>

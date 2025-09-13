@@ -15,14 +15,17 @@ import User from '../models/User'
  * @param {NextFunction} next
  */
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
-  let token: string
-  const isBackend = authHelper.isBackend(req)
-  const isFrontend = authHelper.isFrontend(req)
+  let token: string | undefined
+  const backendToken = req.signedCookies[env.BACKEND_AUTH_COOKIE_NAME] as string
+  const frontendToken = req.signedCookies[env.FRONTEND_AUTH_COOKIE_NAME] as string
 
-  if (isBackend) {
-    token = req.signedCookies[env.BACKEND_AUTH_COOKIE_NAME] as string // backend
-  } else if (isFrontend) {
-    token = req.signedCookies[env.FRONTEND_AUTH_COOKIE_NAME] as string // frontend
+  const isBackend = authHelper.isBackend(req) || !!backendToken
+  const isFrontend = authHelper.isFrontend(req) || !!frontendToken
+
+  if (backendToken) {
+    token = backendToken // backend
+  } else if (frontendToken) {
+    token = frontendToken // frontend
   } else {
     token = req.headers[env.X_ACCESS_TOKEN] as string // mobile app and unit tests
   }

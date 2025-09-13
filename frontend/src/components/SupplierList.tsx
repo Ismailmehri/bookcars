@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Verified as VerifiedIcon } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
@@ -39,6 +40,9 @@ const SupplierList = () => {
             <img src={bookcarsHelper.joinURL(env.CDN_USERS, supplier.avatar)} alt={supplier.fullName} />
           </div>
           <div className="name">
+            {supplier.agencyVerified && (
+              <VerifiedIcon className="agency-verified-badge" />
+            )}
             {supplier.fullName}
           </div>
         </div>

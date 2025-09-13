@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Tooltip, Card, CardContent, Typography, Avatar, Rating } from '@mui/material'
-import { LocalGasStation as CarTypeIcon, AccountTree as GearboxIcon, Person as SeatsIcon, AcUnit as AirconIcon, DirectionsCar as MileageIcon, Check as CheckIcon, Clear as UncheckIcon, Info as InfoIcon, LocationOn as LocationIcon } from '@mui/icons-material'
+import { LocalGasStation as CarTypeIcon, AccountTree as GearboxIcon, Person as SeatsIcon, AcUnit as AirconIcon, DirectionsCar as MileageIcon, Check as CheckIcon, Clear as UncheckIcon, Info as InfoIcon, LocationOn as LocationIcon, Verified as VerifiedIcon } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
@@ -397,7 +397,12 @@ const CarList = ({
                       alt={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
                     />
                   </span>
-                  <span className="car-supplier-info">{car.supplier.fullName}</span>
+                  <span className="car-supplier-info">
+                    {car.supplier.agencyVerified && (
+                      <VerifiedIcon className="agency-verified-badge" />
+                    )}
+                    {car.supplier.fullName}
+                  </span>
                 </div>
               </a>
             )}

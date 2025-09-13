@@ -20,6 +20,8 @@ const strings = new LocalizedStrings({
     COUNTRIES: 'Pays',
     PRICING: 'Tarification',
     SUBSCRIPTIONS: 'Abonnements',
+    VERIFICATION: 'Vérification agence',
+    ADMIN_VERIFICATION: 'Documents agences',
   },
   en: {
     DASHBOARD: 'Dashboard',
@@ -39,6 +41,8 @@ const strings = new LocalizedStrings({
     COUNTRIES: 'Countries',
     PRICING: 'Pricing',
     SUBSCRIPTIONS: 'Subscriptions',
+    VERIFICATION: 'Agency verification',
+    ADMIN_VERIFICATION: 'Agency documents',
   },
 })
 

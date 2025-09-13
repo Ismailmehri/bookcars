@@ -199,7 +199,21 @@ const Search = () => {
     const pickupLocationIdFromUrl = searchParams.get('pickupLocation') || null
     const suppliersFromUrl = searchParams.get('supplier')?.split(',').filter(Boolean) || []
     const { state } = location
-    const pickupLocationId = state?.pickupLocationId || pickupLocationIdFromUrl || pickupLocationSlug || 'aeroport-international-de-tunis-carthage'
+    let pickupLocationId = state?.pickupLocationId || pickupLocationIdFromUrl || pickupLocationSlug
+    if (!pickupLocationId) {
+      const checkoutStr = localStorage.getItem('checkout')
+      if (checkoutStr) {
+        try {
+          const checkout = JSON.parse(checkoutStr) as { pickupLocationId?: string }
+          if (checkout.pickupLocationId) {
+            pickupLocationId = checkout.pickupLocationId
+          }
+        } catch {
+          /* empty */
+        }
+      }
+    }
+    pickupLocationId = pickupLocationId || 'aeroport-international-de-tunis-carthage'
     const dropOffLocationId = state?.dropOffLocationId || null
     const _from = state?.from || null
     const _to = state?.to || null

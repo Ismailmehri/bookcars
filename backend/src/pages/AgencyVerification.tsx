@@ -147,7 +147,13 @@ const AgencyVerification = () => {
 
   return (
     <Layout>
-      <Box p={2} display="flex" flexDirection="column" gap={3}>
+      <Box
+        p={{ xs: 2, md: 8 }}
+        mt={{ xs: 2, md: 4 }}
+        display="flex"
+        flexDirection="column"
+        gap={3}
+      >
         <AgencyVerificationBanner status={status} />
         <AgencyVerificationBenefits />
         <Box display="flex" flexDirection="column" gap={2}>

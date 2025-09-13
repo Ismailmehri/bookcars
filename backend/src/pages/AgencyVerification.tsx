@@ -9,19 +9,18 @@ import {
 } from '@mui/material'
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
+import * as AgencyVerificationService from '@/services/AgencyVerificationService'
 
 const AgencyVerification = () => {
   const [docType, setDocType] = useState<bookcarsTypes.AgencyDocumentType>(
     bookcarsTypes.AgencyDocumentType.RC,
   )
   const [file, setFile] = useState<File>()
-  const [docs, setDocs] = useState<any[]>([])
+  const [docs, setDocs] = useState<bookcarsTypes.AgencyDocument[]>([])
 
   const loadDocs = async () => {
-    const res = await fetch('/api/verification/my')
-    if (res.ok) {
-      setDocs(await res.json())
-    }
+    const data = await AgencyVerificationService.getMyDocuments()
+    setDocs(data)
   }
 
   useEffect(() => {
@@ -32,10 +31,7 @@ const AgencyVerification = () => {
     if (!file) {
       return
     }
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('docType', docType)
-    await fetch('/api/verification/upload', { method: 'POST', body: formData })
+    await AgencyVerificationService.upload(docType, file)
     setFile(undefined)
     await loadDocs()
   }
@@ -68,7 +64,7 @@ const AgencyVerification = () => {
               <>
                 <Typography>{doc.latest.status}</Typography>
                 <Button
-                  href={`/api/verification/download/${doc.latest._id}`}
+                  href={AgencyVerificationService.getDownloadUrl(doc.latest._id)}
                   target="_blank"
                   size="small"
                 >

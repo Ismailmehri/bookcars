@@ -5,23 +5,20 @@ import {
   Button,
 } from '@mui/material'
 import Layout from '@/components/Layout'
+import * as AgencyVerificationService from '@/services/AgencyVerificationService'
 
 const AdminVerificationDashboard = () => {
   const [docs, setDocs] = useState<any[]>([])
 
   const loadDocs = async () => {
-    const res = await fetch('/api/admin/verification')
-    if (res.ok) {
-      const data = await res.json()
-      const enriched = await Promise.all(
-        data.map(async (doc: any) => {
-          const vRes = await fetch(`/api/admin/verification/${doc._id}/versions`)
-          const versions = vRes.ok ? await vRes.json() : []
-          return { ...doc, latest: versions[0] }
-        }),
-      )
-      setDocs(enriched)
-    }
+    const data = await AgencyVerificationService.getDocuments()
+    const enriched = await Promise.all(
+      data.map(async (doc: any) => {
+        const versions = await AgencyVerificationService.getVersions(doc._id)
+        return { ...doc, latest: versions[0] }
+      }),
+    )
+    setDocs(enriched)
   }
 
   useEffect(() => {
@@ -37,7 +34,7 @@ const AdminVerificationDashboard = () => {
             <Typography>{doc.docType}</Typography>
             {doc.latest && (
               <Button
-                href={`/api/admin/verification/download/${doc.latest._id}`}
+                href={AgencyVerificationService.getDownloadUrl(doc.latest._id, true)}
                 target="_blank"
                 size="small"
               >

@@ -120,7 +120,13 @@ const AdminVerificationDashboard = () => {
 
   return (
     <Layout>
-      <Box p={2} mt={2} display="flex" flexDirection="column" gap={2}>
+      <Box
+        p={{ xs: 2, md: 8 }}
+        mt={{ xs: 2, md: 4 }}
+        display="flex"
+        flexDirection="column"
+        gap={3}
+      >
         <Typography variant="h5">Tableau de bord de vérification</Typography>
         <Box display="flex" gap={2}>
           <Select

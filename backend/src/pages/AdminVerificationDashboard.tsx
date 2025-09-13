@@ -237,7 +237,12 @@ const AdminVerificationDashboard = () => {
           component="div"
           count={filtered.length}
           page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
+          onPageChange={(e, newPage) => {
+            if (e) {
+              e.preventDefault()
+            }
+            setPage(newPage)
+          }}
           rowsPerPage={rowsPerPage}
           rowsPerPageOptions={[rowsPerPage]}
         />

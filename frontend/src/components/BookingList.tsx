@@ -205,23 +205,51 @@ const BookingList = ({
     throw new Error('Invalid date')
   }
 
-  const resolveBookingTotal = (bookingRecord: bookcarsTypes.Booking): number => {
-    if (typeof bookingRecord.price === 'number') {
-      return Math.ceil(bookingRecord.price)
+  const resolveBookingTotal = (bookingRecord?: bookcarsTypes.Booking): number => {
+    if (!bookingRecord) {
+      return 0
     }
 
-    const commissionTotal = bookingRecord.commission?.displayTotalPrice
+    const { price: bookingPrice, commission } = bookingRecord
+
+    if (typeof bookingPrice === 'number') {
+      return Math.ceil(bookingPrice)
+    }
+
+    if (typeof bookingPrice === 'string') {
+      const parsedPrice = Number.parseFloat(bookingPrice)
+      if (!Number.isNaN(parsedPrice)) {
+        return Math.ceil(parsedPrice)
+      }
+    }
+
+    const commissionTotal = commission?.displayTotalPrice
     if (typeof commissionTotal === 'number') {
       return Math.ceil(commissionTotal)
     }
 
-    const bookingCarRecord = bookingRecord.car as bookcarsTypes.Car | undefined
+    if (typeof commissionTotal === 'string') {
+      const parsedCommissionTotal = Number.parseFloat(commissionTotal)
+      if (!Number.isNaN(parsedCommissionTotal)) {
+        return Math.ceil(parsedCommissionTotal)
+      }
+    }
+
+    const bookingCarRecord = (bookingRecord.car && typeof bookingRecord.car === 'object')
+      ? (bookingRecord.car as bookcarsTypes.Car)
+      : undefined
+
     if (!bookingCarRecord) {
       return 0
     }
 
-    const fromDate = new Date(bookingRecord.from)
-    const toDate = new Date(bookingRecord.to)
+    const fromDate = bookingRecord.from ? new Date(bookingRecord.from) : undefined
+    const toDate = bookingRecord.to ? new Date(bookingRecord.to) : undefined
+
+    if (!fromDate || Number.isNaN(fromDate.getTime()) || !toDate || Number.isNaN(toDate.getTime())) {
+      return 0
+    }
+
     const appliedAt = bookingRecord.createdAt ? new Date(bookingRecord.createdAt) : undefined
     const pricingConfigForBooking = helper.getPricingConfig(appliedAt)
 

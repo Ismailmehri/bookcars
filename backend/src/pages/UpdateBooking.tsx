@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import {
   FormControl,
   FormControlLabel,
@@ -84,6 +84,10 @@ const UpdateBooking = () => {
   const [language, setLanguage] = useState(env.DEFAULT_LANGUAGE)
   const [fromError, setFromError] = useState(false)
   const [toError, setToError] = useState(false)
+  const pricingConfig = useMemo(
+    () => helper.getPricingConfig(booking?.createdAt ? new Date(booking.createdAt) : undefined),
+    [booking],
+  )
 
   const handleSupplierChange = (values: bookcarsTypes.Option[]) => {
     setSupplier(values.length > 0 ? values[0] : undefined)
@@ -517,6 +521,34 @@ const UpdateBooking = () => {
 
   const days = bookcarsHelper.days(from, to)
 
+  const dailyPrice = useMemo(() => {
+    if (car && from && to) {
+      const options: bookcarsTypes.CarOptions = {
+        cancellation,
+        amendments,
+        theftProtection,
+        collisionDamageWaiver,
+        fullInsurance,
+        additionalDriver,
+      }
+
+      return bookcarsHelper.calculateDailyPrice(car, from, to, options, pricingConfig)
+    }
+
+    return 0
+  }, [
+    car,
+    from,
+    to,
+    cancellation,
+    amendments,
+    theftProtection,
+    collisionDamageWaiver,
+    fullInsurance,
+    additionalDriver,
+    pricingConfig,
+  ])
+
   return (
     <Layout onLoad={onLoad} strict>
       {visible && booking && (
@@ -833,7 +865,7 @@ const UpdateBooking = () => {
               <div className="price">
                 <span className="price-days">{helper.getDays(days)}</span>
                 <span className="price-main">{bookcarsHelper.formatPrice(price as number, commonStrings.CURRENCY, language)}</span>
-                <span className="price-day">{`${csStrings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(Math.floor((price as number) / days), commonStrings.CURRENCY, language)}`}</span>
+                <span className="price-day">{`${csStrings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(dailyPrice, commonStrings.CURRENCY, language)}`}</span>
               </div>
             </div>
             <CarList

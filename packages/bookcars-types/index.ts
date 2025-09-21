@@ -114,6 +114,50 @@ export interface Booking {
   paymentIntentId?: string
   customerId?: string
   expireAt?: Date
+  commission?: CommissionInfo
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export interface CommissionInfo {
+  applied: boolean
+  rate?: number
+  dailyAmount?: number
+  totalAmount?: number
+  displayDailyPrice?: number
+  displayTotalPrice?: number
+  effectDate?: Date
+  appliedAt?: Date
+  monthlyThreshold?: number
+}
+
+export interface CommissionSettings {
+  enabled: boolean
+  rate: number
+  effectDate: Date
+  appliedAt?: Date
+  monthlyThreshold?: number
+}
+
+export interface PricingConfig {
+  commission?: CommissionSettings
+}
+
+export interface PricingDetails {
+  totalDays: number
+  baseTotal: number
+  discountedTotal: number
+  displayDaily: number
+  displayTotal: number
+  commissionApplied: boolean
+  commissionRate?: number
+  commissionTotalAmount?: number
+  commissionDailyAmount?: number
+  commissionAppliedAt?: Date
+  commissionEffectDate?: Date
+  monthlyThreshold?: number
+  optionsTotal?: number
+  lumpSumTotal?: number
 }
 
 export interface CheckoutPayload {

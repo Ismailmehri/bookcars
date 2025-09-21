@@ -39,6 +39,16 @@ export const error = (err?: unknown, message?: string) => {
   }
 }
 
+export const getPricingConfig = (appliedAt?: Date): bookcarsTypes.PricingConfig => ({
+  commission: {
+    enabled: env.COMMISSION_ENABLED,
+    rate: env.COMMISSION_RATE,
+    effectDate: env.COMMISSION_EFFECTIVE_DATE,
+    appliedAt: appliedAt || new Date(),
+    monthlyThreshold: env.COMMISSION_MONTHLY_THRESHOLD,
+  },
+})
+
 /**
  * Get car type label.
  *

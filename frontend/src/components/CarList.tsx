@@ -321,7 +321,21 @@ const CarList = ({
               )}
 
                 {rows.map((car) => {
-                const totalPrice = bookcarsHelper.calculateTotalPrice(car, from as Date, to as Date)
+                const pricingConfig = helper.getPricingConfig()
+                const totalPrice = bookcarsHelper.calculateTotalPrice(
+                  car,
+                  from as Date,
+                  to as Date,
+                  undefined,
+                  pricingConfig,
+                )
+                const dailyPrice = bookcarsHelper.calculateDailyPrice(
+                  car,
+                  from as Date,
+                  to as Date,
+                  undefined,
+                  pricingConfig,
+                )
 
   // Données pour le JSON-LD
   const productData = {
@@ -331,7 +345,7 @@ const CarList = ({
     image: bookcarsHelper.joinURL(env.CDN_CARS, car.image),
     offers: {
       '@type': 'Offer',
-      price: car.dailyPrice,
+      price: dailyPrice,
       priceCurrency: 'TND',
       availability: 'https://schema.org/InStock',
     },
@@ -384,8 +398,8 @@ const CarList = ({
               <a
                 href={`/search/agence/${car.supplier.slug}`}
                 style={{ textDecoration: 'none', color: 'inherit' }}
-                title={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
-                aria-label={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
+                title={`Louler une voiture chez ${car.supplier.fullName} à partir de ${dailyPrice}DT/Jour`}
+                aria-label={`Louler une voiture chez ${car.supplier.fullName} à partir de ${dailyPrice}DT/Jour`}
                 itemScope
                 itemType="https://schema.org/AutoRental"
               >
@@ -394,7 +408,7 @@ const CarList = ({
                     <img
                       loading="lazy"
                       src={bookcarsHelper.joinURL(env.CDN_USERS, car.supplier.avatar)}
-                      alt={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
+                      alt={`Louler une voiture chez ${car.supplier.fullName} à partir de ${dailyPrice}DT/Jour`}
                     />
                   </span>
                   <span className="car-supplier-info">
@@ -555,7 +569,7 @@ const CarList = ({
           <div className="price">
             <span className="price-days">{helper.getDays(days)}</span>
             <span className="price-main">{bookcarsHelper.formatPrice(totalPrice, commonStrings.CURRENCY, language)}</span>
-            <span className="price-day">{`${strings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(totalPrice / days, commonStrings.CURRENCY, language)}`}</span>
+            <span className="price-day">{`${strings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(dailyPrice, commonStrings.CURRENCY, language)}`}</span>
           </div>
         )}
 
@@ -566,7 +580,7 @@ const CarList = ({
               variant="contained"
               className="btn-book btn-margin-bottom"
               onClick={() => {
-                sendCheckoutEvent(totalPrice, [{ id: car.id, name: car.name, quantity: days, price: totalPrice / days }])
+                sendCheckoutEvent(totalPrice, [{ id: car.id, name: car.name, quantity: days, price: dailyPrice }])
                 navigate('/checkout', {
                   state: {
                     carId: car._id,

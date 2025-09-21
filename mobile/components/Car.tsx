@@ -47,11 +47,14 @@ const Car = ({
 
   const [days, setDays] = useState<number>()
   const [totalPrice, setTotalPrice] = useState<number>()
+  const [dailyPrice, setDailyPrice] = useState<number>()
 
   useEffect(() => {
     if (car && from && to) {
       setDays(bookcarsHelper.days(from, to))
-      setTotalPrice(bookcarsHelper.calculateTotalPrice(car, from as Date, to as Date))
+      const pricingConfig = helper.getPricingConfig()
+      setTotalPrice(bookcarsHelper.calculateTotalPrice(car, from as Date, to as Date, undefined, pricingConfig))
+      setDailyPrice(bookcarsHelper.calculateDailyPrice(car, from as Date, to as Date, undefined, pricingConfig))
     }
   }, [car, from, to])
 
@@ -396,7 +399,7 @@ const Car = ({
             <View style={styles.price}>
               <Text style={styles.priceSecondary}>{helper.getDays(days)}</Text>
               <Text style={styles.pricePrimary}>{`${bookcarsHelper.formatPrice(totalPrice, i18n.t('CURRENCY'), language)}`}</Text>
-              <Text style={styles.priceSecondary}>{`${i18n.t('PRICE_PER_DAY')} ${bookcarsHelper.formatPrice(totalPrice / days, i18n.t('CURRENCY'), language)}`}</Text>
+              <Text style={styles.priceSecondary}>{`${i18n.t('PRICE_PER_DAY')} ${bookcarsHelper.formatPrice(dailyPrice ?? 0, i18n.t('CURRENCY'), language)}`}</Text>
             </View>
           )}
         </View>

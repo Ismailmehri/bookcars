@@ -19,6 +19,10 @@ import {
   BC_DEPOSIT_FILTER_VALUE_1,
   BC_DEPOSIT_FILTER_VALUE_2,
   BC_DEPOSIT_FILTER_VALUE_3,
+  BC_COMMISSION_ENABLED,
+  BC_COMMISSION_RATE,
+  BC_COMMISSION_EFFECTIVE_DATE,
+  BC_COMMISSION_MONTHLY_THRESHOLD,
 } from '@env'
 
 /**
@@ -196,6 +200,22 @@ export const STRIPE_CURRENCY_CODE: string = BC_STRIPE_CURRENCY_CODE
  * @type {string}
  */
 export const CURRENCY: string = BC_CURRENCY
+
+export const COMMISSION_ENABLED = (BC_COMMISSION_ENABLED && BC_COMMISSION_ENABLED.toLowerCase()) === 'true'
+  || !BC_COMMISSION_ENABLED
+export const COMMISSION_RATE = (() => {
+  const rate = Number.parseFloat(BC_COMMISSION_RATE || '5')
+  return Number.isNaN(rate) ? 0 : rate
+})()
+export const COMMISSION_EFFECTIVE_DATE = (() => {
+  const value = BC_COMMISSION_EFFECTIVE_DATE || '2026-01-01'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? new Date('2026-01-01') : date
+})()
+export const COMMISSION_MONTHLY_THRESHOLD = (() => {
+  const threshold = Number.parseFloat(BC_COMMISSION_MONTHLY_THRESHOLD || '50')
+  return Number.isNaN(threshold) ? 0 : threshold
+})()
 
 /**
  * Deposit filter first value.

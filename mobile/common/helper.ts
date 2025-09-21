@@ -10,6 +10,7 @@ import i18n from '@/lang/i18n'
 import * as UserService from '@/services/UserService'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
+import * as env from '@/config/env.config'
 import * as toastHelper from './toastHelper'
 
 /**
@@ -44,6 +45,16 @@ export const toast = (message: string) => {
 export const error = (err?: unknown, __toast__ = true) => {
   toastHelper.error(err, __toast__)
 }
+
+export const getPricingConfig = (appliedAt?: Date): bookcarsTypes.PricingConfig => ({
+  commission: {
+    enabled: env.COMMISSION_ENABLED,
+    rate: env.COMMISSION_RATE,
+    effectDate: env.COMMISSION_EFFECTIVE_DATE,
+    appliedAt: appliedAt || new Date(),
+    monthlyThreshold: env.COMMISSION_MONTHLY_THRESHOLD,
+  },
+})
 
 /**
  * Get filename.

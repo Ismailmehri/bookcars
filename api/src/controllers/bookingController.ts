@@ -5,6 +5,7 @@ import { Request, Response } from 'express'
 import nodemailer from 'nodemailer'
 import path from 'node:path'
 import * as bookcarsTypes from ':bookcars-types'
+import * as bookcarsHelper from ':bookcars-helper'
 import i18n from '../lang/i18n'
 import Booking from '../models/Booking'
 import User from '../models/User'
@@ -22,6 +23,77 @@ import * as logger from '../common/logger'
 import stripeAPI from '../stripe'
 import { sendSms, validateAndFormatPhoneNumber } from '../common/smsHelper'
 
+const buildPricingOptions = (booking: bookcarsTypes.Booking): bookcarsTypes.CarOptions => ({
+  cancellation: booking.cancellation,
+  amendments: booking.amendments,
+  theftProtection: booking.theftProtection,
+  collisionDamageWaiver: booking.collisionDamageWaiver,
+  fullInsurance: booking.fullInsurance,
+  additionalDriver: booking.additionalDriver,
+})
+
+const calculateBookingPricing = async (
+  bookingPayload: bookcarsTypes.Booking,
+  appliedAt: Date,
+  commissionEnabled: boolean,
+): Promise<bookcarsTypes.PricingDetails> => {
+  const carId = typeof bookingPayload.car === 'string'
+    ? bookingPayload.car
+    : bookingPayload.car?._id
+
+  if (!carId) {
+    throw new Error('Car not found')
+  }
+
+  const car = await Car.findById(carId).lean<env.Car>()
+  if (!car) {
+    throw new Error(`Car ${carId} not found`)
+  }
+
+  const fromDate = new Date(bookingPayload.from)
+  const toDate = new Date(bookingPayload.to)
+  if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())) {
+    throw new Error('Invalid booking dates')
+  }
+
+  return bookcarsHelper.calculatePricingDetails(
+    car as unknown as bookcarsTypes.Car,
+    fromDate,
+    toDate,
+    buildPricingOptions(bookingPayload),
+    {
+      commission: {
+        enabled: commissionEnabled,
+        rate: env.COMMISSION_RATE,
+        effectDate: env.COMMISSION_EFFECTIVE_DATE,
+        appliedAt,
+        monthlyThreshold: env.COMMISSION_MONTHLY_THRESHOLD,
+      },
+    },
+  )
+}
+
+const buildCommissionInfo = (
+  pricing: bookcarsTypes.PricingDetails,
+  appliedAt: Date,
+): bookcarsTypes.CommissionInfo | undefined => {
+  if (!pricing.commissionApplied) {
+    return undefined
+  }
+
+  return {
+    applied: true,
+    rate: pricing.commissionRate ?? env.COMMISSION_RATE,
+    dailyAmount: pricing.commissionDailyAmount,
+    totalAmount: pricing.commissionTotalAmount,
+    displayDailyPrice: pricing.displayDaily,
+    displayTotalPrice: pricing.displayTotal,
+    effectDate: pricing.commissionEffectDate ?? env.COMMISSION_EFFECTIVE_DATE,
+    appliedAt: pricing.commissionAppliedAt ?? appliedAt,
+    monthlyThreshold: pricing.monthlyThreshold ?? env.COMMISSION_MONTHLY_THRESHOLD,
+  }
+}
+
 /**
  * Create a Booking.
  *
@@ -38,6 +110,16 @@ export const create = async (req: Request, res: Response) => {
       const additionalDriver = new AdditionalDriver(body.additionalDriver)
       await additionalDriver.save()
       body.booking._additionalDriver = additionalDriver._id.toString()
+    }
+
+    const pricingAppliedAt = new Date()
+    const pricing = await calculateBookingPricing(body.booking, pricingAppliedAt, env.COMMISSION_ENABLED)
+    body.booking.price = pricing.displayTotal
+    const commissionInfo = buildCommissionInfo(pricing, pricingAppliedAt)
+    if (commissionInfo) {
+      body.booking.commission = commissionInfo
+    } else {
+      delete body.booking.commission
     }
 
     const booking = new Booking(body.booking)
@@ -298,6 +380,16 @@ export const checkout = async (req: Request, res: Response) => {
       body.booking._additionalDriver = additionalDriver._id.toString()
     }
 
+    const pricingAppliedAt = new Date()
+    const pricing = await calculateBookingPricing(body.booking, pricingAppliedAt, env.COMMISSION_ENABLED)
+    body.booking.price = pricing.displayTotal
+    const commissionInfo = buildCommissionInfo(pricing, pricingAppliedAt)
+    if (commissionInfo) {
+      body.booking.commission = commissionInfo
+    } else {
+      delete body.booking.commission
+    }
+
     const booking = new Booking(body.booking)
 
     await booking.save()
@@ -520,6 +612,11 @@ export const update = async (req: Request, res: Response) => {
         }
       }
 
+      const appliedAt = booking.createdAt || new Date()
+      const commissionEnabledForBooking = (Boolean(booking.commission?.applied) || env.COMMISSION_ENABLED)
+        && appliedAt >= env.COMMISSION_EFFECTIVE_DATE
+      const pricing = await calculateBookingPricing(body.booking, appliedAt, commissionEnabledForBooking)
+
       const {
         supplier,
         car,
@@ -535,7 +632,6 @@ export const update = async (req: Request, res: Response) => {
         collisionDamageWaiver,
         fullInsurance,
         additionalDriver,
-        price,
       } = body.booking
 
       const previousStatus = booking.status
@@ -554,7 +650,14 @@ export const update = async (req: Request, res: Response) => {
       booking.collisionDamageWaiver = collisionDamageWaiver
       booking.fullInsurance = fullInsurance
       booking.additionalDriver = additionalDriver
-      booking.price = price as number
+      booking.price = pricing.displayTotal
+
+      const commissionInfo = buildCommissionInfo(pricing, appliedAt)
+      if (commissionInfo) {
+        booking.set('commission', commissionInfo)
+      } else {
+        booking.set('commission', undefined)
+      }
 
       if (!additionalDriver && booking._additionalDriver) {
         booking._additionalDriver = undefined

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   OutlinedInput,
@@ -106,6 +106,26 @@ const Checkout = () => {
   const [bookingId, setBookingId] = useState<string>()
   const [sessionId, setSessionId] = useState<string>()
 
+  const pricingConfig = useMemo(() => helper.getPricingConfig(), [])
+  const currentOptions = useMemo<bookcarsTypes.CarOptions>(
+    () => ({
+      cancellation,
+      amendments,
+      theftProtection,
+      collisionDamageWaiver,
+      fullInsurance,
+      additionalDriver,
+    }),
+    [cancellation, amendments, theftProtection, collisionDamageWaiver, fullInsurance, additionalDriver],
+  )
+
+  const summaryDailyPrice = useMemo(() => {
+    if (car && from && to) {
+      return bookcarsHelper.calculateDailyPrice(car, from, to, currentOptions, pricingConfig)
+    }
+    return 0
+  }, [car, from, to, currentOptions, pricingConfig])
+
   const _fr = language === 'fr'
   const _locale = _fr ? fr : enUS
   const _format = _fr ? 'eee d LLL yyyy kk:mm' : 'eee, d LLL yyyy, p'
@@ -132,7 +152,7 @@ const Checkout = () => {
         fullInsurance,
         additionalDriver,
       }
-      const _price = bookcarsHelper.calculateTotalPrice(car, from, to, options)
+      const _price = bookcarsHelper.calculateTotalPrice(car, from, to, options, pricingConfig)
 
       setCancellation(_cancellation)
       setPrice(_price)
@@ -150,7 +170,7 @@ const Checkout = () => {
         fullInsurance,
         additionalDriver,
       }
-      const _price = bookcarsHelper.calculateTotalPrice(car, from, to, options)
+      const _price = bookcarsHelper.calculateTotalPrice(car, from, to, options, pricingConfig)
 
       setAmendments(_amendments)
       setPrice(_price)
@@ -168,7 +188,7 @@ const Checkout = () => {
         fullInsurance,
         additionalDriver: _additionalDriver,
       }
-      const _price = bookcarsHelper.calculateTotalPrice(car, from, to, options)
+      const _price = bookcarsHelper.calculateTotalPrice(car, from, to, options, pricingConfig)
 
       setAdditionalDriver(_additionalDriver)
       setPrice(_price)
@@ -322,7 +342,7 @@ const Checkout = () => {
           sendPurchaseEvent(_bookingId, price, 'TND', [{ id: car?._id,
             name: car?.name,
             quantity: days,
-            price: car?.dailyPrice }])
+            price: summaryDailyPrice }])
           setVisible(false)
           setSuccess(true)
         }
@@ -404,7 +424,7 @@ const Checkout = () => {
         return
       }
 
-      const _price = bookcarsHelper.calculateTotalPrice(_car, _from, _to)
+      const _price = bookcarsHelper.calculateTotalPrice(_car, _from, _to, undefined, pricingConfig)
 
       const included = (val: number) => val === 0
 
@@ -609,7 +629,7 @@ const Checkout = () => {
                       </div>
                       <div className="booking-detail" style={{ height: bookingDetailHeight }}>
                         <span className="booking-detail-title">{strings.CAR}</span>
-                        <div className="booking-detail-value">{`${car.name} (${bookcarsHelper.formatPrice(price / days, commonStrings.CURRENCY, language)}${commonStrings.DAILY})`}</div>
+                        <div className="booking-detail-value">{`${car.name} (${bookcarsHelper.formatPrice(summaryDailyPrice, commonStrings.CURRENCY, language)}${commonStrings.DAILY})`}</div>
                       </div>
                       <div className="booking-detail" style={{ height: bookingDetailHeight }}>
                         <span className="booking-detail-title">{commonStrings.SUPPLIER}</span>

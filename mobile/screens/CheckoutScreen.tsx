@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Image, StyleSheet, Text, View, TextInput as ReactTextInput } from 'react-native'
 import { useIsFocused } from '@react-navigation/native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -88,6 +88,32 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
   const adRequired = true
 
   const { presentPaymentSheet } = useStripe()
+
+  const pricingConfig = useMemo(() => helper.getPricingConfig(), [])
+  const currentOptions = useMemo<bookcarsTypes.CarOptions>(
+    () => ({
+      cancellation,
+      amendments,
+      theftProtection,
+      collisionDamageWaiver,
+      fullInsurance,
+      additionalDriver,
+    }),
+    [cancellation, amendments, theftProtection, collisionDamageWaiver, fullInsurance, additionalDriver],
+  )
+
+  const summaryDailyPrice = useMemo(() => {
+    if (car && from && to) {
+      return bookcarsHelper.calculateDailyPrice(
+        car,
+        from,
+        to,
+        currentOptions,
+        pricingConfig,
+      )
+    }
+    return 0
+  }, [car, from, to, currentOptions, pricingConfig])
 
   const fullNameRef = useRef<ReactTextInput>(null)
   const emailRef = useRef<ReactTextInput>(null)
@@ -230,7 +256,7 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
       const _to = new Date(route.params.to)
       setTo(_to)
 
-      const _price = bookcarsHelper.calculateTotalPrice(_car, _from, _to)
+      const _price = bookcarsHelper.calculateTotalPrice(_car, _from, _to, undefined, pricingConfig)
       setPrice(_price)
 
       const included = (val: number) => val === 0
@@ -459,7 +485,7 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
       fullInsurance,
       additionalDriver,
     }
-    const _price = bookcarsHelper.calculateTotalPrice(car as bookcarsTypes.Car, from as Date, to as Date, options)
+      const _price = bookcarsHelper.calculateTotalPrice(car as bookcarsTypes.Car, from as Date, to as Date, options, pricingConfig)
     setCancellation(checked)
     setPrice(_price)
   }
@@ -473,7 +499,7 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
       fullInsurance,
       additionalDriver,
     }
-    const _price = bookcarsHelper.calculateTotalPrice(car as bookcarsTypes.Car, from as Date, to as Date, options)
+      const _price = bookcarsHelper.calculateTotalPrice(car as bookcarsTypes.Car, from as Date, to as Date, options, pricingConfig)
     setAmendments(checked)
     setPrice(_price)
   }
@@ -487,7 +513,7 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
       fullInsurance,
       additionalDriver,
     }
-    const _price = bookcarsHelper.calculateTotalPrice(car as bookcarsTypes.Car, from as Date, to as Date, options)
+      const _price = bookcarsHelper.calculateTotalPrice(car as bookcarsTypes.Car, from as Date, to as Date, options, pricingConfig)
     setCollisionDamageWaiver(checked)
     setPrice(_price)
   }
@@ -501,7 +527,7 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
       fullInsurance,
       additionalDriver,
     }
-    const _price = bookcarsHelper.calculateTotalPrice(car as bookcarsTypes.Car, from as Date, to as Date, options)
+      const _price = bookcarsHelper.calculateTotalPrice(car as bookcarsTypes.Car, from as Date, to as Date, options, pricingConfig)
     setTheftProtection(checked)
     setPrice(_price)
   }
@@ -515,7 +541,7 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
       fullInsurance: checked,
       additionalDriver,
     }
-    const _price = bookcarsHelper.calculateTotalPrice(car as bookcarsTypes.Car, from as Date, to as Date, options)
+      const _price = bookcarsHelper.calculateTotalPrice(car as bookcarsTypes.Car, from as Date, to as Date, options, pricingConfig)
     setFullInsurance(checked)
     setPrice(_price)
   }
@@ -529,7 +555,7 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
       fullInsurance,
       additionalDriver: checked,
     }
-    const _price = bookcarsHelper.calculateTotalPrice(car as bookcarsTypes.Car, from as Date, to as Date, options)
+      const _price = bookcarsHelper.calculateTotalPrice(car as bookcarsTypes.Car, from as Date, to as Date, options, pricingConfig)
     setAdditionalDriver(checked)
     setPrice(_price)
     setAdManuallyChecked(checked)
@@ -854,7 +880,7 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
                     <Text style={styles.detailText}>{dropOffLocation.name}</Text>
 
                     <Text style={styles.detailTitle}>{i18n.t('CAR')}</Text>
-                    <Text style={styles.detailText}>{`${car.name} (${bookcarsHelper.formatPrice(price / days, i18n.t('CURRENCY'), language)}${i18n.t('DAILY')})`}</Text>
+                    <Text style={styles.detailText}>{`${car.name} (${bookcarsHelper.formatPrice(summaryDailyPrice, i18n.t('CURRENCY'), language)}${i18n.t('DAILY')})`}</Text>
 
                     <Text style={styles.detailTitle}>{i18n.t('SUPPLIER')}</Text>
                     <View style={styles.supplier}>

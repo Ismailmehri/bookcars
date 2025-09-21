@@ -41,6 +41,16 @@ export const error = (err?: unknown, message?: string) => {
   }
 }
 
+export const getPricingConfig = (appliedAt?: Date): bookcarsTypes.PricingConfig => ({
+  commission: {
+    enabled: env.COMMISSION_ENABLED,
+    rate: env.COMMISSION_RATE,
+    effectDate: env.COMMISSION_EFFECTIVE_DATE,
+    appliedAt: appliedAt || new Date(),
+    monthlyThreshold: env.COMMISSION_MONTHLY_THRESHOLD,
+  },
+})
+
 /**
  * Get car type label.
  *
@@ -452,8 +462,6 @@ export const price = async (
   onSucess: (_price: number) => void,
   onError: (err: unknown) => void
 ) => {
-  const totalDays = (date1: Date, date2: Date) => Math.ceil((date2.getTime() - date1.getTime()) / (1000 * 3600 * 24))
-
   try {
     if (!car) {
       car = await CarService.getCar(booking.car as string)
@@ -462,27 +470,26 @@ export const price = async (
     if (car) {
       const from = new Date(booking.from)
       const to = new Date(booking.to)
-      const days = totalDays(from, to)
+      const appliedAt = booking.createdAt ? new Date(booking.createdAt) : new Date()
+      const options: bookcarsTypes.CarOptions = {
+        cancellation: booking.cancellation,
+        amendments: booking.amendments,
+        theftProtection: booking.theftProtection,
+        collisionDamageWaiver: booking.collisionDamageWaiver,
+        fullInsurance: booking.fullInsurance,
+        additionalDriver: booking.additionalDriver,
+      }
+      const pricingConfig: bookcarsTypes.PricingConfig = {
+        commission: {
+          enabled: env.COMMISSION_ENABLED,
+          rate: env.COMMISSION_RATE,
+          effectDate: env.COMMISSION_EFFECTIVE_DATE,
+          appliedAt,
+          monthlyThreshold: env.COMMISSION_MONTHLY_THRESHOLD,
+        },
+      }
 
-      let _price = bookcarsHelper.calculateTotalPrice(car, from, to)
-      if (booking.cancellation && car.cancellation > 0) {
-        _price += car.cancellation
-      }
-      if (booking.amendments && car.amendments > 0) {
-        _price += car.amendments
-      }
-      if (booking.theftProtection && car.theftProtection > 0) {
-        _price += car.theftProtection * days
-      }
-      if (booking.collisionDamageWaiver && car.collisionDamageWaiver > 0) {
-        _price += car.collisionDamageWaiver * days
-      }
-      if (booking.fullInsurance && car.fullInsurance > 0) {
-        _price += car.fullInsurance * days
-      }
-      if (booking.additionalDriver && car.additionalDriver > 0) {
-        _price += car.additionalDriver * days
-      }
+      const _price = bookcarsHelper.calculateTotalPrice(car, from, to, options, pricingConfig)
 
       if (onSucess) {
         onSucess(_price)

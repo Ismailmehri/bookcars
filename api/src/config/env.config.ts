@@ -380,6 +380,22 @@ export const USER_EXPIRE_AT = BOOKING_EXPIRE_AT
  */
 export const ADMIN_EMAIL = __env__('BC_ADMIN_EMAIL', false)
 
+const commissionEffectiveDateValue = __env__('BC_COMMISSION_EFFECTIVE_DATE', false, '2026-01-01')
+const parsedCommissionEffectiveDate = new Date(commissionEffectiveDateValue)
+
+export const COMMISSION_ENABLED = helper.StringToBoolean(__env__('BC_COMMISSION_ENABLED', false, 'true'))
+const commissionRateValue = Number.parseFloat(__env__('BC_COMMISSION_RATE', false, '5'))
+export const COMMISSION_RATE = Number.isNaN(commissionRateValue) ? 0 : commissionRateValue
+export const COMMISSION_EFFECTIVE_DATE = Number.isNaN(parsedCommissionEffectiveDate.getTime())
+  ? new Date('2026-01-01')
+  : parsedCommissionEffectiveDate
+const commissionMonthlyThresholdValue = Number.parseFloat(
+  __env__('BC_COMMISSION_MONTHLY_THRESHOLD', false, '50'),
+)
+export const COMMISSION_MONTHLY_THRESHOLD = Number.isNaN(commissionMonthlyThresholdValue)
+  ? 0
+  : commissionMonthlyThresholdValue
+
 /**
  * Google reCAPTCHA v3 secret key.
  *
@@ -554,6 +570,9 @@ export interface Booking extends Document {
     supplier?: { count: number; lastSent: Date | null };
     client?: { count: number; lastSent: Date | null };
   };
+  commission?: bookcarsTypes.CommissionInfo;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 interface PricePeriod {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import {
   FormControl,
   FormControlLabel,
@@ -56,6 +56,11 @@ const Booking = () => {
   const [minDate, setMinDate] = useState<Date>()
   const edit = false
 
+  const pricingConfig = useMemo(
+    () => helper.getPricingConfig(booking?.createdAt ? new Date(booking.createdAt) : undefined),
+    [booking?.createdAt],
+  )
+
   const handleSupplierChange = (values: bookcarsTypes.Option[]) => {
     setSupplier(values.length > 0 ? values[0] : undefined)
   }
@@ -79,7 +84,7 @@ const Booking = () => {
         if (_car && from && to) {
           const _booking = bookcarsHelper.clone(booking)
           _booking.car = _car
-          const _price = bookcarsHelper.calculateTotalPrice(_car, from, to, _booking)
+          const _price = bookcarsHelper.calculateTotalPrice(_car, from, to, _booking, pricingConfig)
 
           setBooking(_booking)
           setPrice(_price)
@@ -106,12 +111,13 @@ const Booking = () => {
     if (booking && booking.car) {
       booking.cancellation = e.target.checked
 
-      const _price = bookcarsHelper.calculateTotalPrice(
-        booking.car as bookcarsTypes.Car,
-        new Date(booking.from),
-        new Date(booking.to),
-        booking as bookcarsTypes.CarOptions
-      )
+        const _price = bookcarsHelper.calculateTotalPrice(
+          booking.car as bookcarsTypes.Car,
+          new Date(booking.from),
+          new Date(booking.to),
+          booking as bookcarsTypes.CarOptions,
+          pricingConfig,
+        )
       setBooking(booking)
       setPrice(_price)
       setCancellation(booking.cancellation)
@@ -122,12 +128,13 @@ const Booking = () => {
     if (booking && booking.car) {
       booking.amendments = e.target.checked
 
-      const _price = bookcarsHelper.calculateTotalPrice(
-        booking.car as bookcarsTypes.Car,
-        new Date(booking.from),
-        new Date(booking.to),
-        booking as bookcarsTypes.CarOptions
-      )
+        const _price = bookcarsHelper.calculateTotalPrice(
+          booking.car as bookcarsTypes.Car,
+          new Date(booking.from),
+          new Date(booking.to),
+          booking as bookcarsTypes.CarOptions,
+          pricingConfig,
+        )
       setBooking(booking)
       setPrice(_price)
       setAmendments(booking.amendments)
@@ -138,12 +145,13 @@ const Booking = () => {
     if (booking && booking.car) {
       booking.collisionDamageWaiver = e.target.checked
 
-      const _price = bookcarsHelper.calculateTotalPrice(
-        booking.car as bookcarsTypes.Car,
-        new Date(booking.from),
-        new Date(booking.to),
-        booking as bookcarsTypes.CarOptions
-      )
+        const _price = bookcarsHelper.calculateTotalPrice(
+          booking.car as bookcarsTypes.Car,
+          new Date(booking.from),
+          new Date(booking.to),
+          booking as bookcarsTypes.CarOptions,
+          pricingConfig,
+        )
       setBooking(booking)
       setPrice(_price)
       setCollisionDamageWaiver(booking.collisionDamageWaiver)
@@ -154,12 +162,13 @@ const Booking = () => {
     if (booking && booking.car) {
       booking.theftProtection = e.target.checked
 
-      const _price = bookcarsHelper.calculateTotalPrice(
-        booking.car as bookcarsTypes.Car,
-        new Date(booking.from),
-        new Date(booking.to),
-        booking as bookcarsTypes.CarOptions
-      )
+        const _price = bookcarsHelper.calculateTotalPrice(
+          booking.car as bookcarsTypes.Car,
+          new Date(booking.from),
+          new Date(booking.to),
+          booking as bookcarsTypes.CarOptions,
+          pricingConfig,
+        )
       setBooking(booking)
       setPrice(_price)
       setTheftProtection(booking.theftProtection)
@@ -170,12 +179,13 @@ const Booking = () => {
     if (booking && booking.car) {
       booking.fullInsurance = e.target.checked
 
-      const _price = bookcarsHelper.calculateTotalPrice(
-        booking.car as bookcarsTypes.Car,
-        new Date(booking.from),
-        new Date(booking.to),
-        booking as bookcarsTypes.CarOptions
-      )
+        const _price = bookcarsHelper.calculateTotalPrice(
+          booking.car as bookcarsTypes.Car,
+          new Date(booking.from),
+          new Date(booking.to),
+          booking as bookcarsTypes.CarOptions,
+          pricingConfig,
+        )
       setBooking(booking)
       setPrice(_price)
       setFullInsurance(booking.fullInsurance)
@@ -186,12 +196,13 @@ const Booking = () => {
     if (booking && booking.car) {
       booking.additionalDriver = e.target.checked
 
-      const _price = bookcarsHelper.calculateTotalPrice(
-        booking.car as bookcarsTypes.Car,
-        new Date(booking.from),
-        new Date(booking.to),
-        booking as bookcarsTypes.CarOptions
-      )
+        const _price = bookcarsHelper.calculateTotalPrice(
+          booking.car as bookcarsTypes.Car,
+          new Date(booking.from),
+          new Date(booking.to),
+          booking as bookcarsTypes.CarOptions,
+          pricingConfig,
+        )
       setBooking(booking)
       setPrice(_price)
       setAdditionalDriver(booking.additionalDriver)
@@ -369,12 +380,13 @@ const Booking = () => {
                     if (_from) {
                       booking.from = _from
 
-                      const _price = bookcarsHelper.calculateTotalPrice(
-                        booking.car as bookcarsTypes.Car,
-                        new Date(booking.from),
-                        new Date(booking.to),
-                        booking as bookcarsTypes.CarOptions
-                      )
+                        const _price = bookcarsHelper.calculateTotalPrice(
+                          booking.car as bookcarsTypes.Car,
+                          new Date(booking.from),
+                          new Date(booking.to),
+                          booking as bookcarsTypes.CarOptions,
+                          pricingConfig,
+                        )
                       booking.price = _price
                       setBooking(booking)
                       setPrice(_price)
@@ -396,12 +408,13 @@ const Booking = () => {
                     if (_to) {
                       booking.to = _to
 
-                      const _price = bookcarsHelper.calculateTotalPrice(
-                        booking.car as bookcarsTypes.Car,
-                        new Date(booking.from),
-                        new Date(booking.to),
-                        booking as bookcarsTypes.CarOptions
-                      )
+                        const _price = bookcarsHelper.calculateTotalPrice(
+                          booking.car as bookcarsTypes.Car,
+                          new Date(booking.from),
+                          new Date(booking.to),
+                          booking as bookcarsTypes.CarOptions,
+                          pricingConfig,
+                        )
                       booking.price = _price
                       setBooking(booking)
                       setPrice(_price)
@@ -491,7 +504,19 @@ const Booking = () => {
               <div className="price">
                 <span className="price-days">{helper.getDays(days)}</span>
                 <span className="price-main">{bookcarsHelper.formatPrice(price as number, commonStrings.CURRENCY, language)}</span>
-                <span className="price-day">{`${csStrings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(Math.floor((price as number) / days), commonStrings.CURRENCY, language)}`}</span>
+                <span className="price-day">{`${csStrings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(
+                  booking && booking.car && booking.from && booking.to
+                    ? bookcarsHelper.calculateDailyPrice(
+                      booking.car as bookcarsTypes.Car,
+                      new Date(booking.from),
+                      new Date(booking.to),
+                      booking as bookcarsTypes.CarOptions,
+                      pricingConfig,
+                    )
+                    : 0,
+                  commonStrings.CURRENCY,
+                  language,
+                )}`}</span>
               </div>
             </div>
             <CarList

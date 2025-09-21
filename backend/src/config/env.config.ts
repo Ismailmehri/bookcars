@@ -70,6 +70,23 @@ const env = {
     (import.meta.env.VITE_BC_PRICING_ENABLED
       && import.meta.env.VITE_BC_PRICING_ENABLED.toLowerCase()) === 'true',
   CONTACT_EMAIL: import.meta.env.VITE_BC_CONTACT_EMAIL,
+  COMMISSION_ENABLED:
+    (import.meta.env.VITE_BC_COMMISSION_ENABLED
+      && import.meta.env.VITE_BC_COMMISSION_ENABLED.toLowerCase()) === 'true'
+    || !import.meta.env.VITE_BC_COMMISSION_ENABLED,
+  COMMISSION_RATE: (() => {
+    const rate = Number.parseFloat(String(import.meta.env.VITE_BC_COMMISSION_RATE ?? '5'))
+    return Number.isNaN(rate) ? 0 : rate
+  })(),
+  COMMISSION_EFFECTIVE_DATE: (() => {
+    const value = String(import.meta.env.VITE_BC_COMMISSION_EFFECTIVE_DATE || '2026-01-01')
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? new Date('2026-01-01') : date
+  })(),
+  COMMISSION_MONTHLY_THRESHOLD: (() => {
+    const threshold = Number.parseFloat(String(import.meta.env.VITE_BC_COMMISSION_MONTHLY_THRESHOLD ?? '50'))
+    return Number.isNaN(threshold) ? 0 : threshold
+  })(),
 }
 
 export default env

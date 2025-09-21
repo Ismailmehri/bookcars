@@ -126,6 +126,20 @@ const bookingSchema = new Schema<env.Booking>(
         client: { count: 0, lastSent: null },
       },
     },
+    commission: {
+      type: {
+        applied: { type: Boolean, default: false },
+        rate: { type: Number },
+        dailyAmount: { type: Number },
+        totalAmount: { type: Number },
+        displayDailyPrice: { type: Number },
+        displayTotalPrice: { type: Number },
+        effectDate: { type: Date },
+        appliedAt: { type: Date },
+        monthlyThreshold: { type: Number },
+      },
+      default: undefined,
+    },
   },
   {
     timestamps: true,

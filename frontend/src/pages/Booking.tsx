@@ -262,14 +262,18 @@ const Booking = () => {
           if (_booking) {
             const appliedAt = _booking.createdAt ? new Date(_booking.createdAt) : undefined
             const pricingConfigForBooking = helper.getPricingConfig(appliedAt)
-            const computedPrice = _booking.commission?.displayTotalPrice
-              ?? bookcarsHelper.calculateTotalPrice(
-                _booking.car as bookcarsTypes.Car,
-                new Date(_booking.from),
-                new Date(_booking.to),
-                _booking as bookcarsTypes.CarOptions,
-                pricingConfigForBooking,
-              )
+            const storedPrice = typeof _booking.price === 'number' ? Math.ceil(_booking.price) : undefined
+            const computedPrice = storedPrice
+              ?? (_booking.commission?.displayTotalPrice
+                ?? (_booking.car
+                  ? bookcarsHelper.calculateTotalPrice(
+                    _booking.car as bookcarsTypes.Car,
+                    new Date(_booking.from),
+                    new Date(_booking.to),
+                    _booking as bookcarsTypes.CarOptions,
+                    pricingConfigForBooking,
+                  )
+                  : 0))
             const bookingWithComputedPrice: bookcarsTypes.Booking = { ..._booking, price: computedPrice }
             setBooking(bookingWithComputedPrice)
             setPrice(computedPrice)
@@ -328,15 +332,28 @@ const Booking = () => {
   }
 
   const days = bookcarsHelper.days(from, to)
-  const displayDailyPrice = booking && booking.car && booking.from && booking.to
-    ? bookcarsHelper.calculateDailyPrice(
-      booking.car as bookcarsTypes.Car,
-      new Date(booking.from),
-      new Date(booking.to),
-      booking as bookcarsTypes.CarOptions,
-      pricingConfig,
-    )
-    : 0
+  const displayDailyPrice = (() => {
+    if (!booking || !booking.from || !booking.to) {
+      return 0
+    }
+
+    const commissionDaily = booking.commission?.displayDailyPrice
+    if (typeof commissionDaily === 'number') {
+      return Math.ceil(commissionDaily)
+    }
+
+    if (booking.car) {
+      return Math.ceil(bookcarsHelper.calculateDailyPrice(
+        booking.car as bookcarsTypes.Car,
+        new Date(booking.from),
+        new Date(booking.to),
+        booking as bookcarsTypes.CarOptions,
+        pricingConfig,
+      ))
+    }
+
+    return 0
+  })()
 
   return (
     <Layout onLoad={onLoad} strict>

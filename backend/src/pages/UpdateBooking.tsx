@@ -450,14 +450,18 @@ const UpdateBooking = () => {
 
               const appliedAt = _booking.createdAt ? new Date(_booking.createdAt) : undefined
               const pricingConfigForBooking = helper.getPricingConfig(appliedAt)
-              const computedPrice = _booking.commission?.displayTotalPrice
-                ?? bookcarsHelper.calculateTotalPrice(
-                  _booking.car as bookcarsTypes.Car,
-                  new Date(_booking.from),
-                  new Date(_booking.to),
-                  _booking as bookcarsTypes.CarOptions,
-                  pricingConfigForBooking,
-                )
+              const storedPrice = typeof _booking.price === 'number' ? Math.ceil(_booking.price) : undefined
+              const computedPrice = storedPrice
+                ?? (_booking.commission?.displayTotalPrice
+                  ?? (_booking.car
+                    ? bookcarsHelper.calculateTotalPrice(
+                      _booking.car as bookcarsTypes.Car,
+                      new Date(_booking.from),
+                      new Date(_booking.to),
+                      _booking as bookcarsTypes.CarOptions,
+                      pricingConfigForBooking,
+                    )
+                    : 0))
               const bookingWithComputedPrice: bookcarsTypes.Booking = { ..._booking, price: computedPrice }
               setBooking(bookingWithComputedPrice)
               setPrice(computedPrice)

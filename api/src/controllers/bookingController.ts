@@ -239,15 +239,18 @@ export const create = async (req: Request, res: Response) => {
 
     const pricingAppliedAt = new Date()
     const pricing = await calculateBookingPricing(body.booking, pricingAppliedAt)
-    body.booking.price = pricing.displayTotal
     const commissionInfo = buildCommissionInfo(pricing, pricingAppliedAt)
-    if (commissionInfo) {
-      body.booking.commission = commissionInfo
-    } else {
-      delete body.booking.commission
+    const bookingData: bookcarsTypes.Booking = {
+      ...body.booking,
+      price: pricing.displayTotal,
+      commission: commissionInfo,
     }
 
-    const booking = new Booking(body.booking)
+    if (!commissionInfo) {
+      delete bookingData.commission
+    }
+
+    const booking = new Booking(bookingData)
 
     await booking.save()
     return res.json(booking)
@@ -507,15 +510,18 @@ export const checkout = async (req: Request, res: Response) => {
 
     const pricingAppliedAt = new Date()
     const pricing = await calculateBookingPricing(body.booking, pricingAppliedAt)
-    body.booking.price = pricing.displayTotal
     const commissionInfo = buildCommissionInfo(pricing, pricingAppliedAt)
-    if (commissionInfo) {
-      body.booking.commission = commissionInfo
-    } else {
-      delete body.booking.commission
+    const bookingData: bookcarsTypes.Booking = {
+      ...body.booking,
+      price: pricing.displayTotal,
+      commission: commissionInfo,
     }
 
-    const booking = new Booking(body.booking)
+    if (!commissionInfo) {
+      delete bookingData.commission
+    }
+
+    const booking = new Booking(bookingData)
 
     await booking.save()
 

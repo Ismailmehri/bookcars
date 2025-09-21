@@ -32,18 +32,24 @@ const Booking = ({
   const from = new Date(booking.from)
   const to = new Date(booking.to)
   const days = bookcarsHelper.days(from, to)
-  const car = booking.car as bookcarsTypes.Car
-  const supplier = booking.supplier as bookcarsTypes.User
+  const car = booking.car as bookcarsTypes.Car | undefined
+  const supplier = booking.supplier as bookcarsTypes.User | undefined
   const appliedAt = booking.createdAt ? new Date(booking.createdAt) : undefined
   const pricingConfig = helper.getPricingConfig(appliedAt)
-  const bookingTotal = booking.commission?.displayTotalPrice
-    ?? bookcarsHelper.calculateTotalPrice(
-      car,
-      from,
-      to,
-      booking as bookcarsTypes.CarOptions,
-      pricingConfig,
-    )
+  const storedPrice = typeof booking.price === 'number' ? Math.ceil(booking.price) : undefined
+  const commissionTotal = booking.commission?.displayTotalPrice
+  const bookingTotal = storedPrice
+    ?? (typeof commissionTotal === 'number'
+      ? Math.ceil(commissionTotal)
+      : (car
+        ? Math.ceil(bookcarsHelper.calculateTotalPrice(
+          car,
+          from,
+          to,
+          booking as bookcarsTypes.CarOptions,
+          pricingConfig,
+        ))
+        : 0))
 
   const today = new Date()
   today.setHours(0)
@@ -59,7 +65,7 @@ const Booking = ({
       <View style={styles.booking}>
         <View style={styles.header}>
           <MaterialIcons name="directions-car" size={iconSize} color={iconColor} />
-          <Text style={styles.headerText}>{car.name}</Text>
+          <Text style={styles.headerText}>{car?.name || '—'}</Text>
         </View>
 
         <BookingStatus style={styles.status} status={booking.status} />
@@ -78,20 +84,20 @@ const Booking = ({
         <Text style={styles.detailText}>{(booking.dropOffLocation as bookcarsTypes.Location).name}</Text>
 
         <Text style={styles.detailTitle}>{i18n.t('CAR')}</Text>
-        <Text style={styles.detailText}>{car.name}</Text>
+        <Text style={styles.detailText}>{car?.name || '—'}</Text>
 
         <Text style={styles.detailTitle}>{i18n.t('SUPPLIER')}</Text>
         <View style={styles.supplier}>
           <Image
             style={styles.supplierImg}
             source={{
-              uri: bookcarsHelper.joinURL(env.CDN_USERS, supplier.avatar),
+              uri: bookcarsHelper.joinURL(env.CDN_USERS, supplier?.avatar),
             }}
           />
-          <Text style={styles.supplierText}>{supplier.fullName}</Text>
+          <Text style={styles.supplierText}>{supplier?.fullName || '—'}</Text>
         </View>
 
-        {(booking.cancellation || booking.amendments || booking.collisionDamageWaiver || booking.theftProtection || booking.fullInsurance || booking.additionalDriver) && (
+        {(booking.cancellation || booking.amendments || booking.collisionDamageWaiver || booking.theftProtection || booking.fullInsurance || booking.additionalDriver) && car && (
           <>
             <Text style={styles.detailTitle}>{i18n.t('OPTIONS')}</Text>
             <View style={styles.extras}>

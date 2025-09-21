@@ -205,6 +205,37 @@ const BookingList = ({
     throw new Error('Invalid date')
   }
 
+  const resolveBookingTotal = (bookingRecord: bookcarsTypes.Booking): number => {
+    if (typeof bookingRecord.price === 'number') {
+      return Math.ceil(bookingRecord.price)
+    }
+
+    const commissionTotal = bookingRecord.commission?.displayTotalPrice
+    if (typeof commissionTotal === 'number') {
+      return Math.ceil(commissionTotal)
+    }
+
+    const bookingCarRecord = bookingRecord.car as bookcarsTypes.Car | undefined
+    if (!bookingCarRecord) {
+      return 0
+    }
+
+    const fromDate = new Date(bookingRecord.from)
+    const toDate = new Date(bookingRecord.to)
+    const appliedAt = bookingRecord.createdAt ? new Date(bookingRecord.createdAt) : undefined
+    const pricingConfigForBooking = helper.getPricingConfig(appliedAt)
+
+    return Math.ceil(
+      bookcarsHelper.calculateTotalPrice(
+        bookingCarRecord,
+        fromDate,
+        toDate,
+        bookingRecord as bookcarsTypes.CarOptions,
+        pricingConfigForBooking,
+      ),
+    )
+  }
+
   const getColumns = (): GridColDef<bookcarsTypes.Booking>[] => {
     const _columns: GridColDef<bookcarsTypes.Booking>[] = [
       {
@@ -225,20 +256,7 @@ const BookingList = ({
         flex: 1,
         renderCell: ({ value }: GridRenderCellParams<bookcarsTypes.Booking, string>) => <span className="bp">{value}</span>,
         valueGetter: (params: GridValueGetterParams<bookcarsTypes.Booking, number>) => {
-          const bookingRecord = params.row
-          const bookingCarRecord = bookingRecord.car as bookcarsTypes.Car
-          const fromDate = new Date(bookingRecord.from)
-          const toDate = new Date(bookingRecord.to)
-          const appliedAt = bookingRecord.createdAt ? new Date(bookingRecord.createdAt) : undefined
-          const pricingConfigForBooking = helper.getPricingConfig(appliedAt)
-          const total = bookingRecord.commission?.displayTotalPrice
-            ?? bookcarsHelper.calculateTotalPrice(
-              bookingCarRecord,
-              fromDate,
-              toDate,
-              bookingRecord as bookcarsTypes.CarOptions,
-              pricingConfigForBooking,
-            )
+          const total = resolveBookingTotal(params.row)
 
           return bookcarsHelper.formatPrice(total, commonStrings.CURRENCY, language as string)
         },
@@ -428,21 +446,12 @@ const BookingList = ({
         ) : env.isMobile() ? (
           <>
             {rows.map((booking) => {
-              const _bookingCar = booking.car as bookcarsTypes.Car
-              const bookingSupplier = booking.supplier as bookcarsTypes.User
+              const bookingCarRecord = booking.car as bookcarsTypes.Car | undefined
+              const bookingSupplier = booking.supplier as bookcarsTypes.User | undefined
               const from = new Date(booking.from)
               const to = new Date(booking.to)
               const days = bookcarsHelper.days(from, to)
-              const appliedAt = booking.createdAt ? new Date(booking.createdAt) : undefined
-              const pricingConfigForBooking = helper.getPricingConfig(appliedAt)
-              const bookingTotal = booking.commission?.displayTotalPrice
-                ?? bookcarsHelper.calculateTotalPrice(
-                  _bookingCar,
-                  from,
-                  to,
-                  booking as bookcarsTypes.CarOptions,
-                  pricingConfigForBooking,
-                )
+              const bookingTotal = resolveBookingTotal(booking)
 
               return (
                 <div key={booking._id} className="booking-details">
@@ -451,7 +460,7 @@ const BookingList = ({
                   </div>
                   <div className="booking-detail" style={{ height: bookingDetailHeight }}>
                     <span className="booking-detail-title">{strings.CAR}</span>
-                    <div className="booking-detail-value">{_bookingCar.name}</div>
+                    <div className="booking-detail-value">{bookingCarRecord?.name || '—'}</div>
                   </div>
                   <div className="booking-detail" style={{ height: bookingDetailHeight }}>
                     <span className="booking-detail-title">{strings.DAYS}</span>
@@ -472,15 +481,19 @@ const BookingList = ({
                   <div className="booking-detail" style={{ height: bookingDetailHeight }}>
                     <span className="booking-detail-title">{commonStrings.SUPPLIER}</span>
                     <div className="booking-detail-value">
-                      <div className="car-supplier">
-                        <img src={bookcarsHelper.joinURL(env.CDN_USERS, bookingSupplier.avatar)} alt={bookingSupplier.fullName} />
-                        <span className="car-supplier-name">
-                          {bookingSupplier.agencyVerified && (
-                            <VerifiedIcon className="agency-verified-badge" />
-                          )}
-                          {bookingSupplier.fullName}
-                        </span>
-                      </div>
+                      {bookingSupplier ? (
+                        <div className="car-supplier">
+                          <img src={bookcarsHelper.joinURL(env.CDN_USERS, bookingSupplier.avatar)} alt={bookingSupplier.fullName} />
+                          <span className="car-supplier-name">
+                            {bookingSupplier.agencyVerified && (
+                              <VerifiedIcon className="agency-verified-badge" />
+                            )}
+                            {bookingSupplier.fullName}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="car-supplier-name">—</span>
+                      )}
                     </div>
                   </div>
 
@@ -489,14 +502,14 @@ const BookingList = ({
                     || booking.collisionDamageWaiver
                     || booking.theftProtection
                     || booking.fullInsurance
-                    || booking.additionalDriver) && (
+                    || booking.additionalDriver) && bookingCarRecord && (
                       <div className="extras">
                         <span className="extras-title">{commonStrings.OPTIONS}</span>
                         {booking.cancellation && (
                           <div className="extra">
                             <CheckIcon className="extra-icon" />
                             <span className="extra-title">{csStrings.CANCELLATION}</span>
-                            <span className="extra-text">{helper.getCancellationOption(_bookingCar.cancellation, language as string)}</span>
+                            <span className="extra-text">{helper.getCancellationOption(bookingCarRecord.cancellation, language as string)}</span>
                           </div>
                         )}
 
@@ -504,7 +517,7 @@ const BookingList = ({
                           <div className="extra">
                             <CheckIcon className="extra-icon" />
                             <span className="extra-title">{csStrings.AMENDMENTS}</span>
-                            <span className="extra-text">{helper.getAmendmentsOption(_bookingCar.amendments, language as string)}</span>
+                            <span className="extra-text">{helper.getAmendmentsOption(bookingCarRecord.amendments, language as string)}</span>
                           </div>
                         )}
 
@@ -512,7 +525,7 @@ const BookingList = ({
                           <div className="extra">
                             <CheckIcon className="extra-icon" />
                             <span className="extra-title">{csStrings.COLLISION_DAMAGE_WAVER}</span>
-                            <span className="extra-text">{helper.getCollisionDamageWaiverOption(_bookingCar.collisionDamageWaiver, days, language as string)}</span>
+                            <span className="extra-text">{helper.getCollisionDamageWaiverOption(bookingCarRecord.collisionDamageWaiver, days, language as string)}</span>
                           </div>
                         )}
 
@@ -520,7 +533,7 @@ const BookingList = ({
                           <div className="extra">
                             <CheckIcon className="extra-icon" />
                             <span className="extra-title">{csStrings.THEFT_PROTECTION}</span>
-                            <span className="extra-text">{helper.getTheftProtectionOption(_bookingCar.theftProtection, days, language as string)}</span>
+                            <span className="extra-text">{helper.getTheftProtectionOption(bookingCarRecord.theftProtection, days, language as string)}</span>
                           </div>
                         )}
 
@@ -528,7 +541,7 @@ const BookingList = ({
                           <div className="extra">
                             <CheckIcon className="extra-icon" />
                             <span className="extra-title">{csStrings.FULL_INSURANCE}</span>
-                            <span className="extra-text">{helper.getFullInsuranceOption(_bookingCar.fullInsurance, days, language as string)}</span>
+                            <span className="extra-text">{helper.getFullInsuranceOption(bookingCarRecord.fullInsurance, days, language as string)}</span>
                           </div>
                         )}
 
@@ -536,7 +549,7 @@ const BookingList = ({
                           <div className="extra">
                             <CheckIcon className="extra-icon" />
                             <span className="extra-title">{csStrings.ADDITIONAL_DRIVER}</span>
-                            <span className="extra-text">{helper.getAdditionalDriverOption(_bookingCar.additionalDriver, days, language as string)}</span>
+                            <span className="extra-text">{helper.getAdditionalDriverOption(bookingCarRecord.additionalDriver, days, language as string)}</span>
                           </div>
                         )}
                       </div>

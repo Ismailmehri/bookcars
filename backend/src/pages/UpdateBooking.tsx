@@ -448,8 +448,19 @@ const UpdateBooking = () => {
                 return
               }
 
-              setBooking(_booking)
-              setPrice(_booking.price)
+              const appliedAt = _booking.createdAt ? new Date(_booking.createdAt) : undefined
+              const pricingConfigForBooking = helper.getPricingConfig(appliedAt)
+              const computedPrice = _booking.commission?.displayTotalPrice
+                ?? bookcarsHelper.calculateTotalPrice(
+                  _booking.car as bookcarsTypes.Car,
+                  new Date(_booking.from),
+                  new Date(_booking.to),
+                  _booking as bookcarsTypes.CarOptions,
+                  pricingConfigForBooking,
+                )
+              const bookingWithComputedPrice: bookcarsTypes.Booking = { ..._booking, price: computedPrice }
+              setBooking(bookingWithComputedPrice)
+              setPrice(computedPrice)
               setLoading(false)
               setVisible(true)
               setIsSupplier(_user.type === bookcarsTypes.RecordType.Supplier)

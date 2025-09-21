@@ -34,6 +34,16 @@ const Booking = ({
   const days = bookcarsHelper.days(from, to)
   const car = booking.car as bookcarsTypes.Car
   const supplier = booking.supplier as bookcarsTypes.User
+  const appliedAt = booking.createdAt ? new Date(booking.createdAt) : undefined
+  const pricingConfig = helper.getPricingConfig(appliedAt)
+  const bookingTotal = booking.commission?.displayTotalPrice
+    ?? bookcarsHelper.calculateTotalPrice(
+      car,
+      from,
+      to,
+      booking as bookcarsTypes.CarOptions,
+      pricingConfig,
+    )
 
   const today = new Date()
   today.setHours(0)
@@ -137,7 +147,7 @@ const Booking = ({
         )}
 
         <Text style={styles.detailTitle}>{i18n.t('COST')}</Text>
-        <Text style={styles.detailTextBold}>{`${bookcarsHelper.formatPrice(booking.price as number, i18n.t('CURRENCY'), language)}`}</Text>
+        <Text style={styles.detailTextBold}>{`${bookcarsHelper.formatPrice(bookingTotal, i18n.t('CURRENCY'), language)}`}</Text>
 
         {booking.cancellation
           && !booking.cancelRequest

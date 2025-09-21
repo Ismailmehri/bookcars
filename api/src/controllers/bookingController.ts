@@ -32,10 +32,101 @@ const buildPricingOptions = (booking: bookcarsTypes.Booking): bookcarsTypes.CarO
   additionalDriver: booking.additionalDriver,
 })
 
+const ensureValidDate = (value?: Date | string | number): Date | undefined => {
+  if (!value) {
+    return undefined
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return undefined
+  }
+
+  return date
+}
+
+const buildCommissionConfig = (
+  appliedAtInput: Date,
+  commission?: bookcarsTypes.CommissionInfo,
+): bookcarsTypes.CommissionSettings => {
+  const appliedAt = ensureValidDate(appliedAtInput) ?? new Date()
+  const effectDate = ensureValidDate(commission?.effectDate) ?? env.COMMISSION_EFFECTIVE_DATE
+  const monthlyThreshold = typeof commission?.monthlyThreshold === 'number'
+    ? commission.monthlyThreshold
+    : env.COMMISSION_MONTHLY_THRESHOLD
+  const rate = typeof commission?.rate === 'number' ? commission.rate : env.COMMISSION_RATE
+
+  const enabled = commission?.applied
+    ? true
+    : (env.COMMISSION_ENABLED && appliedAt >= effectDate)
+
+  return {
+    enabled,
+    rate,
+    effectDate,
+    appliedAt,
+    monthlyThreshold,
+  }
+}
+
+const normalizeCommissionDate = (value?: Date) => ensureValidDate(value)?.getTime()
+
+const hasCommissionChanged = (
+  existing?: bookcarsTypes.CommissionInfo,
+  next?: bookcarsTypes.CommissionInfo,
+) => {
+  if (!existing && !next) {
+    return false
+  }
+
+  if (!existing || !next) {
+    return true
+  }
+
+  if (existing.applied !== next.applied) {
+    return true
+  }
+
+  if ((existing.rate ?? undefined) !== (next.rate ?? undefined)) {
+    return true
+  }
+
+  if ((existing.dailyAmount ?? undefined) !== (next.dailyAmount ?? undefined)) {
+    return true
+  }
+
+  if ((existing.totalAmount ?? undefined) !== (next.totalAmount ?? undefined)) {
+    return true
+  }
+
+  if ((existing.displayDailyPrice ?? undefined) !== (next.displayDailyPrice ?? undefined)) {
+    return true
+  }
+
+  if ((existing.displayTotalPrice ?? undefined) !== (next.displayTotalPrice ?? undefined)) {
+    return true
+  }
+
+  if (normalizeCommissionDate(existing.effectDate) !== normalizeCommissionDate(next.effectDate)) {
+    return true
+  }
+
+  if (normalizeCommissionDate(existing.appliedAt) !== normalizeCommissionDate(next.appliedAt)) {
+    return true
+  }
+
+  if ((existing.monthlyThreshold ?? undefined) !== (next.monthlyThreshold ?? undefined)) {
+    return true
+  }
+
+  return false
+}
+
 const calculateBookingPricing = async (
   bookingPayload: bookcarsTypes.Booking,
   appliedAt: Date,
-  commissionEnabled: boolean,
+  commission?: bookcarsTypes.CommissionInfo,
+  loadedCar?: bookcarsTypes.Car | env.Car,
 ): Promise<bookcarsTypes.PricingDetails> => {
   const carId = typeof bookingPayload.car === 'string'
     ? bookingPayload.car
@@ -45,7 +136,13 @@ const calculateBookingPricing = async (
     throw new Error('Car not found')
   }
 
-  const car = await Car.findById(carId).lean<env.Car>()
+  let car: env.Car | bookcarsTypes.Car | null = null
+  if (loadedCar) {
+    car = loadedCar as bookcarsTypes.Car
+  } else {
+    car = await Car.findById(carId).lean<env.Car>()
+  }
+
   if (!car) {
     throw new Error(`Car ${carId} not found`)
   }
@@ -56,21 +153,49 @@ const calculateBookingPricing = async (
     throw new Error('Invalid booking dates')
   }
 
+  const commissionConfig = buildCommissionConfig(appliedAt, commission)
+
   return bookcarsHelper.calculatePricingDetails(
     car as unknown as bookcarsTypes.Car,
     fromDate,
     toDate,
     buildPricingOptions(bookingPayload),
     {
-      commission: {
-        enabled: commissionEnabled,
-        rate: env.COMMISSION_RATE,
-        effectDate: env.COMMISSION_EFFECTIVE_DATE,
-        appliedAt,
-        monthlyThreshold: env.COMMISSION_MONTHLY_THRESHOLD,
-      },
+      commission: commissionConfig,
     },
   )
+}
+
+const persistPricingIfNeeded = async (
+  bookingId: mongoose.Types.ObjectId | string,
+  pricing: bookcarsTypes.PricingDetails,
+  existingCommission?: bookcarsTypes.CommissionInfo,
+  nextCommission?: bookcarsTypes.CommissionInfo,
+  existingPrice?: number,
+) => {
+  const priceChanged = typeof existingPrice === 'number'
+    ? existingPrice !== pricing.displayTotal
+    : true
+  const commissionChanged = hasCommissionChanged(existingCommission, nextCommission)
+
+  if (!priceChanged && !commissionChanged) {
+    return
+  }
+
+  if (nextCommission) {
+    await Booking.updateOne({ _id: bookingId }, { $set: { price: pricing.displayTotal, commission: nextCommission } })
+    return
+  }
+
+  const update: { $set: { price: number }, $unset?: { commission: '' } } = {
+    $set: { price: pricing.displayTotal },
+  }
+
+  if (commissionChanged && existingCommission) {
+    update.$unset = { commission: '' }
+  }
+
+  await Booking.updateOne({ _id: bookingId }, update)
 }
 
 const buildCommissionInfo = (
@@ -113,7 +238,7 @@ export const create = async (req: Request, res: Response) => {
     }
 
     const pricingAppliedAt = new Date()
-    const pricing = await calculateBookingPricing(body.booking, pricingAppliedAt, env.COMMISSION_ENABLED)
+    const pricing = await calculateBookingPricing(body.booking, pricingAppliedAt)
     body.booking.price = pricing.displayTotal
     const commissionInfo = buildCommissionInfo(pricing, pricingAppliedAt)
     if (commissionInfo) {
@@ -381,7 +506,7 @@ export const checkout = async (req: Request, res: Response) => {
     }
 
     const pricingAppliedAt = new Date()
-    const pricing = await calculateBookingPricing(body.booking, pricingAppliedAt, env.COMMISSION_ENABLED)
+    const pricing = await calculateBookingPricing(body.booking, pricingAppliedAt)
     body.booking.price = pricing.displayTotal
     const commissionInfo = buildCommissionInfo(pricing, pricingAppliedAt)
     if (commissionInfo) {
@@ -612,10 +737,8 @@ export const update = async (req: Request, res: Response) => {
         }
       }
 
-      const appliedAt = booking.createdAt || new Date()
-      const commissionEnabledForBooking = (Boolean(booking.commission?.applied) || env.COMMISSION_ENABLED)
-        && appliedAt >= env.COMMISSION_EFFECTIVE_DATE
-      const pricing = await calculateBookingPricing(body.booking, appliedAt, commissionEnabledForBooking)
+      const appliedAt = ensureValidDate(booking.createdAt) ?? new Date()
+      const pricing = await calculateBookingPricing(body.booking, appliedAt, booking.commission ?? undefined)
 
       const {
         supplier,
@@ -658,6 +781,7 @@ export const update = async (req: Request, res: Response) => {
       } else {
         booking.set('commission', undefined)
       }
+      booking.markModified('commission')
 
       if (!additionalDriver && booking._additionalDriver) {
         booking._additionalDriver = undefined
@@ -809,6 +933,22 @@ export const getBooking = async (req: Request, res: Response) => {
       .lean()
 
     if (booking) {
+      const appliedAt = ensureValidDate(booking.createdAt) ?? new Date()
+      const pricing = await calculateBookingPricing(
+        booking as unknown as bookcarsTypes.Booking,
+        appliedAt,
+        booking.commission ?? undefined,
+        booking.car as bookcarsTypes.Car,
+      )
+      const commissionInfo = buildCommissionInfo(pricing, appliedAt)
+      await persistPricingIfNeeded(booking._id, pricing, booking.commission ?? undefined, commissionInfo, booking.price)
+      booking.price = pricing.displayTotal
+      if (commissionInfo) {
+        booking.commission = commissionInfo
+      } else {
+        delete booking.commission
+      }
+
       const { language } = req.params
 
       booking.supplier = {
@@ -1038,6 +1178,28 @@ export const getBookings = async (req: Request, res: Response) => {
     const bookings: env.BookingInfo[] = data[0].resultData
 
     for (const booking of bookings) {
+      const appliedAt = ensureValidDate(booking.createdAt) ?? new Date()
+      const pricing = await calculateBookingPricing(
+        booking as unknown as bookcarsTypes.Booking,
+        appliedAt,
+        booking.commission ?? undefined,
+        booking.car as bookcarsTypes.Car,
+      )
+      const commissionInfo = buildCommissionInfo(pricing, appliedAt)
+      await persistPricingIfNeeded(
+        booking._id as mongoose.Types.ObjectId,
+        pricing,
+        booking.commission ?? undefined,
+        commissionInfo,
+        booking.price,
+      )
+      booking.price = pricing.displayTotal
+      if (commissionInfo) {
+        booking.commission = commissionInfo
+      } else {
+        delete booking.commission
+      }
+
       const { _id, fullName, avatar, agencyVerified } = booking.supplier
       booking.supplier = { _id, fullName, avatar, agencyVerified }
     }

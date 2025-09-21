@@ -4,7 +4,8 @@ import {
   GridColDef,
   GridPaginationModel,
   GridRowId,
-  GridRenderCellParams
+  GridRenderCellParams,
+  GridValueGetterParams,
 } from '@mui/x-data-grid'
 import {
   Tooltip,
@@ -223,7 +224,24 @@ const BookingList = ({
         headerName: strings.PRICE,
         flex: 1,
         renderCell: ({ value }: GridRenderCellParams<bookcarsTypes.Booking, string>) => <span className="bp">{value}</span>,
-        valueGetter: (value: number) => bookcarsHelper.formatPrice(value, commonStrings.CURRENCY, language as string),
+        valueGetter: (params: GridValueGetterParams<bookcarsTypes.Booking, number>) => {
+          const bookingRecord = params.row
+          const bookingCarRecord = bookingRecord.car as bookcarsTypes.Car
+          const fromDate = new Date(bookingRecord.from)
+          const toDate = new Date(bookingRecord.to)
+          const appliedAt = bookingRecord.createdAt ? new Date(bookingRecord.createdAt) : undefined
+          const pricingConfigForBooking = helper.getPricingConfig(appliedAt)
+          const total = bookingRecord.commission?.displayTotalPrice
+            ?? bookcarsHelper.calculateTotalPrice(
+              bookingCarRecord,
+              fromDate,
+              toDate,
+              bookingRecord as bookcarsTypes.CarOptions,
+              pricingConfigForBooking,
+            )
+
+          return bookcarsHelper.formatPrice(total, commonStrings.CURRENCY, language as string)
+        },
       },
       {
         field: 'status',
@@ -415,6 +433,16 @@ const BookingList = ({
               const from = new Date(booking.from)
               const to = new Date(booking.to)
               const days = bookcarsHelper.days(from, to)
+              const appliedAt = booking.createdAt ? new Date(booking.createdAt) : undefined
+              const pricingConfigForBooking = helper.getPricingConfig(appliedAt)
+              const bookingTotal = booking.commission?.displayTotalPrice
+                ?? bookcarsHelper.calculateTotalPrice(
+                  _bookingCar,
+                  from,
+                  to,
+                  booking as bookcarsTypes.CarOptions,
+                  pricingConfigForBooking,
+                )
 
               return (
                 <div key={booking._id} className="booking-details">
@@ -515,7 +543,7 @@ const BookingList = ({
                     )}
                   <div className="booking-detail" style={{ height: bookingDetailHeight }}>
                     <span className="booking-detail-title">{strings.COST}</span>
-                    <div className="booking-detail-value booking-price">{bookcarsHelper.formatPrice(booking.price as number, commonStrings.CURRENCY, language as string)}</div>
+                    <div className="booking-detail-value booking-price">{bookcarsHelper.formatPrice(bookingTotal, commonStrings.CURRENCY, language as string)}</div>
                   </div>
                   <div className="bs-buttons">
                     {booking.cancelRequest && booking.status !== bookcarsTypes.BookingStatus.Cancelled ? (

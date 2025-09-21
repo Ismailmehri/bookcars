@@ -260,8 +260,19 @@ const Booking = () => {
         try {
           const _booking = await BookingService.getBooking(id)
           if (_booking) {
-            setBooking(_booking)
-            setPrice(_booking.price)
+            const appliedAt = _booking.createdAt ? new Date(_booking.createdAt) : undefined
+            const pricingConfigForBooking = helper.getPricingConfig(appliedAt)
+            const computedPrice = _booking.commission?.displayTotalPrice
+              ?? bookcarsHelper.calculateTotalPrice(
+                _booking.car as bookcarsTypes.Car,
+                new Date(_booking.from),
+                new Date(_booking.to),
+                _booking as bookcarsTypes.CarOptions,
+                pricingConfigForBooking,
+              )
+            const bookingWithComputedPrice: bookcarsTypes.Booking = { ..._booking, price: computedPrice }
+            setBooking(bookingWithComputedPrice)
+            setPrice(computedPrice)
             setLoading(false)
             setVisible(true)
             const cmp = _booking.supplier as bookcarsTypes.User
@@ -317,6 +328,15 @@ const Booking = () => {
   }
 
   const days = bookcarsHelper.days(from, to)
+  const displayDailyPrice = booking && booking.car && booking.from && booking.to
+    ? bookcarsHelper.calculateDailyPrice(
+      booking.car as bookcarsTypes.Car,
+      new Date(booking.from),
+      new Date(booking.to),
+      booking as bookcarsTypes.CarOptions,
+      pricingConfig,
+    )
+    : 0
 
   return (
     <Layout onLoad={onLoad} strict>
@@ -504,19 +524,11 @@ const Booking = () => {
               <div className="price">
                 <span className="price-days">{helper.getDays(days)}</span>
                 <span className="price-main">{bookcarsHelper.formatPrice(price as number, commonStrings.CURRENCY, language)}</span>
-                <span className="price-day">{`${csStrings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(
-                  booking && booking.car && booking.from && booking.to
-                    ? bookcarsHelper.calculateDailyPrice(
-                      booking.car as bookcarsTypes.Car,
-                      new Date(booking.from),
-                      new Date(booking.to),
-                      booking as bookcarsTypes.CarOptions,
-                      pricingConfig,
-                    )
-                    : 0,
-                  commonStrings.CURRENCY,
-                  language,
-                )}`}</span>
+                <span className="price-day">
+                  {csStrings.PRICE_PER_DAY}
+                  {' '}
+                  {bookcarsHelper.formatPrice(displayDailyPrice, commonStrings.CURRENCY, language)}
+                </span>
               </div>
             </div>
             <CarList

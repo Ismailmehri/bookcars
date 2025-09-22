@@ -625,19 +625,19 @@ const AgencyCommissions = () => {
       field: 'grossTurnover',
       headerName: strings.COLUMN_GROSS,
       minWidth: 140,
-      valueFormatter: ({ value }) => formatNumber(value as number, language),
+      valueFormatter: (params) => formatNumber(Number(params?.value ?? 0), language),
     },
     {
       field: 'commissionDue',
       headerName: strings.COLUMN_DUE,
       minWidth: 150,
-      valueFormatter: ({ value }) => formatNumber(value as number, language),
+      valueFormatter: (params) => formatNumber(Number(params?.value ?? 0), language),
     },
     {
       field: 'commissionCollected',
       headerName: strings.COLUMN_COLLECTED,
       minWidth: 170,
-      valueFormatter: ({ value }) => formatNumber(value as number, language),
+      valueFormatter: (params) => formatNumber(Number(params?.value ?? 0), language),
     },
     {
       field: 'balance',
@@ -665,11 +665,11 @@ const AgencyCommissions = () => {
       field: 'lastPayment',
       headerName: strings.COLUMN_LAST_PAYMENT,
       minWidth: 150,
-      valueFormatter: ({ value }) => {
-        if (!value) {
+      valueFormatter: (params) => {
+        if (!params?.value) {
           return strings.LAST_PAYMENT_NONE
         }
-        return new Date(value as string).toLocaleDateString(language)
+        return new Date(params.value as string).toLocaleDateString(language)
       },
     },
     {
@@ -1014,25 +1014,39 @@ const AgencyCommissions = () => {
                             field: 'from',
                             headerName: strings.BOOKING_COLUMN_FROM,
                             minWidth: 130,
-                            valueFormatter: ({ value }) => new Date(value as string).toLocaleDateString(language),
+                            valueFormatter: (params) => {
+                              if (!params?.value) {
+                                return ''
+                              }
+                              return new Date(params.value as string).toLocaleDateString(language)
+                            },
                           },
                           {
                             field: 'to',
                             headerName: strings.BOOKING_COLUMN_TO,
                             minWidth: 130,
-                            valueFormatter: ({ value }) => new Date(value as string).toLocaleDateString(language),
+                            valueFormatter: (params) => {
+                              if (!params?.value) {
+                                return ''
+                              }
+                              return new Date(params.value as string).toLocaleDateString(language)
+                            },
                           },
                           {
                             field: 'totalPrice',
                             headerName: strings.BOOKING_COLUMN_TOTAL,
                             minWidth: 160,
-                            valueFormatter: ({ value }) => `${formatNumber(value as number, language)} TND`,
+                            valueFormatter: (params) => {
+                              return `${formatNumber(Number(params?.value ?? 0), language)} TND`
+                            },
                           },
                           {
                             field: 'commission',
                             headerName: strings.BOOKING_COLUMN_COMMISSION,
                             minWidth: 170,
-                            valueFormatter: ({ value }) => `${formatNumber(value as number, language)} TND`,
+                            valueFormatter: (params) => {
+                              return `${formatNumber(Number(params?.value ?? 0), language)} TND`
+                            },
                           },
                           {
                             field: 'paymentStatus',

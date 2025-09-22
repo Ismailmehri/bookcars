@@ -169,10 +169,22 @@ const calculateBookingPricing = async (
 const persistPricingIfNeeded = async (
   bookingId: mongoose.Types.ObjectId | string,
   pricing: bookcarsTypes.PricingDetails,
+  appliedAt: Date,
   existingCommission?: bookcarsTypes.CommissionInfo,
   nextCommission?: bookcarsTypes.CommissionInfo,
   existingPrice?: number,
 ) => {
+  const effectDate = env.COMMISSION_EFFECTIVE_DATE
+  const appliedTimestamp = appliedAt.getTime()
+  const shouldSkipLegacyUpdate = Number.isFinite(appliedTimestamp)
+    && appliedTimestamp < effectDate.getTime()
+    && !existingCommission
+    && !nextCommission
+
+  if (shouldSkipLegacyUpdate) {
+    return
+  }
+
   const priceChanged = typeof existingPrice === 'number'
     ? existingPrice !== pricing.displayTotal
     : true
@@ -947,7 +959,14 @@ export const getBooking = async (req: Request, res: Response) => {
         booking.car as bookcarsTypes.Car,
       )
       const commissionInfo = buildCommissionInfo(pricing, appliedAt)
-      await persistPricingIfNeeded(booking._id, pricing, booking.commission ?? undefined, commissionInfo, booking.price)
+      await persistPricingIfNeeded(
+        booking._id,
+        pricing,
+        appliedAt,
+        booking.commission ?? undefined,
+        commissionInfo,
+        booking.price,
+      )
       booking.price = pricing.displayTotal
       if (commissionInfo) {
         booking.commission = commissionInfo
@@ -1195,6 +1214,7 @@ export const getBookings = async (req: Request, res: Response) => {
       await persistPricingIfNeeded(
         booking._id as mongoose.Types.ObjectId,
         pricing,
+        appliedAt,
         booking.commission ?? undefined,
         commissionInfo,
         booking.price,

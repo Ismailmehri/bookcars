@@ -218,6 +218,23 @@ export const days = (from?: Date, to?: Date) =>
   (from && to && Math.ceil((to.getTime() - from.getTime()) / (1000 * 3600 * 24))) || 0
 
 /**
+ * Safely convert a value to a finite number.
+ *
+ * @param {?unknown} [value]
+ * @param {number} [fallback]
+ * @returns {number}
+ */
+const toSafeNumber = (value?: unknown, fallback = 0): number => {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+
+  if (!Number.isFinite(numericValue)) {
+    return fallback
+  }
+
+  return numericValue
+}
+
+/**
  * Format price
  *
  * @param {number} price
@@ -274,62 +291,68 @@ export const calculatePricingDetails = (
   const baseDailyPrices: number[] = []
   for (let i = 0; i < totalDays; i += 1) {
     const currentDate = new Date(fromDate.getTime() + i * oneDay)
-    let dailyPrice = car.dailyPrice || 0
-    if (car.periodicPrices) {
+    let dailyPrice = toSafeNumber(car.dailyPrice)
+
+    if (Array.isArray(car.periodicPrices)) {
       for (const period of car.periodicPrices) {
         if (!period) {
           continue
         }
-        const startDate = period.startDate ? new Date(period.startDate) : null
-        const endDate = period.endDate ? new Date(period.endDate) : null
+
+        const startDate = period.startDate ? new Date(period.startDate) : undefined
+        const endDate = period.endDate ? new Date(period.endDate) : undefined
+
         if ((startDate && Number.isNaN(startDate.getTime())) || (endDate && Number.isNaN(endDate.getTime()))) {
           continue
         }
+
         if (startDate && endDate && startDate <= currentDate && currentDate <= endDate) {
-          dailyPrice = period.dailyPrice ?? dailyPrice ?? 0
+          dailyPrice = toSafeNumber(period.dailyPrice, dailyPrice)
           break
         }
       }
     }
-    baseDailyPrices.push(dailyPrice ?? 0)
+
+    baseDailyPrices.push(dailyPrice)
   }
 
+  const discountThreshold = toSafeNumber(car.discounts?.threshold)
+  const discountPercentage = toSafeNumber(car.discounts?.percentage)
   const hasDiscount = Boolean(
-    car.discounts
-    && car.discounts.threshold
-    && car.discounts.percentage
-    && totalDays >= (car.discounts.threshold || 0),
+    discountThreshold > 0
+    && discountPercentage > 0
+    && totalDays >= discountThreshold,
   )
 
   const discountMultiplier = hasDiscount
-    ? 1 - ((car.discounts?.percentage ?? 0) / 100)
+    ? Math.max(0, 1 - (discountPercentage / 100))
     : 1
 
-  const discountedDailyPrices = baseDailyPrices.map((price) => price * discountMultiplier)
+  const discountedDailyPrices = baseDailyPrices.map((price) => toSafeNumber(price) * discountMultiplier)
 
-  const baseTotal = baseDailyPrices.reduce((acc, price) => acc + price, 0)
+  const baseTotal = baseDailyPrices.reduce((acc, price) => acc + toSafeNumber(price), 0)
   const discountedTotal = discountedDailyPrices.reduce((acc, price) => acc + price, 0)
 
   const dailyOptionCharge =
-    ((options?.theftProtection && car.theftProtection > 0) ? car.theftProtection : 0)
-    + ((options?.collisionDamageWaiver && car.collisionDamageWaiver > 0) ? car.collisionDamageWaiver : 0)
-    + ((options?.fullInsurance && car.fullInsurance > 0) ? car.fullInsurance : 0)
-    + ((options?.additionalDriver && car.additionalDriver > 0) ? car.additionalDriver : 0)
+    (options?.theftProtection ? toSafeNumber(car.theftProtection) : 0)
+    + (options?.collisionDamageWaiver ? toSafeNumber(car.collisionDamageWaiver) : 0)
+    + (options?.fullInsurance ? toSafeNumber(car.fullInsurance) : 0)
+    + (options?.additionalDriver ? toSafeNumber(car.additionalDriver) : 0)
 
-  const lumpSumTotal =
-    ((options?.cancellation && car.cancellation > 0) ? car.cancellation : 0)
-    + ((options?.amendments && car.amendments > 0) ? car.amendments : 0)
+  const cancellationCharge = options?.cancellation ? toSafeNumber(car.cancellation) : 0
+  const amendmentsCharge = options?.amendments ? toSafeNumber(car.amendments) : 0
+  const lumpSumTotal = cancellationCharge + amendmentsCharge
 
   const commissionSettings = config?.commission
   const effectDate = commissionSettings?.effectDate ? new Date(commissionSettings.effectDate) : undefined
   const appliedAt = commissionSettings?.appliedAt ? new Date(commissionSettings.appliedAt) : new Date()
-  const commissionRate = commissionSettings?.rate ?? 0
+  const commissionRate = toSafeNumber(commissionSettings?.rate)
   const commissionActive = Boolean(
     commissionSettings?.enabled
     && effectDate
     && !Number.isNaN(effectDate.getTime())
     && !Number.isNaN(appliedAt.getTime())
-    && appliedAt >= effectDate
+    && appliedAt.getTime() >= effectDate.getTime()
     && commissionRate > 0,
   )
 
@@ -337,18 +360,23 @@ export const calculatePricingDetails = (
   let roundedDailySum = 0
 
   discountedDailyPrices.forEach((dailyPrice) => {
-    let dailyTotal = dailyPrice + dailyOptionCharge
+    const normalizedDailyPrice = toSafeNumber(dailyPrice)
+    let dailyTotal = normalizedDailyPrice + dailyOptionCharge
     if (commissionActive) {
-      const commissionAmount = (dailyPrice * commissionRate) / 100
+      const commissionAmount = (normalizedDailyPrice * commissionRate) / 100
       commissionTotalAmount += commissionAmount
       dailyTotal += commissionAmount
     }
+
     const roundedDaily = Math.ceil(dailyTotal)
     roundedDailySum += roundedDaily
   })
 
   const displayTotal = Math.ceil(roundedDailySum + lumpSumTotal)
   const displayDaily = totalDays > 0 ? Math.ceil(roundedDailySum / totalDays) : 0
+
+  const dailyOptionsTotal = dailyOptionCharge * totalDays
+  const optionsTotal = dailyOptionsTotal + lumpSumTotal
 
   return {
     totalDays,
@@ -363,7 +391,7 @@ export const calculatePricingDetails = (
     commissionAppliedAt: commissionActive ? appliedAt : undefined,
     commissionEffectDate: commissionActive ? effectDate : undefined,
     monthlyThreshold: commissionActive ? commissionSettings?.monthlyThreshold : undefined,
-    optionsTotal: (dailyOptionCharge * totalDays) + lumpSumTotal,
+    optionsTotal,
     lumpSumTotal,
   }
 }

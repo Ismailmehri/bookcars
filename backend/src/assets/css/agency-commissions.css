@@ -1,0 +1,109 @@
+.agency-commissions {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.agency-commissions .ac-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.agency-commissions .ac-header-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.agency-commissions .ac-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.agency-commissions .ac-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.agency-commissions .ac-kpi-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agency-commissions .ac-search-field {
+  min-width: 280px;
+}
+
+.agency-commissions .ac-table {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.agency-commissions .ac-drawer-content {
+  width: min(960px, 100vw);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+.agency-commissions .ac-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.agency-commissions .ac-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.agency-commissions .ac-log-entry {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f7f7f7;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.agency-commissions .ac-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.agency-commissions .ac-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.agency-commissions .ac-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .agency-commissions {
+    padding: 16px;
+  }
+
+  .agency-commissions .ac-search-field {
+    min-width: 220px;
+  }
+}

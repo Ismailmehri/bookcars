@@ -1,0 +1,1045 @@
+import { Request, Response } from 'express'
+import escapeStringRegexp from 'escape-string-regexp'
+import PDFDocument from 'pdfkit'
+import mongoose from 'mongoose'
+import * as bookcarsTypes from ':bookcars-types'
+import { getCommissionConfig } from ':bookcars-helper'
+import Booking from '../models/Booking'
+import User from '../models/User'
+import Car from '../models/Car'
+import AgencyCommissionEvent from '../models/AgencyCommissionEvent'
+import AgencyCommissionState from '../models/AgencyCommissionState'
+import AgencyCommissionSettings from '../models/AgencyCommissionSettings'
+import * as env from '../config/env.config'
+import * as authHelper from '../common/authHelper'
+import * as logger from '../common/logger'
+import * as mailHelper from '../common/mailHelper'
+import { sendSms, validateAndFormatPhoneNumber } from '../common/smsHelper'
+import i18n from '../lang/i18n'
+
+interface CommissionComputationResult {
+  summary: bookcarsTypes.AgencyCommissionSummary
+  rows: bookcarsTypes.AgencyCommissionRow[]
+  total: number
+}
+
+type CommissionEventRecord = Omit<env.AgencyCommissionEvent, 'admin'> & {
+  admin?: env.User | mongoose.Types.ObjectId
+}
+const CSV_SEPARATOR = ';'
+
+const ensureAdmin = async (req: Request): Promise<env.User | null> => {
+  const sessionData = await authHelper.getSessionData(req)
+  if (!sessionData || !sessionData.id) {
+    return null
+  }
+
+  const user = await User.findById(sessionData.id)
+  if (!user || user.type !== bookcarsTypes.UserType.Admin) {
+    return null
+  }
+
+  return user
+}
+
+const getPeriodBoundaries = (year: number, month: number) => {
+  const start = new Date(Date.UTC(year, month - 1, 1))
+  const end = new Date(Date.UTC(year, month, 1))
+  return { start, end }
+}
+
+const normalizeNumber = (value: number | undefined | null): number => {
+  if (!value) {
+    return 0
+  }
+  return Math.round(value)
+}
+
+const getUserId = (user: env.User): string => {
+  if (typeof user._id === 'string') {
+    return user._id
+  }
+
+  if (user._id) {
+    return user._id.toString()
+  }
+
+  return ''
+}
+
+const toAgency = (user: env.User): bookcarsTypes.AgencyCommissionAgency => ({
+  id: getUserId(user),
+  name: user.fullName,
+  city: user.location || undefined,
+  email: user.email || undefined,
+  phone: user.phone || undefined,
+  slug: user.slug || undefined,
+})
+
+const ensureObjectId = (value?: mongoose.Types.ObjectId | string) => {
+  if (!value) {
+    return undefined
+  }
+
+  if (typeof value === 'string') {
+    return new mongoose.Types.ObjectId(value)
+  }
+
+  return value
+}
+
+const computeStatus = (
+  blocked: boolean,
+  balance: number,
+): bookcarsTypes.AgencyCommissionStatus => {
+  if (blocked) {
+    return bookcarsTypes.AgencyCommissionStatus.Blocked
+  }
+
+  if (balance > 0) {
+    return bookcarsTypes.AgencyCommissionStatus.NeedsFollowUp
+  }
+
+  return bookcarsTypes.AgencyCommissionStatus.Active
+}
+
+const buildReminderInfo = (
+  event?: CommissionEventRecord | null,
+): bookcarsTypes.AgencyCommissionReminderInfo | undefined => {
+  if (!event) {
+    return undefined
+  }
+
+  const channel = event.channel || bookcarsTypes.CommissionReminderChannel.Email
+
+  return {
+    date: event.createdAt,
+    channel,
+    success: event.success !== false,
+  }
+}
+const getSettingsDocument = async () => {
+  let settings = await AgencyCommissionSettings.findOne()
+
+  if (!settings) {
+    settings = new AgencyCommissionSettings()
+    await settings.save()
+  }
+
+  return settings
+}
+
+const computeCommissionData = async (
+  year: number,
+  month: number,
+  filters: bookcarsTypes.CommissionListPayload,
+  page: number,
+  size: number,
+): Promise<CommissionComputationResult> => {
+  const { start, end } = getPeriodBoundaries(year, month)
+  const config = getCommissionConfig()
+  const effectiveStart = start.getTime() < config.effectiveDate.getTime() ? config.effectiveDate : start
+
+  if (effectiveStart.getTime() >= end.getTime()) {
+    return {
+      summary: {
+        grossTurnover: 0,
+        commissionDue: 0,
+        commissionCollected: 0,
+        agenciesAboveThreshold: 0,
+        threshold: config.monthlyThreshold,
+      },
+      rows: [],
+      total: 0,
+    }
+  }
+
+  const bookingsAggregation = await Booking.aggregate([
+    {
+      $match: {
+        from: { $gte: effectiveStart, $lt: end },
+        expireAt: null,
+      },
+    },
+    {
+      $group: {
+        _id: '$supplier',
+        reservations: { $sum: 1 },
+        grossTurnover: { $sum: { $ifNull: ['$price', 0] } },
+        commissionDue: { $sum: { $ifNull: ['$commissionTotal', 0] } },
+      },
+    },
+  ])
+
+  const supplierIds = bookingsAggregation.map((item) => item._id as mongoose.Types.ObjectId)
+  const suppliers = await User.find({ _id: { $in: supplierIds } })
+  const states = await AgencyCommissionState.find({ agency: { $in: supplierIds } })
+  const events = await AgencyCommissionEvent.find({
+    agency: { $in: supplierIds },
+    month,
+    year,
+  })
+    .sort({ createdAt: 1 })
+    .lean<CommissionEventRecord[]>()
+
+  const supplierMap = new Map<string, env.User>()
+  suppliers.forEach((supplier) => {
+    const supplierId = getUserId(supplier)
+    if (supplierId) {
+      supplierMap.set(supplierId, supplier)
+    }
+  })
+
+  const stateMap = new Map<string, env.AgencyCommissionState>()
+  states.forEach((state) => {
+    stateMap.set(state.agency.toString(), state)
+  })
+
+  const paymentTotals = new Map<string, number>()
+  const lastPayment = new Map<string, Date>()
+  const lastReminder = new Map<string, CommissionEventRecord>()
+
+  events.forEach((event) => {
+    const agencyId = event.agency.toString()
+    if (event.type === bookcarsTypes.AgencyCommissionEventType.Payment) {
+      const amount = event.amount || 0
+      const total = paymentTotals.get(agencyId) || 0
+      paymentTotals.set(agencyId, total + amount)
+      const paymentDate = event.paymentDate || event.createdAt
+      const currentLastPayment = lastPayment.get(agencyId)
+      if (!currentLastPayment || (paymentDate && paymentDate > currentLastPayment)) {
+        lastPayment.set(agencyId, paymentDate)
+      }
+    } else if (event.type === bookcarsTypes.AgencyCommissionEventType.Reminder) {
+      const current = lastReminder.get(agencyId)
+      if (!current || current.createdAt < event.createdAt) {
+        lastReminder.set(agencyId, event)
+      }
+    }
+  })
+
+  const rows: bookcarsTypes.AgencyCommissionRow[] = []
+
+  let totalGross = 0
+  let totalDue = 0
+  let totalCollected = 0
+  let agenciesAboveThreshold = 0
+
+  bookingsAggregation.forEach((item) => {
+    const supplierId = (item._id as mongoose.Types.ObjectId).toString()
+    const supplier = supplierMap.get(supplierId)
+    if (!supplier) {
+      return
+    }
+
+    const grossTurnover = normalizeNumber(item.grossTurnover)
+    const commissionDue = normalizeNumber(item.commissionDue)
+    const collected = normalizeNumber(paymentTotals.get(supplierId) || 0)
+    const balance = commissionDue - collected
+    const aboveThreshold = commissionDue >= config.monthlyThreshold
+    const state = stateMap.get(supplierId)
+    const blocked = (state && state.blocked) || supplier.blacklisted || false
+
+    totalGross += grossTurnover
+    totalDue += commissionDue
+    totalCollected += collected
+
+    if (aboveThreshold) {
+      agenciesAboveThreshold += 1
+    }
+
+    const status = computeStatus(blocked, balance)
+
+    rows.push({
+      agency: toAgency(supplier),
+      reservations: item.reservations as number,
+      grossTurnover,
+      commissionDue,
+      commissionCollected: collected,
+      balance: normalizeNumber(balance),
+      lastPayment: lastPayment.get(supplierId),
+      lastReminder: buildReminderInfo(lastReminder.get(supplierId)),
+      status,
+      aboveThreshold,
+    })
+  })
+
+  let filteredRows = rows
+  const search = filters.search ? filters.search.trim() : ''
+  if (search) {
+    const escaped = escapeStringRegexp(search)
+    const regex = new RegExp(escaped, 'i')
+    filteredRows = filteredRows.filter((row) => (
+      regex.test(row.agency.name)
+      || regex.test(row.agency.id)
+      || (row.agency.city ? regex.test(row.agency.city) : false)
+      || (row.agency.slug ? regex.test(row.agency.slug) : false)
+    ))
+  }
+
+  if (filters.status && filters.status !== 'all') {
+    filteredRows = filteredRows.filter((row) => row.status === filters.status)
+  }
+
+  if (filters.aboveThreshold) {
+    filteredRows = filteredRows.filter((row) => row.aboveThreshold)
+  }
+
+  filteredRows.sort((a, b) => b.commissionDue - a.commissionDue || a.agency.name.localeCompare(b.agency.name))
+
+  const total = filteredRows.length
+  const offset = (page - 1) * size
+  const paginatedRows = size > 0 ? filteredRows.slice(offset, offset + size) : filteredRows
+
+  return {
+    summary: {
+      grossTurnover: normalizeNumber(totalGross),
+      commissionDue: normalizeNumber(totalDue),
+      commissionCollected: normalizeNumber(totalCollected),
+      agenciesAboveThreshold,
+      threshold: config.monthlyThreshold,
+    },
+    rows: paginatedRows,
+    total,
+  }
+}
+
+const formatDate = (value?: Date) => {
+  if (!value) {
+    return ''
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  return date.toISOString().split('T')[0]
+}
+
+const mapEventToLogEntry = (
+  event: CommissionEventRecord,
+): bookcarsTypes.AgencyCommissionLogEntry => {
+  const admin = event.admin && typeof event.admin === 'object' && 'fullName' in event.admin
+    ? (event.admin as env.User)
+    : undefined
+
+  return {
+    id: event._id.toString(),
+    type: event.type,
+    date: event.createdAt,
+    admin: admin ? toAgency(admin) : undefined,
+    channel: event.channel || undefined,
+    success: event.success,
+    amount: event.amount,
+    paymentDate: event.paymentDate,
+    reference: event.reference || undefined,
+    note: event.note || undefined,
+    metadata: event.metadata || undefined,
+  }
+}
+
+const getMonthLabel = (year: number, month: number, locale = 'fr-FR') => new Date(
+  Date.UTC(year, month - 1, 1),
+).toLocaleString(locale, { month: 'long' })
+
+const formatCsvCell = (value: unknown) => {
+  const stringValue = value === undefined || value === null ? '' : String(value)
+  return `"${stringValue.replace(/"/g, '""')}"`
+}
+
+export const getMonthlyCommissions = async (req: Request, res: Response) => {
+  try {
+    const admin = await ensureAdmin(req)
+    if (!admin) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const page = Math.max(Number.parseInt(req.params.page, 10) || 1, 1)
+    const size = Math.max(Number.parseInt(req.params.size, 10) || 10, 1)
+    const { body }: { body: bookcarsTypes.CommissionListPayload } = req
+
+    if (!body || !body.month || !body.year || body.month < 1 || body.month > 12) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const { rows, summary, total } = await computeCommissionData(body.year, body.month, body, page, size)
+
+    return res.json({
+      summary,
+      agencies: rows,
+      total,
+      page,
+      size,
+    })
+  } catch (err) {
+    logger.error('[commission.getMonthlyCommissions]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const exportMonthlyCommissions = async (req: Request, res: Response) => {
+  try {
+    const admin = await ensureAdmin(req)
+    if (!admin) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const page = Math.max(Number.parseInt(req.params.page, 10) || 1, 1)
+    const size = Math.max(Number.parseInt(req.params.size, 10) || 10, 1)
+    const { body }: { body: bookcarsTypes.CommissionListPayload } = req
+
+    if (!body || !body.month || !body.year || body.month < 1 || body.month > 12) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const { rows, summary } = await computeCommissionData(body.year, body.month, body, page, size)
+
+    const headers = [
+      'Agence',
+      'Ville',
+      'Identifiant',
+      'Réservations',
+      'CA brut (TND)',
+      'Commission due (TND)',
+      'Commission encaissée (TND)',
+      'Solde (TND)',
+      'Statut',
+      'Dernière relance',
+      'Dernier paiement',
+    ]
+
+    const rowsData = rows.map((row) => {
+      const reminder = row.lastReminder
+        ? `${formatDate(row.lastReminder.date)} (${row.lastReminder.channel})`
+        : ''
+
+      const lastPayment = row.lastPayment ? formatDate(row.lastPayment) : ''
+
+      let statusLabel = 'Active'
+      if (row.status === bookcarsTypes.AgencyCommissionStatus.Blocked) {
+        statusLabel = 'Bloquée'
+      } else if (row.status === bookcarsTypes.AgencyCommissionStatus.NeedsFollowUp) {
+        statusLabel = 'À relancer'
+      }
+
+      return [
+        row.agency.name,
+        row.agency.city || '',
+        row.agency.id,
+        row.reservations,
+        row.grossTurnover,
+        row.commissionDue,
+        row.commissionCollected,
+        row.balance,
+        statusLabel,
+        reminder,
+        lastPayment,
+      ]
+    })
+
+    const csvContent = [
+      headers.map(formatCsvCell).join(CSV_SEPARATOR),
+      ...rowsData.map((line) => line.map(formatCsvCell).join(CSV_SEPARATOR)),
+      ['Totaux', '', '', '', summary.grossTurnover, summary.commissionDue, summary.commissionCollected, summary.commissionDue - summary.commissionCollected, '', '', ''].map(formatCsvCell).join(CSV_SEPARATOR),
+    ].join('\n')
+
+    const filename = `commissions_${body.year}_${String(body.month).padStart(2, '0')}.csv`
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+
+    return res.send(`\ufeff${csvContent}`)
+  } catch (err) {
+    logger.error('[commission.exportMonthlyCommissions]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+const loadAgencyCommissionDetail = async (
+  agencyId: string,
+  year: number,
+  month: number,
+): Promise<bookcarsTypes.AgencyCommissionDetail | null> => {
+  const supplier = await User.findById(agencyId)
+  if (!supplier) {
+    return null
+  }
+
+  const supplierObjectId = ensureObjectId(supplier._id)
+  if (!supplierObjectId) {
+    return null
+  }
+
+  const config = getCommissionConfig()
+  const { start, end } = getPeriodBoundaries(year, month)
+  const effectiveStart = start.getTime() < config.effectiveDate.getTime() ? config.effectiveDate : start
+
+  const state = await AgencyCommissionState.findOne({ agency: supplierObjectId })
+
+  const events = await AgencyCommissionEvent.find({
+    agency: supplierObjectId,
+    month,
+    year,
+  })
+    .sort({ createdAt: -1 })
+    .populate<{ admin: env.User }>('admin')
+    .lean<CommissionEventRecord[]>()
+
+  const bookings = effectiveStart.getTime() < end.getTime()
+    ? await Booking.find({
+      supplier: supplierObjectId,
+      from: { $gte: effectiveStart, $lt: end },
+      expireAt: null,
+    })
+      .sort({ from: 1 })
+      .lean()
+    : []
+
+  let grossTurnover = 0
+  let commissionDue = 0
+
+  bookings.forEach((booking) => {
+    grossTurnover += booking.price || 0
+    commissionDue += booking.commissionTotal || 0
+  })
+
+  let commissionCollected = 0
+
+  events.forEach((event) => {
+    if (event.type === bookcarsTypes.AgencyCommissionEventType.Payment) {
+      commissionCollected += event.amount || 0
+    }
+  })
+
+  const balance = commissionDue - commissionCollected
+  const aboveThreshold = commissionDue >= config.monthlyThreshold
+  const blocked = (state && state.blocked) || supplier.blacklisted || false
+  const status = computeStatus(blocked, balance)
+
+  const bookingInfos: bookcarsTypes.AgencyCommissionBookingInfo[] = []
+  let remainingCommission = commissionCollected
+
+  bookings.forEach((booking) => {
+    const commission = normalizeNumber(booking.commissionTotal || 0)
+    let paymentStatus = bookcarsTypes.CommissionPaymentStatus.Unpaid
+
+    if (commission <= 0) {
+      paymentStatus = bookcarsTypes.CommissionPaymentStatus.Paid
+    } else if (remainingCommission >= commission) {
+      paymentStatus = bookcarsTypes.CommissionPaymentStatus.Paid
+      remainingCommission -= commission
+    } else if (remainingCommission > 0) {
+      paymentStatus = bookcarsTypes.CommissionPaymentStatus.Partial
+      remainingCommission = 0
+    }
+
+    bookingInfos.push({
+      id: booking._id.toString(),
+      from: booking.from,
+      to: booking.to,
+      totalPrice: normalizeNumber(booking.price || 0),
+      commission,
+      status: booking.status as bookcarsTypes.BookingStatus,
+      paymentStatus,
+    })
+  })
+
+  const logs: bookcarsTypes.AgencyCommissionLogEntry[] = events.map((event) => mapEventToLogEntry(event))
+
+  return {
+    agency: { ...toAgency(supplier), status, blocked },
+    summary: {
+      reservations: bookings.length,
+      grossTurnover: normalizeNumber(grossTurnover),
+      commissionDue: normalizeNumber(commissionDue),
+      commissionCollected: normalizeNumber(commissionCollected),
+      balance: normalizeNumber(balance),
+      threshold: config.monthlyThreshold,
+      aboveThreshold,
+    },
+    logs,
+    bookings: bookingInfos,
+    month,
+    year,
+  }
+}
+
+const serializeSettings = async (
+  settings: env.AgencyCommissionSettings,
+): Promise<bookcarsTypes.CommissionSettings> => {
+  const updatedByUser = settings.updatedBy ? await User.findById(settings.updatedBy) : null
+
+  return {
+    reminderChannel: settings.reminderChannel || bookcarsTypes.CommissionReminderChannel.Email,
+    emailTemplate: settings.emailTemplate,
+    smsTemplate: settings.smsTemplate,
+    updatedAt: settings.updatedAt || undefined,
+    updatedBy: updatedByUser ? toAgency(updatedByUser) : undefined,
+  }
+}
+
+export const getAgencyCommissionDetails = async (req: Request, res: Response) => {
+  try {
+    const admin = await ensureAdmin(req)
+    if (!admin) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const { agencyId, year, month } = req.params
+    const parsedYear = Number.parseInt(year, 10)
+    const parsedMonth = Number.parseInt(month, 10)
+
+    if (!agencyId || Number.isNaN(parsedYear) || Number.isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const detail = await loadAgencyCommissionDetail(agencyId, parsedYear, parsedMonth)
+
+    if (!detail) {
+      return res.status(404).send(i18n.t('USER_NOT_FOUND'))
+    }
+
+    return res.json(detail)
+  } catch (err) {
+    logger.error('[commission.getAgencyCommissionDetails]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const sendCommissionReminder = async (req: Request, res: Response) => {
+  try {
+    const admin = await ensureAdmin(req)
+    if (!admin) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const { body }: { body: bookcarsTypes.CommissionReminderPayload } = req
+
+    if (
+      !body
+      || !body.agencyId
+      || !body.month
+      || !body.year
+      || !body.message
+      || body.month < 1
+      || body.month > 12
+    ) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const channel = body.channel || (await getSettingsDocument()).reminderChannel
+    const supplier = await User.findById(body.agencyId)
+
+    if (!supplier) {
+      return res.status(404).send(i18n.t('USER_NOT_FOUND'))
+    }
+
+    const supplierObjectId = ensureObjectId(supplier._id)
+    const adminObjectId = ensureObjectId(admin._id)
+
+    if (!supplierObjectId || !adminObjectId) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const payload: Partial<env.AgencyCommissionEvent> = {
+      agency: supplierObjectId,
+      month: body.month,
+      year: body.year,
+      type: bookcarsTypes.AgencyCommissionEventType.Reminder,
+      admin: adminObjectId,
+      channel,
+      message: body.message,
+    }
+
+    let success = true
+
+    try {
+      if (
+        channel === bookcarsTypes.CommissionReminderChannel.Email
+        || channel === bookcarsTypes.CommissionReminderChannel.EmailAndSms
+      ) {
+        if (!supplier.email) {
+          throw new Error('EMAIL_NOT_FOUND')
+        }
+        const subject = body.subject || `Relance commission ${getMonthLabel(body.year, body.month)} ${body.year}`
+        await mailHelper.sendMail({ to: supplier.email, subject, html: body.message })
+        payload.metadata = { ...(payload.metadata || {}), subject }
+      }
+
+      if (
+        channel === bookcarsTypes.CommissionReminderChannel.Sms
+        || channel === bookcarsTypes.CommissionReminderChannel.EmailAndSms
+      ) {
+        const phone = validateAndFormatPhoneNumber(supplier.phone)
+        if (!phone.isValide) {
+          throw new Error('INVALID_PHONE')
+        }
+        const plainMessage = body.message.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+        await sendSms(phone.phone, plainMessage)
+      }
+    } catch (error) {
+      success = false
+      logger.error('[commission.sendCommissionReminder] failed', error)
+    }
+
+    await AgencyCommissionEvent.create({
+      ...payload,
+      success,
+    })
+
+    if (!success) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    return res.sendStatus(200)
+  } catch (err) {
+    logger.error('[commission.sendCommissionReminder]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const recordCommissionPayment = async (req: Request, res: Response) => {
+  try {
+    const admin = await ensureAdmin(req)
+    if (!admin) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const { body }: { body: bookcarsTypes.CommissionPaymentPayload } = req
+
+    if (
+      !body
+      || !body.agencyId
+      || !body.month
+      || !body.year
+      || body.month < 1
+      || body.month > 12
+      || body.amount === undefined
+      || !body.paymentDate
+    ) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const amount = Math.round(Number(body.amount))
+    if (Number.isNaN(amount) || amount <= 0) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const paymentDate = new Date(body.paymentDate)
+    if (Number.isNaN(paymentDate.getTime())) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const supplier = await User.findById(body.agencyId)
+    if (!supplier) {
+      return res.status(404).send(i18n.t('USER_NOT_FOUND'))
+    }
+
+    const supplierObjectId = ensureObjectId(supplier._id)
+    const adminObjectId = ensureObjectId(admin._id)
+
+    if (!supplierObjectId || !adminObjectId) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    await AgencyCommissionEvent.create({
+      agency: supplierObjectId,
+      month: body.month,
+      year: body.year,
+      type: bookcarsTypes.AgencyCommissionEventType.Payment,
+      admin: adminObjectId,
+      amount,
+      paymentDate,
+      reference: body.reference,
+      success: true,
+    })
+
+    return res.sendStatus(200)
+  } catch (err) {
+    logger.error('[commission.recordCommissionPayment]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const toggleAgencyCommissionBlock = async (req: Request, res: Response) => {
+  try {
+    const admin = await ensureAdmin(req)
+    if (!admin) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const { body }: { body: bookcarsTypes.CommissionBlockPayload } = req
+
+    if (
+      !body
+      || !body.agencyId
+      || !body.month
+      || !body.year
+      || body.month < 1
+      || body.month > 12
+    ) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const supplier = await User.findById(body.agencyId)
+    if (!supplier) {
+      return res.status(404).send(i18n.t('USER_NOT_FOUND'))
+    }
+
+    const supplierObjectId = ensureObjectId(supplier._id)
+    const adminObjectId = ensureObjectId(admin._id)
+
+    if (!supplierObjectId || !adminObjectId) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    let state = await AgencyCommissionState.findOne({ agency: supplierObjectId })
+    if (!state) {
+      state = new AgencyCommissionState({ agency: supplierObjectId, blocked: false, disabledCars: [] })
+    }
+
+    if (body.block) {
+      const cars = await Car.find({ supplier: supplierObjectId })
+      const disabledCars = cars.filter((car) => car.available).map((car) => car._id)
+
+      if (disabledCars.length > 0) {
+        await Car.updateMany({ _id: { $in: disabledCars } }, { $set: { available: false } })
+      }
+
+      state.blocked = true
+      state.blockedAt = new Date()
+      state.blockedBy = adminObjectId
+      state.disabledCars = disabledCars
+      await state.save()
+
+      supplier.blacklisted = true
+      await supplier.save()
+
+      await AgencyCommissionEvent.create({
+        agency: supplierObjectId,
+        month: body.month,
+        year: body.year,
+        type: bookcarsTypes.AgencyCommissionEventType.Block,
+        admin: adminObjectId,
+        metadata: { disabledCars: disabledCars.map((id) => id.toString()) },
+        success: true,
+      })
+
+      return res.json({ blocked: true })
+    }
+
+    const disabledCars = state.disabledCars || []
+
+    if (disabledCars.length > 0) {
+      await Car.updateMany({ _id: { $in: disabledCars } }, { $set: { available: true } })
+    }
+
+    state.blocked = false
+    state.blockedAt = undefined
+    state.blockedBy = undefined
+    state.disabledCars = []
+    await state.save()
+
+    supplier.blacklisted = false
+    await supplier.save()
+
+    await AgencyCommissionEvent.create({
+      agency: supplierObjectId,
+      month: body.month,
+      year: body.year,
+      type: bookcarsTypes.AgencyCommissionEventType.Unblock,
+      admin: adminObjectId,
+      metadata: { reactivatedCars: disabledCars.map((id) => id.toString()) },
+      success: true,
+    })
+
+    return res.json({ blocked: false })
+  } catch (err) {
+    logger.error('[commission.toggleAgencyCommissionBlock]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const addCommissionNote = async (req: Request, res: Response) => {
+  try {
+    const admin = await ensureAdmin(req)
+    if (!admin) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const { body }: { body: bookcarsTypes.CommissionNotePayload } = req
+
+    if (
+      !body
+      || !body.agencyId
+      || !body.month
+      || !body.year
+      || body.month < 1
+      || body.month > 12
+      || !body.note
+    ) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const supplier = await User.findById(body.agencyId)
+    if (!supplier) {
+      return res.status(404).send(i18n.t('USER_NOT_FOUND'))
+    }
+
+    const supplierObjectId = ensureObjectId(supplier._id)
+    const adminObjectId = ensureObjectId(admin._id)
+
+    if (!supplierObjectId || !adminObjectId) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    await AgencyCommissionEvent.create({
+      agency: supplierObjectId,
+      month: body.month,
+      year: body.year,
+      type: bookcarsTypes.AgencyCommissionEventType.Note,
+      admin: adminObjectId,
+      note: body.note,
+      success: true,
+    })
+
+    return res.sendStatus(200)
+  } catch (err) {
+    logger.error('[commission.addCommissionNote]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const getCommissionSettings = async (req: Request, res: Response) => {
+  try {
+    const admin = await ensureAdmin(req)
+    if (!admin) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const settings = await getSettingsDocument()
+    const payload = await serializeSettings(settings)
+
+    return res.json(payload)
+  } catch (err) {
+    logger.error('[commission.getCommissionSettings]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const updateCommissionSettings = async (req: Request, res: Response) => {
+  try {
+    const admin = await ensureAdmin(req)
+    if (!admin) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const { body }: { body: bookcarsTypes.CommissionSettingsPayload } = req
+
+    if (!body || !body.emailTemplate || !body.smsTemplate || !body.reminderChannel) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const settings = await getSettingsDocument()
+    settings.reminderChannel = body.reminderChannel
+    settings.emailTemplate = body.emailTemplate
+    settings.smsTemplate = body.smsTemplate
+    settings.updatedBy = ensureObjectId(admin._id)
+    await settings.save()
+
+    const payload = await serializeSettings(settings)
+
+    return res.json(payload)
+  } catch (err) {
+    logger.error('[commission.updateCommissionSettings]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const generateCommissionInvoice = async (req: Request, res: Response) => {
+  try {
+    const admin = await ensureAdmin(req)
+    if (!admin) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const { agencyId, year, month } = req.params
+    const parsedYear = Number.parseInt(year, 10)
+    const parsedMonth = Number.parseInt(month, 10)
+
+    if (!agencyId || Number.isNaN(parsedYear) || Number.isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const detail = await loadAgencyCommissionDetail(agencyId, parsedYear, parsedMonth)
+
+    if (!detail) {
+      return res.status(404).send(i18n.t('USER_NOT_FOUND'))
+    }
+
+    const doc = new PDFDocument({ margin: 50 })
+    const filename = `commission_${detail.agency.slug || detail.agency.id}_${parsedYear}_${String(parsedMonth).padStart(2, '0')}.pdf`
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+
+    doc.pipe(res)
+
+    doc.fontSize(18).text('Commissions agences', { align: 'center' })
+    doc.moveDown()
+    doc.fontSize(12).text(`Agence : ${detail.agency.name}`)
+    if (detail.agency.city) {
+      doc.text(`Ville : ${detail.agency.city}`)
+    }
+    if (detail.agency.email) {
+      doc.text(`Email : ${detail.agency.email}`)
+    }
+    if (detail.agency.phone) {
+      doc.text(`Téléphone : ${detail.agency.phone}`)
+    }
+
+    doc.moveDown()
+    doc.text(`Période : ${getMonthLabel(parsedYear, parsedMonth)} ${parsedYear}`)
+
+    doc.moveDown()
+    doc.text(`Nombre de réservations : ${detail.summary.reservations}`)
+    doc.text(`CA brut : ${detail.summary.grossTurnover} TND`)
+    doc.text(`Commission due : ${detail.summary.commissionDue} TND`)
+    doc.text(`Commission encaissée : ${detail.summary.commissionCollected} TND`)
+    doc.text(`Solde : ${detail.summary.balance} TND`)
+
+    doc.moveDown()
+    doc.fontSize(14).text('Détail des réservations', { underline: true })
+    doc.moveDown(0.5)
+    doc.fontSize(12)
+
+    if (detail.bookings.length === 0) {
+      doc.text('Aucune réservation pour cette période.')
+    } else {
+      detail.bookings.forEach((booking) => {
+        const paymentStatus = (() => {
+          switch (booking.paymentStatus) {
+            case bookcarsTypes.CommissionPaymentStatus.Paid:
+              return 'Payé'
+            case bookcarsTypes.CommissionPaymentStatus.Partial:
+              return 'Partiel'
+            default:
+              return 'Non payé'
+          }
+        })()
+
+        doc.text(
+          `${booking.id} | du ${formatDate(booking.from)} au ${formatDate(booking.to)} | Total ${booking.totalPrice} TND | Commission ${booking.commission} TND | Statut commission : ${paymentStatus}`,
+        )
+      })
+    }
+
+    doc.end()
+
+    return undefined
+  } catch (err) {
+    logger.error('[commission.generateCommissionInvoice]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}

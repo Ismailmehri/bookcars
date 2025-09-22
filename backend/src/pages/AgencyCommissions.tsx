@@ -23,6 +23,7 @@ import {
   Stack,
   CircularProgress,
 } from '@mui/material'
+import { SelectChangeEvent } from '@mui/material/Select'
 import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
@@ -57,7 +58,7 @@ import '@/assets/css/agency-commissions.css'
 const buildMonthLabel = (month: number, year: number, language: string) => {
   const date = new Date(Date.UTC(year, month - 1, 1))
   const label = date.toLocaleString(language, { month: 'long' })
-  return helper.capitalize(label)
+  return bookcarsHelper.capitalize(label)
 }
 
 const formatNumber = (value: number, language: string) => {
@@ -225,12 +226,12 @@ const AgencyCommissions = () => {
     setPage(0)
   }
 
-  const handleMonthChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMonthChange = (event: SelectChangeEvent<number>) => {
     setMonth(Number(event.target.value))
     resetPagination()
   }
 
-  const handleYearChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleYearChange = (event: SelectChangeEvent<number>) => {
     setYear(Number(event.target.value))
     resetPagination()
   }
@@ -257,7 +258,7 @@ const AgencyCommissions = () => {
     resetPagination()
   }
 
-  const handleStatusChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleStatusChange = (event: SelectChangeEvent<'all' | bookcarsTypes.AgencyCommissionStatus>) => {
     setStatusFilter(event.target.value as 'all' | bookcarsTypes.AgencyCommissionStatus)
     resetPagination()
   }
@@ -278,7 +279,7 @@ const AgencyCommissions = () => {
     resetPagination()
   }
 
-  const handlePageSizeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePageSizeChange = (event: SelectChangeEvent<number>) => {
     setPageSize(Number(event.target.value))
     resetPagination()
   }
@@ -376,7 +377,7 @@ const AgencyCommissions = () => {
     }
   }
 
-  const handleReminderChannelChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReminderChannelChange = (event: SelectChangeEvent<bookcarsTypes.CommissionReminderChannel>) => {
     const channel = event.target.value as bookcarsTypes.CommissionReminderChannel
     setReminderChannel(channel)
     if (selectedAgency && settings) {

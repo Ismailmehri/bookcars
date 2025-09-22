@@ -4,9 +4,17 @@ import fs from 'node:fs/promises'
 import http from 'node:http'
 import https, { ServerOptions } from 'node:https'
 import * as env from './config/env.config'
+import { setCommissionConfig } from ':bookcars-helper'
 import * as databaseHelper from './common/databaseHelper'
 import app from './app'
 import * as logger from './common/logger'
+
+setCommissionConfig({
+  enabled: env.COMMISSION_ENABLED,
+  rate: env.COMMISSION_RATE,
+  effectiveDate: env.COMMISSION_EFFECTIVE_DATE,
+  monthlyThreshold: env.COMMISSION_MONTHLY_THRESHOLD,
+})
 
 if (
   await databaseHelper.connect(env.DB_URI, env.DB_SSL, env.DB_DEBUG) && await databaseHelper.initialize()

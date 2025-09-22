@@ -329,6 +329,22 @@ export const DEFAULT_LANGUAGE = __env__('BC_DEFAULT_LANGUAGE', false, 'fr')
  */
 export const MINIMUM_AGE = Number.parseInt(__env__('BC_MINIMUM_AGE', false, '21'), 10)
 
+const parseCommissionDate = (value?: string) => {
+  if (!value) {
+    return new Date('2025-01-01T00:00:00Z')
+  }
+
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? new Date('2025-01-01T00:00:00Z') : date
+}
+
+export const COMMISSION_ENABLED = helper.StringToBoolean(__env__('XXXX__COMMISSION_ENABLED', false, 'true'))
+const parsedCommissionRate = Number.parseFloat(__env__('XXXX__COMMISSION_RATE', false, '5'))
+export const COMMISSION_RATE = Number.isNaN(parsedCommissionRate) ? 5 : parsedCommissionRate
+export const COMMISSION_EFFECTIVE_DATE = parseCommissionDate(__env__('XXXX__COMMISSION_EFFECTIVE_DATE', false, '2025-01-01'))
+const parsedCommissionThreshold = Number.parseInt(__env__('XXXX__COMMISSION_MONTHLY_THRESHOLD', false, '50'), 10)
+export const COMMISSION_MONTHLY_THRESHOLD = Number.isNaN(parsedCommissionThreshold) ? 50 : parsedCommissionThreshold
+
 /**
  * Expo push access token.
  *
@@ -546,6 +562,8 @@ export interface Booking extends Document {
   _additionalDriver?: Types.ObjectId
   cancelRequest?: boolean
   price: number
+  commissionRate?: number
+  commissionTotal?: number
   sessionId?: string
   paymentIntentId?: string
   customerId?: string

@@ -5,6 +5,7 @@ import { Request, Response } from 'express'
 import nodemailer from 'nodemailer'
 import path from 'node:path'
 import * as bookcarsTypes from ':bookcars-types'
+import * as bookcarsHelper from ':bookcars-helper'
 import i18n from '../lang/i18n'
 import Booking from '../models/Booking'
 import User from '../models/User'
@@ -21,6 +22,33 @@ import * as env from '../config/env.config'
 import * as logger from '../common/logger'
 import stripeAPI from '../stripe'
 import { sendSms, validateAndFormatPhoneNumber } from '../common/smsHelper'
+
+const buildBookingOptions = (booking: bookcarsTypes.Booking): bookcarsTypes.CarOptions => ({
+  cancellation: booking.cancellation,
+  amendments: booking.amendments,
+  theftProtection: booking.theftProtection,
+  collisionDamageWaiver: booking.collisionDamageWaiver,
+  fullInsurance: booking.fullInsurance,
+  additionalDriver: booking.additionalDriver,
+})
+
+const getBookingPricing = async (booking: bookcarsTypes.Booking) => {
+  const car = await Car.findById(booking.car)
+  if (!car) {
+    throw new Error(`Car ${booking.car} not found`)
+  }
+
+  const from = new Date(booking.from)
+  const to = new Date(booking.to)
+  const breakdown = bookcarsHelper.calculatePriceBreakdown(
+    car.toObject() as unknown as bookcarsTypes.Car,
+    from,
+    to,
+    buildBookingOptions(booking),
+  )
+
+  return { car, breakdown }
+}
 
 /**
  * Create a Booking.
@@ -39,6 +67,11 @@ export const create = async (req: Request, res: Response) => {
       await additionalDriver.save()
       body.booking._additionalDriver = additionalDriver._id.toString()
     }
+
+    const { breakdown } = await getBookingPricing(body.booking)
+    body.booking.price = breakdown.totalPrice
+    body.booking.commissionRate = breakdown.commissionRate
+    body.booking.commissionTotal = breakdown.commissionTotal
 
     const booking = new Booking(body.booking)
 
@@ -298,12 +331,17 @@ export const checkout = async (req: Request, res: Response) => {
       body.booking._additionalDriver = additionalDriver._id.toString()
     }
 
+    const { breakdown: checkoutBreakdown, car: pricingCar } = await getBookingPricing(body.booking)
+    body.booking.price = checkoutBreakdown.totalPrice
+    body.booking.commissionRate = checkoutBreakdown.commissionRate
+    body.booking.commissionTotal = checkoutBreakdown.commissionTotal
+
     const booking = new Booking(body.booking)
 
     await booking.save()
 
     if (booking.status === bookcarsTypes.BookingStatus.Paid && body.paymentIntentId && body.customerId) {
-      const car = await Car.findById(booking.car)
+      const car = pricingCar
       if (!car) {
         throw new Error(`Car ${booking.car} not found`)
       }
@@ -535,8 +573,9 @@ export const update = async (req: Request, res: Response) => {
         collisionDamageWaiver,
         fullInsurance,
         additionalDriver,
-        price,
       } = body.booking
+
+      const { breakdown } = await getBookingPricing(body.booking)
 
       const previousStatus = booking.status
 
@@ -554,7 +593,9 @@ export const update = async (req: Request, res: Response) => {
       booking.collisionDamageWaiver = collisionDamageWaiver
       booking.fullInsurance = fullInsurance
       booking.additionalDriver = additionalDriver
-      booking.price = price as number
+      booking.price = breakdown.totalPrice
+      booking.commissionRate = breakdown.commissionRate
+      booking.commissionTotal = breakdown.commissionTotal
 
       if (!additionalDriver && booking._additionalDriver) {
         booking._additionalDriver = undefined

@@ -122,6 +122,24 @@ const hasCommissionChanged = (
   return false
 }
 
+const hasPricingData = (car?: bookcarsTypes.Car | env.Car | env.CarInfo | null): car is bookcarsTypes.Car | env.Car => {
+  if (!car || typeof car !== 'object') {
+    return false
+  }
+
+  const candidate = car as { dailyPrice?: unknown }
+  if (typeof candidate.dailyPrice === 'number') {
+    return true
+  }
+
+  if (typeof candidate.dailyPrice === 'string') {
+    const parsed = Number.parseFloat(candidate.dailyPrice)
+    return !Number.isNaN(parsed)
+  }
+
+  return false
+}
+
 const calculateBookingPricing = async (
   bookingPayload: bookcarsTypes.Booking,
   appliedAt: Date,
@@ -137,10 +155,14 @@ const calculateBookingPricing = async (
   }
 
   let car: env.Car | bookcarsTypes.Car | env.CarInfo | null = null
-  if (loadedCar) {
+  if (loadedCar && hasPricingData(loadedCar)) {
     car = loadedCar as env.Car | bookcarsTypes.Car | env.CarInfo
   } else {
     car = await Car.findById(carId).lean<env.Car>()
+
+    if (!car && loadedCar) {
+      car = loadedCar as env.Car | bookcarsTypes.Car | env.CarInfo
+    }
   }
 
   if (!car) {

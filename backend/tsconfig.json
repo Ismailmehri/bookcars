@@ -26,6 +26,7 @@
       ":bookcars-helper": ["../packages/bookcars-helper/index.ts"],
       ":disable-react-devtools": ["../packages/disable-react-devtools"]
     },
+    "types": ["vite/client", "vitest"]
   },
   "include": ["src"],
   "references": [

@@ -126,7 +126,7 @@ const calculateBookingPricing = async (
   bookingPayload: bookcarsTypes.Booking,
   appliedAt: Date,
   commission?: bookcarsTypes.CommissionInfo,
-  loadedCar?: bookcarsTypes.Car | env.Car,
+  loadedCar?: bookcarsTypes.Car | env.Car | env.CarInfo,
 ): Promise<bookcarsTypes.PricingDetails> => {
   const carId = typeof bookingPayload.car === 'string'
     ? bookingPayload.car
@@ -136,9 +136,9 @@ const calculateBookingPricing = async (
     throw new Error('Car not found')
   }
 
-  let car: env.Car | bookcarsTypes.Car | null = null
+  let car: env.Car | bookcarsTypes.Car | env.CarInfo | null = null
   if (loadedCar) {
-    car = loadedCar as bookcarsTypes.Car
+    car = loadedCar as env.Car | bookcarsTypes.Car | env.CarInfo
   } else {
     car = await Car.findById(carId).lean<env.Car>()
   }
@@ -155,8 +155,10 @@ const calculateBookingPricing = async (
 
   const commissionConfig = buildCommissionConfig(appliedAt, commission)
 
+  const pricingCar = car as unknown as bookcarsTypes.Car
+
   return bookcarsHelper.calculatePricingDetails(
-    car as unknown as bookcarsTypes.Car,
+    pricingCar,
     fromDate,
     toDate,
     buildPricingOptions(bookingPayload),
@@ -956,7 +958,7 @@ export const getBooking = async (req: Request, res: Response) => {
         booking as unknown as bookcarsTypes.Booking,
         appliedAt,
         booking.commission ?? undefined,
-        booking.car as bookcarsTypes.Car,
+        booking.car as unknown as bookcarsTypes.Car,
       )
       const commissionInfo = buildCommissionInfo(pricing, appliedAt)
       await persistPricingIfNeeded(
@@ -1208,7 +1210,7 @@ export const getBookings = async (req: Request, res: Response) => {
         booking as unknown as bookcarsTypes.Booking,
         appliedAt,
         booking.commission ?? undefined,
-        booking.car as bookcarsTypes.Car,
+        booking.car as unknown as bookcarsTypes.Car,
       )
       const commissionInfo = buildCommissionInfo(pricing, appliedAt)
       await persistPricingIfNeeded(

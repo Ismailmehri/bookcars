@@ -5,7 +5,7 @@ import {
   GridColDef,
   GridRowId,
   GridRenderCellParams,
-  GridValueGetterParams,
+  GridValueGetter,
 } from '@mui/x-data-grid'
 import {
   Tooltip,
@@ -36,6 +36,8 @@ import BookingStatus from './BookingStatus'
 
 import '@/assets/css/booking-list.css'
 import CarReservationCalendar from './CarReservationCalendar'
+
+type BookingValueGetterParams = Parameters<GridValueGetter<bookcarsTypes.Booking>>[0]
 
 interface BookingListProps {
   suppliers?: string[]
@@ -292,7 +294,7 @@ const BookingList = ({
         headerName: strings.PRICE,
         flex: 1,
         renderCell: ({ value }: GridRenderCellParams<bookcarsTypes.Booking, string>) => <span className="bp">{value}</span>,
-        valueGetter: (params: GridValueGetterParams<bookcarsTypes.Booking, number>) => {
+        valueGetter: (params: BookingValueGetterParams) => {
           const total = resolveBookingTotal(params.row)
 
           return bookcarsHelper.formatPrice(total, commonStrings.CURRENCY, language as string)

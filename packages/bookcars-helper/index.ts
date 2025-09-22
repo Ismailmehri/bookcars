@@ -361,15 +361,18 @@ export const calculatePricingDetails = (
 
   discountedDailyPrices.forEach((dailyPrice) => {
     const normalizedDailyPrice = toSafeNumber(dailyPrice)
-    let dailyTotal = normalizedDailyPrice + dailyOptionCharge
+    const normalizedOptionsCharge = toSafeNumber(dailyOptionCharge)
+
+    let commissionAmountForDay = 0
+
     if (commissionActive) {
-      const commissionAmount = (normalizedDailyPrice * commissionRate) / 100
-      commissionTotalAmount += commissionAmount
-      dailyTotal += commissionAmount
+      const rawCommissionAmount = (normalizedDailyPrice * commissionRate) / 100
+      commissionAmountForDay = Math.ceil(rawCommissionAmount)
+      commissionTotalAmount += commissionAmountForDay
     }
 
-    const roundedDaily = Math.ceil(dailyTotal)
-    roundedDailySum += roundedDaily
+    const dailyTotal = Math.ceil(normalizedDailyPrice + normalizedOptionsCharge + commissionAmountForDay)
+    roundedDailySum += dailyTotal
   })
 
   const displayTotal = Math.ceil(roundedDailySum + lumpSumTotal)

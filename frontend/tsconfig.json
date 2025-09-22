@@ -24,14 +24,13 @@
       "@/*": ["./src/*"],
       ":bookcars-types": ["../packages/bookcars-types"],
       ":bookcars-helper": ["../packages/bookcars-helper/index.ts"],
-      ":disable-react-devtools": ["../packages/disable-react-devtools"]
+      ":disable-react-devtools": ["../packages/disable-react-devtools/index.ts"]
     },
   },
   "include": ["src", ".env.d.ts"],
   "references": [
     { "path": "./tsconfig.node.json" },
     { "path": "../packages/bookcars-types" },
-    { "path": "../packages/bookcars-helper" },
-    { "path": "../packages/disable-react-devtools" }
+    { "path": "../packages/bookcars-helper" }
   ]
 }

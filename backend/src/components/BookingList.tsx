@@ -37,7 +37,7 @@ import BookingStatus from './BookingStatus'
 import '@/assets/css/booking-list.css'
 import CarReservationCalendar from './CarReservationCalendar'
 
-type BookingValueGetterParams = Parameters<GridValueGetter<bookcarsTypes.Booking>>[0]
+type BookingValueGetterParams = Parameters<GridValueGetter<string, bookcarsTypes.Booking>>[0]
 
 interface BookingListProps {
   suppliers?: string[]

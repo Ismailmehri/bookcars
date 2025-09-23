@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import {
   Box,
   Paper,
@@ -22,6 +28,7 @@ import {
   DialogActions,
   Stack,
   CircularProgress,
+  LinearProgress,
 } from '@mui/material'
 import { SelectChangeEvent } from '@mui/material/Select'
 import {
@@ -37,6 +44,10 @@ import {
   Settings as SettingsIcon,
   NoteAdd as NoteAddIcon,
   PictureAsPdf as PictureAsPdfIcon,
+  LocationOn as LocationOnIcon,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
+  Fingerprint as FingerprintIcon,
 } from '@mui/icons-material'
 import {
   DataGrid,
@@ -139,6 +150,7 @@ const AgencyCommissions = () => {
   const [selectedAgency, setSelectedAgency] = useState<bookcarsTypes.AgencyCommissionRow | null>(null)
   const [detail, setDetail] = useState<bookcarsTypes.AgencyCommissionDetail>()
   const [detailLoading, setDetailLoading] = useState(false)
+  const [detailError, setDetailError] = useState(false)
   const [settings, setSettings] = useState<bookcarsTypes.CommissionSettings>()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [loadingSettings, setLoadingSettings] = useState(false)
@@ -158,12 +170,71 @@ const AgencyCommissions = () => {
   const [exporting, setExporting] = useState(false)
   const [invoiceLoading, setInvoiceLoading] = useState(false)
 
+  const detailRequestRef = useRef(0)
+
   const language = user?.language || env.DEFAULT_LANGUAGE
 
   const monthOptions = useMemo(() => Array.from({ length: 12 }).map((_, index) => ({
     value: index + 1,
     label: buildMonthLabel(index + 1, year, language),
   })), [language, year])
+
+  const activeAgency = useMemo<bookcarsTypes.AgencyCommissionDetail['agency'] | undefined>(() => {
+    if (detail?.agency) {
+      return detail.agency
+    }
+
+    if (selectedAgency) {
+      return {
+        ...selectedAgency.agency,
+        status: selectedAgency.status,
+        blocked: selectedAgency.status === bookcarsTypes.AgencyCommissionStatus.Blocked,
+      }
+    }
+
+    return undefined
+  }, [detail, selectedAgency])
+
+  const summary = useMemo<bookcarsTypes.AgencyCommissionDetailSummary | undefined>(() => {
+    if (detail?.summary) {
+      return detail.summary
+    }
+
+    if (selectedAgency && data?.summary) {
+      return {
+        reservations: selectedAgency.reservations,
+        grossTurnover: selectedAgency.grossTurnover,
+        commissionDue: selectedAgency.commissionDue,
+        commissionCollected: selectedAgency.commissionCollected,
+        balance: selectedAgency.balance,
+        threshold: data.summary.threshold,
+        aboveThreshold: selectedAgency.aboveThreshold,
+      }
+    }
+
+    return undefined
+  }, [data?.summary, detail, selectedAgency])
+
+  const logs = detail?.logs || []
+  const bookings = detail?.bookings || []
+  const currentStatus = activeAgency?.status
+    ?? selectedAgency?.status
+    ?? bookcarsTypes.AgencyCommissionStatus.Active
+  const isAwaitingDetail = detailLoading && !detail
+  const showDetailError = detailError && !detail
+  const isBlocked = currentStatus === bookcarsTypes.AgencyCommissionStatus.Blocked
+
+  const getStatusChipColor = (status: bookcarsTypes.AgencyCommissionStatus) => {
+    if (status === bookcarsTypes.AgencyCommissionStatus.Blocked) {
+      return 'error'
+    }
+
+    if (status === bookcarsTypes.AgencyCommissionStatus.NeedsFollowUp) {
+      return 'warning'
+    }
+
+    return 'success'
+  }
 
   const onLoad = (_user?: bookcarsTypes.User) => {
     if (_user) {
@@ -293,32 +364,57 @@ const AgencyCommissions = () => {
     }
   }
 
-  const fetchDetail = useCallback(async (
-    agency: bookcarsTypes.AgencyCommissionRow,
-  ) => {
+  const fetchDetail = useCallback(async (agencyId: string) => {
+    const requestId = detailRequestRef.current + 1
+    detailRequestRef.current = requestId
+    setDetailError(false)
     setDetailLoading(true)
     try {
-      const response = await CommissionService.getAgencyCommissionDetails(agency.agency.id, year, month)
-      setDetail(response)
+      const response = await CommissionService.getAgencyCommissionDetails(agencyId, year, month)
+      if (detailRequestRef.current === requestId) {
+        setDetail(response)
+      }
     } catch (err) {
+      if (detailRequestRef.current === requestId) {
+        setDetail(undefined)
+        setDetailError(true)
+      }
       helper.error(err)
-      setDetail(undefined)
     } finally {
-      setDetailLoading(false)
+      if (detailRequestRef.current === requestId) {
+        setDetailLoading(false)
+      }
     }
   }, [month, year])
 
-  const openDrawer = async (agency: bookcarsTypes.AgencyCommissionRow) => {
+  const openDrawer = (agency: bookcarsTypes.AgencyCommissionRow) => {
     setSelectedAgency(agency)
+    setDetail(undefined)
+    setDetailError(false)
     setDrawerOpen(true)
-    await fetchDetail(agency)
+  }
+
+  const handleDrawerClose = () => {
+    setDrawerOpen(false)
+    setSelectedAgency(null)
+    setDetail(undefined)
+    setDetailError(false)
+    detailRequestRef.current += 1
   }
 
   const refreshDetail = useCallback(async () => {
     if (selectedAgency) {
-      await fetchDetail(selectedAgency)
+      await fetchDetail(selectedAgency.agency.id)
     }
   }, [fetchDetail, selectedAgency])
+
+  useEffect(() => {
+    if (!drawerOpen || !selectedAgency) {
+      return
+    }
+
+    fetchDetail(selectedAgency.agency.id)
+  }, [drawerOpen, selectedAgency, fetchDetail])
 
   const ensureSettings = useCallback(async (): Promise<bookcarsTypes.CommissionSettings> => {
     if (settings) {
@@ -486,7 +582,8 @@ const AgencyCommissions = () => {
       return
     }
 
-    const block = selectedAgency.status !== bookcarsTypes.AgencyCommissionStatus.Blocked
+    const currentStatus = detail?.agency.status ?? selectedAgency.status
+    const block = currentStatus !== bookcarsTypes.AgencyCommissionStatus.Blocked
 
     try {
       await CommissionService.toggleAgencyBlock({
@@ -879,64 +976,182 @@ const AgencyCommissions = () => {
             />
           </Paper>
 
-          <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+          <Drawer
+            anchor="right"
+            open={drawerOpen}
+            onClose={handleDrawerClose}
+            PaperProps={{
+              sx: {
+                width: { xs: '100vw', sm: 480, md: 720, lg: 960 },
+                backgroundColor: 'transparent',
+              },
+            }}
+          >
             <Box className="ac-drawer-content">
-              {detailLoading && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <CircularProgress />
-                </Box>
-              )}
-              {!detailLoading && detail && (
+              {detailLoading && <LinearProgress className="ac-drawer-progress" />}
+              {selectedAgency ? (
                 <>
                   <Box className="ac-drawer-header">
-                    <Box>
-                      <Typography variant="h6">{detail.agency.name}</Typography>
-                      <Chip
-                        size="small"
-                        color={detail.agency.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? 'error' : detail.agency.status === bookcarsTypes.AgencyCommissionStatus.NeedsFollowUp ? 'warning' : 'success'}
-                        label={mapStatusToLabel(detail.agency.status)}
-                      />
+                    <Box className="ac-drawer-identity">
+                      <Typography variant="h5">{activeAgency?.name || strings.DRAWER_CONTACT_NONE}</Typography>
+                      <Stack direction="row" spacing={1} className="ac-drawer-meta">
+                        {activeAgency?.city && (
+                          <Chip size="small" variant="outlined" label={activeAgency.city} />
+                        )}
+                        <Chip
+                          size="small"
+                          color={getStatusChipColor(currentStatus)}
+                          label={mapStatusToLabel(currentStatus)}
+                        />
+                      </Stack>
                     </Box>
                     <Button
-                      startIcon={detail.agency.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? <LockOpenIcon /> : <BlockIcon />}
+                      startIcon={currentStatus === bookcarsTypes.AgencyCommissionStatus.Blocked ? <LockOpenIcon /> : <BlockIcon />}
                       variant="outlined"
                       onClick={() => selectedAgency && handleToggleBlock(selectedAgency)}
                     >
-                      {detail.agency.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}
+                      {currentStatus === bookcarsTypes.AgencyCommissionStatus.Blocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}
                     </Button>
                   </Box>
 
-                  <Divider />
+                  {activeAgency && (
+                    <>
+                      <Divider />
+                      <Box className="ac-section">
+                        <Typography variant="subtitle1">{strings.DRAWER_CONTACT_TITLE}</Typography>
+                        <Paper elevation={0} className="ac-contact-card">
+                          <Box className="ac-contact-row">
+                            <FingerprintIcon fontSize="small" color="primary" />
+                            <Box className="ac-contact-value">
+                              <Typography variant="caption" className="ac-contact-label">
+                                {strings.DRAWER_CONTACT_ID}
+                              </Typography>
+                              <Typography variant="body2">{activeAgency.id}</Typography>
+                            </Box>
+                          </Box>
+                          <Box className="ac-contact-row">
+                            <LocationOnIcon fontSize="small" color="primary" />
+                            <Box className="ac-contact-value">
+                              <Typography variant="caption" className="ac-contact-label">
+                                {strings.DRAWER_CONTACT_CITY}
+                              </Typography>
+                              <Typography variant="body2">
+                                {activeAgency.city || strings.DRAWER_CONTACT_NONE}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <Box className="ac-contact-row">
+                            <EmailIcon fontSize="small" color="primary" />
+                            <Box className="ac-contact-value">
+                              <Typography variant="caption" className="ac-contact-label">
+                                {strings.DRAWER_CONTACT_EMAIL}
+                              </Typography>
+                              {activeAgency.email ? (
+                                <Typography
+                                  variant="body2"
+                                  component="a"
+                                  href={`mailto:${activeAgency.email}`}
+                                  className="ac-contact-link"
+                                >
+                                  {activeAgency.email}
+                                </Typography>
+                              ) : (
+                                <Typography variant="body2">{strings.DRAWER_CONTACT_NONE}</Typography>
+                              )}
+                            </Box>
+                          </Box>
+                          <Box className="ac-contact-row">
+                            <PhoneIcon fontSize="small" color="primary" />
+                            <Box className="ac-contact-value">
+                              <Typography variant="caption" className="ac-contact-label">
+                                {strings.DRAWER_CONTACT_PHONE}
+                              </Typography>
+                              {activeAgency.phone ? (
+                                <Typography
+                                  variant="body2"
+                                  component="a"
+                                  href={`tel:${activeAgency.phone}`}
+                                  className="ac-contact-link"
+                                >
+                                  {activeAgency.phone}
+                                </Typography>
+                              ) : (
+                                <Typography variant="body2">{strings.DRAWER_CONTACT_NONE}</Typography>
+                              )}
+                            </Box>
+                          </Box>
+                        </Paper>
+                      </Box>
+                    </>
+                  )}
 
-                  <Box className="ac-section">
-                    <Typography variant="subtitle1">{strings.DRAWER_TITLE_SUMMARY}</Typography>
-                    <Box className="ac-summary-grid">
-                      <Paper elevation={0} className="ac-kpi-card">
-                        <Typography variant="caption" color="text.secondary">{strings.DRAWER_SUMMARY_RESERVATIONS}</Typography>
-                        <Typography variant="body1">{detail.summary.reservations}</Typography>
-                      </Paper>
-                      <Paper elevation={0} className="ac-kpi-card">
-                        <Typography variant="caption" color="text.secondary">{strings.DRAWER_SUMMARY_GROSS}</Typography>
-                        <Typography variant="body1">{`${formatNumber(detail.summary.grossTurnover, language)} TND`}</Typography>
-                      </Paper>
-                      <Paper elevation={0} className="ac-kpi-card">
-                        <Typography variant="caption" color="text.secondary">{strings.DRAWER_SUMMARY_DUE}</Typography>
-                        <Typography variant="body1">{`${formatNumber(detail.summary.commissionDue, language)} TND`}</Typography>
-                      </Paper>
-                      <Paper elevation={0} className="ac-kpi-card">
-                        <Typography variant="caption" color="text.secondary">{strings.DRAWER_SUMMARY_COLLECTED}</Typography>
-                        <Typography variant="body1">{`${formatNumber(detail.summary.commissionCollected, language)} TND`}</Typography>
-                      </Paper>
-                      <Paper elevation={0} className="ac-kpi-card">
-                        <Typography variant="caption" color="text.secondary">{strings.DRAWER_SUMMARY_BALANCE}</Typography>
-                        <Typography variant="body1">{`${formatNumber(detail.summary.balance, language)} TND`}</Typography>
-                      </Paper>
-                      <Paper elevation={0} className="ac-kpi-card">
-                        <Typography variant="caption" color="text.secondary">{strings.DRAWER_SUMMARY_THRESHOLD}</Typography>
-                        <Typography variant="body1">{`${formatNumber(detail.summary.threshold, language)} TND`}</Typography>
-                      </Paper>
-                    </Box>
-                  </Box>
+                  {summary && (
+                    <>
+                      <Divider />
+                      <Box className="ac-section">
+                        <Typography variant="subtitle1">{strings.DRAWER_TITLE_SUMMARY}</Typography>
+                        <Box className="ac-summary-grid">
+                          <Paper elevation={0} className="ac-summary-card">
+                            <Typography variant="caption" color="text.secondary">
+                              {strings.DRAWER_SUMMARY_RESERVATIONS}
+                            </Typography>
+                            <Typography variant="h6">{formatNumber(summary.reservations, language)}</Typography>
+                          </Paper>
+                          <Paper elevation={0} className="ac-summary-card">
+                            <Typography variant="caption" color="text.secondary">
+                              {strings.DRAWER_SUMMARY_GROSS}
+                            </Typography>
+                            <Typography variant="h6">
+                              {`${formatNumber(summary.grossTurnover, language)} TND`}
+                            </Typography>
+                          </Paper>
+                          <Paper elevation={0} className="ac-summary-card">
+                            <Typography variant="caption" color="text.secondary">
+                              {strings.DRAWER_SUMMARY_DUE}
+                            </Typography>
+                            <Typography variant="h6">
+                              {`${formatNumber(summary.commissionDue, language)} TND`}
+                            </Typography>
+                          </Paper>
+                          <Paper elevation={0} className="ac-summary-card">
+                            <Typography variant="caption" color="text.secondary">
+                              {strings.DRAWER_SUMMARY_COLLECTED}
+                            </Typography>
+                            <Typography variant="h6">
+                              {`${formatNumber(summary.commissionCollected, language)} TND`}
+                            </Typography>
+                          </Paper>
+                          <Paper elevation={0} className="ac-summary-card">
+                            <Typography variant="caption" color="text.secondary">
+                              {strings.DRAWER_SUMMARY_BALANCE}
+                            </Typography>
+                            <Typography
+                              variant="h6"
+                              color={summary.balance > 0 ? 'error' : 'success'}
+                            >
+                              {`${formatNumber(summary.balance, language)} TND`}
+                            </Typography>
+                          </Paper>
+                          <Paper elevation={0} className="ac-summary-card">
+                            <Typography variant="caption" color="text.secondary">
+                              {strings.DRAWER_SUMMARY_THRESHOLD}
+                            </Typography>
+                            <Typography variant="h6">
+                              {`${formatNumber(summary.threshold, language)} TND`}
+                            </Typography>
+                            {summary.aboveThreshold && (
+                              <Chip
+                                size="small"
+                                color="warning"
+                                className="ac-summary-chip"
+                                label={strings.DRAWER_SUMMARY_ABOVE_THRESHOLD}
+                              />
+                            )}
+                          </Paper>
+                        </Box>
+                      </Box>
+                    </>
+                  )}
 
                   <Divider />
 
@@ -967,110 +1182,125 @@ const AgencyCommissions = () => {
 
                   <Box className="ac-section">
                     <Typography variant="subtitle1">{strings.DRAWER_OPERATIONS}</Typography>
-                    <Box className="ac-logs">
-                      {detail.logs.length === 0 && (
-                        <Typography variant="body2" color="text.secondary">{strings.EMPTY_STATE}</Typography>
-                      )}
-                      {detail.logs.map((log) => (
-                        <Box key={log.id} className="ac-log-entry">
-                          <Typography variant="subtitle2">{`${mapLogTypeToLabel(log.type)} • ${new Date(log.date).toLocaleString(language)}`}</Typography>
-                          {log.admin && (
-                            <Typography variant="caption" color="text.secondary">{`${strings.LOG_ADMIN_LABEL} ${log.admin.name}`}</Typography>
-                          )}
-                          {log.channel && (
-                            <Typography variant="caption" color="text.secondary">{`${strings.LOG_CHANNEL_LABEL} ${getReminderChannelLabel(log.channel)}`}</Typography>
-                          )}
-                          {typeof log.amount === 'number' && (
-                            <Typography variant="caption" color="text.secondary">{`${strings.LOG_AMOUNT_LABEL} ${formatNumber(log.amount, language)} TND`}</Typography>
-                          )}
-                          {log.paymentDate && (
-                            <Typography variant="caption" color="text.secondary">{`${strings.LOG_PAYMENT_DATE_LABEL} ${new Date(log.paymentDate).toLocaleDateString(language)}`}</Typography>
-                          )}
-                          {log.reference && (
-                            <Typography variant="caption" color="text.secondary">{`${strings.LOG_REFERENCE_LABEL} ${log.reference}`}</Typography>
-                          )}
-                          {typeof log.success === 'boolean' && (
-                            <Typography variant="caption" color={log.success ? 'success.main' : 'error'}>
-                              {`${strings.LOG_STATUS_LABEL} ${log.success ? strings.LOG_STATUS_SUCCESS : strings.LOG_STATUS_FAILURE}`}
-                            </Typography>
-                          )}
-                          {log.note && (
-                            <Typography variant="body2">{`${strings.LOG_NOTE_LABEL} ${log.note}`}</Typography>
-                          )}
-                        </Box>
-                      ))}
-                    </Box>
+                    {showDetailError ? (
+                      <Typography variant="body2" color="error">{strings.DRAWER_ERROR_STATE}</Typography>
+                    ) : (
+                      <Box className="ac-logs">
+                        {isAwaitingDetail ? (
+                          <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                            <CircularProgress size={24} />
+                          </Box>
+                        ) : logs.length === 0 ? (
+                          <Typography variant="body2" color="text.secondary">{strings.DRAWER_OPERATIONS_EMPTY}</Typography>
+                        ) : (
+                          logs.map((log) => (
+                            <Box key={log.id} className="ac-log-entry">
+                              <Typography variant="subtitle2">{`${mapLogTypeToLabel(log.type)} • ${new Date(log.date).toLocaleString(language)}`}</Typography>
+                              {log.admin && (
+                                <Typography variant="caption" color="text.secondary">{`${strings.LOG_ADMIN_LABEL} ${log.admin.name}`}</Typography>
+                              )}
+                              {log.channel && (
+                                <Typography variant="caption" color="text.secondary">{`${strings.LOG_CHANNEL_LABEL} ${getReminderChannelLabel(log.channel)}`}</Typography>
+                              )}
+                              {typeof log.amount === 'number' && (
+                                <Typography variant="caption" color="text.secondary">{`${strings.LOG_AMOUNT_LABEL} ${formatNumber(log.amount, language)} TND`}</Typography>
+                              )}
+                              {log.paymentDate && (
+                                <Typography variant="caption" color="text.secondary">{`${strings.LOG_PAYMENT_DATE_LABEL} ${new Date(log.paymentDate).toLocaleDateString(language)}`}</Typography>
+                              )}
+                              {log.reference && (
+                                <Typography variant="caption" color="text.secondary">{`${strings.LOG_REFERENCE_LABEL} ${log.reference}`}</Typography>
+                              )}
+                              {typeof log.success === 'boolean' && (
+                                <Typography variant="caption" color={log.success ? 'success.main' : 'error'}>
+                                  {`${strings.LOG_STATUS_LABEL} ${log.success ? strings.LOG_STATUS_SUCCESS : strings.LOG_STATUS_FAILURE}`}
+                                </Typography>
+                              )}
+                              {log.note && (
+                                <Typography variant="body2">{`${strings.LOG_NOTE_LABEL} ${log.note}`}</Typography>
+                              )}
+                            </Box>
+                          ))
+                        )}
+                      </Box>
+                    )}
                   </Box>
 
                   <Divider />
 
                   <Box className="ac-section">
                     <Typography variant="subtitle1">{strings.DRAWER_BOOKINGS}</Typography>
-                    <Box>
-                      <DataGrid
-                        autoHeight
-                        rows={detail.bookings}
-                        columns={[
-                          { field: 'id', headerName: strings.BOOKING_COLUMN_ID, flex: 1, minWidth: 140 },
-                          {
-                            field: 'from',
-                            headerName: strings.BOOKING_COLUMN_FROM,
-                            minWidth: 130,
-                            valueFormatter: (params) => {
-                              if (!params?.value) {
-                                return ''
-                              }
-                              return new Date(params.value as string).toLocaleDateString(language)
+                    {showDetailError ? (
+                      <Typography variant="body2" color="error">{strings.DRAWER_ERROR_STATE}</Typography>
+                    ) : (
+                      <Box>
+                        <DataGrid
+                          autoHeight
+                          rows={bookings}
+                          loading={detailLoading && !showDetailError}
+                          columns={[
+                            { field: 'id', headerName: strings.BOOKING_COLUMN_ID, flex: 1, minWidth: 140 },
+                            {
+                              field: 'from',
+                              headerName: strings.BOOKING_COLUMN_FROM,
+                              minWidth: 130,
+                              valueFormatter: (params) => {
+                                if (!params?.value) {
+                                  return ''
+                                }
+                                return new Date(params.value as string).toLocaleDateString(language)
+                              },
                             },
-                          },
-                          {
-                            field: 'to',
-                            headerName: strings.BOOKING_COLUMN_TO,
-                            minWidth: 130,
-                            valueFormatter: (params) => {
-                              if (!params?.value) {
-                                return ''
-                              }
-                              return new Date(params.value as string).toLocaleDateString(language)
+                            {
+                              field: 'to',
+                              headerName: strings.BOOKING_COLUMN_TO,
+                              minWidth: 130,
+                              valueFormatter: (params) => {
+                                if (!params?.value) {
+                                  return ''
+                                }
+                                return new Date(params.value as string).toLocaleDateString(language)
+                              },
                             },
-                          },
-                          {
-                            field: 'totalPrice',
-                            headerName: strings.BOOKING_COLUMN_TOTAL,
-                            minWidth: 160,
-                            valueFormatter: (params) => {
-                              return `${formatNumber(Number(params?.value ?? 0), language)} TND`
+                            {
+                              field: 'totalPrice',
+                              headerName: strings.BOOKING_COLUMN_TOTAL,
+                              minWidth: 160,
+                              valueFormatter: (params) => `${formatNumber(Number(params?.value ?? 0), language)} TND`,
                             },
-                          },
-                          {
-                            field: 'commission',
-                            headerName: strings.BOOKING_COLUMN_COMMISSION,
-                            minWidth: 170,
-                            valueFormatter: (params) => {
-                              return `${formatNumber(Number(params?.value ?? 0), language)} TND`
+                            {
+                              field: 'commission',
+                              headerName: strings.BOOKING_COLUMN_COMMISSION,
+                              minWidth: 170,
+                              valueFormatter: (params) => `${formatNumber(Number(params?.value ?? 0), language)} TND`,
                             },
-                          },
-                          {
-                            field: 'paymentStatus',
-                            headerName: strings.BOOKING_COLUMN_PAYMENT_STATUS,
-                            minWidth: 180,
-                            renderCell: (params) => (
-                              <Chip
-                                size="small"
-                                color={params.value === bookcarsTypes.CommissionPaymentStatus.Unpaid ? 'error' : params.value === bookcarsTypes.CommissionPaymentStatus.Partial ? 'warning' : 'success'}
-                                label={mapPaymentStatusToLabel(params.value as bookcarsTypes.CommissionPaymentStatus)}
-                              />
-                            ),
-                          },
-                        ]}
-                        getRowId={(row) => row.id}
-                        hideFooter
-                        disableColumnMenu
-                        disableRowSelectionOnClick
-                      />
-                    </Box>
+                            {
+                              field: 'paymentStatus',
+                              headerName: strings.BOOKING_COLUMN_PAYMENT_STATUS,
+                              minWidth: 180,
+                              renderCell: (params) => (
+                                <Chip
+                                  size="small"
+                                  color={params.value === bookcarsTypes.CommissionPaymentStatus.Unpaid ? 'error' : params.value === bookcarsTypes.CommissionPaymentStatus.Partial ? 'warning' : 'success'}
+                                  label={mapPaymentStatusToLabel(params.value as bookcarsTypes.CommissionPaymentStatus)}
+                                />
+                              ),
+                            },
+                          ]}
+                          localeText={{ noRowsLabel: detailLoading ? commonStrings.PLEASE_WAIT : strings.EMPTY_STATE }}
+                          getRowId={(row) => row.id}
+                          hideFooter
+                          disableColumnMenu
+                          disableRowSelectionOnClick
+                        />
+                      </Box>
+                    )}
                   </Box>
                 </>
+              ) : (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 6 }}>
+                  <Typography variant="body2" color="text.secondary">{strings.EMPTY_STATE}</Typography>
+                </Box>
               )}
             </Box>
           </Drawer>
@@ -1161,12 +1391,10 @@ const AgencyCommissions = () => {
           </Dialog>
 
           <Dialog open={blockConfirmOpen} onClose={() => setBlockConfirmOpen(false)}>
-            <DialogTitle>{selectedAgency && selectedAgency.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? strings.UNBLOCK_CONFIRM_TITLE : strings.BLOCK_CONFIRM_TITLE}</DialogTitle>
+            <DialogTitle>{isBlocked ? strings.UNBLOCK_CONFIRM_TITLE : strings.BLOCK_CONFIRM_TITLE}</DialogTitle>
             <DialogContent>
               <Typography variant="body2">
-                {selectedAgency && selectedAgency.status === bookcarsTypes.AgencyCommissionStatus.Blocked
-                  ? strings.UNBLOCK_CONFIRM_MESSAGE
-                  : strings.BLOCK_CONFIRM_MESSAGE}
+                {isBlocked ? strings.UNBLOCK_CONFIRM_MESSAGE : strings.BLOCK_CONFIRM_MESSAGE}
               </Typography>
             </DialogContent>
             <DialogActions>

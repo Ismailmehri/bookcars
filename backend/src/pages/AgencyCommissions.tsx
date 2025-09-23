@@ -1021,7 +1021,7 @@ const AgencyCommissions = () => {
             onClose={handleDrawerClose}
             PaperProps={{
               sx: {
-                width: { xs: '100%', sm: 520, md: 640 },
+                width: { xs: '100%', sm: 520, md: 980 },
               },
             }}
           >

@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react'
 import {
+  Avatar,
   Box,
   Paper,
   Typography,
@@ -29,6 +30,12 @@ import {
   Stack,
   CircularProgress,
   LinearProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  InputAdornment,
 } from '@mui/material'
 import { SelectChangeEvent } from '@mui/material/Select'
 import {
@@ -49,12 +56,6 @@ import {
   Phone as PhoneIcon,
   Fingerprint as FingerprintIcon,
 } from '@mui/icons-material'
-import {
-  DataGrid,
-  GridColDef,
-  GridRenderCellParams,
-  GridPaginationModel,
-} from '@mui/x-data-grid'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import Layout from '@/components/Layout'
@@ -353,15 +354,6 @@ const AgencyCommissions = () => {
   const handlePageSizeChange = (event: SelectChangeEvent<number>) => {
     setPageSize(Number(event.target.value))
     resetPagination()
-  }
-
-  const handlePaginationModelChange = (model: GridPaginationModel) => {
-    if (model.pageSize !== pageSize) {
-      setPageSize(model.pageSize)
-      setPage(model.page)
-    } else {
-      setPage(model.page)
-    }
   }
 
   const fetchDetail = useCallback(async (agencyId: string) => {
@@ -687,162 +679,73 @@ const AgencyCommissions = () => {
 
   const rows = data?.agencies || []
 
-  const columns = useMemo<GridColDef[]>(() => [
-    {
-      field: 'agency',
-      headerName: strings.COLUMN_AGENCY,
-      flex: 1.2,
-      minWidth: 200,
-      renderCell: (params: GridRenderCellParams<bookcarsTypes.AgencyCommissionRow>) => {
-        const agency = params.row.agency
-        const tooltip = [agency.email, agency.phone]
-          .filter((value) => !!value)
-          .join(' • ')
-
-        return (
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Tooltip title={tooltip || ''} placement="top">
-              <Box>
-                <Typography variant="body2" fontWeight={600}>{agency.name}</Typography>
-                {agency.email && (
-                  <Typography variant="caption" color="text.secondary">{agency.email}</Typography>
-                )}
-              </Box>
-            </Tooltip>
-            {agency.city && <Chip size="small" label={agency.city} />}
-          </Stack>
-        )
-      },
-    },
-    {
-      field: 'reservations',
-      headerName: strings.COLUMN_RESERVATIONS,
-      minWidth: 120,
-      type: 'number',
-    },
-    {
-      field: 'grossTurnover',
-      headerName: strings.COLUMN_GROSS,
-      minWidth: 140,
-      valueFormatter: (params) => formatNumber(Number(params?.value ?? 0), language),
-    },
-    {
-      field: 'commissionDue',
-      headerName: strings.COLUMN_DUE,
-      minWidth: 150,
-      valueFormatter: (params) => formatNumber(Number(params?.value ?? 0), language),
-    },
-    {
-      field: 'commissionCollected',
-      headerName: strings.COLUMN_COLLECTED,
-      minWidth: 170,
-      valueFormatter: (params) => formatNumber(Number(params?.value ?? 0), language),
-    },
-    {
-      field: 'balance',
-      headerName: strings.COLUMN_BALANCE,
-      minWidth: 160,
-      renderCell: (params: GridRenderCellParams<bookcarsTypes.AgencyCommissionRow>) => {
-        const balanceValue = params.row.balance
-        const formatted = formatNumber(balanceValue, language)
-        const color = balanceValue > 0
-          ? 'error'
-          : balanceValue < 0
-            ? 'success'
-            : 'default'
-        return (
-          <Chip
-            size="small"
-            color={color === 'default' ? undefined : color}
-            variant={color === 'default' ? 'outlined' : 'filled'}
-            label={`${formatted} TND`}
-          />
-        )
-      },
-    },
-    {
-      field: 'lastPayment',
-      headerName: strings.COLUMN_LAST_PAYMENT,
-      minWidth: 150,
-      valueFormatter: (params) => {
-        if (!params?.value) {
-          return strings.LAST_PAYMENT_NONE
-        }
-        return new Date(params.value as string).toLocaleDateString(language)
-      },
-    },
-    {
-      field: 'lastReminder',
-      headerName: strings.COLUMN_LAST_REMINDER,
-      minWidth: 180,
-      renderCell: (params: GridRenderCellParams<bookcarsTypes.AgencyCommissionRow>) => {
-        const reminder = params.row.lastReminder
-        if (!reminder) {
-          return <Typography variant="body2" color="text.secondary">{strings.LAST_REMINDER_NONE}</Typography>
-        }
-        const date = new Date(reminder.date).toLocaleDateString(language)
-        return (
-          <Typography variant="body2" color={reminder.success ? 'inherit' : 'error'}>
-            {`${date} • ${getReminderChannelLabel(reminder.channel)}`}
-          </Typography>
-        )
-      },
-    },
-    {
-      field: 'status',
-      headerName: strings.COLUMN_STATUS,
-      minWidth: 140,
-      renderCell: (params: GridRenderCellParams<bookcarsTypes.AgencyCommissionRow>) => {
-        const status = params.row.status
-        let color: 'default' | 'success' | 'error' | 'warning' = 'default'
-        if (status === bookcarsTypes.AgencyCommissionStatus.Blocked) {
-          color = 'error'
-        } else if (status === bookcarsTypes.AgencyCommissionStatus.NeedsFollowUp) {
-          color = 'warning'
-        } else {
-          color = 'success'
-        }
-        return <Chip size="small" color={color} label={mapStatusToLabel(status)} />
-      },
-    },
-    {
-      field: 'actions',
-      headerName: strings.COLUMN_ACTIONS,
-      minWidth: 180,
-      sortable: false,
-      filterable: false,
-      disableColumnMenu: true,
-      renderCell: (params: GridRenderCellParams<bookcarsTypes.AgencyCommissionRow>) => {
-        const row = params.row
-        return (
-          <Stack direction="row" spacing={1}>
-            <Tooltip title={strings.ACTION_REMIND}>
-              <IconButton size="small" onClick={() => handleOpenReminder(row)}>
-                <SendIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={strings.ACTION_MARK_PAID}>
-              <IconButton size="small" onClick={() => handleOpenPaymentDialog(row)}>
-                <PaidIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}>
-              <IconButton size="small" onClick={() => handleToggleBlock(row)}>
-                {row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? <LockOpenIcon fontSize="small" /> : <BlockIcon fontSize="small" />}
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={strings.ACTION_DETAILS}>
-              <IconButton size="small" onClick={() => openDrawer(row)}>
-                <VisibilityIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        )
-      },
-    },
-  ], [language])
-
   const rowCount = data?.total || 0
+  const summaryData = data?.summary
+
+  const paginationFrom = rows.length === 0 ? 0 : page * pageSize + 1
+  const paginationTo = rows.length === 0
+    ? 0
+    : Math.min(rowCount, page * pageSize + rows.length)
+  const isPreviousDisabled = page === 0 || loading
+  const isNextDisabled = paginationTo >= rowCount || loading
+
+  const handlePreviousPage = () => {
+    if (page > 0 && !loading) {
+      setPage((prev) => prev - 1)
+    }
+  }
+
+  const handleNextPage = () => {
+    if (!loading && (page + 1) * pageSize < rowCount) {
+      setPage((prev) => prev + 1)
+    }
+  }
+
+  const formatCurrency = (value: number) => `${formatNumber(value, language)} TND`
+
+  const ContactInfoRow = ({
+    icon,
+    label,
+    value,
+    href,
+  }: {
+    icon: React.ReactNode
+    label: string
+    value?: string
+    href?: string
+  }) => (
+    <Box className="ac-contact-row">
+      <Box>{icon}</Box>
+      <Box className="ac-contact-value">
+        <Typography variant="caption" className="ac-contact-label">
+          {label}
+        </Typography>
+        {value ? (
+          href ? (
+            <a className="ac-contact-link" href={href} target="_blank" rel="noreferrer">
+              {value}
+            </a>
+          ) : (
+            <Typography variant="body2">{value}</Typography>
+          )
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            {strings.DRAWER_CONTACT_NONE}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  )
+
+  const agencyInitials = activeAgency?.name
+    ? activeAgency.name
+      .split(' ')
+      .map((part) => part[0])
+      .filter(Boolean)
+      .join('')
+      .substring(0, 2)
+      .toUpperCase()
+    : '?'
 
   return (
     <Layout strict admin onLoad={onLoad}>
@@ -853,128 +756,264 @@ const AgencyCommissions = () => {
       )}
       {admin && (
         <Box className="agency-commissions">
-          <Box className="ac-header">
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="h5">{strings.TITLE}</Typography>
-              <Chip label={`${strings.THRESHOLD_LABEL}: ${formatNumber(data?.summary.threshold || 0, language)} TND`} size="small" />
-            </Stack>
-            <Stack direction="row" spacing={1} className="ac-header-controls">
-              <IconButton onClick={handlePreviousMonth}><ChevronLeftIcon /></IconButton>
-              <FormControl size="small">
-                <InputLabel>{strings.MONTH_LABEL}</InputLabel>
-                <Select value={month} label={strings.MONTH_LABEL} onChange={handleMonthChange}>
-                  {monthOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl size="small">
-                <InputLabel>{strings.YEAR_LABEL}</InputLabel>
-                <Select value={year} label={strings.YEAR_LABEL} onChange={handleYearChange}>
-                  {Array.from({ length: 5 }).map((_, index) => {
-                    const value = now.getFullYear() - 2 + index
-                    return <MenuItem key={value} value={value}>{value}</MenuItem>
-                  })}
-                </Select>
-              </FormControl>
-              <IconButton onClick={handleNextMonth}><ChevronRightIcon /></IconButton>
-              <Button
-                variant="outlined"
-                startIcon={<SettingsIcon />}
-                onClick={handleSettingsOpen}
-                disabled={loadingSettings}
-              >
-                {strings.SETTINGS}
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<FileDownloadIcon />}
-                onClick={handleExport}
-                disabled={exporting || loading}
-              >
-                {strings.EXPORT_CSV}
-              </Button>
-            </Stack>
-          </Box>
-
-          <Box className="ac-filters">
-            <TextField
-              className="ac-search-field"
-              label={strings.SEARCH_PLACEHOLDER}
-              size="small"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              InputProps={{
-                endAdornment: (
-                  <IconButton onClick={handleSearch}>
-                    <SearchIcon />
-                  </IconButton>
-                ),
-              }}
-            />
-            <FormControl size="small" sx={{ minWidth: 160 }}>
-              <InputLabel>{strings.STATUS_FILTER_LABEL}</InputLabel>
-              <Select value={statusFilter} label={strings.STATUS_FILTER_LABEL} onChange={handleStatusChange}>
-                <MenuItem value="all">{strings.STATUS_ALL}</MenuItem>
-                <MenuItem value={bookcarsTypes.AgencyCommissionStatus.Active}>{strings.STATUS_ACTIVE}</MenuItem>
-                <MenuItem value={bookcarsTypes.AgencyCommissionStatus.Blocked}>{strings.STATUS_BLOCKED}</MenuItem>
-                <MenuItem value={bookcarsTypes.AgencyCommissionStatus.NeedsFollowUp}>{strings.STATUS_NEEDS_FOLLOW_UP}</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControlLabel
-              control={(
-                <Switch
-                  checked={aboveThreshold}
-                  onChange={handleAboveThresholdChange}
+          <Stack spacing={3}>
+            <Box className="ac-header">
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Typography variant="h5">{strings.TITLE}</Typography>
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`${strings.THRESHOLD_LABEL}: ${summaryData ? formatCurrency(summaryData.threshold) : '—'}`}
                 />
-              )}
-              label={strings.FILTER_ABOVE_THRESHOLD}
-            />
-            <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel>{strings.ROWS_PER_PAGE}</InputLabel>
-              <Select value={pageSize} label={strings.ROWS_PER_PAGE} onChange={handlePageSizeChange}>
-                {[10, 25, 50].map((sizeOption) => (
-                  <MenuItem key={sizeOption} value={sizeOption}>{sizeOption}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
+              </Stack>
+              <Stack direction="row" spacing={1} className="ac-header-actions">
+                <Button
+                  variant="outlined"
+                  startIcon={<SettingsIcon />}
+                  onClick={handleSettingsOpen}
+                  disabled={loadingSettings}
+                >
+                  {strings.SETTINGS}
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<FileDownloadIcon />}
+                  onClick={handleExport}
+                  disabled={exporting || loading}
+                >
+                  {strings.EXPORT_CSV}
+                </Button>
+              </Stack>
+            </Box>
 
-          <Box className="ac-kpis">
-            <Paper elevation={1} className="ac-kpi-card">
-              <Typography variant="caption" color="text.secondary">{strings.GROSS_TURNOVER}</Typography>
-              <Typography variant="h6">{data ? `${formatNumber(data.summary.grossTurnover, language)} TND` : '-'}</Typography>
+            <Paper elevation={0} className="ac-filters-card">
+              <Stack
+                direction={{ xs: 'column', lg: 'row' }}
+                spacing={2}
+                alignItems={{ lg: 'center' }}
+                className="ac-filters"
+              >
+                <TextField
+                  className="ac-search-field"
+                  placeholder={strings.SEARCH_PLACEHOLDER}
+                  size="small"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton size="small" onClick={handleSearch}>
+                          <SearchIcon fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                  <InputLabel>{strings.STATUS_FILTER_LABEL}</InputLabel>
+                  <Select value={statusFilter} label={strings.STATUS_FILTER_LABEL} onChange={handleStatusChange}>
+                    <MenuItem value="all">{strings.STATUS_ALL}</MenuItem>
+                    <MenuItem value={bookcarsTypes.AgencyCommissionStatus.Active}>{strings.STATUS_ACTIVE}</MenuItem>
+                    <MenuItem value={bookcarsTypes.AgencyCommissionStatus.Blocked}>{strings.STATUS_BLOCKED}</MenuItem>
+                    <MenuItem value={bookcarsTypes.AgencyCommissionStatus.NeedsFollowUp}>{strings.STATUS_NEEDS_FOLLOW_UP}</MenuItem>
+                  </Select>
+                </FormControl>
+                <FormControlLabel
+                  control={<Switch checked={aboveThreshold} onChange={handleAboveThresholdChange} />}
+                  label={strings.FILTER_ABOVE_THRESHOLD}
+                />
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel>{strings.ROWS_PER_PAGE}</InputLabel>
+                  <Select value={pageSize} label={strings.ROWS_PER_PAGE} onChange={handlePageSizeChange}>
+                    {[10, 25, 50].map((sizeOption) => (
+                      <MenuItem key={sizeOption} value={sizeOption}>{sizeOption}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { lg: 'auto' } }}>
+                  <Tooltip title={strings.PREVIOUS_MONTH}>
+                    <span>
+                      <IconButton onClick={handlePreviousMonth} disabled={loading}>
+                        <ChevronLeftIcon />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <FormControl size="small" sx={{ minWidth: 160 }}>
+                    <InputLabel>{strings.MONTH_LABEL}</InputLabel>
+                    <Select value={month} label={strings.MONTH_LABEL} onChange={handleMonthChange}>
+                      {monthOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl size="small" sx={{ minWidth: 120 }}>
+                    <InputLabel>{strings.YEAR_LABEL}</InputLabel>
+                    <Select value={year} label={strings.YEAR_LABEL} onChange={handleYearChange}>
+                      {Array.from({ length: 5 }).map((_, index) => {
+                        const value = now.getFullYear() - 2 + index
+                        return <MenuItem key={value} value={value}>{value}</MenuItem>
+                      })}
+                    </Select>
+                  </FormControl>
+                  <Tooltip title={strings.NEXT_MONTH}>
+                    <span>
+                      <IconButton onClick={handleNextMonth} disabled={loading}>
+                        <ChevronRightIcon />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                </Stack>
+              </Stack>
             </Paper>
-            <Paper elevation={1} className="ac-kpi-card">
-              <Typography variant="caption" color="text.secondary">{strings.COMMISSION_DUE}</Typography>
-              <Typography variant="h6">{data ? `${formatNumber(data.summary.commissionDue, language)} TND` : '-'}</Typography>
-            </Paper>
-            <Paper elevation={1} className="ac-kpi-card">
-              <Typography variant="caption" color="text.secondary">{strings.COMMISSION_COLLECTED}</Typography>
-              <Typography variant="h6">{data ? `${formatNumber(data.summary.commissionCollected, language)} TND` : '-'}</Typography>
-            </Paper>
-            <Paper elevation={1} className="ac-kpi-card">
-              <Typography variant="caption" color="text.secondary">{strings.ABOVE_THRESHOLD_COUNT}</Typography>
-              <Typography variant="h6">{data ? data.summary.agenciesAboveThreshold : '-'}</Typography>
-            </Paper>
-          </Box>
 
-          <Paper elevation={1} className="ac-table">
-            <DataGrid
-              autoHeight
-              rows={rows}
-              columns={columns}
-              getRowId={(row) => row.agency.id}
-              rowCount={rowCount}
-              paginationModel={{ page, pageSize }}
-              onPaginationModelChange={handlePaginationModelChange}
-              paginationMode="server"
-              disableRowSelectionOnClick
-              loading={loading}
-              localeText={{ noRowsLabel: aboveThreshold ? strings.EMPTY_THRESHOLD_STATE : strings.EMPTY_STATE }}
-            />
-          </Paper>
+            <Box className="ac-kpis">
+              {[{
+                title: strings.GROSS_TURNOVER,
+                value: summaryData ? formatCurrency(summaryData.grossTurnover) : '—',
+              }, {
+                title: strings.COMMISSION_DUE,
+                value: summaryData ? formatCurrency(summaryData.commissionDue) : '—',
+              }, {
+                title: strings.COMMISSION_COLLECTED,
+                value: summaryData ? formatCurrency(summaryData.commissionCollected) : '—',
+              }, {
+                title: strings.ABOVE_THRESHOLD_COUNT,
+                value: summaryData ? formatNumber(summaryData.agenciesAboveThreshold, language) : '—',
+              }].map((item) => (
+                <Paper key={item.title} elevation={0} className="ac-kpi-card">
+                  <Typography variant="caption" color="text.secondary">{item.title}</Typography>
+                  <Typography variant="h6">{item.value}</Typography>
+                </Paper>
+              ))}
+            </Box>
+
+            <Typography variant="subtitle2" color="text.secondary">
+              {strings.AGENCIES_SECTION_TITLE}
+            </Typography>
+
+            <Paper elevation={0} className="ac-table">
+              {loading && <LinearProgress color="primary" />}
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>{strings.COLUMN_AGENCY}</TableCell>
+                    <TableCell align="right">{strings.COLUMN_RESERVATIONS}</TableCell>
+                    <TableCell align="right">{strings.COLUMN_GROSS}</TableCell>
+                    <TableCell align="right">{strings.COLUMN_DUE}</TableCell>
+                    <TableCell align="center">{strings.BOOKING_COLUMN_PAYMENT_STATUS}</TableCell>
+                    <TableCell align="center">{strings.COLUMN_STATUS}</TableCell>
+                    <TableCell align="center">{strings.COLUMN_ACTIONS}</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {loading && rows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center">
+                        <CircularProgress size={24} />
+                      </TableCell>
+                    </TableRow>
+                  ) : rows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center">
+                        <Typography variant="body2" color="text.secondary">
+                          {aboveThreshold ? strings.EMPTY_THRESHOLD_STATE : strings.EMPTY_STATE}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    rows.map((row) => {
+                      const { agency } = row
+                      let paymentStatusLabel = strings.PAYMENT_STATUS_UNPAID
+                      let paymentStatusColor: 'success' | 'warning' | 'error' = 'error'
+                      let paymentStatusVariant: 'filled' | 'outlined' = 'outlined'
+
+                      if (row.balance <= 0) {
+                        paymentStatusLabel = strings.PAYMENT_STATUS_PAID
+                        paymentStatusColor = 'success'
+                        paymentStatusVariant = 'filled'
+                      } else if (row.commissionCollected > 0) {
+                        paymentStatusLabel = strings.PAYMENT_STATUS_PARTIAL
+                        paymentStatusColor = 'warning'
+                      }
+
+                      return (
+                        <TableRow key={agency.id} hover>
+                          <TableCell>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Box>
+                                <Typography variant="body2" fontWeight={600}>{agency.name}</Typography>
+                                {agency.email && (
+                                  <Typography variant="caption" color="text.secondary">{agency.email}</Typography>
+                                )}
+                              </Box>
+                              {agency.city && <Chip size="small" label={agency.city} />}
+                            </Stack>
+                          </TableCell>
+                          <TableCell align="right">{formatNumber(row.reservations, language)}</TableCell>
+                          <TableCell align="right">{formatCurrency(row.grossTurnover)}</TableCell>
+                          <TableCell align="right">{formatCurrency(row.commissionDue)}</TableCell>
+                          <TableCell align="center">
+                            <Chip size="small" color={paymentStatusColor} variant={paymentStatusVariant} label={paymentStatusLabel} />
+                          </TableCell>
+                          <TableCell align="center">
+                            <Chip size="small" color={getStatusChipColor(row.status)} label={mapStatusToLabel(row.status)} />
+                          </TableCell>
+                          <TableCell align="center">
+                            <Stack direction="row" spacing={0.5} justifyContent="center">
+                              <Tooltip title={strings.ACTION_REMIND}>
+                                <IconButton size="small" onClick={() => handleOpenReminder(row)}>
+                                  <SendIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title={strings.ACTION_MARK_PAID}>
+                                <IconButton size="small" onClick={() => handleOpenPaymentDialog(row)}>
+                                  <PaidIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title={row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}>
+                                <IconButton size="small" onClick={() => handleToggleBlock(row)}>
+                                  {row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? <LockOpenIcon fontSize="small" /> : <BlockIcon fontSize="small" />}
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title={strings.ACTION_DETAILS}>
+                                <IconButton size="small" onClick={() => openDrawer(row)}>
+                                  <VisibilityIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </Stack>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </Paper>
+
+            <Box className="ac-table-footer">
+              <Typography variant="body2" color="text.secondary">
+                {rowCount === 0
+                  ? `0 ${commonStrings.OF} 0`
+                  : `${paginationFrom}–${paginationTo} ${commonStrings.OF} ${rowCount}`}
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                <Button size="small" variant="outlined" onClick={handlePreviousPage} disabled={isPreviousDisabled}>
+                  {strings.TABLE_PREVIOUS}
+                </Button>
+                <Button size="small" variant="outlined" onClick={handleNextPage} disabled={isNextDisabled}>
+                  {strings.TABLE_NEXT}
+                </Button>
+              </Stack>
+            </Box>
+          </Stack>
 
           <Drawer
             anchor="right"
@@ -982,108 +1021,55 @@ const AgencyCommissions = () => {
             onClose={handleDrawerClose}
             PaperProps={{
               sx: {
-                width: { xs: '100vw', sm: 480, md: 720, lg: 960 },
-                backgroundColor: 'transparent',
+                width: { xs: '100%', sm: 520, md: 980 },
               },
             }}
           >
             <Box className="ac-drawer-content">
               {detailLoading && <LinearProgress className="ac-drawer-progress" />}
-              {selectedAgency ? (
+              {selectedAgency && activeAgency ? (
                 <>
                   <Box className="ac-drawer-header">
-                    <Box className="ac-drawer-identity">
-                      <Typography variant="h5">{activeAgency?.name || strings.DRAWER_CONTACT_NONE}</Typography>
-                      <Stack direction="row" spacing={1} className="ac-drawer-meta">
-                        {activeAgency?.city && (
-                          <Chip size="small" variant="outlined" label={activeAgency.city} />
-                        )}
-                        <Chip
-                          size="small"
-                          color={getStatusChipColor(currentStatus)}
-                          label={mapStatusToLabel(currentStatus)}
-                        />
-                      </Stack>
-                    </Box>
-                    <Button
-                      startIcon={currentStatus === bookcarsTypes.AgencyCommissionStatus.Blocked ? <LockOpenIcon /> : <BlockIcon />}
-                      variant="outlined"
-                      onClick={() => selectedAgency && handleToggleBlock(selectedAgency)}
-                    >
-                      {currentStatus === bookcarsTypes.AgencyCommissionStatus.Blocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}
-                    </Button>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <Avatar>{agencyInitials}</Avatar>
+                      <Box className="ac-drawer-identity">
+                        <Typography variant="h6" fontWeight={700}>{activeAgency.name}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {[activeAgency.city, activeAgency.email, activeAgency.phone].filter(Boolean).join(' • ') || strings.DRAWER_CONTACT_NONE}
+                        </Typography>
+                        <Box className="ac-drawer-meta">
+                          <Chip size="small" color={getStatusChipColor(currentStatus)} label={mapStatusToLabel(currentStatus)} />
+                          {summary?.aboveThreshold && (
+                            <Chip size="small" color="warning" variant="outlined" label={strings.DRAWER_SUMMARY_ABOVE_THRESHOLD} />
+                          )}
+                        </Box>
+                      </Box>
+                    </Stack>
+                    <Tooltip title={isBlocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}>
+                      <span>
+                        <Button
+                          variant="outlined"
+                          color={isBlocked ? 'success' : 'error'}
+                          startIcon={isBlocked ? <LockOpenIcon /> : <BlockIcon />}
+                          onClick={() => selectedAgency && handleToggleBlock(selectedAgency)}
+                        >
+                          {isBlocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}
+                        </Button>
+                      </span>
+                    </Tooltip>
                   </Box>
 
-                  {activeAgency && (
-                    <>
-                      <Divider />
-                      <Box className="ac-section">
-                        <Typography variant="subtitle1">{strings.DRAWER_CONTACT_TITLE}</Typography>
-                        <Paper elevation={0} className="ac-contact-card">
-                          <Box className="ac-contact-row">
-                            <FingerprintIcon fontSize="small" color="primary" />
-                            <Box className="ac-contact-value">
-                              <Typography variant="caption" className="ac-contact-label">
-                                {strings.DRAWER_CONTACT_ID}
-                              </Typography>
-                              <Typography variant="body2">{activeAgency.id}</Typography>
-                            </Box>
-                          </Box>
-                          <Box className="ac-contact-row">
-                            <LocationOnIcon fontSize="small" color="primary" />
-                            <Box className="ac-contact-value">
-                              <Typography variant="caption" className="ac-contact-label">
-                                {strings.DRAWER_CONTACT_CITY}
-                              </Typography>
-                              <Typography variant="body2">
-                                {activeAgency.city || strings.DRAWER_CONTACT_NONE}
-                              </Typography>
-                            </Box>
-                          </Box>
-                          <Box className="ac-contact-row">
-                            <EmailIcon fontSize="small" color="primary" />
-                            <Box className="ac-contact-value">
-                              <Typography variant="caption" className="ac-contact-label">
-                                {strings.DRAWER_CONTACT_EMAIL}
-                              </Typography>
-                              {activeAgency.email ? (
-                                <Typography
-                                  variant="body2"
-                                  component="a"
-                                  href={`mailto:${activeAgency.email}`}
-                                  className="ac-contact-link"
-                                >
-                                  {activeAgency.email}
-                                </Typography>
-                              ) : (
-                                <Typography variant="body2">{strings.DRAWER_CONTACT_NONE}</Typography>
-                              )}
-                            </Box>
-                          </Box>
-                          <Box className="ac-contact-row">
-                            <PhoneIcon fontSize="small" color="primary" />
-                            <Box className="ac-contact-value">
-                              <Typography variant="caption" className="ac-contact-label">
-                                {strings.DRAWER_CONTACT_PHONE}
-                              </Typography>
-                              {activeAgency.phone ? (
-                                <Typography
-                                  variant="body2"
-                                  component="a"
-                                  href={`tel:${activeAgency.phone}`}
-                                  className="ac-contact-link"
-                                >
-                                  {activeAgency.phone}
-                                </Typography>
-                              ) : (
-                                <Typography variant="body2">{strings.DRAWER_CONTACT_NONE}</Typography>
-                              )}
-                            </Box>
-                          </Box>
-                        </Paper>
-                      </Box>
-                    </>
-                  )}
+                  <Divider />
+
+                  <Box className="ac-section">
+                    <Typography variant="subtitle1">{strings.DRAWER_CONTACT_TITLE}</Typography>
+                    <Paper elevation={0} className="ac-contact-card">
+                      <ContactInfoRow icon={<FingerprintIcon fontSize="small" />} label={strings.DRAWER_CONTACT_ID} value={activeAgency.id} />
+                      <ContactInfoRow icon={<LocationOnIcon fontSize="small" />} label={strings.DRAWER_CONTACT_CITY} value={activeAgency.city} />
+                      <ContactInfoRow icon={<EmailIcon fontSize="small" />} label={strings.DRAWER_CONTACT_EMAIL} value={activeAgency.email} href={activeAgency.email ? `mailto:${activeAgency.email}` : undefined} />
+                      <ContactInfoRow icon={<PhoneIcon fontSize="small" />} label={strings.DRAWER_CONTACT_PHONE} value={activeAgency.phone} href={activeAgency.phone ? `tel:${activeAgency.phone}` : undefined} />
+                    </Paper>
+                  </Box>
 
                   {summary && (
                     <>
@@ -1101,51 +1087,35 @@ const AgencyCommissions = () => {
                             <Typography variant="caption" color="text.secondary">
                               {strings.DRAWER_SUMMARY_GROSS}
                             </Typography>
-                            <Typography variant="h6">
-                              {`${formatNumber(summary.grossTurnover, language)} TND`}
-                            </Typography>
+                            <Typography variant="h6">{formatCurrency(summary.grossTurnover)}</Typography>
                           </Paper>
                           <Paper elevation={0} className="ac-summary-card">
                             <Typography variant="caption" color="text.secondary">
                               {strings.DRAWER_SUMMARY_DUE}
                             </Typography>
-                            <Typography variant="h6">
-                              {`${formatNumber(summary.commissionDue, language)} TND`}
-                            </Typography>
+                            <Typography variant="h6">{formatCurrency(summary.commissionDue)}</Typography>
                           </Paper>
                           <Paper elevation={0} className="ac-summary-card">
                             <Typography variant="caption" color="text.secondary">
                               {strings.DRAWER_SUMMARY_COLLECTED}
                             </Typography>
-                            <Typography variant="h6">
-                              {`${formatNumber(summary.commissionCollected, language)} TND`}
-                            </Typography>
+                            <Typography variant="h6">{formatCurrency(summary.commissionCollected)}</Typography>
                           </Paper>
                           <Paper elevation={0} className="ac-summary-card">
                             <Typography variant="caption" color="text.secondary">
                               {strings.DRAWER_SUMMARY_BALANCE}
                             </Typography>
-                            <Typography
-                              variant="h6"
-                              color={summary.balance > 0 ? 'error' : 'success'}
-                            >
-                              {`${formatNumber(summary.balance, language)} TND`}
+                            <Typography variant="h6" color={summary.balance > 0 ? 'error' : 'success'}>
+                              {formatCurrency(summary.balance)}
                             </Typography>
                           </Paper>
                           <Paper elevation={0} className="ac-summary-card">
                             <Typography variant="caption" color="text.secondary">
                               {strings.DRAWER_SUMMARY_THRESHOLD}
                             </Typography>
-                            <Typography variant="h6">
-                              {`${formatNumber(summary.threshold, language)} TND`}
-                            </Typography>
+                            <Typography variant="h6">{formatCurrency(summary.threshold)}</Typography>
                             {summary.aboveThreshold && (
-                              <Chip
-                                size="small"
-                                color="warning"
-                                className="ac-summary-chip"
-                                label={strings.DRAWER_SUMMARY_ABOVE_THRESHOLD}
-                              />
+                              <Chip size="small" color="warning" className="ac-summary-chip" label={strings.DRAWER_SUMMARY_ABOVE_THRESHOLD} />
                             )}
                           </Paper>
                         </Box>
@@ -1158,7 +1128,7 @@ const AgencyCommissions = () => {
                   <Box className="ac-section">
                     <Typography variant="subtitle1">{strings.DRAWER_ACTIONS}</Typography>
                     <Box className="ac-actions">
-                      <Button variant="outlined" startIcon={<SendIcon />} onClick={() => selectedAgency && handleOpenReminder(selectedAgency)}>
+                      <Button variant="contained" startIcon={<SendIcon />} onClick={() => selectedAgency && handleOpenReminder(selectedAgency)}>
                         {strings.DRAWER_ACTION_REMIND}
                       </Button>
                       <Button variant="outlined" startIcon={<PaidIcon />} onClick={() => selectedAgency && handleOpenPaymentDialog(selectedAgency)}>
@@ -1188,7 +1158,7 @@ const AgencyCommissions = () => {
                       <Box className="ac-logs">
                         {isAwaitingDetail ? (
                           <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                            <CircularProgress size={24} />
+                            <CircularProgress size={20} />
                           </Box>
                         ) : logs.length === 0 ? (
                           <Typography variant="body2" color="text.secondary">{strings.DRAWER_OPERATIONS_EMPTY}</Typography>
@@ -1203,7 +1173,7 @@ const AgencyCommissions = () => {
                                 <Typography variant="caption" color="text.secondary">{`${strings.LOG_CHANNEL_LABEL} ${getReminderChannelLabel(log.channel)}`}</Typography>
                               )}
                               {typeof log.amount === 'number' && (
-                                <Typography variant="caption" color="text.secondary">{`${strings.LOG_AMOUNT_LABEL} ${formatNumber(log.amount, language)} TND`}</Typography>
+                                <Typography variant="caption" color="text.secondary">{`${strings.LOG_AMOUNT_LABEL} ${formatCurrency(log.amount)}`}</Typography>
                               )}
                               {log.paymentDate && (
                                 <Typography variant="caption" color="text.secondary">{`${strings.LOG_PAYMENT_DATE_LABEL} ${new Date(log.paymentDate).toLocaleDateString(language)}`}</Typography>
@@ -1233,67 +1203,53 @@ const AgencyCommissions = () => {
                     {showDetailError ? (
                       <Typography variant="body2" color="error">{strings.DRAWER_ERROR_STATE}</Typography>
                     ) : (
-                      <Box>
-                        <DataGrid
-                          autoHeight
-                          rows={bookings}
-                          loading={detailLoading && !showDetailError}
-                          columns={[
-                            { field: 'id', headerName: strings.BOOKING_COLUMN_ID, flex: 1, minWidth: 140 },
-                            {
-                              field: 'from',
-                              headerName: strings.BOOKING_COLUMN_FROM,
-                              minWidth: 130,
-                              valueFormatter: (params) => {
-                                if (!params?.value) {
-                                  return ''
-                                }
-                                return new Date(params.value as string).toLocaleDateString(language)
-                              },
-                            },
-                            {
-                              field: 'to',
-                              headerName: strings.BOOKING_COLUMN_TO,
-                              minWidth: 130,
-                              valueFormatter: (params) => {
-                                if (!params?.value) {
-                                  return ''
-                                }
-                                return new Date(params.value as string).toLocaleDateString(language)
-                              },
-                            },
-                            {
-                              field: 'totalPrice',
-                              headerName: strings.BOOKING_COLUMN_TOTAL,
-                              minWidth: 160,
-                              valueFormatter: (params) => `${formatNumber(Number(params?.value ?? 0), language)} TND`,
-                            },
-                            {
-                              field: 'commission',
-                              headerName: strings.BOOKING_COLUMN_COMMISSION,
-                              minWidth: 170,
-                              valueFormatter: (params) => `${formatNumber(Number(params?.value ?? 0), language)} TND`,
-                            },
-                            {
-                              field: 'paymentStatus',
-                              headerName: strings.BOOKING_COLUMN_PAYMENT_STATUS,
-                              minWidth: 180,
-                              renderCell: (params) => (
-                                <Chip
-                                  size="small"
-                                  color={params.value === bookcarsTypes.CommissionPaymentStatus.Unpaid ? 'error' : params.value === bookcarsTypes.CommissionPaymentStatus.Partial ? 'warning' : 'success'}
-                                  label={mapPaymentStatusToLabel(params.value as bookcarsTypes.CommissionPaymentStatus)}
-                                />
-                              ),
-                            },
-                          ]}
-                          localeText={{ noRowsLabel: detailLoading ? commonStrings.PLEASE_WAIT : strings.EMPTY_STATE }}
-                          getRowId={(row) => row.id}
-                          hideFooter
-                          disableColumnMenu
-                          disableRowSelectionOnClick
-                        />
-                      </Box>
+                      <Paper variant="outlined">
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>{strings.BOOKING_COLUMN_ID}</TableCell>
+                              <TableCell>{strings.BOOKING_COLUMN_FROM}</TableCell>
+                              <TableCell>{strings.BOOKING_COLUMN_TO}</TableCell>
+                              <TableCell align="right">{strings.BOOKING_COLUMN_TOTAL}</TableCell>
+                              <TableCell align="right">{strings.BOOKING_COLUMN_COMMISSION}</TableCell>
+                              <TableCell align="center">{strings.BOOKING_COLUMN_PAYMENT_STATUS}</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {isAwaitingDetail ? (
+                              <TableRow>
+                                <TableCell colSpan={6} align="center">
+                                  <CircularProgress size={20} />
+                                </TableCell>
+                              </TableRow>
+                            ) : bookings.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={6} align="center">
+                                  <Typography variant="body2" color="text.secondary">{strings.EMPTY_STATE}</Typography>
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              bookings.map((booking) => (
+                                <TableRow key={booking.id}>
+                                  <TableCell>{booking.id}</TableCell>
+                                  <TableCell>{new Date(booking.from).toLocaleDateString(language)}</TableCell>
+                                  <TableCell>{new Date(booking.to).toLocaleDateString(language)}</TableCell>
+                                  <TableCell align="right">{formatCurrency(booking.totalPrice)}</TableCell>
+                                  <TableCell align="right">{formatCurrency(booking.commission)}</TableCell>
+                                  <TableCell align="center">
+                                    <Chip
+                                      size="small"
+                                      color={booking.paymentStatus === bookcarsTypes.CommissionPaymentStatus.Unpaid ? 'error' : booking.paymentStatus === bookcarsTypes.CommissionPaymentStatus.Partial ? 'warning' : 'success'}
+                                      variant={booking.paymentStatus === bookcarsTypes.CommissionPaymentStatus.Paid ? 'filled' : 'outlined'}
+                                      label={mapPaymentStatusToLabel(booking.paymentStatus)}
+                                    />
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </Paper>
                     )}
                   </Box>
                 </>

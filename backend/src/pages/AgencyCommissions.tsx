@@ -368,7 +368,8 @@ const AgencyCommissions = () => {
       const template = defaultChannel === bookcarsTypes.CommissionReminderChannel.Sms
         ? currentSettings.smsTemplate
         : currentSettings.emailTemplate
-      const message = buildTemplateMessage(template, agency, detail?.summary)
+      const summary = detail && detail.agency.id === agency.agency.id ? detail.summary : undefined
+      const message = buildTemplateMessage(template, agency, summary)
       setReminderMessage(message)
       setReminderSubject(`Relance commission - ${buildMonthLabel(month, year, language)} ${year}`)
       setReminderDialogOpen(true)
@@ -384,7 +385,8 @@ const AgencyCommissions = () => {
       const template = channel === bookcarsTypes.CommissionReminderChannel.Sms
         ? settings.smsTemplate
         : settings.emailTemplate
-      const message = buildTemplateMessage(template, selectedAgency, detail?.summary)
+      const summary = detail && detail.agency.id === selectedAgency.agency.id ? detail.summary : undefined
+      const message = buildTemplateMessage(template, selectedAgency, summary)
       setReminderMessage(message)
     }
   }

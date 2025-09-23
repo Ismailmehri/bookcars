@@ -55,6 +55,20 @@ const normalizeNumber = (value: number | undefined | null): number => {
   return Math.round(value)
 }
 
+const COMMISSION_ELIGIBLE_STATUSES: bookcarsTypes.BookingStatus[] = [
+  bookcarsTypes.BookingStatus.Reserved,
+  bookcarsTypes.BookingStatus.Deposit,
+  bookcarsTypes.BookingStatus.Paid,
+]
+
+const isCommissionEligibleStatus = (status?: bookcarsTypes.BookingStatus | null) => {
+  if (!status) {
+    return false
+  }
+
+  return COMMISSION_ELIGIBLE_STATUSES.includes(status)
+}
+
 const getUserId = (user: env.User): string => {
   if (typeof user._id === 'string') {
     return user._id
@@ -165,8 +179,24 @@ const computeCommissionData = async (
       $group: {
         _id: '$supplier',
         reservations: { $sum: 1 },
-        grossTurnover: { $sum: { $ifNull: ['$price', 0] } },
-        commissionDue: { $sum: { $ifNull: ['$commissionTotal', 0] } },
+        grossTurnover: {
+          $sum: {
+            $cond: [
+              { $in: ['$status', COMMISSION_ELIGIBLE_STATUSES] },
+              { $ifNull: ['$price', 0] },
+              0,
+            ],
+          },
+        },
+        commissionDue: {
+          $sum: {
+            $cond: [
+              { $in: ['$status', COMMISSION_ELIGIBLE_STATUSES] },
+              { $ifNull: ['$commissionTotal', 0] },
+              0,
+            ],
+          },
+        },
       },
     },
   ])
@@ -500,8 +530,11 @@ const loadAgencyCommissionDetail = async (
   let commissionDue = 0
 
   bookings.forEach((booking) => {
-    grossTurnover += booking.price || 0
-    commissionDue += booking.commissionTotal || 0
+    const bookingStatus = booking.status as bookcarsTypes.BookingStatus | undefined
+    if (isCommissionEligibleStatus(bookingStatus)) {
+      grossTurnover += booking.price || 0
+      commissionDue += booking.commissionTotal || 0
+    }
   })
 
   let commissionCollected = 0
@@ -521,7 +554,10 @@ const loadAgencyCommissionDetail = async (
   let remainingCommission = commissionCollected
 
   bookings.forEach((booking) => {
-    const commission = normalizeNumber(booking.commissionTotal || 0)
+    const bookingStatus = booking.status as bookcarsTypes.BookingStatus | undefined
+    const eligible = isCommissionEligibleStatus(bookingStatus)
+    const commission = eligible ? normalizeNumber(booking.commissionTotal || 0) : 0
+    const totalPrice = normalizeNumber(booking.price || 0)
     let paymentStatus = bookcarsTypes.CommissionPaymentStatus.Unpaid
 
     if (commission <= 0) {
@@ -538,9 +574,9 @@ const loadAgencyCommissionDetail = async (
       id: booking._id.toString(),
       from: booking.from,
       to: booking.to,
-      totalPrice: normalizeNumber(booking.price || 0),
+      totalPrice,
       commission,
-      status: booking.status as bookcarsTypes.BookingStatus,
+      status: bookingStatus || bookcarsTypes.BookingStatus.Pending,
       paymentStatus,
     })
   })

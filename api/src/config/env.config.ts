@@ -463,6 +463,7 @@ export interface Review {
  * @extends {Document}
  */
 export interface User extends Document {
+  _id: Types.ObjectId | string
   supplier?: Types.ObjectId
   fullName: string
   email: string
@@ -574,6 +575,46 @@ export interface Booking extends Document {
   };
 }
 
+export interface AgencyCommissionEvent extends Document {
+  _id: Types.ObjectId
+  agency: Types.ObjectId
+  month: number
+  year: number
+  type: bookcarsTypes.AgencyCommissionEventType
+  admin: Types.ObjectId
+  amount?: number
+  paymentDate?: Date
+  reference?: string
+  channel?: bookcarsTypes.CommissionReminderChannel
+  success?: boolean
+  message?: string
+  note?: string
+  metadata?: Record<string, unknown>
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface AgencyCommissionState extends Document {
+  _id: Types.ObjectId
+  agency: Types.ObjectId
+  blocked: boolean
+  blockedAt?: Date
+  blockedBy?: Types.ObjectId
+  disabledCars: Types.ObjectId[]
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export interface AgencyCommissionSettings extends Document {
+  _id: Types.ObjectId
+  reminderChannel: bookcarsTypes.CommissionReminderChannel
+  emailTemplate: string
+  smsTemplate: string
+  updatedBy?: Types.ObjectId
+  createdAt?: Date
+  updatedAt?: Date
+}
+
 interface PricePeriod {
   startDate: null | Date
   endDate: null | Date
@@ -610,6 +651,7 @@ export interface CarBoost {
 }
 
 export interface Car extends Document {
+  _id: Types.ObjectId
   name: string
   supplier: Types.ObjectId
   minimumAge: number

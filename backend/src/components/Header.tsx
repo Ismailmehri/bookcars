@@ -47,6 +47,8 @@ import * as langHelper from '@/common/langHelper'
 import * as helper from '@/common/helper'
 import { useGlobalContext, GlobalContextType } from '@/context/GlobalContext'
 
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
+
 import '@/assets/css/header.css'
 
 interface HeaderProps {
@@ -336,6 +338,12 @@ const Header = ({
                   <ListItemIcon><StatsIcon /></ListItemIcon>
                   <ListItemText primary={strings.STATS} />
                 </ListItemLink>
+                {isAdmin && (
+                <ListItemLink href="/agency-commissions">
+                  <ListItemIcon><MonetizationOnIcon /></ListItemIcon>
+                  <ListItemText primary={strings.AGENCY_COMMISSIONS} />
+                </ListItemLink>
+                )}
                 {env.PRICING_ENABLED && (
                 <ListItemLink href="/pricing">
                   <ListItemIcon><StatsIcon /></ListItemIcon>

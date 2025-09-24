@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import * as bookcarsTypes from ':bookcars-types'
 import i18n from '../lang/i18n'
 import * as logger from '../common/logger'
+import * as env from '../config/env.config'
 import {
   fetchAgencyCommissions,
   generateMonthlyInvoice,
@@ -23,6 +24,7 @@ export const getAgencyCommissions = async (req: Request, res: Response) => {
           commission: 0,
           net: 0,
           reservations: 0,
+          commissionPercentage: env.PLANY_COMMISSION_PERCENTAGE,
         },
       })
     }

@@ -61,6 +61,9 @@ const env = {
       ? Const.PAGINATION_MODE.INFINITE_SCROLL
       : Const.PAGINATION_MODE.CLASSIC,
   CURRENCY: import.meta.env.VITE_BC_CURRENCY || '$',
+  PLANY_COMMISSION_PERCENTAGE:
+    Number.parseFloat(String(import.meta.env.VITE_BC_PLANY_COMMISSION_PERCENTAGE))
+      || 0,
   DEPOSIT_FILTER_VALUE_1: Number.parseInt(String(import.meta.env.VITE_BC_DEPOSIT_FILTER_VALUE_1), 10),
   DEPOSIT_FILTER_VALUE_2: Number.parseInt(String(import.meta.env.VITE_BC_DEPOSIT_FILTER_VALUE_2), 10),
   DEPOSIT_FILTER_VALUE_3: Number.parseInt(String(import.meta.env.VITE_BC_DEPOSIT_FILTER_VALUE_3), 10),

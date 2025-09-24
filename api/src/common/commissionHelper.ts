@@ -86,6 +86,7 @@ export const fetchAgencyCommissions = async (
         commission: 0,
         net: 0,
         reservations: 0,
+        commissionPercentage: env.PLANY_COMMISSION_PERCENTAGE,
       },
     }
   }
@@ -106,6 +107,7 @@ export const fetchAgencyCommissions = async (
         commission: 0,
         net: 0,
         reservations: 0,
+        commissionPercentage: env.PLANY_COMMISSION_PERCENTAGE,
       },
     }
   }
@@ -241,6 +243,7 @@ export const fetchAgencyCommissions = async (
     commission: 0,
     net: 0,
     reservations: 0,
+    commissionPercentage: env.PLANY_COMMISSION_PERCENTAGE,
   })
 
   const supplierInfo = rawBookings.length > 0 ? rawBookings[0].supplier : null
@@ -253,6 +256,7 @@ export const fetchAgencyCommissions = async (
       commission: summary.commission,
       net: summary.net,
       reservations: summary.reservations,
+      commissionPercentage: summary.commissionPercentage,
     },
     supplier: supplierInfo
       ? { _id: supplierInfo._id.toString(), fullName: supplierInfo.fullName }

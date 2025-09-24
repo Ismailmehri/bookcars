@@ -28,6 +28,8 @@ import {
   Skeleton,
   Link,
   CircularProgress,
+  SxProps,
+  Theme,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import DownloadIcon from '@mui/icons-material/Download'
@@ -43,10 +45,12 @@ import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
 import { strings } from '@/lang/agency-commissions'
 import * as helper from '@/common/helper'
+import env from '@/config/env.config'
 import * as CommissionService from '@/services/CommissionService'
 
 const formatter = new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 0 })
 const formatCurrency = (value: number) => `${formatter.format(Math.round(value || 0))} ${strings.CURRENCY}`
+const formatPercentage = (value: number) => `${formatter.format(Math.round(Number.isFinite(value) ? value : 0))} %`
 const COMMISSION_STATUS_PAID: bookcarsTypes.CommissionStatus = 'paid'
 const COMMISSION_STATUS_PENDING: bookcarsTypes.CommissionStatus = 'pending'
 const LOCALE_MAP: Record<string, string> = {
@@ -79,16 +83,29 @@ type KpiProps = {
   value: string
   icon: React.ReactNode
   loading: boolean
+  helperText?: string
+  sx?: SxProps<Theme>
 }
 
-const Kpi = ({ title, value, icon, loading }: KpiProps) => (
-  <Card sx={{ borderRadius: 3, height: '100%', boxShadow: '0 6px 24px rgba(10,102,255,0.06)' }}>
+const Kpi = ({ title, value, icon, loading, helperText, sx }: KpiProps) => (
+  <Card sx={{ borderRadius: 3, height: '100%', boxShadow: '0 6px 24px rgba(10,102,255,0.06)', ...sx }}>
     <CardContent>
       <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
         {icon}
         <Typography variant="overline" color="text.secondary">{title}</Typography>
       </Stack>
-      {loading ? <Skeleton width="60%" height={36} /> : <Typography variant="h5" fontWeight={900}>{value}</Typography>}
+      {loading ? (
+        <Skeleton width="60%" height={36} />
+      ) : (
+        <Stack spacing={0.5}>
+          <Typography variant="h5" fontWeight={900}>{value}</Typography>
+          {helperText && (
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              {helperText}
+            </Typography>
+          )}
+        </Stack>
+      )}
     </CardContent>
   </Card>
 )
@@ -191,6 +208,7 @@ const AgencyCommissions = () => {
       commission: 0,
       net: 0,
       reservations: 0,
+      commissionPercentage: summary?.commissionPercentage ?? env.PLANY_COMMISSION_PERCENTAGE,
     })
 
     return {
@@ -198,6 +216,7 @@ const AgencyCommissions = () => {
       grossAll: formatCurrency(base.grossAll),
       net: formatCurrency(base.net),
       commission: formatCurrency(base.commission),
+      commissionRate: formatPercentage(base.commissionPercentage),
       reservations: `${base.reservations}`,
     }
   }, [data, summary])
@@ -430,23 +449,52 @@ const AgencyCommissions = () => {
             </Grid>
           </Paper>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
-              <Kpi title={strings.KPI_GROSS} value={metrics.gross} icon={<InfoOutlinedIcon />} loading={loading} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Kpi title={strings.KPI_GROSS_ALL} value={metrics.grossAll} icon={<InfoOutlinedIcon />} loading={loading} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Kpi title={strings.KPI_NET} value={metrics.net} icon={<PaidOutlinedIcon />} loading={loading} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Kpi title={strings.KPI_COMMISSION} value={metrics.commission} icon={<LocalOfferOutlinedIcon />} loading={loading} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Kpi title={strings.KPI_RESERVATIONS} value={metrics.reservations} icon={<PeopleAltOutlinedIcon />} loading={loading} />
-            </Grid>
-          </Grid>
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{
+              flexWrap: 'nowrap',
+              overflowX: 'auto',
+              pb: 1,
+            }}
+          >
+            <Kpi
+              title={strings.KPI_GROSS}
+              value={metrics.gross}
+              icon={<InfoOutlinedIcon />}
+              loading={loading}
+              sx={{ minWidth: { xs: 260, lg: 220 }, flexShrink: 0 }}
+            />
+            <Kpi
+              title={strings.KPI_GROSS_ALL}
+              value={metrics.grossAll}
+              icon={<InfoOutlinedIcon />}
+              loading={loading}
+              sx={{ minWidth: { xs: 260, lg: 220 }, flexShrink: 0 }}
+            />
+            <Kpi
+              title={strings.KPI_NET}
+              value={metrics.net}
+              icon={<PaidOutlinedIcon />}
+              loading={loading}
+              sx={{ minWidth: { xs: 260, lg: 220 }, flexShrink: 0 }}
+            />
+            <Kpi
+              title={strings.KPI_COMMISSION}
+              value={metrics.commission}
+              icon={<LocalOfferOutlinedIcon />}
+              loading={loading}
+              helperText={strings.KPI_COMMISSION_PERCENTAGE.replace('{value}', metrics.commissionRate)}
+              sx={{ minWidth: { xs: 260, lg: 220 }, flexShrink: 0 }}
+            />
+            <Kpi
+              title={strings.KPI_RESERVATIONS}
+              value={metrics.reservations}
+              icon={<PeopleAltOutlinedIcon />}
+              loading={loading}
+              sx={{ minWidth: { xs: 260, lg: 220 }, flexShrink: 0 }}
+            />
+          </Stack>
 
           <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 3, mb: 1 }}>{strings.MONTHLY_BOOKINGS}</Typography>
 

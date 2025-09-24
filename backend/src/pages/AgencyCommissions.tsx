@@ -47,6 +47,8 @@ import * as CommissionService from '@/services/CommissionService'
 
 const formatter = new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 0 })
 const formatCurrency = (value: number) => `${formatter.format(Math.round(value || 0))} ${strings.CURRENCY}`
+const COMMISSION_STATUS_PAID: bookcarsTypes.CommissionStatus = 'paid'
+const COMMISSION_STATUS_PENDING: bookcarsTypes.CommissionStatus = 'pending'
 const LOCALE_MAP: Record<string, string> = {
   fr: 'fr-FR',
   en: 'en-GB',
@@ -90,8 +92,8 @@ const statusColor = (status: StatusCategory): 'default' | 'warning' | 'info' | '
   }
 }
 
-const paymentColor = (status: bookcarsTypes.CommissionStatus): 'success' | 'warning' => (
-  status === bookcarsTypes.CommissionStatus.Paid ? 'success' : 'warning'
+const paymentColor = (status?: bookcarsTypes.CommissionStatus): 'success' | 'warning' => (
+  status === COMMISSION_STATUS_PAID ? 'success' : 'warning'
 )
 
 const computeStatusCategory = (booking: bookcarsTypes.AgencyCommissionBooking): StatusCategory => {
@@ -159,6 +161,7 @@ const AgencyCommissions = () => {
 
           const rows = response.bookings.map((booking) => ({
             ...booking,
+            commissionStatus: booking.commissionStatus || COMMISSION_STATUS_PENDING,
             statusCategory: computeStatusCategory(booking),
           }))
 
@@ -283,7 +286,7 @@ const AgencyCommissions = () => {
       formatCurrency(booking.commission),
       formatCurrency(booking.netAgency),
       statusLabels[booking.statusCategory],
-      commissionPaymentLabels[booking.commissionStatus],
+      commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING],
     ])
 
     const csvContent = [header, ...rows]
@@ -507,12 +510,12 @@ const AgencyCommissions = () => {
                       <Chip size="small" label={statusLabels[booking.statusCategory]} color={statusColor(booking.statusCategory)} />
                     </TableCell>
                     <TableCell align="center">
-                      <Chip
-                        size="small"
-                        label={commissionPaymentLabels[booking.commissionStatus]}
-                        color={paymentColor(booking.commissionStatus)}
-                        variant={booking.commissionStatus === bookcarsTypes.CommissionStatus.Paid ? 'filled' : 'outlined'}
-                      />
+                    <Chip
+                      size="small"
+                      label={commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING]}
+                      color={paymentColor(booking.commissionStatus)}
+                      variant={booking.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
+                    />
                     </TableCell>
                     <TableCell align="center">
                       <Stack direction="row" spacing={0.5} justifyContent="center">
@@ -603,9 +606,9 @@ const AgencyCommissions = () => {
                     <Chip size="small" label={statusLabels[drawer.statusCategory]} color={statusColor(drawer.statusCategory)} />
                     <Chip
                       size="small"
-                      label={commissionPaymentLabels[drawer.commissionStatus]}
+                      label={commissionPaymentLabels[drawer.commissionStatus || COMMISSION_STATUS_PENDING]}
                       color={paymentColor(drawer.commissionStatus)}
-                      variant={drawer.commissionStatus === bookcarsTypes.CommissionStatus.Paid ? 'filled' : 'outlined'}
+                      variant={drawer.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
                     />
                   </Stack>
                 </>

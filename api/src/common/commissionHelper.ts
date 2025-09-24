@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import PDFDocument from 'pdfkit'
+import axios from 'axios'
 import { Response } from 'express'
 import * as bookcarsTypes from ':bookcars-types'
 import Booking from '../models/Booking'
@@ -220,17 +221,21 @@ export const fetchAgencyCommissions = async (
     const commissionRateValue = typeof booking.commissionRate === 'number'
       ? booking.commissionRate
       : undefined
-    const commissionPercentage = typeof commissionRateValue === 'number'
-      ? (commissionRateValue > 1 ? commissionRateValue : commissionRateValue * 100)
-      : undefined
+    let commissionPercentage: number | undefined
+    if (typeof commissionRateValue === 'number') {
+      commissionPercentage = commissionRateValue > 1
+        ? commissionRateValue
+        : commissionRateValue * 100
+    }
     if (typeof commissionPercentage === 'number' && !Number.isNaN(commissionPercentage)) {
       effectiveCommissionPercentage = commissionPercentage
     }
-    const storedCommission = typeof booking.commission === 'number'
-      ? booking.commission
-      : typeof booking.commissionTotal === 'number'
-        ? booking.commissionTotal
-        : undefined
+    let storedCommission: number | undefined
+    if (typeof booking.commission === 'number') {
+      storedCommission = booking.commission
+    } else if (typeof booking.commissionTotal === 'number') {
+      storedCommission = booking.commissionTotal
+    }
     const commissionAmount = typeof storedCommission === 'number'
       ? Math.round(storedCommission)
       : calculateCommissionAmount(booking.price, commissionRateValue)
@@ -333,11 +338,12 @@ export const fetchCommissionBookingById = async (bookingId: string) => {
   const commissionRateValue = typeof booking.commissionRate === 'number'
     ? booking.commissionRate
     : undefined
-  const storedCommission = typeof booking.commission === 'number'
-    ? booking.commission
-    : typeof booking.commissionTotal === 'number'
-      ? booking.commissionTotal
-      : undefined
+  let storedCommission: number | undefined
+  if (typeof booking.commission === 'number') {
+    storedCommission = booking.commission
+  } else if (typeof booking.commissionTotal === 'number') {
+    storedCommission = booking.commissionTotal
+  }
   const commissionAmount = typeof storedCommission === 'number'
     ? Math.round(storedCommission)
     : calculateCommissionAmount(booking.price, commissionRateValue)
@@ -375,7 +381,7 @@ export const fetchCommissionBookingById = async (bookingId: string) => {
   }
 }
 
-export const generateMonthlyInvoice = (
+export const generateMonthlyInvoice = async (
   res: Response,
   data: bookcarsTypes.AgencyCommissionsResponse,
   supplier: Pick<bookcarsTypes.User, '_id' | 'fullName'>,
@@ -383,47 +389,120 @@ export const generateMonthlyInvoice = (
   year: number,
 ) => {
   const doc = new PDFDocument({ size: 'A4', margin: 50 })
-  const filename = `commission_${supplier._id}_${year}_${String(month + 1).padStart(2, '0')}.pdf`
+  const safeMonthIndex = Math.max(0, Math.min(11, month))
+  const monthLabel = MONTHS_FR[safeMonthIndex]
+  const sanitizedMonth = monthLabel
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+  const filename = `facture_commission_${sanitizedMonth}_${year}.pdf`
 
   res.setHeader('Content-Type', 'application/pdf')
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
 
   doc.pipe(res)
 
-  doc.fontSize(18).text('Facture des commissions agence', { align: 'center' })
-  doc.moveDown()
+  let logoBuffer: Buffer | undefined
+  try {
+    const response = await axios.get<ArrayBuffer>('https://plany.tn/logo.png', { responseType: 'arraybuffer' })
+    logoBuffer = Buffer.from(response.data)
+  } catch (err) {
+    console.warn('[commission.generateMonthlyInvoice] Unable to load Plany logo', err)
+  }
 
-  doc.fontSize(12).text(`Agence : ${supplier.fullName}`)
-  doc.text(`Période : ${MONTHS_FR[Math.max(0, Math.min(11, month))]} ${year}`)
-  doc.text(`Commission Plany : ${data.summary.commissionPercentage}%`)
-  doc.moveDown()
+  doc.font('HeiseiMin-W3')
+  doc.fontSize(9)
 
-  if (data.bookings.length === 0) {
-    doc.text('Aucune réservation pour cette période.')
-  } else {
-    doc.font('Helvetica-Bold').text('Réservations :')
-    doc.moveDown(0.5)
+  if (logoBuffer) {
+    doc.image(logoBuffer, doc.page.margins.left, doc.page.margins.top, { width: 120, height: 50 })
+    doc.moveDown(2)
+  }
+
+  doc.fillColor('#000000')
+  doc.fontSize(16).text('Facture des commissions agence', { align: 'center' })
+  doc.moveDown(0.8)
+  doc.fontSize(9)
+
+  doc.text(`Agence : ${supplier.fullName}`)
+  doc.text(`Période : ${monthLabel} ${year}`)
+  doc.text(`Taux de commission Plany : ${data.summary.commissionPercentage}%`)
+  doc.moveDown(1.2)
+
+  const columns: Array<{ label: string; width: number; getValue: (booking: bookcarsTypes.AgencyCommissionBooking) => string }> = [
+    { label: 'N° Réservation', width: 130, getValue: (booking) => booking.bookingNumber },
+    { label: 'Jours', width: 60, getValue: (booking) => String(booking.days) },
+    { label: 'Total client (TND)', width: 105, getValue: (booking) => formatAmount(booking.totalClient) },
+    { label: 'Commission (TND)', width: 100, getValue: (booking) => formatAmount(booking.commission) },
+    { label: 'Net agence (TND)', width: 100, getValue: (booking) => formatAmount(booking.netAgency) },
+  ]
+
+  const tableStartX = doc.page.margins.left
+  let currentY = doc.y
+  const rowHeight = 24
+  const lineWidth = 0.5
+
+  const drawRow = (
+    values: string[],
+    options: { backgroundColor?: string; header?: boolean },
+  ) => {
+    let cursorX = tableStartX
+    values.forEach((value, index) => {
+      const column = columns[index]
+      if (!column) {
+        return
+      }
+
+      if (options.backgroundColor) {
+        doc.save()
+        doc.rect(cursorX, currentY, column.width, rowHeight).fill(options.backgroundColor)
+        doc.restore()
+      }
+
+      doc.lineWidth(lineWidth).strokeColor('#9e9e9e').rect(cursorX, currentY, column.width, rowHeight).stroke()
+
+      doc.fillColor(options.header ? '#ffffff' : '#000000')
+      doc.text(
+        value,
+        cursorX,
+        currentY + (rowHeight / 2) - 5,
+        {
+          width: column.width,
+          align: 'center',
+        },
+      )
+
+      cursorX += column.width
+    })
+    currentY += rowHeight
+  }
+
+  drawRow(
+    columns.map((column) => column.label),
+    { header: true, backgroundColor: '#1976d2' },
+  )
+
+  const hasBookings = data.bookings.length > 0
+  if (hasBookings) {
     data.bookings.forEach((booking) => {
-      doc.font('Helvetica-Bold').text(`Réservation ${booking.bookingNumber}`)
-      doc.font('Helvetica').text(`Client : ${booking.driver.fullName}`)
-      doc.text(`Période : ${formatDate(booking.from)} → ${formatDate(booking.to)}`)
-      doc.text(`Jours : ${booking.days}`)
-      doc.text(`Total client : ${formatAmount(booking.totalClient)}`)
-      doc.text(`Commission Plany : ${formatAmount(booking.commission)}`)
-      doc.text(`Net agence : ${formatAmount(booking.netAgency)}`)
-      doc.moveDown()
+      drawRow(columns.map((column) => column.getValue(booking)), { header: false })
     })
   }
 
-  doc.moveDown()
-  doc.font('Helvetica-Bold').text('Récapitulatif :')
-  doc.font('Helvetica').text(`CA brut : ${formatAmount(data.summary.gross)}`)
-  doc.text(`Commission Plany : ${formatAmount(data.summary.commission)}`)
-  doc.text(`Net agence : ${formatAmount(data.summary.net)}`)
-  doc.text(`Nombre de réservations : ${data.summary.reservations}`)
+  const summaryValues = [
+    'TOTAL',
+    '',
+    formatAmount(data.summary.gross),
+    formatAmount(data.summary.commission),
+    formatAmount(data.summary.net),
+  ]
 
-  doc.moveDown()
-  doc.fontSize(10).text('Document généré automatiquement – Merci d\'utiliser Plany', { align: 'center' })
+  drawRow(summaryValues, { backgroundColor: '#eeeeee' })
+
+  doc.moveDown(2)
+
+  doc.fillColor('#000000')
+  doc.text('Document généré automatiquement – Merci d\'utiliser Plany', { align: 'center' })
 
   doc.end()
 }

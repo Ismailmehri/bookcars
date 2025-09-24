@@ -56,7 +56,7 @@ export const downloadMonthlyInvoice = async (req: Request, res: Response) => {
       return res.sendStatus(404)
     }
 
-    generateMonthlyInvoice(res, data, supplier, payload.month, payload.year)
+    await generateMonthlyInvoice(res, data, supplier, payload.month, payload.year)
     return res
   } catch (err) {
     logger.error(`[commission.downloadMonthlyInvoice] ${i18n.t('DB_ERROR')} ${JSON.stringify(req.params)}`, err)

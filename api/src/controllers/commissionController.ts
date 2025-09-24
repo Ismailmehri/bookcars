@@ -171,8 +171,9 @@ const computeCommissionData = async (
   const bookingsAggregation = await Booking.aggregate([
     {
       $match: {
-        from: { $gte: effectiveStart, $lt: end },
         expireAt: null,
+        from: { $lt: end },
+        to: { $gte: effectiveStart },
       },
     },
     {
@@ -519,8 +520,9 @@ const loadAgencyCommissionDetail = async (
   const bookings = effectiveStart.getTime() < end.getTime()
     ? await Booking.find({
       supplier: supplierObjectId,
-      from: { $gte: effectiveStart, $lt: end },
       expireAt: null,
+      from: { $lt: end },
+      to: { $gte: effectiveStart },
     })
       .sort({ from: 1 })
       .lean()

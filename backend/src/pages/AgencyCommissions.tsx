@@ -27,6 +27,7 @@ import {
   Typography,
   Skeleton,
   Link,
+  CircularProgress,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
 import DownloadIcon from '@mui/icons-material/Download'
@@ -41,70 +42,8 @@ import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
 import { strings } from '@/lang/agency-commissions'
-
-interface CommissionBooking {
-  id: string
-  bookingNumber: string
-  bookingHref: string
-  customer: string
-  customerHref: string
-  start: string
-  end: string
-  days: number
-  pricePerDay: number
-  totalClient: number
-  commission: number
-  status: 'confirmed' | 'inProgress' | 'completed' | 'cancelled'
-  commissionStatus: 'paid' | 'pending'
-}
-
-const COMMISSION_BOOKINGS: CommissionBooking[] = [
-  {
-    id: '1',
-    bookingNumber: 'PL-23001',
-    bookingHref: '/update-booking?b=1',
-    customer: 'Aymen B.',
-    customerHref: '/user?u=u-1',
-    start: '2025-10-03',
-    end: '2025-10-06',
-    days: 3,
-    pricePerDay: 150,
-    totalClient: 450,
-    commission: 24,
-    status: 'completed',
-    commissionStatus: 'paid',
-  },
-  {
-    id: '2',
-    bookingNumber: 'PL-23002',
-    bookingHref: '/update-booking?b=2',
-    customer: 'Sarra K.',
-    customerHref: '/user?u=u-2',
-    start: '2025-10-07',
-    end: '2025-10-10',
-    days: 3,
-    pricePerDay: 180,
-    totalClient: 540,
-    commission: 27,
-    status: 'confirmed',
-    commissionStatus: 'pending',
-  },
-  {
-    id: '3',
-    bookingNumber: 'PL-23003',
-    bookingHref: '/update-booking?b=3',
-    customer: 'Med R.',
-    customerHref: '/user?u=u-3',
-    start: '2025-10-18',
-    end: '2025-10-21',
-    days: 3,
-    pricePerDay: 95,
-    totalClient: 285,
-    commission: 15,
-    status: 'confirmed',
-    commissionStatus: 'pending',
-  },
-]
+import * as helper from '@/common/helper'
+import * as CommissionService from '@/services/CommissionService'
 
 const formatter = new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 0 })
 const formatCurrency = (value: number) => `${formatter.format(Math.round(value || 0))} ${strings.CURRENCY}`
@@ -114,7 +53,9 @@ const LOCALE_MAP: Record<string, string> = {
   es: 'es-ES',
 }
 
-type DrawerState = CommissionBooking | null
+type StatusCategory = 'confirmed' | 'inProgress' | 'completed' | 'cancelled'
+type CommissionRow = bookcarsTypes.AgencyCommissionBooking & { statusCategory: StatusCategory }
+type DrawerState = CommissionRow | null
 
 type KpiProps = {
   title: string
@@ -135,7 +76,7 @@ const Kpi = ({ title, value, icon, loading }: KpiProps) => (
   </Card>
 )
 
-const statusColor = (status: CommissionBooking['status']): 'default' | 'warning' | 'info' | 'success' => {
+const statusColor = (status: StatusCategory): 'default' | 'warning' | 'info' | 'success' => {
   switch (status) {
     case 'confirmed':
       return 'warning'
@@ -149,67 +90,128 @@ const statusColor = (status: CommissionBooking['status']): 'default' | 'warning'
   }
 }
 
-const paymentColor = (status: CommissionBooking['commissionStatus']): 'success' | 'warning' => (status === 'paid' ? 'success' : 'warning')
+const paymentColor = (status: bookcarsTypes.CommissionStatus): 'success' | 'warning' => (
+  status === bookcarsTypes.CommissionStatus.Paid ? 'success' : 'warning'
+)
+
+const computeStatusCategory = (booking: bookcarsTypes.AgencyCommissionBooking): StatusCategory => {
+  if (booking.bookingStatus === bookcarsTypes.BookingStatus.Cancelled) {
+    return 'cancelled'
+  }
+
+  const now = Date.now()
+  const start = new Date(booking.from).getTime()
+  const end = new Date(booking.to).getTime()
+
+  if (!Number.isFinite(start) || !Number.isFinite(end)) {
+    return 'confirmed'
+  }
+
+  if (end < now) {
+    return 'completed'
+  }
+
+  if (start > now) {
+    return 'confirmed'
+  }
+
+  return 'inProgress'
+}
 
 const AgencyCommissions = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
-  const [status, setStatus] = useState<'all' | CommissionBooking['status']>('all')
+  const [status, setStatus] = useState<'all' | StatusCategory>('all')
   const [query, setQuery] = useState('')
   const [month, setMonth] = useState(new Date().getMonth())
   const [year, setYear] = useState(new Date().getFullYear())
   const [loading, setLoading] = useState(false)
+  const [data, setData] = useState<CommissionRow[]>([])
+  const [summary, setSummary] = useState<bookcarsTypes.AgencyCommissionSummary | null>(null)
   const [drawer, setDrawer] = useState<DrawerState>(null)
+  const [monthInvoiceLoading, setMonthInvoiceLoading] = useState(false)
+  const [bookingInvoiceLoading, setBookingInvoiceLoading] = useState<string | null>(null)
 
   const locale = LOCALE_MAP[user?.language || 'fr'] || 'fr-FR'
   const months = strings.MONTHS as string[]
-  const statusLabels = strings.STATUS_LABELS as Record<CommissionBooking['status'], string>
-  const commissionPaymentLabels = strings.COMMISSION_PAYMENT_LABELS as Record<CommissionBooking['commissionStatus'], string>
+  const statusLabels = strings.STATUS_LABELS as Record<StatusCategory, string>
+  const commissionPaymentLabels = strings.COMMISSION_PAYMENT_LABELS as Record<bookcarsTypes.CommissionStatus, string>
 
   useEffect(() => {
-    if (!user) {
+    if (!user?._id) {
+      setData([])
+      setSummary(null)
       return
     }
+
+    let active = true
     setLoading(true)
     const timeout = window.setTimeout(() => {
-      setLoading(false)
-    }, 400)
-    return () => window.clearTimeout(timeout)
-  }, [user, status, query, month, year])
+      CommissionService.getAgencyCommissions({
+        suppliers: [user._id],
+        month,
+        year,
+        query: query.trim() || undefined,
+      })
+        .then((response) => {
+          if (!active) {
+            return
+          }
 
-  const normalizedQuery = query.trim().toLowerCase()
+          const rows = response.bookings.map((booking) => ({
+            ...booking,
+            statusCategory: computeStatusCategory(booking),
+          }))
 
-  const rows = useMemo(() => {
-    const filteredByPeriod = COMMISSION_BOOKINGS.filter((booking) => {
-      const start = new Date(booking.start)
-      return start.getMonth() === month && start.getFullYear() === year
-    })
+          setData(rows)
+          setSummary(response.summary)
+        })
+        .catch((err) => {
+          if (active) {
+            helper.error(err)
+            setData([])
+            setSummary(null)
+          }
+        })
+        .finally(() => {
+          if (active) {
+            setLoading(false)
+          }
+        })
+    }, 300)
 
-    const filteredByStatus = status === 'all'
-      ? filteredByPeriod
-      : filteredByPeriod.filter((booking) => booking.status === status)
-
-    if (!normalizedQuery) {
-      return filteredByStatus
+    return () => {
+      active = false
+      window.clearTimeout(timeout)
     }
+  }, [user?._id, month, year, query])
 
-    return filteredByStatus.filter((booking) => {
-      const searchTarget = `${booking.bookingNumber} ${booking.customer}`.toLowerCase()
-      return searchTarget.includes(normalizedQuery)
-    })
-  }, [month, normalizedQuery, status, year])
+  const filteredRows = useMemo(() => (
+    status === 'all'
+      ? data
+      : data.filter((booking) => booking.statusCategory === status)
+  ), [data, status])
 
   const metrics = useMemo(() => {
-    const totalGross = rows.reduce((acc, booking) => acc + booking.totalClient, 0)
-    const totalCommission = rows.reduce((acc, booking) => acc + booking.commission, 0)
+    if (summary) {
+      return {
+        gross: formatCurrency(summary.gross),
+        net: formatCurrency(summary.net),
+        commission: formatCurrency(summary.commission),
+        reservations: `${summary.reservations}`,
+      }
+    }
+
+    const totalGross = filteredRows.reduce((acc, booking) => acc + booking.totalClient, 0)
+    const totalCommission = filteredRows.reduce((acc, booking) => acc + booking.commission, 0)
     const totalNet = totalGross - totalCommission
 
     return {
       gross: formatCurrency(totalGross),
       net: formatCurrency(totalNet),
       commission: formatCurrency(totalCommission),
-      reservations: `${rows.length}`,
+      reservations: `${filteredRows.length}`,
     }
-  }, [rows])
+  }, [filteredRows, summary])
 
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear()
@@ -244,6 +246,84 @@ const AgencyCommissions = () => {
 
   const renderDate = (date: string) => new Date(date).toLocaleDateString(locale)
 
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  }
+
+  const handleExportCsv = () => {
+    const header = [
+      strings.BOOKING_NUMBER,
+      strings.CLIENT,
+      strings.START_DATE,
+      strings.END_DATE,
+      strings.DAYS,
+      strings.PRICE_PER_DAY,
+      strings.TOTAL_CLIENT,
+      strings.COMMISSION,
+      strings.NET_AGENCY,
+      strings.BOOKING_STATUS,
+      strings.COMMISSION_STATUS,
+    ]
+
+    const rows = filteredRows.map((booking) => [
+      booking.bookingNumber,
+      booking.driver.fullName,
+      renderDate(booking.from),
+      renderDate(booking.to),
+      booking.days.toString(),
+      formatCurrency(booking.pricePerDay),
+      formatCurrency(booking.totalClient),
+      formatCurrency(booking.commission),
+      formatCurrency(booking.netAgency),
+      statusLabels[booking.statusCategory],
+      commissionPaymentLabels[booking.commissionStatus],
+    ])
+
+    const csvContent = [header, ...rows]
+      .map((row) => row.map((value) => `"${value.replace(/"/g, '""')}"`).join(';'))
+      .join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    downloadBlob(blob, `commissions_${year}_${String(month + 1).padStart(2, '0')}.csv`)
+  }
+
+  const handleDownloadMonthlyInvoice = async () => {
+    if (!user?._id) {
+      return
+    }
+
+    try {
+      setMonthInvoiceLoading(true)
+      const response = await CommissionService.downloadMonthlyInvoice(user._id, year, month)
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      downloadBlob(blob, `commission_${year}_${String(month + 1).padStart(2, '0')}.pdf`)
+    } catch (err) {
+      helper.error(err)
+    } finally {
+      setMonthInvoiceLoading(false)
+    }
+  }
+
+  const handleDownloadBookingInvoice = async (bookingId: string) => {
+    try {
+      setBookingInvoiceLoading(bookingId)
+      const response = await CommissionService.downloadBookingInvoice(bookingId)
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      downloadBlob(blob, `commission_booking_${bookingId}.pdf`)
+    } catch (err) {
+      helper.error(err)
+    } finally {
+      setBookingInvoiceLoading(null)
+    }
+  }
+
   return (
     <Layout onLoad={handleLoad} strict>
       {user && (
@@ -254,8 +334,22 @@ const AgencyCommissions = () => {
               <Chip size="small" variant="outlined" label={`${strings.PERIOD_LABEL} ${months[month]} ${year}`} />
             </Stack>
             <Stack direction="row" spacing={1}>
-              <Button variant="outlined" startIcon={<ReceiptLongIcon />}>{strings.EXPORT_CSV}</Button>
-              <Button variant="contained" startIcon={<DownloadIcon />}>{strings.DOWNLOAD_MONTH_INVOICE}</Button>
+              <Button
+                variant="outlined"
+                startIcon={<ReceiptLongIcon />}
+                onClick={handleExportCsv}
+                disabled={filteredRows.length === 0 && !loading}
+              >
+                {strings.EXPORT_CSV}
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={monthInvoiceLoading ? <CircularProgress size={18} /> : <DownloadIcon />}
+                onClick={handleDownloadMonthlyInvoice}
+                disabled={monthInvoiceLoading}
+              >
+                {strings.DOWNLOAD_MONTH_INVOICE}
+              </Button>
             </Stack>
           </Stack>
 
@@ -282,7 +376,7 @@ const AgencyCommissions = () => {
                   size="small"
                   fullWidth
                   value={status}
-                  onChange={(event) => setStatus(event.target.value as CommissionBooking['status'] | 'all')}
+                  onChange={(event) => setStatus(event.target.value as StatusCategory | 'all')}
                 >
                   <MenuItem value="all">{strings.STATUS_ALL}</MenuItem>
                   <MenuItem value="confirmed">{statusLabels.confirmed}</MenuItem>
@@ -364,65 +458,84 @@ const AgencyCommissions = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((booking) => {
-                  const net = booking.totalClient - booking.commission
-                  return (
-                    <TableRow key={booking.id} hover>
-                      <TableCell>
-                        <Link
-                          href={booking.bookingHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          underline="hover"
-                        >
-                          {booking.bookingNumber}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <Link
-                          href={booking.customerHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          underline="hover"
-                        >
-                          {booking.customer}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{renderDate(booking.start)}</TableCell>
-                      <TableCell>{renderDate(booking.end)}</TableCell>
-                      <TableCell align="right">{booking.days}</TableCell>
-                      <TableCell align="right">{formatCurrency(booking.pricePerDay)}</TableCell>
-                      <TableCell align="right">{formatCurrency(booking.totalClient)}</TableCell>
-                      <TableCell align="right">{formatCurrency(booking.commission)}</TableCell>
-                      <TableCell align="right">{formatCurrency(net)}</TableCell>
-                      <TableCell align="center">
-                        <Chip size="small" label={statusLabels[booking.status]} color={statusColor(booking.status)} />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          size="small"
-                          label={commissionPaymentLabels[booking.commissionStatus]}
-                          color={paymentColor(booking.commissionStatus)}
-                          variant={booking.commissionStatus === 'paid' ? 'filled' : 'outlined'}
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Stack direction="row" spacing={0.5} justifyContent="center">
-                          <Tooltip title={strings.VIEW_DETAILS}>
-                            <IconButton size="small" onClick={() => setDrawer(booking)}>
-                              <OpenInNewIcon fontSize="small" />
+                {loading && filteredRows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={12}>
+                      <Skeleton variant="rectangular" height={40} />
+                    </TableCell>
+                  </TableRow>
+                )}
+                {!loading && filteredRows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={12}>
+                      <Typography align="center" color="text.secondary" sx={{ py: 2 }}>
+                        {strings.EMPTY_LIST}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {filteredRows.map((booking) => (
+                  <TableRow key={booking.bookingId} hover>
+                    <TableCell>
+                      <Link
+                        href={`/update-booking?b=${booking.bookingId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        underline="hover"
+                      >
+                        {booking.bookingNumber}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/user?u=${booking.driver._id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        underline="hover"
+                      >
+                        {booking.driver.fullName}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{renderDate(booking.from)}</TableCell>
+                    <TableCell>{renderDate(booking.to)}</TableCell>
+                    <TableCell align="right">{booking.days}</TableCell>
+                    <TableCell align="right">{formatCurrency(booking.pricePerDay)}</TableCell>
+                    <TableCell align="right">{formatCurrency(booking.totalClient)}</TableCell>
+                    <TableCell align="right">{formatCurrency(booking.commission)}</TableCell>
+                    <TableCell align="right">{formatCurrency(booking.netAgency)}</TableCell>
+                    <TableCell align="center">
+                      <Chip size="small" label={statusLabels[booking.statusCategory]} color={statusColor(booking.statusCategory)} />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        size="small"
+                        label={commissionPaymentLabels[booking.commissionStatus]}
+                        color={paymentColor(booking.commissionStatus)}
+                        variant={booking.commissionStatus === bookcarsTypes.CommissionStatus.Paid ? 'filled' : 'outlined'}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Stack direction="row" spacing={0.5} justifyContent="center">
+                        <Tooltip title={strings.VIEW_DETAILS}>
+                          <IconButton size="small" onClick={() => setDrawer(booking)}>
+                            <OpenInNewIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title={strings.DOWNLOAD_INVOICE}>
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDownloadBookingInvoice(booking.bookingId)}
+                              disabled={bookingInvoiceLoading === booking.bookingId}
+                            >
+                              {bookingInvoiceLoading === booking.bookingId ? <CircularProgress size={16} /> : <ReceiptLongIcon fontSize="small" />}
                             </IconButton>
-                          </Tooltip>
-                          <Tooltip title={strings.DOWNLOAD_INVOICE}>
-                            <IconButton size="small">
-                              <ReceiptLongIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
+                          </span>
+                        </Tooltip>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </Paper>
@@ -436,7 +549,16 @@ const AgencyCommissions = () => {
             <Box sx={{ p: 3 }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
                 <Typography variant="h6" fontWeight={800}>{strings.DRAWER_TITLE}</Typography>
-                <Button variant="outlined" startIcon={<ReceiptLongIcon />}>{strings.DOWNLOAD_INVOICE}</Button>
+                {drawer && (
+                  <Button
+                    variant="outlined"
+                    startIcon={bookingInvoiceLoading === drawer.bookingId ? <CircularProgress size={18} /> : <ReceiptLongIcon />}
+                    onClick={() => handleDownloadBookingInvoice(drawer.bookingId)}
+                    disabled={bookingInvoiceLoading === drawer.bookingId}
+                  >
+                    {strings.DOWNLOAD_INVOICE}
+                  </Button>
+                )}
               </Stack>
               <Divider sx={{ mb: 2 }} />
               {drawer && (
@@ -444,15 +566,15 @@ const AgencyCommissions = () => {
                   <Typography variant="subtitle2" color="text.secondary">{strings.DRAWER_BOOKING_SECTION}</Typography>
                   <List dense>
                     <ListItem>
-                    <ListItemText primary={strings.BOOKING_NUMBER} secondary={drawer.bookingNumber} />
+                      <ListItemText primary={strings.BOOKING_NUMBER} secondary={drawer.bookingNumber} />
                     </ListItem>
                     <ListItem>
-                      <ListItemText primary={strings.CLIENT} secondary={drawer.customer} />
+                      <ListItemText primary={strings.CLIENT} secondary={drawer.driver.fullName} />
                     </ListItem>
                     <ListItem>
                       <ListItemText
                         primary={strings.DRAWER_PERIOD}
-                        secondary={`${renderDate(drawer.start)} → ${renderDate(drawer.end)}`}
+                        secondary={`${renderDate(drawer.from)} → ${renderDate(drawer.to)}`}
                       />
                     </ListItem>
                     <ListItem>
@@ -472,18 +594,18 @@ const AgencyCommissions = () => {
                       <ListItemText primary={strings.COMMISSION} secondary={formatCurrency(drawer.commission)} />
                     </ListItem>
                     <ListItem>
-                      <ListItemText primary={strings.NET_AGENCY} secondary={formatCurrency(drawer.totalClient - drawer.commission)} />
+                      <ListItemText primary={strings.NET_AGENCY} secondary={formatCurrency(drawer.netAgency)} />
                     </ListItem>
                   </List>
 
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_STATUS_SECTION}</Typography>
                   <Stack direction="row" spacing={1}>
-                    <Chip size="small" label={statusLabels[drawer.status]} color={statusColor(drawer.status)} />
+                    <Chip size="small" label={statusLabels[drawer.statusCategory]} color={statusColor(drawer.statusCategory)} />
                     <Chip
                       size="small"
                       label={commissionPaymentLabels[drawer.commissionStatus]}
                       color={paymentColor(drawer.commissionStatus)}
-                      variant={drawer.commissionStatus === 'paid' ? 'filled' : 'outlined'}
+                      variant={drawer.commissionStatus === bookcarsTypes.CommissionStatus.Paid ? 'filled' : 'outlined'}
                     />
                   </Stack>
                 </>

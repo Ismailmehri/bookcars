@@ -51,6 +51,11 @@ export enum BookingStatus {
   Cancelled = 'cancelled'
 }
 
+export enum CommissionStatus {
+  Pending = 'pending',
+  Paid = 'paid'
+}
+
 export enum Mileage {
   Limited = 'limited',
   Unlimited = 'unlimited'
@@ -114,6 +119,8 @@ export interface Booking {
   paymentIntentId?: string
   customerId?: string
   expireAt?: Date
+  commission?: number
+  commissionStatus?: CommissionStatus
 }
 
 export interface CheckoutPayload {
@@ -140,6 +147,41 @@ export interface GetBookingsPayload {
   user?: string
   car?: string
   filter?: Filter
+}
+
+export interface GetAgencyCommissionsPayload {
+  suppliers: string[]
+  month: number
+  year: number
+  query?: string
+}
+
+export interface AgencyCommissionBooking {
+  bookingId: string
+  bookingNumber: string
+  bookingStatus: BookingStatus
+  commissionStatus: CommissionStatus
+  driver: Pick<User, '_id' | 'fullName'>
+  from: string
+  to: string
+  days: number
+  pricePerDay: number
+  totalClient: number
+  commission: number
+  netAgency: number
+}
+
+export interface AgencyCommissionSummary {
+  gross: number
+  commission: number
+  net: number
+  reservations: number
+}
+
+export interface AgencyCommissionsResponse {
+  bookings: AgencyCommissionBooking[]
+  summary: AgencyCommissionSummary
+  supplier?: Pick<User, '_id' | 'fullName'>
 }
 
 export interface AdditionalDriver {

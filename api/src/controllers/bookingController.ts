@@ -21,7 +21,7 @@ import * as env from '../config/env.config'
 import * as logger from '../common/logger'
 import stripeAPI from '../stripe'
 import { sendSms, validateAndFormatPhoneNumber } from '../common/smsHelper'
-
+import { calculateCommissionAmount } from '../common/commissionHelper'
 /**
  * Create a Booking.
  *
@@ -39,6 +39,12 @@ export const create = async (req: Request, res: Response) => {
       await additionalDriver.save()
       body.booking._additionalDriver = additionalDriver._id.toString()
     }
+
+    body.booking.commission = calculateCommissionAmount(body.booking.price)
+    body.booking.commissionStatus = body.booking.commissionStatus || bookcarsTypes.CommissionStatus.Pending
+
+    body.booking.commission = calculateCommissionAmount(body.booking.price)
+    body.booking.commissionStatus = body.booking.commissionStatus || bookcarsTypes.CommissionStatus.Pending
 
     const booking = new Booking(body.booking)
 
@@ -555,6 +561,10 @@ export const update = async (req: Request, res: Response) => {
       booking.fullInsurance = fullInsurance
       booking.additionalDriver = additionalDriver
       booking.price = price as number
+      booking.commission = calculateCommissionAmount(booking.price)
+      booking.commissionStatus = body.booking.commissionStatus
+        ? body.booking.commissionStatus
+        : booking.commissionStatus || bookcarsTypes.CommissionStatus.Pending
 
       if (!additionalDriver && booking._additionalDriver) {
         booking._additionalDriver = undefined

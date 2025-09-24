@@ -88,6 +88,16 @@ const bookingSchema = new Schema<env.Booking>(
       type: Number,
       required: [true, "can't be blank"],
     },
+    commission: {
+      type: Number,
+      default: 0,
+    },
+    commissionStatus: {
+      type: String,
+      enum: [bookcarsTypes.CommissionStatus.Pending, bookcarsTypes.CommissionStatus.Paid],
+      default: bookcarsTypes.CommissionStatus.Pending,
+      index: true,
+    },
     cancelRequest: {
       type: Boolean,
       default: false,

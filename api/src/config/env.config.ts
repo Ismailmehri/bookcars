@@ -374,6 +374,20 @@ export const BOOKING_EXPIRE_AT = STRIPE_SESSION_EXPIRE_AT + (10 * 60)
 export const USER_EXPIRE_AT = BOOKING_EXPIRE_AT
 
 /**
+ * Plany commission percentage applied on bookings.
+ *
+ * @type {number}
+ */
+export const PLANY_COMMISSION_PERCENTAGE = Number.parseFloat(__env__('BC_PLANY_COMMISSION_PERCENTAGE', false, '12'))
+
+/**
+ * Plany commission rate as decimal multiplier.
+ *
+ * @type {number}
+ */
+export const PLANY_COMMISSION_RATE = PLANY_COMMISSION_PERCENTAGE / 100
+
+/**
  * Admin email.
  *
  * @type {string}
@@ -554,6 +568,8 @@ export interface Booking extends Document {
     supplier?: { count: number; lastSent: Date | null };
     client?: { count: number; lastSent: Date | null };
   };
+  commission?: number
+  commissionStatus?: bookcarsTypes.CommissionStatus
 }
 
 interface PricePeriod {
@@ -694,6 +710,8 @@ export interface BookingInfo {
   _additionalDriver?: Types.ObjectId
   cancelRequest?: boolean
   price: number
+  commission?: number
+  commissionStatus?: bookcarsTypes.CommissionStatus
 }
 
 /**

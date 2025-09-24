@@ -92,6 +92,14 @@ const bookingSchema = new Schema<env.Booking>(
       type: Number,
       default: 0,
     },
+    commissionRate: {
+      type: Number,
+      default: env.PLANY_COMMISSION_PERCENTAGE,
+    },
+    commissionTotal: {
+      type: Number,
+      default: 0,
+    },
     commissionStatus: {
       type: String,
       enum: [bookcarsTypes.CommissionStatus.Pending, bookcarsTypes.CommissionStatus.Paid],

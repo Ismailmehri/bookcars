@@ -120,6 +120,8 @@ export interface Booking {
   customerId?: string
   expireAt?: Date
   commission?: number
+  commissionRate?: number
+  commissionTotal?: number
   commissionStatus?: CommissionStatus
 }
 

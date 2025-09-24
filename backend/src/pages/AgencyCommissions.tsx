@@ -188,8 +188,14 @@ const AgencyCommissions = () => {
       : data.filter((booking) => booking.bookingStatus === status)
   ), [data, status])
 
-  const metrics = useMemo(() => {
-    const base = summary ?? data.reduce<bookcarsTypes.AgencyCommissionSummary>((acc, booking) => {
+  const sortedRows = useMemo(() => [...filteredRows].sort((a, b) => b.totalClient - a.totalClient), [filteredRows])
+
+  const computedSummary = useMemo(() => {
+    if (summary) {
+      return summary
+    }
+
+    return data.reduce<bookcarsTypes.AgencyCommissionSummary>((acc, booking) => {
       const isBillable = BILLABLE_STATUSES.has(booking.bookingStatus)
 
       acc.grossAll += booking.totalClient
@@ -208,18 +214,52 @@ const AgencyCommissions = () => {
       commission: 0,
       net: 0,
       reservations: 0,
-      commissionPercentage: summary?.commissionPercentage ?? env.PLANY_COMMISSION_PERCENTAGE,
+      commissionPercentage: env.PLANY_COMMISSION_PERCENTAGE,
     })
-
-    return {
-      gross: formatCurrency(base.gross),
-      grossAll: formatCurrency(base.grossAll),
-      net: formatCurrency(base.net),
-      commission: formatCurrency(base.commission),
-      commissionRate: formatPercentage(base.commissionPercentage),
-      reservations: `${base.reservations}`,
-    }
   }, [data, summary])
+
+  const metrics = useMemo(() => ({
+    grossAll: formatCurrency(computedSummary.grossAll),
+    gross: formatCurrency(computedSummary.gross),
+    net: formatCurrency(computedSummary.net),
+    commission: formatCurrency(computedSummary.commission),
+    commissionRate: formatPercentage(computedSummary.commissionPercentage),
+    reservations: `${computedSummary.reservations}`,
+  }), [computedSummary])
+
+  const kpiItems = useMemo(() => ([
+    {
+      key: 'grossAll',
+      title: strings.KPI_GROSS_ALL,
+      value: metrics.grossAll,
+      icon: <InfoOutlinedIcon />,
+    },
+    {
+      key: 'gross',
+      title: strings.KPI_GROSS,
+      value: metrics.gross,
+      icon: <InfoOutlinedIcon />,
+    },
+    {
+      key: 'net',
+      title: strings.KPI_NET,
+      value: metrics.net,
+      icon: <PaidOutlinedIcon />,
+    },
+    {
+      key: 'commission',
+      title: strings.KPI_COMMISSION,
+      value: metrics.commission,
+      icon: <LocalOfferOutlinedIcon />,
+      helperText: strings.KPI_COMMISSION_PERCENTAGE.replace('{value}', metrics.commissionRate),
+    },
+    {
+      key: 'reservations',
+      title: strings.KPI_RESERVATIONS,
+      value: metrics.reservations,
+      icon: <PeopleAltOutlinedIcon />,
+    },
+  ]), [metrics, strings, language])
 
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear()
@@ -300,7 +340,7 @@ const AgencyCommissions = () => {
       strings.COMMISSION_STATUS,
     ]
 
-    const rows = filteredRows.map((booking) => [
+    const rows = sortedRows.map((booking) => [
       booking.bookingNumber,
       booking.driver.fullName,
       renderDate(booking.from),
@@ -366,7 +406,7 @@ const AgencyCommissions = () => {
                 variant="outlined"
                 startIcon={<ReceiptLongIcon />}
                 onClick={handleExportCsv}
-                disabled={filteredRows.length === 0 && !loading}
+                disabled={sortedRows.length === 0 && !loading}
               >
                 {strings.EXPORT_CSV}
               </Button>
@@ -449,52 +489,28 @@ const AgencyCommissions = () => {
             </Grid>
           </Paper>
 
-          <Stack
-            direction="row"
-            spacing={2}
+          <Box
             sx={{
-              flexWrap: 'nowrap',
-              overflowX: 'auto',
-              pb: 1,
+              width: '100%',
+              display: 'grid',
+              gap: 2,
+              gridTemplateColumns: {
+                xs: 'repeat(auto-fit, minmax(220px, 1fr))',
+                lg: 'repeat(5, 1fr)',
+              },
             }}
           >
-            <Kpi
-              title={strings.KPI_GROSS}
-              value={metrics.gross}
-              icon={<InfoOutlinedIcon />}
-              loading={loading}
-              sx={{ minWidth: { xs: 260, lg: 220 }, flexShrink: 0 }}
-            />
-            <Kpi
-              title={strings.KPI_GROSS_ALL}
-              value={metrics.grossAll}
-              icon={<InfoOutlinedIcon />}
-              loading={loading}
-              sx={{ minWidth: { xs: 260, lg: 220 }, flexShrink: 0 }}
-            />
-            <Kpi
-              title={strings.KPI_NET}
-              value={metrics.net}
-              icon={<PaidOutlinedIcon />}
-              loading={loading}
-              sx={{ minWidth: { xs: 260, lg: 220 }, flexShrink: 0 }}
-            />
-            <Kpi
-              title={strings.KPI_COMMISSION}
-              value={metrics.commission}
-              icon={<LocalOfferOutlinedIcon />}
-              loading={loading}
-              helperText={strings.KPI_COMMISSION_PERCENTAGE.replace('{value}', metrics.commissionRate)}
-              sx={{ minWidth: { xs: 260, lg: 220 }, flexShrink: 0 }}
-            />
-            <Kpi
-              title={strings.KPI_RESERVATIONS}
-              value={metrics.reservations}
-              icon={<PeopleAltOutlinedIcon />}
-              loading={loading}
-              sx={{ minWidth: { xs: 260, lg: 220 }, flexShrink: 0 }}
-            />
-          </Stack>
+            {kpiItems.map((item) => (
+              <Kpi
+                key={item.key}
+                title={item.title}
+                value={item.value}
+                icon={item.icon}
+                helperText={item.helperText}
+                loading={loading}
+              />
+            ))}
+          </Box>
 
           <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 3, mb: 1 }}>{strings.MONTHLY_BOOKINGS}</Typography>
 
@@ -517,14 +533,14 @@ const AgencyCommissions = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {loading && filteredRows.length === 0 && (
+                {loading && sortedRows.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={12}>
                       <Skeleton variant="rectangular" height={40} />
                     </TableCell>
                   </TableRow>
                 )}
-                {!loading && filteredRows.length === 0 && (
+                {!loading && sortedRows.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={12}>
                       <Typography align="center" color="text.secondary" sx={{ py: 2 }}>
@@ -533,7 +549,7 @@ const AgencyCommissions = () => {
                     </TableCell>
                   </TableRow>
                 )}
-                {filteredRows.map((booking) => (
+                {sortedRows.map((booking) => (
                   <TableRow key={booking.bookingId} hover>
                     <TableCell>
                       <Link

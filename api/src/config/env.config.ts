@@ -378,7 +378,25 @@ export const USER_EXPIRE_AT = BOOKING_EXPIRE_AT
  *
  * @type {number}
  */
-export const PLANY_COMMISSION_PERCENTAGE = Number.parseFloat(__env__('BC_PLANY_COMMISSION_PERCENTAGE', false, '12'))
+const parseCommissionPercentage = (value?: string) => {
+  if (!value) {
+    return undefined
+  }
+
+  const parsed = Number.parseFloat(value)
+  if (Number.isFinite(parsed)) {
+    return parsed
+  }
+
+  return undefined
+}
+
+const commissionRateOverride = parseCommissionPercentage(__env__('BC_COMMISSION_RATE'))
+const commissionPercentageEnv = parseCommissionPercentage(__env__('BC_PLANY_COMMISSION_PERCENTAGE'))
+
+export const PLANY_COMMISSION_PERCENTAGE = commissionRateOverride
+  ?? commissionPercentageEnv
+  ?? 12
 
 /**
  * Plany commission rate as decimal multiplier.
@@ -569,6 +587,8 @@ export interface Booking extends Document {
     client?: { count: number; lastSent: Date | null };
   };
   commission?: number
+  commissionRate?: number
+  commissionTotal?: number
   commissionStatus?: bookcarsTypes.CommissionStatus
 }
 
@@ -711,6 +731,8 @@ export interface BookingInfo {
   cancelRequest?: boolean
   price: number
   commission?: number
+  commissionRate?: number
+  commissionTotal?: number
   commissionStatus?: bookcarsTypes.CommissionStatus
 }
 

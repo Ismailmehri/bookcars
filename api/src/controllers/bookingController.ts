@@ -40,10 +40,13 @@ export const create = async (req: Request, res: Response) => {
       body.booking._additionalDriver = additionalDriver._id.toString()
     }
 
-    body.booking.commission = calculateCommissionAmount(body.booking.price)
-    body.booking.commissionStatus = body.booking.commissionStatus || bookcarsTypes.CommissionStatus.Pending
-
-    body.booking.commission = calculateCommissionAmount(body.booking.price)
+    const commissionRate = typeof body.booking.commissionRate === 'number'
+      ? body.booking.commissionRate
+      : env.PLANY_COMMISSION_PERCENTAGE
+    const commissionAmount = calculateCommissionAmount(body.booking.price, commissionRate)
+    body.booking.commissionRate = commissionRate
+    body.booking.commissionTotal = commissionAmount
+    body.booking.commission = commissionAmount
     body.booking.commissionStatus = body.booking.commissionStatus || bookcarsTypes.CommissionStatus.Pending
 
     const booking = new Booking(body.booking)
@@ -561,7 +564,13 @@ export const update = async (req: Request, res: Response) => {
       booking.fullInsurance = fullInsurance
       booking.additionalDriver = additionalDriver
       booking.price = price as number
-      booking.commission = calculateCommissionAmount(booking.price)
+      const commissionRate = typeof body.booking.commissionRate === 'number'
+        ? body.booking.commissionRate
+        : env.PLANY_COMMISSION_PERCENTAGE
+      const commissionAmount = calculateCommissionAmount(booking.price, commissionRate)
+      booking.commissionRate = commissionRate
+      booking.commissionTotal = commissionAmount
+      booking.commission = commissionAmount
       booking.commissionStatus = body.booking.commissionStatus
         ? body.booking.commissionStatus
         : booking.commissionStatus || bookcarsTypes.CommissionStatus.Pending

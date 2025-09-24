@@ -26,6 +26,19 @@ const nf = new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 0 })
 const formatAmount = (value: number) => `${nf.format(Math.round(value || 0))} TND`
 const formatDate = (value: string) => new Date(value).toLocaleDateString('fr-FR')
 
+const resolveCommissionRate = (commissionRate?: number) => {
+  if (typeof commissionRate !== 'number' || Number.isNaN(commissionRate)) {
+    return env.PLANY_COMMISSION_RATE
+  }
+
+  const normalized = commissionRate > 1 ? commissionRate / 100 : commissionRate
+  if (normalized <= 0) {
+    return env.PLANY_COMMISSION_RATE
+  }
+
+  return normalized
+}
+
 const BOOKING_STATUS_LABELS_FR: Record<bookcarsTypes.BookingStatus, string> = {
   [bookcarsTypes.BookingStatus.Void]: 'Brouillon',
   [bookcarsTypes.BookingStatus.Pending]: 'En attente',
@@ -46,7 +59,9 @@ const COMMISSION_STATUS_LABELS_FR: Record<bookcarsTypes.CommissionStatus, string
   [bookcarsTypes.CommissionStatus.Paid]: 'Commission payée',
 }
 
-export const calculateCommissionAmount = (price?: number) => Math.round((price || 0) * env.PLANY_COMMISSION_RATE)
+export const calculateCommissionAmount = (price?: number, commissionRate?: number) => (
+  Math.round((price || 0) * resolveCommissionRate(commissionRate))
+)
 
 const getRentalDays = (from: Date, to: Date) => {
   if (!(from instanceof Date) || Number.isNaN(from.getTime()) || !(to instanceof Date) || Number.isNaN(to.getTime())) {
@@ -156,6 +171,8 @@ export const fetchAgencyCommissions = async (
         price: 1,
         status: 1,
         commission: 1,
+        commissionTotal: 1,
+        commissionRate: 1,
         commissionStatus: 1,
         driver: {
           _id: '$driver._id',
@@ -177,6 +194,8 @@ export const fetchAgencyCommissions = async (
     price?: number
     status: bookcarsTypes.BookingStatus
     commission?: number
+    commissionTotal?: number
+    commissionRate?: number
     commissionStatus?: bookcarsTypes.CommissionStatus
     driver: { _id: mongoose.Types.ObjectId; fullName: string }
     supplier: { _id: mongoose.Types.ObjectId; fullName: string }
@@ -191,14 +210,30 @@ export const fetchAgencyCommissions = async (
     })
     : rawBookings
 
+  let effectiveCommissionPercentage = env.PLANY_COMMISSION_PERCENTAGE
+
   const bookings = filtered.map<bookcarsTypes.AgencyCommissionBooking>((booking) => {
     const fromDate = new Date(booking.from)
     const toDate = new Date(booking.to)
     const days = Math.max(getRentalDays(fromDate, toDate), 1)
     const totalClient = Math.round(booking.price || 0)
-    const commissionAmount = typeof booking.commission === 'number'
-      ? Math.round(booking.commission)
-      : calculateCommissionAmount(booking.price)
+    const commissionRateValue = typeof booking.commissionRate === 'number'
+      ? booking.commissionRate
+      : undefined
+    const commissionPercentage = typeof commissionRateValue === 'number'
+      ? (commissionRateValue > 1 ? commissionRateValue : commissionRateValue * 100)
+      : undefined
+    if (typeof commissionPercentage === 'number' && !Number.isNaN(commissionPercentage)) {
+      effectiveCommissionPercentage = commissionPercentage
+    }
+    const storedCommission = typeof booking.commission === 'number'
+      ? booking.commission
+      : typeof booking.commissionTotal === 'number'
+        ? booking.commissionTotal
+        : undefined
+    const commissionAmount = typeof storedCommission === 'number'
+      ? Math.round(storedCommission)
+      : calculateCommissionAmount(booking.price, commissionRateValue)
     const commissionDue = BILLABLE_STATUSES.has(booking.status)
       ? commissionAmount
       : 0
@@ -243,7 +278,7 @@ export const fetchAgencyCommissions = async (
     commission: 0,
     net: 0,
     reservations: 0,
-    commissionPercentage: env.PLANY_COMMISSION_PERCENTAGE,
+    commissionPercentage: effectiveCommissionPercentage,
   })
 
   const supplierInfo = rawBookings.length > 0 ? rawBookings[0].supplier : null
@@ -256,7 +291,7 @@ export const fetchAgencyCommissions = async (
       commission: summary.commission,
       net: summary.net,
       reservations: summary.reservations,
-      commissionPercentage: summary.commissionPercentage,
+      commissionPercentage: effectiveCommissionPercentage,
     },
     supplier: supplierInfo
       ? { _id: supplierInfo._id.toString(), fullName: supplierInfo.fullName }
@@ -280,6 +315,8 @@ export const fetchCommissionBookingById = async (bookingId: string) => {
       price?: number
       status: bookcarsTypes.BookingStatus
       commission?: number
+      commissionTotal?: number
+      commissionRate?: number
       commissionStatus?: bookcarsTypes.CommissionStatus
       driver?: { _id: mongoose.Types.ObjectId; fullName: string }
       supplier?: { _id: mongoose.Types.ObjectId; fullName: string }
@@ -293,9 +330,17 @@ export const fetchCommissionBookingById = async (bookingId: string) => {
   const toDate = new Date(booking.to)
   const days = Math.max(getRentalDays(fromDate, toDate), 1)
   const totalClient = Math.round(booking.price || 0)
-  const commissionAmount = typeof booking.commission === 'number'
-    ? Math.round(booking.commission)
-    : calculateCommissionAmount(booking.price)
+  const commissionRateValue = typeof booking.commissionRate === 'number'
+    ? booking.commissionRate
+    : undefined
+  const storedCommission = typeof booking.commission === 'number'
+    ? booking.commission
+    : typeof booking.commissionTotal === 'number'
+      ? booking.commissionTotal
+      : undefined
+  const commissionAmount = typeof storedCommission === 'number'
+    ? Math.round(storedCommission)
+    : calculateCommissionAmount(booking.price, commissionRateValue)
   const commissionDue = BILLABLE_STATUSES.has(booking.status)
     ? commissionAmount
     : 0
@@ -350,7 +395,7 @@ export const generateMonthlyInvoice = (
 
   doc.fontSize(12).text(`Agence : ${supplier.fullName}`)
   doc.text(`Période : ${MONTHS_FR[Math.max(0, Math.min(11, month))]} ${year}`)
-  doc.text(`Commission Plany : ${env.PLANY_COMMISSION_PERCENTAGE}%`)
+  doc.text(`Commission Plany : ${data.summary.commissionPercentage}%`)
   doc.moveDown()
 
   if (data.bookings.length === 0) {

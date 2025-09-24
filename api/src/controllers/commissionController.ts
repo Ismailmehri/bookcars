@@ -19,6 +19,7 @@ export const getAgencyCommissions = async (req: Request, res: Response) => {
         bookings: [],
         summary: {
           gross: 0,
+          grossAll: 0,
           commission: 0,
           net: 0,
           reservations: 0,

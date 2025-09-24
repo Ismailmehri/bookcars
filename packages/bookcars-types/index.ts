@@ -173,6 +173,7 @@ export interface AgencyCommissionBooking {
 
 export interface AgencyCommissionSummary {
   gross: number
+  grossAll: number
   commission: number
   net: number
   reservations: number

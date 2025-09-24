@@ -10,12 +10,6 @@ const strings = new LocalizedStrings({
     DOWNLOAD_MONTH_INVOICE: 'Télécharger facture du mois',
     SEARCH_PLACEHOLDER: 'Rechercher par client ou n° réservation…',
     STATUS_ALL: 'Tous les statuts',
-    STATUS_LABELS: {
-      confirmed: 'Confirmée',
-      inProgress: 'En cours',
-      completed: 'Terminée',
-      cancelled: 'Annulée',
-    },
     COMMISSION_PAYMENT_LABELS: {
       paid: 'Payée',
       pending: 'Non payée',
@@ -23,6 +17,7 @@ const strings = new LocalizedStrings({
     PREVIOUS_MONTH: 'Mois précédent',
     NEXT_MONTH: 'Mois suivant',
     KPI_GROSS: 'CA brut (mois)',
+    KPI_GROSS_ALL: 'CA brut (toutes réservations)',
     KPI_NET: 'CA sans commission (mois)',
     KPI_COMMISSION: 'Commission Plany (mois)',
     KPI_RESERVATIONS: 'Réservations (mois)',
@@ -71,12 +66,6 @@ const strings = new LocalizedStrings({
     DOWNLOAD_MONTH_INVOICE: 'Download monthly invoice',
     SEARCH_PLACEHOLDER: 'Search by client or booking number…',
     STATUS_ALL: 'All statuses',
-    STATUS_LABELS: {
-      confirmed: 'Confirmed',
-      inProgress: 'In progress',
-      completed: 'Completed',
-      cancelled: 'Cancelled',
-    },
     COMMISSION_PAYMENT_LABELS: {
       paid: 'Paid',
       pending: 'Unpaid',
@@ -84,6 +73,7 @@ const strings = new LocalizedStrings({
     PREVIOUS_MONTH: 'Previous month',
     NEXT_MONTH: 'Next month',
     KPI_GROSS: 'Gross revenue (month)',
+    KPI_GROSS_ALL: 'Gross revenue (all bookings)',
     KPI_NET: 'Net revenue (month)',
     KPI_COMMISSION: 'Plany commission (month)',
     KPI_RESERVATIONS: 'Bookings (month)',

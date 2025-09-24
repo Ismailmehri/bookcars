@@ -35,6 +35,12 @@ const BOOKING_STATUS_LABELS_FR: Record<bookcarsTypes.BookingStatus, string> = {
   [bookcarsTypes.BookingStatus.Cancelled]: 'Annulée',
 }
 
+const BILLABLE_STATUSES = new Set<bookcarsTypes.BookingStatus>([
+  bookcarsTypes.BookingStatus.Deposit,
+  bookcarsTypes.BookingStatus.Reserved,
+  bookcarsTypes.BookingStatus.Paid,
+])
+
 const COMMISSION_STATUS_LABELS_FR: Record<bookcarsTypes.CommissionStatus, string> = {
   [bookcarsTypes.CommissionStatus.Pending]: 'Commission en attente',
   [bookcarsTypes.CommissionStatus.Paid]: 'Commission payée',
@@ -76,6 +82,7 @@ export const fetchAgencyCommissions = async (
       bookings: [],
       summary: {
         gross: 0,
+        grossAll: 0,
         commission: 0,
         net: 0,
         reservations: 0,
@@ -95,6 +102,7 @@ export const fetchAgencyCommissions = async (
       bookings: [],
       summary: {
         gross: 0,
+        grossAll: 0,
         commission: 0,
         net: 0,
         reservations: 0,
@@ -189,7 +197,10 @@ export const fetchAgencyCommissions = async (
     const commissionAmount = typeof booking.commission === 'number'
       ? Math.round(booking.commission)
       : calculateCommissionAmount(booking.price)
-    const netAgency = totalClient - commissionAmount
+    const commissionDue = BILLABLE_STATUSES.has(booking.status)
+      ? commissionAmount
+      : 0
+    const netAgency = totalClient - commissionDue
     const pricePerDay = Math.round(days > 0 ? totalClient / days : totalClient)
 
     return {
@@ -206,18 +217,27 @@ export const fetchAgencyCommissions = async (
       days,
       pricePerDay,
       totalClient,
-      commission: commissionAmount,
+      commission: commissionDue,
       netAgency,
     }
   })
 
-  const summary = bookings.reduce<bookcarsTypes.AgencyCommissionSummary>((acc, booking) => ({
-    gross: acc.gross + booking.totalClient,
-    commission: acc.commission + booking.commission,
-    net: acc.net + booking.netAgency,
-    reservations: acc.reservations + 1,
-  }), {
+  const summary = bookings.reduce<bookcarsTypes.AgencyCommissionSummary>((acc, booking) => {
+    const isBillable = BILLABLE_STATUSES.has(booking.bookingStatus)
+
+    acc.grossAll += booking.totalClient
+
+    if (isBillable) {
+      acc.gross += booking.totalClient
+      acc.commission += booking.commission
+      acc.net += booking.netAgency
+      acc.reservations += 1
+    }
+
+    return acc
+  }, {
     gross: 0,
+    grossAll: 0,
     commission: 0,
     net: 0,
     reservations: 0,
@@ -229,6 +249,7 @@ export const fetchAgencyCommissions = async (
     bookings,
     summary: {
       gross: summary.gross,
+      grossAll: summary.grossAll,
       commission: summary.commission,
       net: summary.net,
       reservations: summary.reservations,
@@ -271,7 +292,10 @@ export const fetchCommissionBookingById = async (bookingId: string) => {
   const commissionAmount = typeof booking.commission === 'number'
     ? Math.round(booking.commission)
     : calculateCommissionAmount(booking.price)
-  const netAgency = totalClient - commissionAmount
+  const commissionDue = BILLABLE_STATUSES.has(booking.status)
+    ? commissionAmount
+    : 0
+  const netAgency = totalClient - commissionDue
   const pricePerDay = Math.round(days > 0 ? totalClient / days : totalClient)
 
   const commissionBooking: bookcarsTypes.AgencyCommissionBooking = {
@@ -288,7 +312,7 @@ export const fetchCommissionBookingById = async (bookingId: string) => {
     days,
     pricePerDay,
     totalClient,
-    commission: commissionAmount,
+    commission: commissionDue,
     netAgency,
   }
 

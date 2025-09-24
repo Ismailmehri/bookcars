@@ -55,8 +55,23 @@ const LOCALE_MAP: Record<string, string> = {
   es: 'es-ES',
 }
 
-type StatusCategory = 'confirmed' | 'inProgress' | 'completed' | 'cancelled'
-type CommissionRow = bookcarsTypes.AgencyCommissionBooking & { statusCategory: StatusCategory }
+const BILLABLE_STATUSES = new Set<bookcarsTypes.BookingStatus>([
+  bookcarsTypes.BookingStatus.Deposit,
+  bookcarsTypes.BookingStatus.Reserved,
+  bookcarsTypes.BookingStatus.Paid,
+])
+
+const BOOKING_STATUS_CHIP_STYLES: Record<bookcarsTypes.BookingStatus, { background: string; color: string }> = {
+  [bookcarsTypes.BookingStatus.Void]: { background: '#D9D9D9', color: '#6E7C86' },
+  [bookcarsTypes.BookingStatus.Pending]: { background: '#FBDCC2', color: '#EF6C00' },
+  [bookcarsTypes.BookingStatus.Deposit]: { background: '#CDECDA', color: '#3CB371' },
+  [bookcarsTypes.BookingStatus.Paid]: { background: '#D1F9D1', color: '#77BC23' },
+  [bookcarsTypes.BookingStatus.Reserved]: { background: '#D9E7F4', color: '#1E88E5' },
+  [bookcarsTypes.BookingStatus.Cancelled]: { background: '#FBDFDE', color: '#E53935' },
+}
+const FALLBACK_STATUS_CHIP_STYLE = { background: '#ECEFF1', color: '#455A64' }
+
+type CommissionRow = bookcarsTypes.AgencyCommissionBooking
 type DrawerState = CommissionRow | null
 
 type KpiProps = {
@@ -78,51 +93,13 @@ const Kpi = ({ title, value, icon, loading }: KpiProps) => (
   </Card>
 )
 
-const statusColor = (status: StatusCategory): 'default' | 'warning' | 'info' | 'success' => {
-  switch (status) {
-    case 'confirmed':
-      return 'warning'
-    case 'inProgress':
-      return 'info'
-    case 'completed':
-      return 'success'
-    case 'cancelled':
-    default:
-      return 'default'
-  }
-}
-
 const paymentColor = (status?: bookcarsTypes.CommissionStatus): 'success' | 'warning' => (
   status === COMMISSION_STATUS_PAID ? 'success' : 'warning'
 )
 
-const computeStatusCategory = (booking: bookcarsTypes.AgencyCommissionBooking): StatusCategory => {
-  if (booking.bookingStatus === bookcarsTypes.BookingStatus.Cancelled) {
-    return 'cancelled'
-  }
-
-  const now = Date.now()
-  const start = new Date(booking.from).getTime()
-  const end = new Date(booking.to).getTime()
-
-  if (!Number.isFinite(start) || !Number.isFinite(end)) {
-    return 'confirmed'
-  }
-
-  if (end < now) {
-    return 'completed'
-  }
-
-  if (start > now) {
-    return 'confirmed'
-  }
-
-  return 'inProgress'
-}
-
 const AgencyCommissions = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
-  const [status, setStatus] = useState<'all' | StatusCategory>('all')
+  const [status, setStatus] = useState<'all' | bookcarsTypes.BookingStatus>('all')
   const [query, setQuery] = useState('')
   const [month, setMonth] = useState(new Date().getMonth())
   const [year, setYear] = useState(new Date().getFullYear())
@@ -135,8 +112,9 @@ const AgencyCommissions = () => {
 
   const locale = LOCALE_MAP[user?.language || 'fr'] || 'fr-FR'
   const months = strings.MONTHS as string[]
-  const statusLabels = strings.STATUS_LABELS as Record<StatusCategory, string>
+  const language = strings.getLanguage()
   const commissionPaymentLabels = strings.COMMISSION_PAYMENT_LABELS as Record<bookcarsTypes.CommissionStatus, string>
+  const bookingStatusOptions = useMemo(() => helper.getBookingStatuses(), [language])
 
   useEffect(() => {
     if (!user?._id) {
@@ -162,7 +140,6 @@ const AgencyCommissions = () => {
           const rows = response.bookings.map((booking) => ({
             ...booking,
             commissionStatus: booking.commissionStatus || COMMISSION_STATUS_PENDING,
-            statusCategory: computeStatusCategory(booking),
           }))
 
           setData(rows)
@@ -191,30 +168,39 @@ const AgencyCommissions = () => {
   const filteredRows = useMemo(() => (
     status === 'all'
       ? data
-      : data.filter((booking) => booking.statusCategory === status)
+      : data.filter((booking) => booking.bookingStatus === status)
   ), [data, status])
 
   const metrics = useMemo(() => {
-    if (summary) {
-      return {
-        gross: formatCurrency(summary.gross),
-        net: formatCurrency(summary.net),
-        commission: formatCurrency(summary.commission),
-        reservations: `${summary.reservations}`,
-      }
-    }
+    const base = summary ?? data.reduce<bookcarsTypes.AgencyCommissionSummary>((acc, booking) => {
+      const isBillable = BILLABLE_STATUSES.has(booking.bookingStatus)
 
-    const totalGross = filteredRows.reduce((acc, booking) => acc + booking.totalClient, 0)
-    const totalCommission = filteredRows.reduce((acc, booking) => acc + booking.commission, 0)
-    const totalNet = totalGross - totalCommission
+      acc.grossAll += booking.totalClient
+
+      if (isBillable) {
+        acc.gross += booking.totalClient
+        acc.commission += booking.commission
+        acc.net += booking.netAgency
+        acc.reservations += 1
+      }
+
+      return acc
+    }, {
+      gross: 0,
+      grossAll: 0,
+      commission: 0,
+      net: 0,
+      reservations: 0,
+    })
 
     return {
-      gross: formatCurrency(totalGross),
-      net: formatCurrency(totalNet),
-      commission: formatCurrency(totalCommission),
-      reservations: `${filteredRows.length}`,
+      gross: formatCurrency(base.gross),
+      grossAll: formatCurrency(base.grossAll),
+      net: formatCurrency(base.net),
+      commission: formatCurrency(base.commission),
+      reservations: `${base.reservations}`,
     }
-  }, [filteredRows, summary])
+  }, [data, summary])
 
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear()
@@ -248,6 +234,26 @@ const AgencyCommissions = () => {
   }
 
   const renderDate = (date: string) => new Date(date).toLocaleDateString(locale)
+
+  const renderBookingStatusChip = (bookingStatus: bookcarsTypes.BookingStatus) => {
+    const statusStyle = BOOKING_STATUS_CHIP_STYLES[bookingStatus] || FALLBACK_STATUS_CHIP_STYLE
+
+    return (
+      <Chip
+        size="small"
+        label={helper.getBookingStatus(bookingStatus)}
+        variant="filled"
+        sx={{
+          bgcolor: statusStyle.background,
+          color: statusStyle.color,
+          fontWeight: 600,
+          '& .MuiChip-label': {
+            fontWeight: 600,
+          },
+        }}
+      />
+    )
+  }
 
   const downloadBlob = (blob: Blob, filename: string) => {
     const url = window.URL.createObjectURL(blob)
@@ -285,7 +291,7 @@ const AgencyCommissions = () => {
       formatCurrency(booking.totalClient),
       formatCurrency(booking.commission),
       formatCurrency(booking.netAgency),
-      statusLabels[booking.statusCategory],
+      helper.getBookingStatus(booking.bookingStatus),
       commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING],
     ])
 
@@ -379,13 +385,12 @@ const AgencyCommissions = () => {
                   size="small"
                   fullWidth
                   value={status}
-                  onChange={(event) => setStatus(event.target.value as StatusCategory | 'all')}
+                  onChange={(event) => setStatus(event.target.value as ('all' | bookcarsTypes.BookingStatus))}
                 >
                   <MenuItem value="all">{strings.STATUS_ALL}</MenuItem>
-                  <MenuItem value="confirmed">{statusLabels.confirmed}</MenuItem>
-                  <MenuItem value="inProgress">{statusLabels.inProgress}</MenuItem>
-                  <MenuItem value="completed">{statusLabels.completed}</MenuItem>
-                  <MenuItem value="cancelled">{statusLabels.cancelled}</MenuItem>
+                  {bookingStatusOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                  ))}
                 </Select>
               </Grid>
               <Grid item xs={12} sm={6} md={2}>
@@ -426,16 +431,19 @@ const AgencyCommissions = () => {
           </Paper>
 
           <Grid container spacing={2}>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={4}>
               <Kpi title={strings.KPI_GROSS} value={metrics.gross} icon={<InfoOutlinedIcon />} loading={loading} />
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={4}>
+              <Kpi title={strings.KPI_GROSS_ALL} value={metrics.grossAll} icon={<InfoOutlinedIcon />} loading={loading} />
+            </Grid>
+            <Grid item xs={12} md={4}>
               <Kpi title={strings.KPI_NET} value={metrics.net} icon={<PaidOutlinedIcon />} loading={loading} />
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={6}>
               <Kpi title={strings.KPI_COMMISSION} value={metrics.commission} icon={<LocalOfferOutlinedIcon />} loading={loading} />
             </Grid>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={6}>
               <Kpi title={strings.KPI_RESERVATIONS} value={metrics.reservations} icon={<PeopleAltOutlinedIcon />} loading={loading} />
             </Grid>
           </Grid>
@@ -506,9 +514,7 @@ const AgencyCommissions = () => {
                     <TableCell align="right">{formatCurrency(booking.totalClient)}</TableCell>
                     <TableCell align="right">{formatCurrency(booking.commission)}</TableCell>
                     <TableCell align="right">{formatCurrency(booking.netAgency)}</TableCell>
-                    <TableCell align="center">
-                      <Chip size="small" label={statusLabels[booking.statusCategory]} color={statusColor(booking.statusCategory)} />
-                    </TableCell>
+                    <TableCell align="center">{renderBookingStatusChip(booking.bookingStatus)}</TableCell>
                     <TableCell align="center">
                     <Chip
                       size="small"
@@ -603,7 +609,7 @@ const AgencyCommissions = () => {
 
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_STATUS_SECTION}</Typography>
                   <Stack direction="row" spacing={1}>
-                    <Chip size="small" label={statusLabels[drawer.statusCategory]} color={statusColor(drawer.statusCategory)} />
+                    {drawer && renderBookingStatusChip(drawer.bookingStatus)}
                     <Chip
                       size="small"
                       label={commissionPaymentLabels[drawer.commissionStatus || COMMISSION_STATUS_PENDING]}

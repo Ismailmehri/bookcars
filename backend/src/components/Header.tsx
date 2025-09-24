@@ -24,6 +24,7 @@ import {
   Settings as SettingsIcon,
   Dashboard as DashboardIcon,
   CorporateFare as SuppliersIcon,
+  AccountBalanceWallet as CommissionsIcon,
   LocationOn as LocationsIcon,
   DirectionsCar as CarsIcon,
   People as UsersIcon,
@@ -293,6 +294,10 @@ const Header = ({
                 <ListItemLink href="/">
                   <ListItemIcon><DashboardIcon /></ListItemIcon>
                   <ListItemText primary={strings.DASHBOARD} />
+                </ListItemLink>
+                <ListItemLink href="/agency-commissions">
+                  <ListItemIcon><CommissionsIcon /></ListItemIcon>
+                  <ListItemText primary={strings.COMMISSIONS} />
                 </ListItemLink>
                 <ListItemLink href="/suppliers">
                   <ListItemIcon><SuppliersIcon /></ListItemIcon>

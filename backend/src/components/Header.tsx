@@ -33,7 +33,8 @@ import {
   Flag as CountriesIcon,
   BarChart as StatsIcon,
   RateReview as ReviewIcon,
-  FactCheck as VerificationIcon
+  FactCheck as VerificationIcon,
+  Paid as CommissionsIcon
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import * as bookcarsTypes from ':bookcars-types'
@@ -298,6 +299,12 @@ const Header = ({
                   <ListItemIcon><SuppliersIcon /></ListItemIcon>
                   <ListItemText primary={strings.COMPANIES} />
                 </ListItemLink>
+                {isAdmin && (
+                <ListItemLink href="/admin-commissions">
+                  <ListItemIcon><CommissionsIcon /></ListItemIcon>
+                  <ListItemText primary={strings.COMMISSIONS} />
+                </ListItemLink>
+                )}
                 {(isAdmin) && (
                 <>
                   <ListItemLink href="/countries">

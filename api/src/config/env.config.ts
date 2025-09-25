@@ -374,6 +374,13 @@ export const BOOKING_EXPIRE_AT = STRIPE_SESSION_EXPIRE_AT + (10 * 60)
 export const USER_EXPIRE_AT = BOOKING_EXPIRE_AT
 
 /**
+ * Commission rate applied on bookings when calculating agency commissions.
+ *
+ * @type {number}
+ */
+export const COMMISSION_RATE = Number.parseFloat(__env__('BC_COMMISSION_RATE', false, '0.15'))
+
+/**
  * Admin email.
  *
  * @type {string}

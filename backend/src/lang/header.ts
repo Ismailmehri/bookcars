@@ -22,6 +22,7 @@ const strings = new LocalizedStrings({
     SUBSCRIPTIONS: 'Abonnements',
     VERIFICATION: 'Vérification agence',
     ADMIN_VERIFICATION: 'Documents agences',
+    COMMISSIONS: 'Commissions',
   },
   en: {
     DASHBOARD: 'Dashboard',
@@ -43,6 +44,7 @@ const strings = new LocalizedStrings({
     SUBSCRIPTIONS: 'Subscriptions',
     VERIFICATION: 'Agency verification',
     ADMIN_VERIFICATION: 'Agency documents',
+    COMMISSIONS: 'Commissions',
   },
 })
 

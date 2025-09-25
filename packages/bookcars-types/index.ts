@@ -114,6 +114,16 @@ export interface Booking {
   paymentIntentId?: string
   customerId?: string
   expireAt?: Date
+  notifications?: {
+    supplier?: {
+      count?: number
+      lastSent?: Date | string | null
+    }
+    client?: {
+      count?: number
+      lastSent?: Date | string | null
+    }
+  }
 }
 
 export interface CheckoutPayload {
@@ -749,6 +759,51 @@ export interface BookingStat {
   status: BookingStatus
   count: number
   totalPrice: number
+}
+
+export interface CommissionNotificationInfo {
+  count: number
+  lastSent?: Date | string | null
+}
+
+export interface CommissionBookingParty {
+  _id: string
+  fullName: string
+  email?: string
+  phone?: string
+}
+
+export interface CommissionBooking {
+  bookingId: string
+  supplier: CommissionBookingParty
+  driver: CommissionBookingParty
+  from: Date
+  to: Date
+  createdAt?: Date
+  status: BookingStatus
+  price: number
+  commission: number
+  notifications?: {
+    supplier?: CommissionNotificationInfo
+    client?: CommissionNotificationInfo
+  }
+}
+
+export interface CommissionSummary {
+  bookings: number
+  totalAmount: number
+  totalCommission: number
+  paidCommission: number
+  pendingCommission: number
+}
+
+export interface AgencyCommissionsPayload {
+  supplierIds?: string[]
+}
+
+export interface AgencyCommissionsResponse {
+  summary: CommissionSummary
+  bookings: CommissionBooking[]
 }
 
 

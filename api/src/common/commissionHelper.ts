@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import mongoose from 'mongoose'
 import PDFDocument from 'pdfkit'
 import axios from 'axios'
@@ -26,6 +28,78 @@ const nf = new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 0 })
 
 const formatAmount = (value: number) => `${nf.format(Math.round(value || 0))} TND`
 const formatDate = (value: string) => new Date(value).toLocaleDateString('fr-FR')
+
+const INVOICE_FONT_NAME = 'HeiseiMin-W3'
+const FALLBACK_FONT_NAME = 'Helvetica'
+
+const getInvoiceFontCandidates = () => {
+  const candidates = new Set<string>()
+  const configured = (env.COMMISSION_INVOICE_FONT_PATH || '').trim()
+  const fileNames = [
+    'HeiseiMin-W3.ttf',
+    'HeiseiMin-W3.TTF',
+    'HeiseiMin-W3.otf',
+    'HeiseiMin-W3.OTF',
+    INVOICE_FONT_NAME,
+  ]
+
+  if (configured) {
+    const resolvedConfigured = path.resolve(configured)
+    candidates.add(resolvedConfigured)
+
+    try {
+      const configuredStats = fs.statSync(resolvedConfigured)
+      if (configuredStats.isDirectory()) {
+        fileNames.forEach((fileName) => {
+          candidates.add(path.resolve(resolvedConfigured, fileName))
+        })
+      }
+    } catch (err) {
+      console.warn(`[commission.generateMonthlyInvoice] Unable to access configured font path '${resolvedConfigured}'`, err)
+    }
+  }
+
+  const searchDirectories = [
+    path.resolve(__dirname, '..', 'assets', 'fonts'),
+    path.resolve(process.cwd(), 'assets', 'fonts'),
+    path.resolve(process.cwd(), 'fonts'),
+    process.cwd(),
+  ]
+
+  searchDirectories.forEach((directory) => {
+    fileNames.forEach((fileName) => {
+      candidates.add(path.resolve(directory, fileName))
+    })
+  })
+
+  return Array.from(candidates)
+}
+
+const applyInvoiceFont = (doc: PDFDocument) => {
+  const candidates = getInvoiceFontCandidates()
+
+  for (const candidate of candidates) {
+    if (candidate) {
+      try {
+        const exists = fs.existsSync(candidate)
+        if (exists) {
+          const stats = fs.statSync(candidate)
+          if (stats.isFile()) {
+            doc.registerFont(INVOICE_FONT_NAME, candidate)
+            doc.font(INVOICE_FONT_NAME)
+            return INVOICE_FONT_NAME
+          }
+        }
+      } catch (err) {
+        console.warn(`[commission.generateMonthlyInvoice] Unable to register font '${candidate}'`, err)
+      }
+    }
+  }
+
+  doc.font(FALLBACK_FONT_NAME)
+  console.warn('[commission.generateMonthlyInvoice] Falling back to Helvetica font. Set BC_COMMISSION_INVOICE_FONT_PATH to provide HeiseiMin-W3.')
+  return FALLBACK_FONT_NAME
+}
 
 const resolveCommissionRate = (commissionRate?: number) => {
   if (typeof commissionRate !== 'number' || Number.isNaN(commissionRate)) {
@@ -411,7 +485,7 @@ export const generateMonthlyInvoice = async (
     console.warn('[commission.generateMonthlyInvoice] Unable to load Plany logo', err)
   }
 
-  doc.font('HeiseiMin-W3')
+  applyInvoiceFont(doc)
   doc.fontSize(9)
 
   if (logoBuffer) {

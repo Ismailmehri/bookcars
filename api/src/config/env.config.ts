@@ -391,12 +391,14 @@ const parseCommissionPercentage = (value?: string) => {
   return undefined
 }
 
-const commissionRateOverride = parseCommissionPercentage(__env__('BC_COMMISSION_RATE'))
-const commissionPercentageEnv = parseCommissionPercentage(__env__('BC_PLANY_COMMISSION_PERCENTAGE'))
+const commissionRateRaw = __env__('BC_COMMISSION_RATE', true)
+const commissionRateOverride = parseCommissionPercentage(commissionRateRaw)
+
+if (commissionRateOverride === undefined) {
+  throw new Error(`Invalid BC_COMMISSION_RATE value: ${commissionRateRaw}`)
+}
 
 export const PLANY_COMMISSION_PERCENTAGE = commissionRateOverride
-  ?? commissionPercentageEnv
-  ?? 12
 
 /**
  * Plany commission rate as decimal multiplier.

@@ -40,9 +40,7 @@ export const create = async (req: Request, res: Response) => {
       body.booking._additionalDriver = additionalDriver._id.toString()
     }
 
-    const commissionRate = typeof body.booking.commissionRate === 'number'
-      ? body.booking.commissionRate
-      : env.PLANY_COMMISSION_PERCENTAGE
+    const commissionRate = env.PLANY_COMMISSION_PERCENTAGE
     const commissionAmount = calculateCommissionAmount(body.booking.price, commissionRate)
     body.booking.commissionRate = commissionRate
     body.booking.commissionTotal = commissionAmount
@@ -564,9 +562,14 @@ export const update = async (req: Request, res: Response) => {
       booking.fullInsurance = fullInsurance
       booking.additionalDriver = additionalDriver
       booking.price = price as number
-      const commissionRate = typeof body.booking.commissionRate === 'number'
-        ? body.booking.commissionRate
-        : env.PLANY_COMMISSION_PERCENTAGE
+      let commissionRate: number
+      if (typeof body.booking.commissionRate === 'number') {
+        commissionRate = body.booking.commissionRate
+      } else if (typeof booking.commissionRate === 'number') {
+        commissionRate = booking.commissionRate
+      } else {
+        commissionRate = env.PLANY_COMMISSION_PERCENTAGE
+      }
       const commissionAmount = calculateCommissionAmount(booking.price, commissionRate)
       booking.commissionRate = commissionRate
       booking.commissionTotal = commissionAmount

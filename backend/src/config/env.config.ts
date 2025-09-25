@@ -62,18 +62,13 @@ const env = {
       : Const.PAGINATION_MODE.CLASSIC,
   CURRENCY: import.meta.env.VITE_BC_CURRENCY || '$',
   PLANY_COMMISSION_PERCENTAGE: (() => {
-    const parsePercentage = (value?: string | number) => {
-      if (value === undefined || value === null) {
-        return undefined
-      }
-
-      const parsed = Number.parseFloat(String(value))
-      return Number.isFinite(parsed) ? parsed : undefined
+    const raw = import.meta.env.VITE_BC_COMMISSION_RATE
+    if (raw === undefined || raw === null) {
+      return 0
     }
 
-    return parsePercentage(import.meta.env.VITE_BC_COMMISSION_RATE)
-      ?? parsePercentage(import.meta.env.VITE_BC_PLANY_COMMISSION_PERCENTAGE)
-      ?? 0
+    const parsed = Number.parseFloat(String(raw))
+    return Number.isFinite(parsed) ? parsed : 0
   })(),
   DEPOSIT_FILTER_VALUE_1: Number.parseInt(String(import.meta.env.VITE_BC_DEPOSIT_FILTER_VALUE_1), 10),
   DEPOSIT_FILTER_VALUE_2: Number.parseInt(String(import.meta.env.VITE_BC_DEPOSIT_FILTER_VALUE_2), 10),

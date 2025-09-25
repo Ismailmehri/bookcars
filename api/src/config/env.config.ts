@@ -408,13 +408,6 @@ export const PLANY_COMMISSION_PERCENTAGE = commissionRateOverride
 export const PLANY_COMMISSION_RATE = PLANY_COMMISSION_PERCENTAGE / 100
 
 /**
- * Optional font filepath for commission invoices.
- *
- * @type {string}
- */
-export const COMMISSION_INVOICE_FONT_PATH = __env__('BC_COMMISSION_INVOICE_FONT_PATH')
-
-/**
  * Admin email.
  *
  * @type {string}

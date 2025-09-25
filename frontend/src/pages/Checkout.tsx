@@ -132,7 +132,7 @@ const Checkout = () => {
         fullInsurance,
         additionalDriver,
       }
-      const _price = bookcarsHelper.calculateTotalPrice(car, from, to, options)
+      const _price = helper.calculateCommissionedTotalPrice(car, from, to, options)
 
       setCancellation(_cancellation)
       setPrice(_price)
@@ -150,7 +150,7 @@ const Checkout = () => {
         fullInsurance,
         additionalDriver,
       }
-      const _price = bookcarsHelper.calculateTotalPrice(car, from, to, options)
+      const _price = helper.calculateCommissionedTotalPrice(car, from, to, options)
 
       setAmendments(_amendments)
       setPrice(_price)
@@ -168,7 +168,7 @@ const Checkout = () => {
         fullInsurance,
         additionalDriver: _additionalDriver,
       }
-      const _price = bookcarsHelper.calculateTotalPrice(car, from, to, options)
+      const _price = helper.calculateCommissionedTotalPrice(car, from, to, options)
 
       setAdditionalDriver(_additionalDriver)
       setPrice(_price)
@@ -319,10 +319,11 @@ const Checkout = () => {
 
       if (status === 200) {
         if (payLater) {
+          const pricePerDay = days > 0 ? price / days : price
           sendPurchaseEvent(_bookingId, price, 'TND', [{ id: car?._id,
             name: car?.name,
             quantity: days,
-            price: car?.dailyPrice }])
+            price: pricePerDay }])
           setVisible(false)
           setSuccess(true)
         }
@@ -404,7 +405,7 @@ const Checkout = () => {
         return
       }
 
-      const _price = bookcarsHelper.calculateTotalPrice(_car, _from, _to)
+      const _price = helper.calculateCommissionedTotalPrice(_car, _from, _to)
 
       const included = (val: number) => val === 0
 
@@ -609,7 +610,7 @@ const Checkout = () => {
                       </div>
                       <div className="booking-detail" style={{ height: bookingDetailHeight }}>
                         <span className="booking-detail-title">{strings.CAR}</span>
-                        <div className="booking-detail-value">{`${car.name} (${bookcarsHelper.formatPrice(price / days, commonStrings.CURRENCY, language)}${commonStrings.DAILY})`}</div>
+                        <div className="booking-detail-value">{`${car.name} (${bookcarsHelper.formatPrice(days > 0 ? price / days : price, commonStrings.CURRENCY, language)}${commonStrings.DAILY})`}</div>
                       </div>
                       <div className="booking-detail" style={{ height: bookingDetailHeight }}>
                         <span className="booking-detail-title">{commonStrings.SUPPLIER}</span>

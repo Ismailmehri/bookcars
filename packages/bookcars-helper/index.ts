@@ -319,6 +319,26 @@ export const calculateTotalPrice = (
 };
 
 
+export const normalizeCommissionRate = (commissionRate?: number) => {
+  if (typeof commissionRate !== 'number' || Number.isNaN(commissionRate)) {
+    return 0
+  }
+
+  return commissionRate > 1 ? commissionRate / 100 : commissionRate
+}
+
+export const applyCommission = (amount: number, commissionRate?: number) => {
+  if (typeof amount !== 'number' || Number.isNaN(amount)) {
+    return 0
+  }
+
+  const normalizedRate = normalizeCommissionRate(commissionRate)
+  const gross = amount * (1 + normalizedRate)
+
+  return Math.round(gross * 100) / 100
+}
+
+
 
 
 /**

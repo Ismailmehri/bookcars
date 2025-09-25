@@ -10,6 +10,7 @@ import i18n from '@/lang/i18n'
 import * as UserService from '@/services/UserService'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
+import * as env from '@/config/env.config'
 import * as toastHelper from './toastHelper'
 
 /**
@@ -44,6 +45,17 @@ export const toast = (message: string) => {
 export const error = (err?: unknown, __toast__ = true) => {
   toastHelper.error(err, __toast__)
 }
+
+export const getCommissionPercentage = () => (env.COMMISSION_ENABLED ? env.PLANY_COMMISSION_PERCENTAGE : 0)
+
+export const applyCommission = (amount: number) => bookcarsHelper.applyCommission(amount, getCommissionPercentage())
+
+export const calculateCommissionedTotalPrice = (
+  car: bookcarsTypes.Car,
+  from: Date,
+  to: Date,
+  options?: bookcarsTypes.CarOptions
+) => applyCommission(bookcarsHelper.calculateTotalPrice(car, from, to, options))
 
 /**
  * Get filename.
@@ -248,7 +260,7 @@ export const getCancellation = (cancellation: number, language: string) => {
   } if (cancellation === 0) {
     return `${i18n.t('CANCELLATION')}${fr ? ' : ' : ': '}${i18n.t('INCLUDED')}${fr ? 'e' : ''}`
   }
-  return `${i18n.t('CANCELLATION')}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(cancellation, i18n.t('CURRENCY'), language)}`
+  return `${i18n.t('CANCELLATION')}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(applyCommission(cancellation), i18n.t('CURRENCY'), language)}`
 }
 
 /**
@@ -266,7 +278,7 @@ export const getAmendments = (amendments: number, language: string) => {
   } if (amendments === 0) {
     return `${i18n.t('AMENDMENTS')}${fr ? ' : ' : ': '}${i18n.t('INCLUDED')}${fr ? 'es' : ''}`
   }
-  return `${i18n.t('AMENDMENTS')}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(amendments, i18n.t('CURRENCY'), language)}`
+  return `${i18n.t('AMENDMENTS')}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(applyCommission(amendments), i18n.t('CURRENCY'), language)}`
 }
 
 /**
@@ -284,7 +296,7 @@ export const getTheftProtection = (theftProtection: number, language: string) =>
   } if (theftProtection === 0) {
     return `${i18n.t('THEFT_PROTECTION')}${fr ? ' : ' : ': '}${i18n.t('INCLUDED')}${fr ? 'e' : ''}`
   }
-  return `${i18n.t('THEFT_PROTECTION')}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(theftProtection, i18n.t('CURRENCY'), language)}${i18n.t('DAILY')}`
+  return `${i18n.t('THEFT_PROTECTION')}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(applyCommission(theftProtection), i18n.t('CURRENCY'), language)}${i18n.t('DAILY')}`
 }
 
 /**
@@ -302,7 +314,7 @@ export const getCollisionDamageWaiver = (collisionDamageWaiver: number, language
   } if (collisionDamageWaiver === 0) {
     return `${i18n.t('COLLISION_DAMAGE_WAVER')}${fr ? ' : ' : ': '}${i18n.t('INCLUDED')}${fr ? 'e' : ''}`
   }
-  return `${i18n.t('COLLISION_DAMAGE_WAVER')}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(collisionDamageWaiver, i18n.t('CURRENCY'), language)}${i18n.t('DAILY')}`
+  return `${i18n.t('COLLISION_DAMAGE_WAVER')}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(applyCommission(collisionDamageWaiver), i18n.t('CURRENCY'), language)}${i18n.t('DAILY')}`
 }
 
 /**
@@ -320,7 +332,7 @@ export const getFullInsurance = (fullInsurance: number, language: string) => {
   } if (fullInsurance === 0) {
     return `${i18n.t('FULL_INSURANCE')}${fr ? ' : ' : ': '}${i18n.t('INCLUDED')}${fr ? 'e' : ''}`
   }
-  return `${i18n.t('FULL_INSURANCE')}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(fullInsurance, i18n.t('CURRENCY'), language)}${i18n.t('DAILY')}`
+  return `${i18n.t('FULL_INSURANCE')}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(applyCommission(fullInsurance), i18n.t('CURRENCY'), language)}${i18n.t('DAILY')}`
 }
 
 /**
@@ -338,7 +350,7 @@ export const getAdditionalDriver = (additionalDriver: number, language: string) 
   } if (additionalDriver === 0) {
     return `${i18n.t('ADDITIONAL_DRIVER')}${fr ? ' : ' : ': '}${i18n.t('INCLUDED')}`
   }
-  return `${i18n.t('ADDITIONAL_DRIVER')}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(additionalDriver, i18n.t('CURRENCY'), language)}${i18n.t('DAILY')}`
+  return `${i18n.t('ADDITIONAL_DRIVER')}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(applyCommission(additionalDriver), i18n.t('CURRENCY'), language)}${i18n.t('DAILY')}`
 }
 
 /**
@@ -373,7 +385,7 @@ export const getCancellationOption = (cancellation: number, language: string, hi
   } if (cancellation === 0) {
     return `${i18n.t('INCLUDED')}${fr ? 'e' : ''}`
   }
-  return `${hidePlus ? '' : '+ '}${bookcarsHelper.formatPrice(cancellation, i18n.t('CURRENCY'), language)}`
+  return `${hidePlus ? '' : '+ '}${bookcarsHelper.formatPrice(applyCommission(cancellation), i18n.t('CURRENCY'), language)}`
 }
 
 /**
@@ -392,7 +404,7 @@ export const getAmendmentsOption = (amendments: number, language: string, hidePl
   } if (amendments === 0) {
     return `${i18n.t('INCLUDED')}${fr ? 'es' : ''}`
   }
-  return `${hidePlus ? '' : '+ '}${bookcarsHelper.formatPrice(amendments, i18n.t('CURRENCY'), language)}`
+  return `${hidePlus ? '' : '+ '}${bookcarsHelper.formatPrice(applyCommission(amendments), i18n.t('CURRENCY'), language)}`
 }
 
 /**
@@ -412,7 +424,7 @@ export const getCollisionDamageWaiverOption = (collisionDamageWaiver: number, da
   } if (collisionDamageWaiver === 0) {
     return `${i18n.t('INCLUDED')}${fr ? 'e' : ''}`
   }
-  return `${hidePlus ? '' : '+ '}${bookcarsHelper.formatPrice(collisionDamageWaiver * days, i18n.t('CURRENCY'), language)} (${bookcarsHelper.formatPrice(collisionDamageWaiver, i18n.t('CURRENCY'), language)}${i18n.t('DAILY')})`
+  return `${hidePlus ? '' : '+ '}${bookcarsHelper.formatPrice(applyCommission(collisionDamageWaiver * days), i18n.t('CURRENCY'), language)} (${bookcarsHelper.formatPrice(applyCommission(collisionDamageWaiver), i18n.t('CURRENCY'), language)}${i18n.t('DAILY')})`
 }
 
 /**
@@ -432,7 +444,7 @@ export const getTheftProtectionOption = (theftProtection: number, days: number, 
   } if (theftProtection === 0) {
     return `${i18n.t('INCLUDED')}${fr ? 'e' : ''}`
   }
-  return `${hidePlus ? '' : '+ '}${bookcarsHelper.formatPrice(theftProtection * days, i18n.t('CURRENCY'), language)} (${bookcarsHelper.formatPrice(theftProtection, i18n.t('CURRENCY'), language)}${i18n.t('DAILY')})`
+  return `${hidePlus ? '' : '+ '}${bookcarsHelper.formatPrice(applyCommission(theftProtection * days), i18n.t('CURRENCY'), language)} (${bookcarsHelper.formatPrice(applyCommission(theftProtection), i18n.t('CURRENCY'), language)}${i18n.t('DAILY')})`
 }
 
 /**
@@ -452,7 +464,7 @@ export const getFullInsuranceOption = (fullInsurance: number, days: number, lang
   } if (fullInsurance === 0) {
     return `${i18n.t('INCLUDED')}${fr ? 'e' : ''}`
   }
-  return `${hidePlus ? '' : '+ '}${bookcarsHelper.formatPrice(fullInsurance * days, i18n.t('CURRENCY'), language)} (${bookcarsHelper.formatPrice(fullInsurance, i18n.t('CURRENCY'), language)}${i18n.t('DAILY')})`
+  return `${hidePlus ? '' : '+ '}${bookcarsHelper.formatPrice(applyCommission(fullInsurance * days), i18n.t('CURRENCY'), language)} (${bookcarsHelper.formatPrice(applyCommission(fullInsurance), i18n.t('CURRENCY'), language)}${i18n.t('DAILY')})`
 }
 
 /**
@@ -470,7 +482,7 @@ export const getAdditionalDriverOption = (additionalDriver: number, days: number
   } if (additionalDriver === 0) {
     return i18n.t('INCLUDED')
   }
-  return `${hidePlus ? '' : '+ '}${bookcarsHelper.formatPrice(additionalDriver * days, i18n.t('CURRENCY'), language)} (${bookcarsHelper.formatPrice(additionalDriver, i18n.t('CURRENCY'), language)}${i18n.t('DAILY')})`
+  return `${hidePlus ? '' : '+ '}${bookcarsHelper.formatPrice(applyCommission(additionalDriver * days), i18n.t('CURRENCY'), language)} (${bookcarsHelper.formatPrice(applyCommission(additionalDriver), i18n.t('CURRENCY'), language)}${i18n.t('DAILY')})`
 }
 
 /**

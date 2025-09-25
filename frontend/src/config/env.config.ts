@@ -20,6 +20,25 @@ const LANGUAGES = [
   },
 ]
 
+const parseBoolean = (value: unknown) => {
+  if (typeof value !== 'string') {
+    return false
+  }
+
+  return value.toLowerCase() === 'true'
+}
+
+const parseCommissionPercentage = (value: unknown) => {
+  if (value === undefined || value === null) {
+    return 0
+  }
+
+  const parsed = Number.parseFloat(String(value))
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+const commissionPercentage = parseCommissionPercentage(import.meta.env.VITE_BC_COMMISSION_RATE)
+
 const env = {
   isMobile: () => window.innerWidth <= 960,
   isProduction: import.meta.env.VITE_NODE_ENV === 'production',
@@ -68,6 +87,9 @@ const env = {
   GOOGLE_ANALYTICS_ENABLED: (import.meta.env.VITE_BC_GOOGLE_ANALYTICS_ENABLED && import.meta.env.VITE_BC_GOOGLE_ANALYTICS_ENABLED.toLowerCase()) === 'true',
   GOOGLE_ANALYTICS_ID: String(import.meta.env.VITE_BC_GOOGLE_ANALYTICS_ID),
   CONTACT_EMAIL: import.meta.env.VITE_BC_CONTACT_EMAIL,
+  COMMISSION_ENABLED: parseBoolean(import.meta.env.VITE_BC_COMMISSION_ENABLED),
+  PLANY_COMMISSION_PERCENTAGE: commissionPercentage,
+  PLANY_COMMISSION_RATE: commissionPercentage > 1 ? commissionPercentage / 100 : commissionPercentage,
   DEPOSIT_FILTER_VALUE_1: Number.parseInt(String(import.meta.env.VITE_BC_DEPOSIT_FILTER_VALUE_1), 10),
   DEPOSIT_FILTER_VALUE_2: Number.parseInt(String(import.meta.env.VITE_BC_DEPOSIT_FILTER_VALUE_2), 10),
   DEPOSIT_FILTER_VALUE_3: Number.parseInt(String(import.meta.env.VITE_BC_DEPOSIT_FILTER_VALUE_3), 10),

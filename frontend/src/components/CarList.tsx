@@ -321,7 +321,7 @@ const CarList = ({
               )}
 
                 {rows.map((car) => {
-                const totalPrice = bookcarsHelper.calculateTotalPrice(car, from as Date, to as Date)
+                const totalPrice = helper.calculateCommissionedTotalPrice(car, from as Date, to as Date)
 
   // Données pour le JSON-LD
   const productData = {
@@ -555,7 +555,7 @@ const CarList = ({
           <div className="price">
             <span className="price-days">{helper.getDays(days)}</span>
             <span className="price-main">{bookcarsHelper.formatPrice(totalPrice, commonStrings.CURRENCY, language)}</span>
-            <span className="price-day">{`${strings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(totalPrice / days, commonStrings.CURRENCY, language)}`}</span>
+            <span className="price-day">{`${strings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(days > 0 ? totalPrice / days : totalPrice, commonStrings.CURRENCY, language)}`}</span>
           </div>
         )}
 
@@ -566,7 +566,8 @@ const CarList = ({
               variant="contained"
               className="btn-book btn-margin-bottom"
               onClick={() => {
-                sendCheckoutEvent(totalPrice, [{ id: car.id, name: car.name, quantity: days, price: totalPrice / days }])
+                const pricePerDay = days > 0 ? totalPrice / days : totalPrice
+                sendCheckoutEvent(totalPrice, [{ id: car.id, name: car.name, quantity: days, price: pricePerDay }])
                 navigate('/checkout', {
                   state: {
                     carId: car._id,

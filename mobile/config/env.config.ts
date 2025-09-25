@@ -19,6 +19,8 @@ import {
   BC_DEPOSIT_FILTER_VALUE_1,
   BC_DEPOSIT_FILTER_VALUE_2,
   BC_DEPOSIT_FILTER_VALUE_3,
+  BC_COMMISSION_ENABLED,
+  BC_COMMISSION_RATE,
 } from '@env'
 
 /**
@@ -41,6 +43,19 @@ export const LANGUAGES = [
     label: 'Español',
   },
 ]
+
+const parseBoolean = (value?: string) => value?.toLowerCase() === 'true'
+
+const parseCommissionPercentage = (value?: string) => {
+  if (!value) {
+    return 0
+  }
+
+  const parsed = Number.parseFloat(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+const commissionPercentage = parseCommissionPercentage(BC_COMMISSION_RATE)
 
 /**
  * Application type.
@@ -224,3 +239,9 @@ export const DEPOSIT_FILTER_VALUE_3: number = Number(BC_DEPOSIT_FILTER_VALUE_3)
  * @type {boolean}
  */
 export const isUS = CURRENCY === '$'
+
+export const COMMISSION_ENABLED: boolean = parseBoolean(BC_COMMISSION_ENABLED)
+
+export const PLANY_COMMISSION_PERCENTAGE: number = commissionPercentage
+
+export const PLANY_COMMISSION_RATE: number = commissionPercentage > 1 ? commissionPercentage / 100 : commissionPercentage

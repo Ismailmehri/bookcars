@@ -48,6 +48,11 @@ const Car = ({
   const [days, setDays] = useState<number>()
   const [totalPrice, setTotalPrice] = useState<number>()
 
+  const safeTotalPrice = typeof totalPrice === 'number' && Number.isFinite(totalPrice) ? totalPrice : 0
+  const safeDays = typeof days === 'number' && days > 0 ? days : 0
+  const roundedTotalPrice = Math.round(safeTotalPrice)
+  const roundedPricePerDay = Math.round(safeDays > 0 ? safeTotalPrice / safeDays : safeTotalPrice)
+
   useEffect(() => {
     if (car && from && to) {
       setDays(bookcarsHelper.days(from, to))
@@ -395,8 +400,8 @@ const Car = ({
           {!hidePrice && from && to && (
             <View style={styles.price}>
               <Text style={styles.priceSecondary}>{helper.getDays(days)}</Text>
-              <Text style={styles.pricePrimary}>{`${bookcarsHelper.formatPrice(totalPrice, i18n.t('CURRENCY'), language)}`}</Text>
-              <Text style={styles.priceSecondary}>{`${i18n.t('PRICE_PER_DAY')} ${bookcarsHelper.formatPrice(days ? totalPrice / days : totalPrice, i18n.t('CURRENCY'), language)}`}</Text>
+              <Text style={styles.pricePrimary}>{`${bookcarsHelper.formatPrice(roundedTotalPrice, i18n.t('CURRENCY'), language)}`}</Text>
+              <Text style={styles.priceSecondary}>{`${i18n.t('PRICE_PER_DAY')} ${bookcarsHelper.formatPrice(roundedPricePerDay, i18n.t('CURRENCY'), language)}`}</Text>
             </View>
           )}
         </View>

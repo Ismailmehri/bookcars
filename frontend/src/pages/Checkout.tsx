@@ -111,6 +111,9 @@ const Checkout = () => {
   const _format = _fr ? 'eee d LLL yyyy kk:mm' : 'eee, d LLL yyyy, p'
   const bookingDetailHeight = env.SUPPLIER_IMAGE_HEIGHT + 10
   const days = bookcarsHelper.days(from, to)
+  const safePrice = Number.isFinite(price) ? price : 0
+  const roundedPrice = Math.round(safePrice)
+  const roundedPricePerDay = Math.round(days > 0 ? safePrice / days : safePrice)
   const daysLabel = from && to && `
   ${helper.getDaysShort(days)} (${bookcarsHelper.capitalize(
     format(from, _format, { locale: _locale }),
@@ -270,7 +273,7 @@ const Checkout = () => {
         collisionDamageWaiver,
         fullInsurance,
         additionalDriver,
-        price,
+        price: roundedPrice,
       }
 
       if (adRequired && additionalDriver && addiontalDriverBirthDate) {
@@ -289,7 +292,7 @@ const Checkout = () => {
       let _sessionId: string | undefined
       if (!payLater) {
         const payload: bookcarsTypes.CreatePaymentPayload = {
-          amount: price,
+          amount: roundedPrice,
           currency: env.STRIPE_CURRENCY_CODE,
           locale: language,
           receiptEmail: (!authenticated ? driver?.email : user?.email) as string,
@@ -319,11 +322,10 @@ const Checkout = () => {
 
       if (status === 200) {
         if (payLater) {
-          const pricePerDay = days > 0 ? price / days : price
-          sendPurchaseEvent(_bookingId, price, 'TND', [{ id: car?._id,
+          sendPurchaseEvent(_bookingId, roundedPrice, 'TND', [{ id: car?._id,
             name: car?.name,
             quantity: days,
-            price: pricePerDay }])
+            price: roundedPricePerDay }])
           setVisible(false)
           setSuccess(true)
         }
@@ -610,7 +612,7 @@ const Checkout = () => {
                       </div>
                       <div className="booking-detail" style={{ height: bookingDetailHeight }}>
                         <span className="booking-detail-title">{strings.CAR}</span>
-                        <div className="booking-detail-value">{`${car.name} (${bookcarsHelper.formatPrice(days > 0 ? price / days : price, commonStrings.CURRENCY, language)}${commonStrings.DAILY})`}</div>
+                        <div className="booking-detail-value">{`${car.name} (${bookcarsHelper.formatPrice(roundedPricePerDay, commonStrings.CURRENCY, language)}${commonStrings.DAILY})`}</div>
                       </div>
                       <div className="booking-detail" style={{ height: bookingDetailHeight }}>
                         <span className="booking-detail-title">{commonStrings.SUPPLIER}</span>
@@ -628,7 +630,7 @@ const Checkout = () => {
                       </div>
                       <div className="booking-detail" style={{ height: bookingDetailHeight }}>
                         <span className="booking-detail-title">{strings.COST}</span>
-                        <div className="booking-detail-value booking-price">{bookcarsHelper.formatPrice(price, commonStrings.CURRENCY, language)}</div>
+                        <div className="booking-detail-value booking-price">{bookcarsHelper.formatPrice(roundedPrice, commonStrings.CURRENCY, language)}</div>
                       </div>
                     </div>
                   </div>

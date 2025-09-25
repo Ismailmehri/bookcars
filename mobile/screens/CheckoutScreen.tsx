@@ -622,7 +622,7 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
       try {
         if (!payLater) {
           const createPaymentIntentPayload: bookcarsTypes.CreatePaymentPayload = {
-            amount: price,
+            amount: roundedPrice,
             currency: env.STRIPE_CURRENCY_CODE,
             locale: language,
             receiptEmail: (!authenticated ? driver?.email : user?.email) as string,
@@ -702,7 +702,7 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
         collisionDamageWaiver,
         fullInsurance,
         additionalDriver,
-        price,
+        price: roundedPrice,
       }
 
       if (adRequired && additionalDriver && addtionalDriverBirthDate) {
@@ -742,6 +742,9 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
   const _fr = bookcarsHelper.isFrench(language)
   const _format = _fr ? 'eee d LLL yyyy kk:mm' : 'eee, d LLL yyyy, p'
   const days = bookcarsHelper.days(from, to)
+  const safePrice = Number.isFinite(price) ? price : 0
+  const roundedPrice = Math.round(safePrice)
+  const roundedPricePerDay = Math.round(days > 0 ? safePrice / days : safePrice)
 
   return (
     <Layout style={styles.master} navigation={navigation} onLoad={onLoad} reload={reload} route={route}>
@@ -854,7 +857,7 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
                     <Text style={styles.detailText}>{dropOffLocation.name}</Text>
 
                     <Text style={styles.detailTitle}>{i18n.t('CAR')}</Text>
-                    <Text style={styles.detailText}>{`${car.name} (${bookcarsHelper.formatPrice(days ? price / days : price, i18n.t('CURRENCY'), language)}${i18n.t('DAILY')})`}</Text>
+                    <Text style={styles.detailText}>{`${car.name} (${bookcarsHelper.formatPrice(roundedPricePerDay, i18n.t('CURRENCY'), language)}${i18n.t('DAILY')})`}</Text>
 
                     <Text style={styles.detailTitle}>{i18n.t('SUPPLIER')}</Text>
                     <View style={styles.supplier}>
@@ -868,7 +871,7 @@ const CheckoutScreen = ({ navigation, route }: NativeStackScreenProps<StackParam
                     </View>
 
                     <Text style={styles.detailTitle}>{i18n.t('COST')}</Text>
-                    <Text style={styles.detailTextBold}>{`${bookcarsHelper.formatPrice(price, i18n.t('CURRENCY'), language)}`}</Text>
+                    <Text style={styles.detailTextBold}>{`${bookcarsHelper.formatPrice(roundedPrice, i18n.t('CURRENCY'), language)}`}</Text>
                   </View>
 
                   {!authenticated && (

@@ -226,7 +226,9 @@ export const days = (from?: Date, to?: Date) =>
  * @returns {boolean}
  */
 export const formatPrice = (price: number, currency: string, language: string) => {
-  const formatedPrice = formatNumber(price, language)
+  const normalizedPrice = Number.isFinite(price) ? price : 0
+  const roundedPrice = Math.round(normalizedPrice)
+  const formatedPrice = formatNumber(roundedPrice, language)
 
   if (currency === '$') {
     return `$${formatedPrice}`

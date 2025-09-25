@@ -48,7 +48,7 @@ export const calculateCommissionedTotalPrice = (
   from: Date,
   to: Date,
   options?: bookcarsTypes.CarOptions
-) => applyCommission(bookcarsHelper.calculateTotalPrice(car, from, to, options))
+) => Math.round(applyCommission(bookcarsHelper.calculateTotalPrice(car, from, to, options)))
 
 /**
  * Get car type label.

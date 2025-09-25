@@ -306,6 +306,10 @@ const Booking = () => {
   }
 
   const days = bookcarsHelper.days(from, to)
+  const numericPrice = typeof price === 'number' ? price : Number(price)
+  const safePrice = Number.isFinite(numericPrice) ? numericPrice : 0
+  const roundedPrice = Math.round(safePrice)
+  const roundedPricePerDay = Math.round(days > 0 ? safePrice / days : safePrice)
 
   return (
     <Layout onLoad={onLoad} strict>
@@ -490,8 +494,8 @@ const Booking = () => {
             <div className="col-2-header">
               <div className="price">
                 <span className="price-days">{helper.getDays(days)}</span>
-                <span className="price-main">{bookcarsHelper.formatPrice(price as number, commonStrings.CURRENCY, language)}</span>
-                <span className="price-day">{`${csStrings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(days > 0 ? (price as number) / days : (price as number), commonStrings.CURRENCY, language)}`}</span>
+                <span className="price-main">{bookcarsHelper.formatPrice(roundedPrice, commonStrings.CURRENCY, language)}</span>
+                <span className="price-day">{`${csStrings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(roundedPricePerDay, commonStrings.CURRENCY, language)}`}</span>
               </div>
             </div>
             <CarList

@@ -322,6 +322,8 @@ const CarList = ({
 
                 {rows.map((car) => {
                 const totalPrice = helper.calculateCommissionedTotalPrice(car, from as Date, to as Date)
+                const roundedTotalPrice = Math.round(totalPrice)
+                const roundedPricePerDay = Math.round(days > 0 ? totalPrice / days : totalPrice)
 
   // Données pour le JSON-LD
   const productData = {
@@ -554,8 +556,8 @@ const CarList = ({
         {!hidePrice && (
           <div className="price">
             <span className="price-days">{helper.getDays(days)}</span>
-            <span className="price-main">{bookcarsHelper.formatPrice(totalPrice, commonStrings.CURRENCY, language)}</span>
-            <span className="price-day">{`${strings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(days > 0 ? totalPrice / days : totalPrice, commonStrings.CURRENCY, language)}`}</span>
+            <span className="price-main">{bookcarsHelper.formatPrice(roundedTotalPrice, commonStrings.CURRENCY, language)}</span>
+            <span className="price-day">{`${strings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(roundedPricePerDay, commonStrings.CURRENCY, language)}`}</span>
           </div>
         )}
 
@@ -566,8 +568,7 @@ const CarList = ({
               variant="contained"
               className="btn-book btn-margin-bottom"
               onClick={() => {
-                const pricePerDay = days > 0 ? totalPrice / days : totalPrice
-                sendCheckoutEvent(totalPrice, [{ id: car.id, name: car.name, quantity: days, price: pricePerDay }])
+                sendCheckoutEvent(roundedTotalPrice, [{ id: car.id, name: car.name, quantity: days, price: roundedPricePerDay }])
                 navigate('/checkout', {
                   state: {
                     carId: car._id,

@@ -36,6 +36,7 @@ import {
   TableHead,
   TableRow,
   InputAdornment,
+  Link,
 } from '@mui/material'
 import { SelectChangeEvent } from '@mui/material/Select'
 import {
@@ -828,14 +829,6 @@ const AgencyCommissions = () => {
                   control={<Switch checked={aboveThreshold} onChange={handleAboveThresholdChange} />}
                   label={strings.FILTER_ABOVE_THRESHOLD}
                 />
-                <FormControl size="small" sx={{ minWidth: 140 }}>
-                  <InputLabel>{strings.ROWS_PER_PAGE}</InputLabel>
-                  <Select value={pageSize} label={strings.ROWS_PER_PAGE} onChange={handlePageSizeChange}>
-                    {[10, 25, 50].map((sizeOption) => (
-                      <MenuItem key={sizeOption} value={sizeOption}>{sizeOption}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { lg: 'auto' } }}>
                   <Tooltip title={strings.PREVIOUS_MONTH}>
                     <span>
@@ -947,15 +940,21 @@ const AgencyCommissions = () => {
                       return (
                         <TableRow key={agency.id} hover>
                           <TableCell>
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <Box>
-                                <Typography variant="body2" fontWeight={600}>{agency.name}</Typography>
-                                {agency.email && (
-                                  <Typography variant="caption" color="text.secondary">{agency.email}</Typography>
-                                )}
-                              </Box>
-                              {agency.city && <Chip size="small" label={agency.city} />}
-                            </Stack>
+                            <Typography
+                              component={Link}
+                              href={`/supplier?c=${agency.id}`}
+                              variant="body2"
+                              fontWeight={600}
+                              color="primary"
+                              sx={{
+                                textDecoration: 'none',
+                                '&:hover': {
+                                  textDecoration: 'underline',
+                                },
+                              }}
+                            >
+                              {agency.name}
+                            </Typography>
                           </TableCell>
                           <TableCell align="right">{formatNumber(row.reservations, language)}</TableCell>
                           <TableCell align="right">{formatCurrency(row.grossTurnover)}</TableCell>
@@ -999,12 +998,20 @@ const AgencyCommissions = () => {
             </Paper>
 
             <Box className="ac-table-footer">
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" className="ac-table-count">
                 {rowCount === 0
                   ? `0 ${commonStrings.OF} 0`
                   : `${paginationFrom}–${paginationTo} ${commonStrings.OF} ${rowCount}`}
               </Typography>
-              <Stack direction="row" spacing={1}>
+              <FormControl size="small" className="ac-page-size" variant="outlined">
+                <InputLabel>{strings.ROWS_PER_PAGE}</InputLabel>
+                <Select value={pageSize} label={strings.ROWS_PER_PAGE} onChange={handlePageSizeChange}>
+                  {[10, 25, 50].map((sizeOption) => (
+                    <MenuItem key={sizeOption} value={sizeOption}>{sizeOption}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Stack direction="row" spacing={1} className="ac-table-pagination">
                 <Button size="small" variant="outlined" onClick={handlePreviousPage} disabled={isPreviousDisabled}>
                   {strings.TABLE_PREVIOUS}
                 </Button>

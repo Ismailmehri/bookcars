@@ -11,9 +11,6 @@ import {
   Grid,
   IconButton,
   InputAdornment,
-  List,
-  ListItem,
-  ListItemText,
   MenuItem,
   Paper,
   Select,
@@ -46,6 +43,7 @@ import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
 import FilterListIcon from '@mui/icons-material/FilterList'
 import CloseIcon from '@mui/icons-material/Close'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
 import { strings } from '@/lang/agency-commissions-details'
@@ -80,6 +78,25 @@ const BOOKING_STATUS_CHIP_STYLES: Record<bookcarsTypes.BookingStatus, { backgrou
   [bookcarsTypes.BookingStatus.Cancelled]: { background: '#FBDFDE', color: '#E53935' },
 }
 const FALLBACK_STATUS_CHIP_STYLE = { background: '#ECEFF1', color: '#455A64' }
+
+type ReservationStatusKey = 'paid' | 'reserved' | 'ongoing' | 'completed' | 'cancelled'
+
+const RESERVATION_STATUS_STYLES: Record<ReservationStatusKey, { background: string; color: string }> = {
+  paid: { background: '#D1F9D1', color: '#2E7D32' },
+  reserved: { background: '#D9E7F4', color: '#1E88E5' },
+  ongoing: { background: '#FFF3E0', color: '#EF6C00' },
+  completed: { background: '#E0F2F1', color: '#00695C' },
+  cancelled: { background: '#ECEFF1', color: '#546E7A' },
+}
+
+type MonthlyCommissionStatusKey = 'paid' | 'unpaid' | 'partial' | 'followUp'
+
+const MONTHLY_COMMISSION_STATUS_CONFIG: Record<MonthlyCommissionStatusKey, { color: 'success' | 'warning' | 'info'; variant: 'filled' | 'outlined' }> = {
+  paid: { color: 'success', variant: 'filled' },
+  unpaid: { color: 'warning', variant: 'outlined' },
+  partial: { color: 'info', variant: 'filled' },
+  followUp: { color: 'warning', variant: 'filled' },
+}
 
 type CommissionRow = bookcarsTypes.AgencyCommissionBooking
 type DrawerState = CommissionRow | null
@@ -281,6 +298,63 @@ const AgencyDetailsCommissions = () => {
     return kpiItems.filter((item) => mobileKeys.has(item.key))
   }, [isDesktop, kpiItems])
 
+  const monthlyCommissionStatus = useMemo(() => {
+    const labels = strings.MONTHLY_COMMISSION_STATUS as Record<MonthlyCommissionStatusKey, string>
+    const today = new Date()
+    let collected = 0
+    let due = 0
+    let overdue = false
+
+    data.forEach((booking) => {
+      if (!BILLABLE_STATUSES.has(booking.bookingStatus)) {
+        return
+      }
+
+      const commissionValue = booking.commission || 0
+
+      if (booking.commissionStatus === COMMISSION_STATUS_PAID) {
+        collected += commissionValue
+        return
+      }
+
+      due += commissionValue
+
+      if (new Date(booking.to) < today) {
+        overdue = true
+      }
+    })
+
+    if (due <= 0) {
+      return {
+        key: 'paid' as MonthlyCommissionStatusKey,
+        label: labels.paid,
+        ...MONTHLY_COMMISSION_STATUS_CONFIG.paid,
+      }
+    }
+
+    if (overdue) {
+      return {
+        key: 'followUp' as MonthlyCommissionStatusKey,
+        label: labels.followUp,
+        ...MONTHLY_COMMISSION_STATUS_CONFIG.followUp,
+      }
+    }
+
+    if (collected > 0) {
+      return {
+        key: 'partial' as MonthlyCommissionStatusKey,
+        label: labels.partial,
+        ...MONTHLY_COMMISSION_STATUS_CONFIG.partial,
+      }
+    }
+
+    return {
+      key: 'unpaid' as MonthlyCommissionStatusKey,
+      label: labels.unpaid,
+      ...MONTHLY_COMMISSION_STATUS_CONFIG.unpaid,
+    }
+  }, [data, language])
+
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear()
     return [currentYear - 1, currentYear, currentYear + 1, currentYear + 2]
@@ -330,6 +404,52 @@ const AgencyDetailsCommissions = () => {
         sx={{
           bgcolor: statusStyle.background,
           color: statusStyle.color,
+          fontWeight: 600,
+          '& .MuiChip-label': {
+            fontWeight: 600,
+          },
+        }}
+      />
+    )
+  }
+
+  const getReservationStatus = (booking: CommissionRow, referenceDate: Date): ReservationStatusKey => {
+    if (
+      booking.bookingStatus === bookcarsTypes.BookingStatus.Cancelled
+      || booking.bookingStatus === bookcarsTypes.BookingStatus.Void
+    ) {
+      return 'cancelled'
+    }
+
+    if (booking.bookingStatus === bookcarsTypes.BookingStatus.Paid) {
+      return 'paid'
+    }
+
+    const fromDate = new Date(booking.from)
+    const toDate = new Date(booking.to)
+
+    if (referenceDate < fromDate) {
+      return 'reserved'
+    }
+
+    if (referenceDate > toDate) {
+      return 'completed'
+    }
+
+    return 'ongoing'
+  }
+
+  const renderReservationStatusChip = (statusKey: ReservationStatusKey) => {
+    const labels = strings.RESERVATION_STATUS as Record<ReservationStatusKey, string>
+    const style = RESERVATION_STATUS_STYLES[statusKey]
+
+    return (
+      <Chip
+        size="small"
+        label={labels[statusKey]}
+        sx={{
+          bgcolor: style.background,
+          color: style.color,
           fontWeight: 600,
           '& .MuiChip-label': {
             fontWeight: 600,
@@ -417,6 +537,17 @@ const AgencyDetailsCommissions = () => {
     }
   }
 
+  const handleCopyBookingNumber = async (bookingNumber: string) => {
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(bookingNumber)
+      }
+      helper.info(strings.BOOKING_ID_COPIED)
+    } catch (err) {
+      helper.error(err)
+    }
+  }
+
   return (
     <Layout onLoad={handleLoad} strict>
       {user && (
@@ -430,7 +561,7 @@ const AgencyDetailsCommissions = () => {
               }}
             >
               <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-                <Box sx={{ minWidth: 0 }}>
+                <Stack spacing={0.75} sx={{ minWidth: 0 }}>
                   <Typography
                     variant="h5"
                     fontWeight={800}
@@ -439,8 +570,19 @@ const AgencyDetailsCommissions = () => {
                   >
                     {strings.HEADER}
                   </Typography>
-                  <Chip size="small" variant="outlined" label={`${months[month]} ${year}`} sx={{ mt: 0.5 }} />
-                </Box>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={0.5}>
+                    <Chip size="small" variant="outlined" label={`${months[month]} ${year}`} />
+                    {monthlyCommissionStatus && (
+                      <Chip
+                        size="small"
+                        color={monthlyCommissionStatus.color}
+                        variant={monthlyCommissionStatus.variant}
+                        label={strings.COMMISSION_STATUS_HEADER.replace('{value}', monthlyCommissionStatus.label)}
+                        sx={{ fontWeight: 600, '& .MuiChip-label': { fontWeight: 600 } }}
+                      />
+                    )}
+                  </Stack>
+                </Stack>
                 <Stack direction="row" spacing={0.5}>
                   <IconButton onClick={handlePreviousMonth} aria-label={strings.PREVIOUS_MONTH} sx={{ width: 48, height: 48 }}>
                     <ChevronLeftIcon />
@@ -736,106 +878,117 @@ const AgencyDetailsCommissions = () => {
                     </Paper>
                   )
                   : (
-                    sortedRows.map((booking) => (
-                      <Paper
-                        key={booking.bookingId}
-                        elevation={0}
-                        sx={{
-                          p: 2,
-                          borderRadius: 2,
-                          boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 1.5,
-                        }}
-                      >
-                        <Stack direction="row" justifyContent="space-between" spacing={1} alignItems="flex-start">
-                          <Box sx={{ minWidth: 0 }}>
-                            <Tooltip title={booking.bookingNumber}>
-                              <Typography
-                                component={Link}
-                                href={`/update-booking?b=${booking.bookingId}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                underline="none"
-                                variant="subtitle1"
-                                fontWeight={700}
-                                color="primary"
-                                noWrap
-                                sx={{ display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                              >
-                                {booking.bookingNumber}
-                              </Typography>
-                            </Tooltip>
-                            <Tooltip title={booking.driver.fullName}>
-                              <Typography
-                                component={Link}
-                                href={`/user?u=${booking.driver._id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                underline="none"
-                                variant="body2"
-                                color="text.secondary"
-                                noWrap
-                                sx={{ display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                              >
-                                {booking.driver.fullName}
-                              </Typography>
-                            </Tooltip>
-                          </Box>
-                          <Stack direction="row" spacing={0.5} flexWrap="wrap" justifyContent="flex-end">
-                            {renderBookingStatusChip(booking.bookingStatus)}
-                            <Chip
-                              size="small"
-                              label={commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING]}
-                              color={paymentColor(booking.commissionStatus)}
-                              variant={booking.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
-                            />
+                    sortedRows.map((booking) => {
+                      const reservationStatus = getReservationStatus(booking, new Date())
+                      const isCancelled = reservationStatus === 'cancelled'
+                      const detailItems = [
+                        { label: strings.DAYS, value: `${booking.days}` },
+                        { label: strings.PRICE_PER_DAY, value: formatCurrency(booking.pricePerDay) },
+                        { label: strings.TOTAL_CLIENT, value: formatCurrency(booking.totalClient) },
+                        { label: strings.COMMISSION_PLANY, value: formatCurrency(booking.commission) },
+                        { label: strings.NET_AGENCY, value: formatCurrency(booking.netAgency) },
+                      ]
+
+                      return (
+                        <Paper
+                          key={booking.bookingId}
+                          elevation={0}
+                          sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1.5,
+                            bgcolor: isCancelled ? '#f5f5f5' : 'common.white',
+                            opacity: isCancelled ? 0.7 : 1,
+                          }}
+                        >
+                          <Stack direction="row" justifyContent="space-between" spacing={1.5} alignItems="flex-start">
+                            <Stack spacing={0.5} sx={{ minWidth: 0 }}>
+                              <Tooltip title={`#${booking.bookingNumber}`}>
+                                <Button
+                                  variant="text"
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => handleCopyBookingNumber(booking.bookingNumber)}
+                                  startIcon={<ContentCopyIcon fontSize="small" />}
+                                  sx={{
+                                    px: 0,
+                                    minWidth: 0,
+                                    justifyContent: 'flex-start',
+                                    textTransform: 'none',
+                                    fontWeight: 700,
+                                  }}
+                                  aria-label={`${strings.BOOKING_NUMBER} ${booking.bookingNumber}`}
+                                >
+                                  #{booking.bookingNumber}
+                                </Button>
+                              </Tooltip>
+                              <Tooltip title={booking.driver.fullName}>
+                                <Typography
+                                  component={Link}
+                                  href={`/user?u=${booking.driver._id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  underline="none"
+                                  variant="body2"
+                                  color="text.secondary"
+                                  noWrap
+                                  sx={{ display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                >
+                                  {booking.driver.fullName}
+                                </Typography>
+                              </Tooltip>
+                            </Stack>
+                            {renderReservationStatusChip(reservationStatus)}
                           </Stack>
-                        </Stack>
-                        <Typography variant="body2" color="text.secondary">
-                          {`${strings.DRAWER_PERIOD}: ${renderDate(booking.from)} → ${renderDate(booking.to)}`}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {`${strings.DAYS}: ${booking.days}`}
-                        </Typography>
-                        <Stack spacing={0.5}>
-                          <Typography variant="body2">{`${strings.PRICE_PER_DAY}: ${formatCurrency(booking.pricePerDay)}`}</Typography>
-                          <Typography variant="body2">{`${strings.TOTAL_CLIENT}: ${formatCurrency(booking.totalClient)}`}</Typography>
-                          <Typography variant="body2">{`${strings.COMMISSION}: ${formatCurrency(booking.commission)}`}</Typography>
-                          <Typography variant="body2">{`${strings.NET_AGENCY}: ${formatCurrency(booking.netAgency)}`}</Typography>
-                        </Stack>
-                        <Stack direction="row" spacing={1} justifyContent="flex-end">
-                          <Tooltip title={strings.VIEW_DETAILS}>
-                            <IconButton
-                              color="primary"
-                              onClick={() => setDrawer(booking)}
-                              aria-label={strings.VIEW_DETAILS}
-                              sx={{ width: 48, height: 48 }}
-                            >
-                              <OpenInNewIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title={strings.DOWNLOAD_INVOICE}>
-                            <span>
+                          <Typography variant="body2" color="text.secondary">
+                            <Box component="span" fontWeight={600}>{`${strings.DRAWER_PERIOD}: `}</Box>
+                            {`${renderDate(booking.from)} → ${renderDate(booking.to)}`}
+                          </Typography>
+                          <Grid container spacing={1} columns={12}>
+                            {detailItems.map((item) => (
+                              <Grid item xs={6} key={item.label}>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                                  {item.label}
+                                </Typography>
+                                <Typography variant="body2" fontWeight={600}>{item.value}</Typography>
+                              </Grid>
+                            ))}
+                          </Grid>
+                          <Stack direction="row" spacing={1} justifyContent="flex-end">
+                            <Tooltip title={strings.VIEW_DETAILS}>
                               <IconButton
                                 color="primary"
-                                onClick={() => handleDownloadBookingInvoice(booking.bookingId)}
-                                disabled={bookingInvoiceLoading === booking.bookingId}
-                                aria-label={strings.DOWNLOAD_INVOICE}
+                                onClick={() => setDrawer(booking)}
+                                aria-label={strings.VIEW_DETAILS}
                                 sx={{ width: 48, height: 48 }}
                               >
-                                {bookingInvoiceLoading === booking.bookingId ? (
-                                  <CircularProgress size={20} />
-                                ) : (
-                                  <ReceiptLongIcon />
-                                )}
+                                <OpenInNewIcon />
                               </IconButton>
-                            </span>
-                          </Tooltip>
-                        </Stack>
-                      </Paper>
-                    ))
+                            </Tooltip>
+                            <Tooltip title={strings.DOWNLOAD_INVOICE}>
+                              <span>
+                                <IconButton
+                                  color="primary"
+                                  onClick={() => handleDownloadBookingInvoice(booking.bookingId)}
+                                  disabled={bookingInvoiceLoading === booking.bookingId}
+                                  aria-label={strings.DOWNLOAD_INVOICE}
+                                  sx={{ width: 48, height: 48 }}
+                                >
+                                  {bookingInvoiceLoading === booking.bookingId ? (
+                                    <CircularProgress size={20} />
+                                  ) : (
+                                    <ReceiptLongIcon />
+                                  )}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          </Stack>
+                        </Paper>
+                      )
+                    })
                   )}
             </Box>
 
@@ -969,50 +1122,64 @@ const AgencyDetailsCommissions = () => {
                 <Divider sx={{ mb: 2 }} />
                 {drawer && (
                   <>
+                    <Grid container spacing={2} columns={12}>
+                      {[{
+                        label: strings.DAYS,
+                        value: `${drawer.days}`,
+                      }, {
+                        label: strings.PRICE_PER_DAY,
+                        value: formatCurrency(drawer.pricePerDay),
+                      }, {
+                        label: strings.TOTAL_CLIENT,
+                        value: formatCurrency(drawer.totalClient),
+                      }, {
+                        label: strings.COMMISSION_PLANY,
+                        value: formatCurrency(drawer.commission),
+                      }, {
+                        label: strings.NET_AGENCY,
+                        value: formatCurrency(drawer.netAgency),
+                      }].map((item) => (
+                        <Grid item xs={6} key={item.label}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                            {item.label}
+                          </Typography>
+                          <Typography variant="body1" fontWeight={700}>{item.value}</Typography>
+                        </Grid>
+                      ))}
+                    </Grid>
+
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                        {strings.DRAWER_PERIOD}
+                      </Typography>
+                      <Typography variant="body1" fontWeight={700}>
+                        {`${renderDate(drawer.from)} → ${renderDate(drawer.to)}`}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                        {strings.BOOKING_STATUS}
+                      </Typography>
+                      {renderReservationStatusChip(getReservationStatus(drawer, new Date()))}
+                    </Box>
+
+                    <Divider sx={{ my: 3 }} />
+
                     <Typography variant="subtitle2" color="text.secondary">{strings.DRAWER_BOOKING_SECTION}</Typography>
-                    <List dense>
-                      <ListItem>
-                        <ListItemText primary={strings.BOOKING_NUMBER} secondary={drawer.bookingNumber} />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText primary={strings.CLIENT} secondary={drawer.driver.fullName} />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText
-                          primary={strings.DRAWER_PERIOD}
-                          secondary={`${renderDate(drawer.from)} → ${renderDate(drawer.to)}`}
-                        />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText primary={strings.DAYS} secondary={drawer.days} />
-                      </ListItem>
-                    </List>
-
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_AMOUNTS_SECTION}</Typography>
-                    <List dense>
-                      <ListItem>
-                        <ListItemText primary={strings.PRICE_PER_DAY} secondary={formatCurrency(drawer.pricePerDay)} />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText primary={strings.TOTAL_CLIENT} secondary={formatCurrency(drawer.totalClient)} />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText primary={strings.COMMISSION} secondary={formatCurrency(drawer.commission)} />
-                      </ListItem>
-                      <ListItem>
-                        <ListItemText primary={strings.NET_AGENCY} secondary={formatCurrency(drawer.netAgency)} />
-                      </ListItem>
-                    </List>
-
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_STATUS_SECTION}</Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={1}>
-                      {renderBookingStatusChip(drawer.bookingStatus)}
-                      <Chip
-                        size="small"
-                        label={commissionPaymentLabels[drawer.commissionStatus || COMMISSION_STATUS_PENDING]}
-                        color={paymentColor(drawer.commissionStatus)}
-                        variant={drawer.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
-                      />
+                    <Stack spacing={1.5} sx={{ mt: 1 }}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                          {strings.BOOKING_NUMBER}
+                        </Typography>
+                        <Typography variant="body1" fontWeight={700}>{drawer.bookingNumber}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                          {strings.CLIENT}
+                        </Typography>
+                        <Typography variant="body1" fontWeight={700}>{drawer.driver.fullName}</Typography>
+                      </Box>
                     </Stack>
                   </>
                 )}

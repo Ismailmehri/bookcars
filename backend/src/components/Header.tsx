@@ -74,6 +74,7 @@ const Header = ({
   const [loading, setIsLoading] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isSupplier, setIsSupplier] = useState(false)
 
   const isMenuOpen = Boolean(anchorEl)
   const isMobileMenuOpen = Boolean(mobileMoreAnchorEl)
@@ -194,6 +195,7 @@ const Header = ({
     if (!hidden) {
       if (user) {
         setIsAdmin(helper.admin(user))
+        setIsSupplier(user.type === bookcarsTypes.RecordType.Supplier)
         NotificationService.getNotificationCounter(user._id as string)
           .then((notificationCounter) => {
             setIsSignedIn(true)
@@ -202,6 +204,8 @@ const Header = ({
             setIsLoaded(true)
           })
       } else {
+        setIsAdmin(false)
+        setIsSupplier(false)
         setIsLoading(false)
         setIsLoaded(true)
       }
@@ -338,8 +342,8 @@ const Header = ({
                   <ListItemIcon><StatsIcon /></ListItemIcon>
                   <ListItemText primary={strings.STATS} />
                 </ListItemLink>
-                {isAdmin && (
-                <ListItemLink href="/agency-commissions">
+                {(isAdmin || isSupplier) && (
+                <ListItemLink href={isAdmin ? '/admin-commissions' : '/agency-commissions'}>
                   <ListItemIcon><MonetizationOnIcon /></ListItemIcon>
                   <ListItemText primary={strings.AGENCY_COMMISSIONS} />
                 </ListItemLink>

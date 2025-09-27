@@ -9,6 +9,9 @@ const routes = {
   getSettings: '/api/commission/settings',
   updateSettings: '/api/commission/settings',
   generateInvoice: '/api/commission/invoice/:agencyId/:year/:month',
+  getAgencyBookings: '/api/commission/agency/bookings',
+  downloadAgencyInvoice: '/api/commission/agency/:agencyId/invoice/:year/:month',
+  downloadAgencyBookingInvoice: '/api/commission/agency/invoice/booking/:bookingId',
 }
 
 export default routes

@@ -77,10 +77,10 @@ const LOCALE_MAP: Record<string, string> = {
 }
 
 const PAYMENT_STATUS_COLOR: Record<bookcarsTypes.AgencyCommissionPaymentStatus, 'default' | 'warning' | 'info' | 'success' | 'error'> = {
-  [bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid]: 'error',
-  [bookcarsTypes.AgencyCommissionPaymentStatus.FollowUp]: 'warning',
-  [bookcarsTypes.AgencyCommissionPaymentStatus.Partial]: 'info',
-  [bookcarsTypes.AgencyCommissionPaymentStatus.Paid]: 'success',
+  unpaid: 'error',
+  follow_up: 'warning',
+  partial: 'info',
+  paid: 'success',
 }
 
 const CHANNEL_OPTIONS: Array<{ value: ReminderChannel; label: string }> = [
@@ -143,7 +143,7 @@ const AdminCommissions = () => {
   }))
   const [reminderLoading, setReminderLoading] = useState(false)
   const [statusForm, setStatusForm] = useState<{ status: bookcarsTypes.AgencyCommissionPaymentStatus; amountPaid: string; note: string }>(() => ({
-    status: bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid,
+    status: 'unpaid',
     amountPaid: '',
     note: '',
   }))
@@ -923,10 +923,10 @@ const AdminCommissions = () => {
                 value={statusForm.status}
                 onChange={(event) => setStatusForm((prev) => ({ ...prev, status: event.target.value as bookcarsTypes.AgencyCommissionPaymentStatus }))}
               >
-                <MenuItem value={bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid}>{strings.PAYMENT_STATUS_LABELS.unpaid}</MenuItem>
-                <MenuItem value={bookcarsTypes.AgencyCommissionPaymentStatus.FollowUp}>{strings.PAYMENT_STATUS_LABELS.follow_up}</MenuItem>
-                <MenuItem value={bookcarsTypes.AgencyCommissionPaymentStatus.Partial}>{strings.PAYMENT_STATUS_LABELS.partial}</MenuItem>
-                <MenuItem value={bookcarsTypes.AgencyCommissionPaymentStatus.Paid}>{strings.PAYMENT_STATUS_LABELS.paid}</MenuItem>
+                <MenuItem value="unpaid">{strings.PAYMENT_STATUS_LABELS.unpaid}</MenuItem>
+                <MenuItem value="follow_up">{strings.PAYMENT_STATUS_LABELS.follow_up}</MenuItem>
+                <MenuItem value="partial">{strings.PAYMENT_STATUS_LABELS.partial}</MenuItem>
+                <MenuItem value="paid">{strings.PAYMENT_STATUS_LABELS.paid}</MenuItem>
               </Select>
             </FormControl>
             <TextField

@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   Chip,
+  ChipProps,
   Divider,
   Drawer,
   Grid,
@@ -76,6 +77,13 @@ const BOOKING_STATUS_CHIP_STYLES: Record<bookcarsTypes.BookingStatus, { backgrou
 }
 const FALLBACK_STATUS_CHIP_STYLE = { background: '#ECEFF1', color: '#455A64' }
 
+const MONTHLY_PAYMENT_STATUS_COLOR: Record<bookcarsTypes.AgencyCommissionPaymentStatus, ChipProps['color']> = {
+  [bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid]: 'error',
+  [bookcarsTypes.AgencyCommissionPaymentStatus.FollowUp]: 'warning',
+  [bookcarsTypes.AgencyCommissionPaymentStatus.Partial]: 'info',
+  [bookcarsTypes.AgencyCommissionPaymentStatus.Paid]: 'success',
+}
+
 type CommissionRow = bookcarsTypes.AgencyCommissionBooking
 type DrawerState = CommissionRow | null
 
@@ -133,6 +141,7 @@ const AgencyCommissions = () => {
   const months = strings.MONTHS as string[]
   const language = strings.getLanguage()
   const commissionPaymentLabels = strings.COMMISSION_PAYMENT_LABELS as Record<bookcarsTypes.CommissionStatus, string>
+  const agencyPaymentStatusLabels = strings.AGENCY_PAYMENT_STATUS_LABELS as Record<bookcarsTypes.AgencyCommissionPaymentStatus, string>
   const bookingStatusOptions = useMemo(() => helper.getBookingStatuses(), [language])
 
   useEffect(() => {
@@ -217,6 +226,8 @@ const AgencyCommissions = () => {
       net: 0,
       reservations: 0,
       commissionPercentage: env.PLANY_COMMISSION_PERCENTAGE,
+      paymentStatus: bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid,
+      commissionPaid: 0,
     })
   }, [data, summary])
 
@@ -227,7 +238,18 @@ const AgencyCommissions = () => {
     commission: formatCurrency(computedSummary.commission),
     commissionRate: formatPercentage(computedSummary.commissionPercentage),
     reservations: `${computedSummary.reservations}`,
+    commissionPaid: formatCurrency(computedSummary.commissionPaid),
   }), [computedSummary])
+
+  const monthlyPaymentStatus = computedSummary.paymentStatus
+    || bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid
+  const monthlyPaymentStatusLabel = agencyPaymentStatusLabels[monthlyPaymentStatus]
+    || monthlyPaymentStatus
+  const monthlyPaymentChipColor = MONTHLY_PAYMENT_STATUS_COLOR[monthlyPaymentStatus] || 'default'
+  const monthlyPaymentChipVariant = monthlyPaymentStatus === bookcarsTypes.AgencyCommissionPaymentStatus.Paid
+    ? 'filled'
+    : 'outlined'
+  const monthlyPaymentChipLabel = strings.MONTHLY_PAYMENT_STATUS.replace('{status}', monthlyPaymentStatusLabel)
 
   const kpiItems = useMemo(() => ([
     {
@@ -253,7 +275,13 @@ const AgencyCommissions = () => {
       title: strings.KPI_COMMISSION,
       value: metrics.commission,
       icon: <LocalOfferOutlinedIcon />,
-      helperText: strings.KPI_COMMISSION_PERCENTAGE.replace('{value}', metrics.commissionRate),
+      helperText: (() => {
+        const parts = [strings.KPI_COMMISSION_PERCENTAGE.replace('{value}', metrics.commissionRate)]
+        if (computedSummary.commissionPaid > 0) {
+          parts.push(strings.COMMISSION_PAID_HELPER.replace('{value}', metrics.commissionPaid))
+        }
+        return parts.join(' • ')
+      })(),
     },
     {
       key: 'reservations',
@@ -261,7 +289,7 @@ const AgencyCommissions = () => {
       value: metrics.reservations,
       icon: <PeopleAltOutlinedIcon />,
     },
-  ]), [metrics, strings, language])
+  ]), [metrics, strings, language, computedSummary.commissionPaid])
 
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear()
@@ -404,10 +432,16 @@ const AgencyCommissions = () => {
       {user && (
         <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: '#f7f9fc', minHeight: '100vh' }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Typography variant="h5" fontWeight={800}>{strings.HEADER}</Typography>
-              <Chip size="small" variant="outlined" label={`${strings.PERIOD_LABEL} ${months[month]} ${year}`} />
-            </Stack>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Typography variant="h5" fontWeight={800}>{strings.HEADER}</Typography>
+            <Chip size="small" variant="outlined" label={`${strings.PERIOD_LABEL} ${months[month]} ${year}`} />
+            <Chip
+              size="small"
+              color={monthlyPaymentChipColor}
+              variant={monthlyPaymentChipVariant}
+              label={monthlyPaymentChipLabel}
+            />
+          </Stack>
             <Stack direction="row" spacing={1}>
               <Button
                 variant="outlined"
@@ -587,12 +621,12 @@ const AgencyCommissions = () => {
                     <TableCell align="right">{formatCurrency(booking.netAgency)}</TableCell>
                     <TableCell align="center">{renderBookingStatusChip(booking.bookingStatus)}</TableCell>
                     <TableCell align="center">
-                    <Chip
-                      size="small"
-                      label={commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING]}
-                      color={paymentColor(booking.commissionStatus)}
-                      variant={booking.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
-                    />
+                      <Chip
+                        size="small"
+                        label={commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING]}
+                        color={paymentColor(booking.commissionStatus)}
+                        variant={booking.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
+                      />
                     </TableCell>
                     <TableCell align="center">
                       <Stack direction="row" spacing={0.5} justifyContent="center">
@@ -680,6 +714,12 @@ const AgencyCommissions = () => {
 
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_STATUS_SECTION}</Typography>
                   <Stack direction="row" spacing={1}>
+                    <Chip
+                      size="small"
+                      label={monthlyPaymentChipLabel}
+                      color={monthlyPaymentChipColor}
+                      variant={monthlyPaymentChipVariant}
+                    />
                     {drawer && renderBookingStatusChip(drawer.bookingStatus)}
                     <Chip
                       size="small"

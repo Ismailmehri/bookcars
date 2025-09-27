@@ -327,6 +327,8 @@ export const fetchAgencyCommissions = async (
         net: 0,
         reservations: 0,
         commissionPercentage: env.PLANY_COMMISSION_PERCENTAGE,
+        paymentStatus: bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid,
+        commissionPaid: 0,
       },
     }
   }
@@ -348,9 +350,17 @@ export const fetchAgencyCommissions = async (
         net: 0,
         reservations: 0,
         commissionPercentage: env.PLANY_COMMISSION_PERCENTAGE,
+        paymentStatus: bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid,
+        commissionPaid: 0,
       },
     }
   }
+
+  const supplierIdStrings = supplierIds.map((id) => id.toString())
+  const states = await Promise.all(
+    supplierIds.map((supplierId) => ensureCommissionState(supplierId, numericMonth, numericYear)),
+  )
+  const stateMap = new Map(states.map((state) => [state.supplier.toString(), state]))
 
   const pipeline: mongoose.PipelineStage[] = [
     buildMatchStage(supplierIds, numericMonth, numericYear),
@@ -434,7 +444,9 @@ export const fetchAgencyCommissions = async (
     return normalized.booking
   })
 
-  const summary = bookings.reduce<bookcarsTypes.AgencyCommissionSummary>((acc, booking) => {
+  const commissionDueBySupplier = new Map<string, number>()
+
+  const summaryAggregates = bookings.reduce<bookcarsTypes.AgencyCommissionSummary>((acc, booking) => {
     const isBillable = BILLABLE_STATUSES.has(booking.bookingStatus)
     const bookingStart = new Date(booking.from)
     const eligibleByDate = !COMMISSION_EFFECTIVE_DATE || bookingStart >= COMMISSION_EFFECTIVE_DATE
@@ -446,6 +458,12 @@ export const fetchAgencyCommissions = async (
       acc.commission += booking.commission
       acc.net += booking.netAgency
       acc.reservations += 1
+
+      if (booking.supplier?._id) {
+        const supplierId = booking.supplier._id
+        const currentDue = commissionDueBySupplier.get(supplierId) || 0
+        commissionDueBySupplier.set(supplierId, currentDue + booking.commission)
+      }
     }
 
     return acc
@@ -456,20 +474,60 @@ export const fetchAgencyCommissions = async (
     net: 0,
     reservations: 0,
     commissionPercentage: effectiveCommissionPercentage,
+    paymentStatus: bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid,
+    commissionPaid: 0,
   })
+
+  const stateStatuses = supplierIdStrings
+    .map((id) => stateMap.get(id)?.paymentStatus)
+    .filter((status): status is bookcarsTypes.AgencyCommissionPaymentStatus => Boolean(status))
+
+  const paymentStatusPriority: bookcarsTypes.AgencyCommissionPaymentStatus[] = [
+    bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid,
+    bookcarsTypes.AgencyCommissionPaymentStatus.FollowUp,
+    bookcarsTypes.AgencyCommissionPaymentStatus.Partial,
+    bookcarsTypes.AgencyCommissionPaymentStatus.Paid,
+  ]
+
+  const paymentStatus = stateStatuses.length > 0
+    ? paymentStatusPriority.find((status) => stateStatuses.includes(status))
+      || bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid
+    : bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid
+
+  const commissionPaidValue = supplierIdStrings.reduce((total, id) => {
+    const state = stateMap.get(id)
+    if (!state) {
+      return total
+    }
+
+    if (typeof state.commissionPaid === 'number' && Number.isFinite(state.commissionPaid)) {
+      return total + Math.max(0, Math.round(state.commissionPaid))
+    }
+
+    if (state.paymentStatus === bookcarsTypes.AgencyCommissionPaymentStatus.Paid) {
+      const due = commissionDueBySupplier.get(id) || 0
+      return total + Math.round(due)
+    }
+
+    return total
+  }, 0)
+
+  const summary: bookcarsTypes.AgencyCommissionSummary = {
+    gross: summaryAggregates.gross,
+    grossAll: summaryAggregates.grossAll,
+    commission: summaryAggregates.commission,
+    net: summaryAggregates.net,
+    reservations: summaryAggregates.reservations,
+    commissionPercentage: effectiveCommissionPercentage,
+    paymentStatus,
+    commissionPaid: Math.max(0, Math.round(commissionPaidValue)),
+  }
 
   const supplierInfo = rawBookings.length > 0 ? rawBookings[0].supplier : null
 
   return {
     bookings,
-    summary: {
-      gross: summary.gross,
-      grossAll: summary.grossAll,
-      commission: summary.commission,
-      net: summary.net,
-      reservations: summary.reservations,
-      commissionPercentage: effectiveCommissionPercentage,
-    },
+    summary,
     supplier: supplierInfo
       ? { _id: supplierInfo._id.toString(), fullName: supplierInfo.fullName }
       : undefined,

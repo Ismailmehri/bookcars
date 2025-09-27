@@ -201,6 +201,8 @@ export interface AgencyCommissionSummary {
   net: number
   reservations: number
   commissionPercentage: number
+  paymentStatus: AgencyCommissionPaymentStatus
+  commissionPaid: number
 }
 
 export interface AgencyCommissionsResponse {

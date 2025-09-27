@@ -53,6 +53,8 @@ export const getAgencyCommissions = async (req: Request, res: Response) => {
           net: 0,
           reservations: 0,
           commissionPercentage: env.PLANY_COMMISSION_PERCENTAGE,
+          paymentStatus: bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid,
+          commissionPaid: 0,
         },
       })
     }

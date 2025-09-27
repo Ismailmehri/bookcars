@@ -272,6 +272,7 @@ export interface GetAdminCommissionsFilters {
   aboveThreshold?: boolean
   page?: number
   pageSize?: number
+  supplierIds?: string[]
 }
 
 export interface GetAdminCommissionsPayload {
@@ -298,6 +299,7 @@ export interface AgencyCommissionSettings {
   from_email: string
   from_name: string
   from_sms_sender: string
+  default_channel: 'email' | 'sms' | 'both'
   updated_by?: Pick<User, '_id' | 'fullName'>
   updated_at?: string
 }
@@ -319,6 +321,7 @@ export interface UpsertAgencyCommissionSettingsPayload {
   from_email: string
   from_name: string
   from_sms_sender: string
+  default_channel: 'email' | 'sms' | 'both'
 }
 
 export interface UpdateAgencyCommissionStatusPayload {

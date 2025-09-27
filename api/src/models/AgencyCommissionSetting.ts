@@ -7,6 +7,7 @@ export interface AgencyCommissionSettingDocument {
   from_email: string
   from_name: string
   from_sms_sender: string
+  default_channel: 'email' | 'sms' | 'both'
   updated_by?: Schema.Types.ObjectId
   updated_by_name?: string
   updated_at?: Date
@@ -19,6 +20,7 @@ const agencyCommissionSettingSchema = new Schema<AgencyCommissionSettingDocument
   from_email: { type: String, default: '' },
   from_name: { type: String, default: '' },
   from_sms_sender: { type: String, default: '' },
+  default_channel: { type: String, enum: ['email', 'sms', 'both'], default: 'email' },
   updated_by: { type: Schema.Types.ObjectId, ref: 'User' },
   updated_by_name: { type: String },
   updated_at: { type: Date, default: Date.now },

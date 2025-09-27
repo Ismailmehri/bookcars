@@ -287,6 +287,7 @@ const mapSettingsToResponse = (settings: (AgencyCommissionSettingDocument & { _i
   from_email: settings?.from_email || '',
   from_name: settings?.from_name || '',
   from_sms_sender: settings?.from_sms_sender || '',
+  default_channel: settings?.default_channel || 'email',
   updated_by: settings?.updated_by
     ? { _id: settings.updated_by.toString(), fullName: settings.updated_by_name || '' }
     : undefined,
@@ -492,17 +493,28 @@ export const fetchAdminCommissions = async (
   const aboveThreshold = Boolean(filters?.aboveThreshold)
   const pageSize = Math.max(1, Math.min(1000, filters?.pageSize || 25))
   const page = Math.max(1, filters?.page || 1)
+  const supplierFilterIds = Array.isArray(filters?.supplierIds)
+    ? filters.supplierIds
+      .map((id) => (mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null))
+      .filter((id): id is mongoose.Types.ObjectId => Boolean(id))
+    : []
 
   const startDate = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0))
   const endDate = new Date(Date.UTC(year, month + 1, 1, 0, 0, 0, 0))
 
-  const pipeline: mongoose.PipelineStage[] = [
-    {
-      $match: {
-        expireAt: null,
-        from: { $gte: startDate, $lt: endDate },
-      },
+  const matchStage: mongoose.PipelineStage.Match = {
+    $match: {
+      expireAt: null,
+      from: { $gte: startDate, $lt: endDate },
     },
+  }
+
+  if (supplierFilterIds.length > 0) {
+    matchStage.$match.supplier = { $in: supplierFilterIds }
+  }
+
+  const pipeline: mongoose.PipelineStage[] = [
+    matchStage,
     {
       $lookup: {
         from: 'User',
@@ -902,6 +914,7 @@ export const sendAgencyCommissionReminder = async (
   const defaultEmailBody = 'Bonjour {{agency_name}},<br/>Merci de régler votre commission de {{commission_due}} TND pour {{month_label}} {{year}}.'
   const defaultSmsBody = 'Plany: Commission {{month_label}} {{year}} de {{commission_due}} TND. Merci.'
 
+  const effectiveChannel = payload.channel || settings?.default_channel || 'email'
   const emailSubjectTemplate = payload.emailSubject || settings?.email_subject || defaultEmailSubject
   const emailBodyTemplate = payload.emailBody || settings?.email_body || defaultEmailBody
   const smsBodyTemplate = payload.smsBody || settings?.sms_body || defaultSmsBody
@@ -914,7 +927,7 @@ export const sendAgencyCommissionReminder = async (
   const reminderDate = new Date()
   let sent = false
 
-  if ((payload.channel === 'email' || payload.channel === 'both') && supplier.email) {
+  if ((effectiveChannel === 'email' || effectiveChannel === 'both') && supplier.email) {
     await mailHelper.sendMail({
       to: supplier.email,
       subject: emailSubject,
@@ -932,7 +945,7 @@ export const sendAgencyCommissionReminder = async (
     sent = true
   }
 
-  if ((payload.channel === 'sms' || payload.channel === 'both') && supplier.phone) {
+  if ((effectiveChannel === 'sms' || effectiveChannel === 'both') && supplier.phone) {
     const formattedPhone = validateAndFormatPhoneNumber(supplier.phone)
     if (formattedPhone.isValide && formattedPhone.phone) {
       await sendSms(formattedPhone.phone, smsBody.slice(0, 160))
@@ -974,6 +987,7 @@ export const upsertAgencyCommissionSettings = async (
     from_email: payload.from_email,
     from_name: payload.from_name,
     from_sms_sender: payload.from_sms_sender,
+    default_channel: payload.default_channel || 'email',
     updated_at: new Date(),
   }
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -53,15 +54,17 @@ import { strings } from '@/lang/admin-commissions'
 import * as helper from '@/common/helper'
 import env from '@/config/env.config'
 import * as CommissionService from '@/services/CommissionService'
+import * as SupplierService from '@/services/SupplierService'
 
 type Filters = {
-  status: 'all' | 'active' | 'blocked' | 'follow_up'
+  agencyStatus: 'all' | 'active' | 'blocked' | 'follow_up'
   aboveThreshold: boolean
   month: number
   year: number
   query: string
   page: number
   pageSize: number
+  supplierIds: string[]
 }
 
 type ReminderChannel = 'email' | 'sms' | 'both'
@@ -69,6 +72,8 @@ type ReminderChannel = 'email' | 'sms' | 'both'
 const formatter = new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 0 })
 
 const formatCurrency = (value: number) => `${formatter.format(Math.round(value || 0))} TND`
+
+type SupplierOption = { id: string; label: string }
 
 const LOCALE_MAP: Record<string, string> = {
   fr: 'fr-FR',
@@ -115,13 +120,14 @@ const AdminCommissions = () => {
   const navigate = useNavigate()
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [filters, setFilters] = useState<Filters>(() => ({
-    status: 'all',
+    agencyStatus: 'all',
     aboveThreshold: false,
     month: new Date().getMonth(),
     year: new Date().getFullYear(),
     query: '',
     page: 1,
     pageSize: 25,
+    supplierIds: [],
   }))
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -135,6 +141,9 @@ const AdminCommissions = () => {
   const [statusOpen, setStatusOpen] = useState(false)
   const [noteValue, setNoteValue] = useState('')
   const [noteLoading, setNoteLoading] = useState(false)
+  const [suppliers, setSuppliers] = useState<SupplierOption[]>([])
+  const [selectedSuppliers, setSelectedSuppliers] = useState<SupplierOption[]>([])
+  const [suppliersLoading, setSuppliersLoading] = useState(false)
   const [reminderForm, setReminderForm] = useState<{ channel: ReminderChannel; emailSubject: string; emailBody: string; smsBody: string }>(() => ({
     channel: 'email',
     emailSubject: '',
@@ -172,11 +181,42 @@ const AdminCommissions = () => {
     try {
       setSettingsLoading(true)
       const data = await CommissionService.getCommissionSettings()
-      setSettings(data)
+      setSettings({ ...data, default_channel: data.default_channel || 'email' })
     } catch (err) {
       helper.error(err, strings.SETTINGS_ERROR)
     } finally {
       setSettingsLoading(false)
+    }
+  }
+
+  const loadSuppliers = async () => {
+    try {
+      setSuppliersLoading(true)
+      const data = await SupplierService.getAllSuppliers()
+      const options = data
+        .filter((supplier) => supplier && supplier._id)
+        .map((supplier) => ({
+          id: String(supplier._id),
+          label: supplier.fullName || String(supplier._id),
+        }))
+      setSuppliers(options)
+      setSelectedSuppliers((prev) => {
+        if (prev.length === 0) {
+          return prev
+        }
+        const mapped = prev
+          .map((option) => options.find((candidate) => candidate.id === option.id))
+          .filter((option): option is SupplierOption => Boolean(option))
+        if (mapped.length !== prev.length) {
+          const ids = mapped.map((option) => option.id)
+          setFilters((previous) => ({ ...previous, supplierIds: ids, page: 1 }))
+        }
+        return mapped
+      })
+    } catch (err) {
+      helper.error(err, strings.SUPPLIERS_ERROR)
+    } finally {
+      setSuppliersLoading(false)
     }
   }
 
@@ -188,12 +228,7 @@ const AdminCommissions = () => {
 
     setUser(_user)
 
-    try {
-      const data = await CommissionService.getCommissionSettings()
-      setSettings(data)
-    } catch (err) {
-      helper.error(err)
-    }
+    await Promise.allSettled([loadSettings(), loadSuppliers()])
   }
 
   const fetchCommissions = async (nextFilters?: Partial<Filters>, showLoader = true) => {
@@ -234,7 +269,17 @@ const AdminCommissions = () => {
 
     fetchCommissions(undefined, true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, filters.month, filters.year, filters.status, filters.aboveThreshold, filters.page, filters.pageSize, filters.query])
+  }, [
+    user,
+    filters.month,
+    filters.year,
+    filters.agencyStatus,
+    filters.aboveThreshold,
+    filters.page,
+    filters.pageSize,
+    filters.query,
+    filters.supplierIds,
+  ])
 
   const handleMonthChange = (delta: number) => {
     setFilters((prev) => {
@@ -264,8 +309,9 @@ const AdminCommissions = () => {
 
     setSelected(agency)
     const baseSettings = settings
+    const defaultChannel = baseSettings?.default_channel || 'email'
     setReminderForm({
-      channel: 'email',
+      channel: defaultChannel,
       emailSubject: baseSettings ? applyTemplate(baseSettings.email_subject || '', agency, response) : '',
       emailBody: baseSettings ? applyTemplate(baseSettings.email_body || '', agency, response) : '',
       smsBody: baseSettings ? applyTemplate(baseSettings.sms_body || '', agency, response) : '',
@@ -377,8 +423,9 @@ const AdminCommissions = () => {
         from_email: settings.from_email,
         from_name: settings.from_name,
         from_sms_sender: settings.from_sms_sender,
+        default_channel: settings.default_channel,
       })
-      setSettings(updated)
+      setSettings({ ...updated, default_channel: updated.default_channel || 'email' })
       helper.info(strings.SETTINGS_SUCCESS)
       setSettingsOpen(false)
     } catch (err) {
@@ -457,7 +504,10 @@ const AdminCommissions = () => {
       <Box padding={3} display="flex" flexDirection="column" gap={3}>
         <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" gap={2}>
           <Box>
-            <Typography variant="h4" fontWeight={700}>{strings.PAGE_TITLE}</Typography>
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+              <Typography variant="h4" fontWeight={700}>{strings.PAGE_TITLE}</Typography>
+              <Chip size="small" label={`${strings.ABOVE_THRESHOLD} : ${formatCurrency(threshold)}`} variant="outlined" />
+            </Stack>
             <Typography variant="subtitle2" color="text.secondary">{strings.HEADER_TITLE}</Typography>
           </Box>
           <Stack direction="row" spacing={1}>
@@ -496,12 +546,37 @@ const AdminCommissions = () => {
               fullWidth
             />
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', md: 'center' }}>
+              <Autocomplete
+                multiple
+                options={suppliers}
+                value={selectedSuppliers}
+                onChange={(_, value) => {
+                  setSelectedSuppliers(value)
+                  setFilters((prev) => ({ ...prev, supplierIds: value.map((option) => option.id), page: 1 }))
+                }}
+                size="small"
+                loading={suppliersLoading}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                getOptionLabel={(option) => option.label}
+                sx={{ minWidth: 240 }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={strings.FILTER_SUPPLIERS_LABEL}
+                    placeholder={strings.FILTER_SUPPLIERS_PLACEHOLDER}
+                  />
+                )}
+              />
               <FormControl size="small" sx={{ minWidth: 180 }}>
                 <InputLabel>{strings.FILTER_STATUS_LABEL}</InputLabel>
                 <Select
                   label={strings.FILTER_STATUS_LABEL}
-                  value={filters.status}
-                  onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value as Filters['status'], page: 1 }))}
+                  value={filters.agencyStatus}
+                  onChange={(event) => setFilters((prev) => ({
+                    ...prev,
+                    agencyStatus: event.target.value as Filters['agencyStatus'],
+                    page: 1,
+                  }))}
                 >
                   <MenuItem value="all">{strings.STATUS_ALL}</MenuItem>
                   <MenuItem value="active">{strings.STATUS_ACTIVE}</MenuItem>
@@ -956,6 +1031,20 @@ const AdminCommissions = () => {
         <DialogTitle>{strings.SETTINGS_TITLE}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} mt={1}>
+            <FormControl fullWidth size="small">
+              <InputLabel>{strings.SETTINGS_DEFAULT_CHANNEL}</InputLabel>
+              <Select
+                label={strings.SETTINGS_DEFAULT_CHANNEL}
+                value={settings?.default_channel || 'email'}
+                onChange={(event) => setSettings((prev) => (prev
+                  ? { ...prev, default_channel: event.target.value as ReminderChannel }
+                  : prev))}
+              >
+                <MenuItem value="email">{strings.REMINDER_CHANNEL_EMAIL}</MenuItem>
+                <MenuItem value="sms">{strings.REMINDER_CHANNEL_SMS}</MenuItem>
+                <MenuItem value="both">{strings.REMINDER_CHANNEL_BOTH}</MenuItem>
+              </Select>
+            </FormControl>
             <TextField
               label={strings.SETTINGS_EMAIL_SUBJECT}
               value={settings?.email_subject || ''}

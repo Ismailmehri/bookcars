@@ -31,3 +31,15 @@ export const downloadBookingInvoice = (bookingId: string) => axiosInstance.get(
     responseType: 'blob',
   },
 )
+
+export const sendReminder = (
+  bookingId: string,
+  payload: bookcarsTypes.SendCommissionReminderPayload,
+): Promise<bookcarsTypes.CommissionReminderResponse> =>
+  axiosInstance
+    .post(
+      `/api/agency-commissions/${encodeURIComponent(bookingId)}/reminders`,
+      payload,
+      { withCredentials: true },
+    )
+    .then((res) => res.data)

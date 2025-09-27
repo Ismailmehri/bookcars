@@ -6,6 +6,8 @@ import * as bookcarsTypes from ':bookcars-types'
 import Booking from '../models/Booking'
 import User from '../models/User'
 import * as env from '../config/env.config'
+import i18n from '../lang/i18n'
+import * as mailHelper from './mailHelper'
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
 const MONTHS_FR = [
@@ -175,6 +177,7 @@ export const fetchAgencyCommissions = async (
         commissionTotal: 1,
         commissionRate: 1,
         commissionStatus: 1,
+        notifications: 1,
         driver: {
           _id: '$driver._id',
           fullName: '$driver.fullName',
@@ -198,6 +201,10 @@ export const fetchAgencyCommissions = async (
     commissionTotal?: number
     commissionRate?: number
     commissionStatus?: bookcarsTypes.CommissionStatus
+    notifications?: {
+      supplier?: { count?: number; lastSent?: Date | null }
+      client?: { count?: number; lastSent?: Date | null }
+    }
     driver: { _id: mongoose.Types.ObjectId; fullName: string }
     supplier: { _id: mongoose.Types.ObjectId; fullName: string }
   }>(pipeline)
@@ -244,6 +251,32 @@ export const fetchAgencyCommissions = async (
       : 0
     const netAgency = totalClient - commissionDue
     const pricePerDay = Math.round(days > 0 ? totalClient / days : totalClient)
+    const supplierInfo = booking.supplier
+      ? {
+        _id: booking.supplier._id.toString(),
+        fullName: booking.supplier.fullName || '',
+      }
+      : { _id: '', fullName: '' }
+    const notifications = booking.notifications
+      ? {
+        supplier: booking.notifications.supplier
+          ? {
+            count: Math.max(0, booking.notifications.supplier.count || 0),
+            lastSent: booking.notifications.supplier.lastSent instanceof Date
+              ? booking.notifications.supplier.lastSent.toISOString()
+              : undefined,
+          }
+          : undefined,
+        client: booking.notifications.client
+          ? {
+            count: Math.max(0, booking.notifications.client.count || 0),
+            lastSent: booking.notifications.client.lastSent instanceof Date
+              ? booking.notifications.client.lastSent.toISOString()
+              : undefined,
+          }
+          : undefined,
+      }
+      : undefined
 
     return {
       bookingId: booking._id.toString(),
@@ -254,6 +287,7 @@ export const fetchAgencyCommissions = async (
         _id: booking.driver?._id.toString() || '',
         fullName: booking.driver?.fullName || '',
       },
+      supplier: supplierInfo,
       from: fromDate.toISOString(),
       to: toDate.toISOString(),
       days,
@@ -261,6 +295,7 @@ export const fetchAgencyCommissions = async (
       totalClient,
       commission: commissionDue,
       netAgency,
+      notifications,
     }
   })
 
@@ -311,8 +346,8 @@ export const fetchCommissionBookingById = async (bookingId: string) => {
 
   const booking = await Booking
     .findById(new mongoose.Types.ObjectId(bookingId))
-    .populate('driver', 'fullName')
-    .populate('supplier', 'fullName')
+    .populate('driver', 'fullName email language phone')
+    .populate('supplier', 'fullName email language phone')
     .lean<{
       _id: mongoose.Types.ObjectId
       from: Date
@@ -323,8 +358,12 @@ export const fetchCommissionBookingById = async (bookingId: string) => {
       commissionTotal?: number
       commissionRate?: number
       commissionStatus?: bookcarsTypes.CommissionStatus
-      driver?: { _id: mongoose.Types.ObjectId; fullName: string }
-      supplier?: { _id: mongoose.Types.ObjectId; fullName: string }
+      driver?: { _id: mongoose.Types.ObjectId; fullName: string; email?: string; language?: string; phone?: string }
+      supplier?: { _id: mongoose.Types.ObjectId; fullName: string; email?: string; language?: string; phone?: string }
+      notifications?: {
+        supplier?: { count?: number; lastSent?: Date | null }
+        client?: { count?: number; lastSent?: Date | null }
+      }
     }>()
 
   if (!booking) {
@@ -362,6 +401,9 @@ export const fetchCommissionBookingById = async (bookingId: string) => {
       _id: booking.driver?._id.toString() || '',
       fullName: booking.driver?.fullName || '',
     },
+    supplier: booking.supplier
+      ? { _id: booking.supplier._id.toString(), fullName: booking.supplier.fullName || '' }
+      : { _id: '', fullName: '' },
     from: fromDate.toISOString(),
     to: toDate.toISOString(),
     days,
@@ -369,6 +411,26 @@ export const fetchCommissionBookingById = async (bookingId: string) => {
     totalClient,
     commission: commissionDue,
     netAgency,
+    notifications: booking.notifications
+      ? {
+        supplier: booking.notifications.supplier
+          ? {
+            count: Math.max(0, booking.notifications.supplier.count || 0),
+            lastSent: booking.notifications.supplier.lastSent instanceof Date
+              ? booking.notifications.supplier.lastSent.toISOString()
+              : undefined,
+          }
+          : undefined,
+        client: booking.notifications.client
+          ? {
+            count: Math.max(0, booking.notifications.client.count || 0),
+            lastSent: booking.notifications.client.lastSent instanceof Date
+              ? booking.notifications.client.lastSent.toISOString()
+              : undefined,
+          }
+          : undefined,
+      }
+      : undefined,
   }
 
   const supplier = booking.supplier
@@ -378,6 +440,132 @@ export const fetchCommissionBookingById = async (bookingId: string) => {
   return {
     booking: commissionBooking,
     supplier,
+  }
+}
+
+type MutableReminderSummary = {
+  supplier?: { count: number; lastSent?: Date }
+  client?: { count: number; lastSent?: Date }
+}
+
+const createMutableReminderSummary = (notifications?: {
+  supplier?: { count?: number; lastSent?: Date | null }
+  client?: { count?: number; lastSent?: Date | null }
+}): MutableReminderSummary => ({
+  supplier: notifications?.supplier
+    ? {
+      count: Math.max(0, notifications.supplier.count || 0),
+      lastSent: notifications.supplier.lastSent || undefined,
+    }
+    : undefined,
+  client: notifications?.client
+    ? {
+      count: Math.max(0, notifications.client.count || 0),
+      lastSent: notifications.client.lastSent || undefined,
+    }
+    : undefined,
+})
+
+const normalizeReminderSummary = (
+  summary: MutableReminderSummary,
+): bookcarsTypes.CommissionReminderSummary => ({
+  supplier: summary.supplier
+    ? {
+      count: summary.supplier.count,
+      lastSent: summary.supplier.lastSent ? summary.supplier.lastSent.toISOString() : undefined,
+    }
+    : undefined,
+  client: summary.client
+    ? {
+      count: summary.client.count,
+      lastSent: summary.client.lastSent ? summary.client.lastSent.toISOString() : undefined,
+    }
+    : undefined,
+})
+
+export const triggerCommissionReminder = async (
+  bookingId: string,
+  target: bookcarsTypes.CommissionReminderTarget,
+): Promise<bookcarsTypes.CommissionReminderResponse | null> => {
+  if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+    return null
+  }
+
+  const booking = await Booking
+    .findById(new mongoose.Types.ObjectId(bookingId))
+    .populate('driver', 'fullName email language')
+    .populate('supplier', 'fullName email language')
+    .lean<{
+      _id: mongoose.Types.ObjectId
+      supplier?: { _id: mongoose.Types.ObjectId; fullName: string; email?: string; language?: string }
+      driver?: { _id: mongoose.Types.ObjectId; fullName: string; email?: string; language?: string }
+      notifications?: {
+        supplier?: { count?: number; lastSent?: Date | null }
+        client?: { count?: number; lastSent?: Date | null }
+      }
+    }>()
+
+  if (!booking) {
+    return null
+  }
+
+  const recipient = target === 'supplier' ? booking.supplier : booking.driver
+
+  if (!recipient || !recipient.email) {
+    throw new Error('RECIPIENT_EMAIL_NOT_FOUND')
+  }
+
+  const locale = recipient.language || 'fr'
+  i18n.locale = locale
+  const subjectKey = target === 'supplier'
+    ? 'COMMISSION_REMINDER_SUPPLIER_SUBJECT'
+    : 'COMMISSION_REMINDER_CLIENT_SUBJECT'
+  const bodyKey = target === 'supplier'
+    ? 'COMMISSION_REMINDER_SUPPLIER_BODY'
+    : 'COMMISSION_REMINDER_CLIENT_BODY'
+
+  const bookingRef = booking._id.toString()
+  const html = `
+    <p>${i18n.t('HELLO')} <strong>${recipient.fullName}</strong>,</p>
+    <p>${i18n.t(bodyKey, { booking: bookingRef })}</p>
+    <p>${i18n.t('THANK_YOU')}</p>
+  `
+
+  await mailHelper.sendMail({
+    to: recipient.email,
+    subject: i18n.t(subjectKey),
+    html,
+  })
+
+  const baseNotifications = createMutableReminderSummary(booking.notifications)
+
+  const now = new Date()
+  if (target === 'supplier') {
+    const count = (baseNotifications.supplier?.count || 0) + 1
+    baseNotifications.supplier = { count, lastSent: now }
+  } else {
+    const count = (baseNotifications.client?.count || 0) + 1
+    baseNotifications.client = { count, lastSent: now }
+  }
+
+  await Booking.findByIdAndUpdate(
+    booking._id,
+    {
+      notifications: {
+        supplier: baseNotifications.supplier
+          ? { count: baseNotifications.supplier.count, lastSent: baseNotifications.supplier.lastSent }
+          : undefined,
+        client: baseNotifications.client
+          ? { count: baseNotifications.client.count, lastSent: baseNotifications.client.lastSent }
+          : undefined,
+      },
+    },
+    { new: false },
+  )
+
+  return {
+    target,
+    notifications: normalizeReminderSummary(baseNotifications),
   }
 }
 

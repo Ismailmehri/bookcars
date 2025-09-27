@@ -52,6 +52,7 @@ const UpdateSubscription = lazy(() => import('@/pages/UpdateSubscription'))
 const AgencyVerification = lazy(() => import('@/pages/AgencyVerification'))
 const AdminVerificationDashboard = lazy(() => import('@/pages/AdminVerificationDashboard'))
 const AgencyCommissions = lazy(() => import('@/pages/AgencyCommissions'))
+const AdminCommissions = lazy(() => import('@/pages/AdminCommissions'))
 
 const App = () => (
   <GlobalProvider>
@@ -104,6 +105,7 @@ const App = () => (
             <Route path="/agency-verification" element={<AgencyVerification />} />
             <Route path="/admin-verification" element={<AdminVerificationDashboard />} />
             <Route path="/agency-commissions" element={<AgencyCommissions />} />
+            <Route path="/admin-commissions" element={<AdminCommissions />} />
 
             <Route path="*" element={<NoMatch />} />
           </Routes>

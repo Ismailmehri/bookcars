@@ -158,12 +158,25 @@ export interface GetAgencyCommissionsPayload {
   query?: string
 }
 
+export type CommissionReminderTarget = 'supplier' | 'client'
+
+export interface CommissionReminderStats {
+  count: number
+  lastSent?: string
+}
+
+export interface CommissionReminderSummary {
+  supplier?: CommissionReminderStats
+  client?: CommissionReminderStats
+}
+
 export interface AgencyCommissionBooking {
   bookingId: string
   bookingNumber: string
   bookingStatus: BookingStatus
   commissionStatus: CommissionStatus
   driver: Pick<User, '_id' | 'fullName'>
+  supplier: Pick<User, '_id' | 'fullName'>
   from: string
   to: string
   days: number
@@ -171,6 +184,7 @@ export interface AgencyCommissionBooking {
   totalClient: number
   commission: number
   netAgency: number
+  notifications?: CommissionReminderSummary
 }
 
 export interface AgencyCommissionSummary {
@@ -186,6 +200,15 @@ export interface AgencyCommissionsResponse {
   bookings: AgencyCommissionBooking[]
   summary: AgencyCommissionSummary
   supplier?: Pick<User, '_id' | 'fullName'>
+}
+
+export interface SendCommissionReminderPayload {
+  target: CommissionReminderTarget
+}
+
+export interface CommissionReminderResponse {
+  target: CommissionReminderTarget
+  notifications: CommissionReminderSummary
 }
 
 export interface AdditionalDriver {

@@ -29,9 +29,9 @@ import {
   Skeleton,
   Link,
   CircularProgress,
-  SxProps,
-  Theme,
+  Checkbox,
 } from '@mui/material'
+import type { SelectChangeEvent } from '@mui/material/Select'
 import SearchIcon from '@mui/icons-material/Search'
 import DownloadIcon from '@mui/icons-material/Download'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
@@ -42,12 +42,15 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined'
 import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
+import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined'
+import MailOutlineIcon from '@mui/icons-material/MailOutline'
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
-import { strings } from '@/lang/agency-commissions'
+import { strings } from '@/lang/admin-commissions'
 import * as helper from '@/common/helper'
 import env from '@/config/env.config'
 import * as CommissionService from '@/services/CommissionService'
+import * as SupplierService from '@/services/SupplierService'
 
 const formatter = new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 0 })
 const formatCurrency = (value: number) => `${formatter.format(Math.round(value || 0))} ${strings.CURRENCY}`
@@ -76,20 +79,19 @@ const BOOKING_STATUS_CHIP_STYLES: Record<bookcarsTypes.BookingStatus, { backgrou
 }
 const FALLBACK_STATUS_CHIP_STYLE = { background: '#ECEFF1', color: '#455A64' }
 
+const reminderKey = (bookingId: string, target: bookcarsTypes.CommissionReminderTarget) => `${target}:${bookingId}`
+
 type CommissionRow = bookcarsTypes.AgencyCommissionBooking
 type DrawerState = CommissionRow | null
 
-type KpiProps = {
+const Kpi = ({ title, value, icon, loading, helperText }: {
   title: string
   value: string
   icon: React.ReactNode
   loading: boolean
   helperText?: string
-  sx?: SxProps<Theme>
-}
-
-const Kpi = ({ title, value, icon, loading, helperText, sx }: KpiProps) => (
-  <Card sx={{ borderRadius: 3, height: '100%', boxShadow: '0 6px 24px rgba(10,102,255,0.06)', ...sx }}>
+}) => (
+  <Card sx={{ borderRadius: 3, height: '100%', boxShadow: '0 6px 24px rgba(10,102,255,0.06)' }}>
     <CardContent>
       <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
         {icon}
@@ -115,7 +117,7 @@ const paymentColor = (status?: bookcarsTypes.CommissionStatus): 'success' | 'war
   status === COMMISSION_STATUS_PAID ? 'success' : 'warning'
 )
 
-const AgencyCommissions = () => {
+const AdminCommissions = () => {
   const navigate = useNavigate()
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [status, setStatus] = useState<'all' | bookcarsTypes.BookingStatus>('all')
@@ -126,17 +128,83 @@ const AgencyCommissions = () => {
   const [data, setData] = useState<CommissionRow[]>([])
   const [summary, setSummary] = useState<bookcarsTypes.AgencyCommissionSummary | null>(null)
   const [drawer, setDrawer] = useState<DrawerState>(null)
-  const [monthInvoiceLoading, setMonthInvoiceLoading] = useState(false)
   const [bookingInvoiceLoading, setBookingInvoiceLoading] = useState<string | null>(null)
+  const [suppliers, setSuppliers] = useState<Array<Pick<bookcarsTypes.User, '_id' | 'fullName'>>>([])
+  const [supplierLoading, setSupplierLoading] = useState(false)
+  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([])
+  const [reminderLoading, setReminderLoading] = useState<string | null>(null)
 
   const locale = LOCALE_MAP[user?.language || 'fr'] || 'fr-FR'
   const months = strings.MONTHS as string[]
   const language = strings.getLanguage()
   const commissionPaymentLabels = strings.COMMISSION_PAYMENT_LABELS as Record<bookcarsTypes.CommissionStatus, string>
   const bookingStatusOptions = useMemo(() => helper.getBookingStatuses(), [language])
+  const supplierNames = useMemo(() => new Map(suppliers.map((supplier) => [supplier._id, supplier.fullName])), [suppliers])
+  const allSuppliersSelected = selectedSuppliers.length === suppliers.length && suppliers.length > 0
+
+  useEffect(() => {
+    setSelectedSuppliers((current) => {
+      if (suppliers.length === 0) {
+        return []
+      }
+      const filtered = current.filter((id) => supplierNames.has(id))
+      return filtered.length === current.length ? current : filtered
+    })
+  }, [supplierNames, suppliers.length])
 
   useEffect(() => {
     if (!user?._id) {
+      return
+    }
+
+    if (!helper.admin(user)) {
+      navigate('/agency-commissions', { replace: true })
+      return
+    }
+
+    let active = true
+    setSupplierLoading(true)
+    SupplierService.getAllSuppliers()
+      .then((result) => {
+        if (!active) {
+          return
+        }
+        const mapped = result
+          .map((supplier) => ({ _id: supplier._id, fullName: supplier.fullName }))
+          .sort((a, b) => a.fullName.localeCompare(b.fullName))
+        setSuppliers(mapped)
+        if (mapped.length > 0) {
+          setSelectedSuppliers((current) => (current.length > 0 ? current : mapped.map((supplier) => supplier._id)))
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          helper.error(err)
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setSupplierLoading(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [user?._id, navigate])
+
+  useEffect(() => {
+    if (!user?._id || !helper.admin(user)) {
+      setData([])
+      setSummary(null)
+      return
+    }
+
+    const supplierIds = selectedSuppliers.length > 0
+      ? selectedSuppliers
+      : suppliers.map((supplier) => supplier._id)
+
+    if (supplierIds.length === 0) {
       setData([])
       setSummary(null)
       return
@@ -146,7 +214,7 @@ const AgencyCommissions = () => {
     setLoading(true)
     const timeout = window.setTimeout(() => {
       CommissionService.getAgencyCommissions({
-        suppliers: [user._id],
+        suppliers: supplierIds,
         month,
         year,
         query: query.trim() || undefined,
@@ -182,7 +250,7 @@ const AgencyCommissions = () => {
       active = false
       window.clearTimeout(timeout)
     }
-  }, [user?._id, month, year, query])
+  }, [user?._id, month, year, query, selectedSuppliers, suppliers, navigate])
 
   const filteredRows = useMemo(() => (
     status === 'all'
@@ -190,7 +258,14 @@ const AgencyCommissions = () => {
       : data.filter((booking) => booking.bookingStatus === status)
   ), [data, status])
 
-  const sortedRows = useMemo(() => [...filteredRows].sort((a, b) => b.totalClient - a.totalClient), [filteredRows])
+  const sortedRows = useMemo(() => [...filteredRows].sort((a, b) => {
+    const supplierA = a.supplier?.fullName || ''
+    const supplierB = b.supplier?.fullName || ''
+    if (supplierA !== supplierB) {
+      return supplierA.localeCompare(supplierB)
+    }
+    return b.totalClient - a.totalClient
+  }), [filteredRows])
 
   const computedSummary = useMemo(() => {
     if (summary) {
@@ -290,13 +365,29 @@ const AgencyCommissions = () => {
 
   const handleLoad = (_user?: bookcarsTypes.User) => {
     if (_user) {
-      if (helper.admin(_user)) {
-        navigate('/admin-commissions', { replace: true })
+      if (!helper.admin(_user)) {
+        navigate('/agency-commissions', { replace: true })
         return
       }
 
       setUser(_user)
     }
+  }
+
+  const handleSupplierChange = (event: SelectChangeEvent<string[]>) => {
+    const { value } = event.target
+    const values = typeof value === 'string' ? value.split(',') : value
+
+    if (values.includes('__all__')) {
+      if (allSuppliersSelected) {
+        setSelectedSuppliers([])
+      } else {
+        setSelectedSuppliers(suppliers.map((supplier) => supplier._id))
+      }
+      return
+    }
+
+    setSelectedSuppliers(values)
   }
 
   const renderDate = (date: string) => new Date(date).toLocaleDateString(locale)
@@ -321,20 +412,41 @@ const AgencyCommissions = () => {
     )
   }
 
-  const downloadBlob = (blob: Blob, filename: string) => {
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', filename)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
+  const renderReminderTooltip = (
+    _target: bookcarsTypes.CommissionReminderTarget,
+    stats?: bookcarsTypes.CommissionReminderStats,
+  ) => {
+    if (!stats || !stats.count) {
+      return strings.REMINDER_TOOLTIP_NEVER
+    }
+
+    const date = stats.lastSent
+      ? new Date(stats.lastSent).toLocaleString(locale)
+      : strings.REMINDER_UNKNOWN_DATE
+
+    return strings.REMINDER_TOOLTIP
+      .replace('{count}', `${stats.count}`)
+      .replace('{date}', date)
+  }
+
+  const renderReminderSummary = (stats?: bookcarsTypes.CommissionReminderStats) => {
+    if (!stats || !stats.count) {
+      return strings.REMINDER_NONE
+    }
+
+    const date = stats.lastSent
+      ? new Date(stats.lastSent).toLocaleString(locale)
+      : strings.REMINDER_UNKNOWN_DATE
+
+    return strings.REMINDER_SUMMARY
+      .replace('{count}', `${stats.count}`)
+      .replace('{date}', date)
   }
 
   const handleExportCsv = () => {
     const header = [
       strings.BOOKING_NUMBER,
+      strings.SUPPLIER,
       strings.CLIENT,
       strings.START_DATE,
       strings.END_DATE,
@@ -349,6 +461,7 @@ const AgencyCommissions = () => {
 
     const rows = sortedRows.map((booking) => [
       booking.bookingNumber,
+      booking.supplier?.fullName || '',
       booking.driver.fullName,
       renderDate(booking.from),
       renderDate(booking.to),
@@ -366,24 +479,15 @@ const AgencyCommissions = () => {
       .join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    downloadBlob(blob, `commissions_${year}_${String(month + 1).padStart(2, '0')}.csv`)
-  }
-
-  const handleDownloadMonthlyInvoice = async () => {
-    if (!user?._id) {
-      return
-    }
-
-    try {
-      setMonthInvoiceLoading(true)
-      const response = await CommissionService.downloadMonthlyInvoice(user._id, year, month)
-      const blob = new Blob([response.data], { type: 'application/pdf' })
-      downloadBlob(blob, `commission_${year}_${String(month + 1).padStart(2, '0')}.pdf`)
-    } catch (err) {
-      helper.error(err)
-    } finally {
-      setMonthInvoiceLoading(false)
-    }
+    const filename = `commissions_admin_${year}_${String(month + 1).padStart(2, '0')}.csv`
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
   }
 
   const handleDownloadBookingInvoice = async (bookingId: string) => {
@@ -391,7 +495,14 @@ const AgencyCommissions = () => {
       setBookingInvoiceLoading(bookingId)
       const response = await CommissionService.downloadBookingInvoice(bookingId)
       const blob = new Blob([response.data], { type: 'application/pdf' })
-      downloadBlob(blob, `commission_booking_${bookingId}.pdf`)
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `commission_booking_${bookingId}.pdf`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
     } catch (err) {
       helper.error(err)
     } finally {
@@ -399,31 +510,53 @@ const AgencyCommissions = () => {
     }
   }
 
+  const handleSendReminder = async (bookingId: string, target: bookcarsTypes.CommissionReminderTarget) => {
+    try {
+      const key = reminderKey(bookingId, target)
+      setReminderLoading(key)
+      const response = await CommissionService.sendReminder(bookingId, { target })
+      setData((rows) => rows.map((row) => (
+        row.bookingId === bookingId
+          ? { ...row, notifications: response.notifications }
+          : row
+      )))
+      setDrawer((current) => (current && current.bookingId === bookingId
+        ? { ...current, notifications: response.notifications }
+        : current))
+      helper.info(strings.REMINDER_SUCCESS)
+    } catch (err) {
+      helper.error(err, strings.REMINDER_ERROR)
+    } finally {
+      setReminderLoading(null)
+    }
+  }
+
   return (
-    <Layout onLoad={handleLoad} strict>
+    <Layout onLoad={handleLoad} strict admin>
       {user && (
         <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: '#f7f9fc', minHeight: '100vh' }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
             <Stack direction="row" spacing={2} alignItems="center">
               <Typography variant="h5" fontWeight={800}>{strings.HEADER}</Typography>
               <Chip size="small" variant="outlined" label={`${strings.PERIOD_LABEL} ${months[month]} ${year}`} />
+              <Chip
+                size="small"
+                variant="outlined"
+                label={suppliers.length === 0
+                  ? strings.ALL_AGENCIES
+                  : allSuppliersSelected
+                    ? strings.ALL_AGENCIES
+                    : `${selectedSuppliers.length}/${suppliers.length}`}
+              />
             </Stack>
             <Stack direction="row" spacing={1}>
               <Button
                 variant="outlined"
-                startIcon={<ReceiptLongIcon />}
+                startIcon={<DownloadIcon />}
                 onClick={handleExportCsv}
                 disabled={sortedRows.length === 0 && !loading}
               >
                 {strings.EXPORT_CSV}
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={monthInvoiceLoading ? <CircularProgress size={18} /> : <DownloadIcon />}
-                onClick={handleDownloadMonthlyInvoice}
-                disabled={monthInvoiceLoading}
-              >
-                {strings.DOWNLOAD_MONTH_INVOICE}
               </Button>
             </Stack>
           </Stack>
@@ -445,6 +578,42 @@ const AgencyCommissions = () => {
                     ),
                   }}
                 />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Stack spacing={0.5}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>{strings.SUPPLIER_FILTER_LABEL}</Typography>
+                  <Select
+                    multiple
+                    size="small"
+                    fullWidth
+                    value={selectedSuppliers}
+                    onChange={handleSupplierChange}
+                    renderValue={(selected) => {
+                      if (selected.length === 0 || selected.length === suppliers.length) {
+                        return strings.ALL_AGENCIES
+                      }
+                      return selected
+                        .map((id) => supplierNames.get(id) || id)
+                        .join(', ')
+                    }}
+                    displayEmpty
+                    disabled={supplierLoading || suppliers.length === 0}
+                  >
+                    <MenuItem value="__all__">
+                      <Checkbox
+                        checked={allSuppliersSelected}
+                        indeterminate={!allSuppliersSelected && selectedSuppliers.length > 0}
+                      />
+                      <ListItemText primary={strings.ALL_AGENCIES} />
+                    </MenuItem>
+                    {suppliers.map((supplier) => (
+                      <MenuItem key={supplier._id} value={supplier._id}>
+                        <Checkbox checked={selectedSuppliers.includes(supplier._id)} />
+                        <ListItemText primary={supplier.fullName} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </Stack>
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <Select
@@ -526,6 +695,7 @@ const AgencyCommissions = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>{strings.BOOKING_NUMBER}</TableCell>
+                  <TableCell>{strings.SUPPLIER}</TableCell>
                   <TableCell>{strings.CLIENT}</TableCell>
                   <TableCell>{strings.START_DATE}</TableCell>
                   <TableCell>{strings.END_DATE}</TableCell>
@@ -536,20 +706,21 @@ const AgencyCommissions = () => {
                   <TableCell align="right">{strings.NET_AGENCY}</TableCell>
                   <TableCell align="center">{strings.BOOKING_STATUS}</TableCell>
                   <TableCell align="center">{strings.COMMISSION_STATUS}</TableCell>
+                  <TableCell align="center">{strings.REMINDERS}</TableCell>
                   <TableCell align="center">{strings.ACTIONS}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {loading && sortedRows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={12}>
+                    <TableCell colSpan={14}>
                       <Skeleton variant="rectangular" height={40} />
                     </TableCell>
                   </TableRow>
                 )}
                 {!loading && sortedRows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={12}>
+                    <TableCell colSpan={14}>
                       <Typography align="center" color="text.secondary" sx={{ py: 2 }}>
                         {strings.EMPTY_LIST}
                       </Typography>
@@ -566,6 +737,16 @@ const AgencyCommissions = () => {
                         underline="hover"
                       >
                         {booking.bookingNumber}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/update-supplier?c=${booking.supplier._id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        underline="hover"
+                      >
+                        {booking.supplier.fullName}
                       </Link>
                     </TableCell>
                     <TableCell>
@@ -587,12 +768,44 @@ const AgencyCommissions = () => {
                     <TableCell align="right">{formatCurrency(booking.netAgency)}</TableCell>
                     <TableCell align="center">{renderBookingStatusChip(booking.bookingStatus)}</TableCell>
                     <TableCell align="center">
-                    <Chip
-                      size="small"
-                      label={commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING]}
-                      color={paymentColor(booking.commissionStatus)}
-                      variant={booking.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
-                    />
+                      <Chip
+                        size="small"
+                        label={commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING]}
+                        color={paymentColor(booking.commissionStatus)}
+                        variant={booking.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Stack direction="row" spacing={0.5} justifyContent="center">
+                        <Tooltip title={renderReminderTooltip('supplier', booking.notifications?.supplier)}>
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleSendReminder(booking.bookingId, 'supplier')}
+                              disabled={reminderLoading === reminderKey(booking.bookingId, 'supplier')}
+                              aria-label={strings.REMINDER_SUPPLIER}
+                            >
+                              {reminderLoading === reminderKey(booking.bookingId, 'supplier')
+                                ? <CircularProgress size={16} />
+                                : <CampaignOutlinedIcon fontSize="small" />}
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                        <Tooltip title={renderReminderTooltip('client', booking.notifications?.client)}>
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleSendReminder(booking.bookingId, 'client')}
+                              disabled={reminderLoading === reminderKey(booking.bookingId, 'client')}
+                              aria-label={strings.REMINDER_CLIENT}
+                            >
+                              {reminderLoading === reminderKey(booking.bookingId, 'client')
+                                ? <CircularProgress size={16} />
+                                : <MailOutlineIcon fontSize="small" />}
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </Stack>
                     </TableCell>
                     <TableCell align="center">
                       <Stack direction="row" spacing={0.5} justifyContent="center">
@@ -649,6 +862,9 @@ const AgencyCommissions = () => {
                       <ListItemText primary={strings.BOOKING_NUMBER} secondary={drawer.bookingNumber} />
                     </ListItem>
                     <ListItem>
+                      <ListItemText primary={strings.DRAWER_SUPPLIER} secondary={drawer.supplier.fullName} />
+                    </ListItem>
+                    <ListItem>
                       <ListItemText primary={strings.CLIENT} secondary={drawer.driver.fullName} />
                     </ListItem>
                     <ListItem>
@@ -679,8 +895,8 @@ const AgencyCommissions = () => {
                   </List>
 
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_STATUS_SECTION}</Typography>
-                  <Stack direction="row" spacing={1}>
-                    {drawer && renderBookingStatusChip(drawer.bookingStatus)}
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    {renderBookingStatusChip(drawer.bookingStatus)}
                     <Chip
                       size="small"
                       label={commissionPaymentLabels[drawer.commissionStatus || COMMISSION_STATUS_PENDING]}
@@ -688,6 +904,16 @@ const AgencyCommissions = () => {
                       variant={drawer.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
                     />
                   </Stack>
+
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_REMINDERS_SECTION}</Typography>
+                  <List dense>
+                    <ListItem>
+                      <ListItemText primary={strings.REMINDER_SUPPLIER} secondary={renderReminderSummary(drawer.notifications?.supplier)} />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemText primary={strings.REMINDER_CLIENT} secondary={renderReminderSummary(drawer.notifications?.client)} />
+                    </ListItem>
+                  </List>
                 </>
               )}
             </Box>
@@ -698,4 +924,4 @@ const AgencyCommissions = () => {
   )
 }
 
-export default AgencyCommissions
+export default AdminCommissions

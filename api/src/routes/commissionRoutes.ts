@@ -8,5 +8,6 @@ const routes = express.Router()
 routes.route(routeNames.getAgencyCommissions).post(authJwt.verifyToken, commissionController.getAgencyCommissions)
 routes.route(routeNames.downloadMonthlyInvoice).get(authJwt.verifyToken, commissionController.downloadMonthlyInvoice)
 routes.route(routeNames.downloadBookingInvoice).get(authJwt.verifyToken, commissionController.downloadBookingInvoice)
+routes.route(routeNames.sendCommissionReminder).post(authJwt.verifyToken, commissionController.sendCommissionReminder)
 
 export default routes

@@ -295,7 +295,7 @@ const Header = ({
                   <ListItemIcon><DashboardIcon /></ListItemIcon>
                   <ListItemText primary={strings.DASHBOARD} />
                 </ListItemLink>
-                <ListItemLink href="/agency-commissions">
+                <ListItemLink href={isAdmin ? '/admin-commissions' : '/agency-commissions'}>
                   <ListItemIcon><CommissionsIcon /></ListItemIcon>
                   <ListItemText primary={strings.COMMISSIONS} />
                 </ListItemLink>

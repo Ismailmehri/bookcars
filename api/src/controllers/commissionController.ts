@@ -9,6 +9,7 @@ import {
   generateBookingInvoice,
   fetchCommissionBookingById,
   getSupplierById,
+  triggerCommissionReminder,
 } from '../common/commissionHelper'
 
 export const getAgencyCommissions = async (req: Request, res: Response) => {
@@ -80,6 +81,28 @@ export const downloadBookingInvoice = async (req: Request, res: Response) => {
     return res
   } catch (err) {
     logger.error(`[commission.downloadBookingInvoice] ${i18n.t('DB_ERROR')} ${JSON.stringify(req.params)}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const sendCommissionReminder = async (req: Request, res: Response) => {
+  try {
+    const { bookingId } = req.params
+    const { body }: { body: bookcarsTypes.SendCommissionReminderPayload } = req
+
+    if (!body || (body.target !== 'supplier' && body.target !== 'client')) {
+      return res.sendStatus(400)
+    }
+
+    const result = await triggerCommissionReminder(bookingId, body.target)
+
+    if (!result) {
+      return res.sendStatus(404)
+    }
+
+    return res.json(result)
+  } catch (err) {
+    logger.error(`[commission.sendCommissionReminder] ${i18n.t('DB_ERROR')} ${JSON.stringify(req.params)}`, err)
     return res.status(400).send(i18n.t('DB_ERROR') + err)
   }
 }

@@ -29,9 +29,11 @@ import {
   Skeleton,
   Link,
   CircularProgress,
+  useMediaQuery,
   SxProps,
   Theme,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import SearchIcon from '@mui/icons-material/Search'
 import DownloadIcon from '@mui/icons-material/Download'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
@@ -42,9 +44,12 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined'
 import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
+import FilterListIcon from '@mui/icons-material/FilterList'
+import CloseIcon from '@mui/icons-material/Close'
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
 import { strings } from '@/lang/agency-commissions-details'
+import { strings as commonStrings } from '@/lang/common'
 import * as helper from '@/common/helper'
 import env from '@/config/env.config'
 import * as CommissionService from '@/services/CommissionService'
@@ -117,6 +122,9 @@ const paymentColor = (status?: bookcarsTypes.CommissionStatus): 'success' | 'war
 
 const AgencyDetailsCommissions = () => {
   const navigate = useNavigate()
+  const theme = useTheme()
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
+  const isMobileOrTablet = !isDesktop
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [status, setStatus] = useState<'all' | bookcarsTypes.BookingStatus>('all')
   const [query, setQuery] = useState('')
@@ -128,6 +136,7 @@ const AgencyDetailsCommissions = () => {
   const [drawer, setDrawer] = useState<DrawerState>(null)
   const [monthInvoiceLoading, setMonthInvoiceLoading] = useState(false)
   const [bookingInvoiceLoading, setBookingInvoiceLoading] = useState<string | null>(null)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const locale = LOCALE_MAP[user?.language || 'fr'] || 'fr-FR'
   const months = strings.MONTHS as string[]
@@ -176,7 +185,7 @@ const AgencyDetailsCommissions = () => {
             setLoading(false)
           }
         })
-    }, 300)
+    }, 400)
 
     return () => {
       active = false
@@ -262,6 +271,15 @@ const AgencyDetailsCommissions = () => {
       icon: <PeopleAltOutlinedIcon />,
     },
   ]), [metrics])
+
+  const displayedKpis = useMemo(() => {
+    if (isDesktop) {
+      return kpiItems
+    }
+
+    const mobileKeys = new Set(['gross', 'net', 'commission', 'reservations'])
+    return kpiItems.filter((item) => mobileKeys.has(item.key))
+  }, [isDesktop, kpiItems])
 
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear()
@@ -402,35 +420,197 @@ const AgencyDetailsCommissions = () => {
   return (
     <Layout onLoad={handleLoad} strict>
       {user && (
-        <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: '#f7f9fc', minHeight: '100vh' }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Typography variant="h5" fontWeight={800}>{strings.HEADER}</Typography>
-              <Chip size="small" variant="outlined" label={`${strings.PERIOD_LABEL} ${months[month]} ${year}`} />
-            </Stack>
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="outlined"
-                startIcon={<ReceiptLongIcon />}
-                onClick={handleExportCsv}
-                disabled={sortedRows.length === 0 && !loading}
-              >
-                {strings.EXPORT_CSV}
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={monthInvoiceLoading ? <CircularProgress size={18} /> : <DownloadIcon />}
-                onClick={handleDownloadMonthlyInvoice}
-                disabled={monthInvoiceLoading}
-              >
-                {strings.DOWNLOAD_MONTH_INVOICE}
-              </Button>
-            </Stack>
-          </Stack>
+        <Box sx={{ p: { xs: 2, md: 3 }, pb: { xs: 10, md: 3 }, bgcolor: '#f7f9fc', minHeight: '100vh' }}>
+          <Stack spacing={3}>
+            <Box
+              sx={{
+                display: { xs: 'flex', lg: 'none' },
+                flexDirection: 'column',
+                gap: 2,
+              }}
+            >
+              <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography
+                    variant="h5"
+                    fontWeight={800}
+                    noWrap
+                    sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+                  >
+                    {strings.HEADER}
+                  </Typography>
+                  <Chip size="small" variant="outlined" label={`${months[month]} ${year}`} sx={{ mt: 0.5 }} />
+                </Box>
+                <Stack direction="row" spacing={0.5}>
+                  <IconButton onClick={handlePreviousMonth} aria-label={strings.PREVIOUS_MONTH} sx={{ width: 48, height: 48 }}>
+                    <ChevronLeftIcon />
+                  </IconButton>
+                  <IconButton onClick={handleNextMonth} aria-label={strings.NEXT_MONTH} sx={{ width: 48, height: 48 }}>
+                    <ChevronRightIcon />
+                  </IconButton>
+                </Stack>
+              </Stack>
+              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                <Button variant="contained" startIcon={<FilterListIcon />} onClick={() => setFiltersOpen(true)}>
+                  {strings.FILTER_BUTTON}
+                </Button>
+                <Stack direction="row" spacing={1}>
+                  <Tooltip title={strings.EXPORT_CSV}>
+                    <span>
+                      <IconButton
+                        color="primary"
+                        onClick={handleExportCsv}
+                        disabled={sortedRows.length === 0 && !loading}
+                        aria-label={strings.EXPORT_CSV}
+                        sx={{ width: 48, height: 48 }}
+                      >
+                        <ReceiptLongIcon />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <Tooltip title={strings.DOWNLOAD_MONTH_INVOICE}>
+                    <span>
+                      <IconButton
+                        color="primary"
+                        onClick={handleDownloadMonthlyInvoice}
+                        disabled={monthInvoiceLoading}
+                        aria-label={strings.DOWNLOAD_MONTH_INVOICE}
+                        sx={{ width: 48, height: 48 }}
+                      >
+                        {monthInvoiceLoading ? <CircularProgress size={20} /> : <DownloadIcon />}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                </Stack>
+              </Stack>
+            </Box>
 
-          <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 3, boxShadow: '0 6px 24px rgba(10,102,255,0.06)' }}>
-            <Grid container spacing={1.5} alignItems="center">
-              <Grid item xs={12} md>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              sx={{ display: { xs: 'none', lg: 'flex' } }}
+            >
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Typography variant="h5" fontWeight={800}>{strings.HEADER}</Typography>
+                <Chip size="small" variant="outlined" label={`${strings.PERIOD_LABEL} ${months[month]} ${year}`} />
+              </Stack>
+              <Stack direction="row" spacing={1}>
+                <Button
+                  variant="outlined"
+                  startIcon={<ReceiptLongIcon />}
+                  onClick={handleExportCsv}
+                  disabled={sortedRows.length === 0 && !loading}
+                >
+                  {strings.EXPORT_CSV}
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={monthInvoiceLoading ? <CircularProgress size={18} /> : <DownloadIcon />}
+                  onClick={handleDownloadMonthlyInvoice}
+                  disabled={monthInvoiceLoading}
+                >
+                  {strings.DOWNLOAD_MONTH_INVOICE}
+                </Button>
+              </Stack>
+            </Stack>
+
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: 3,
+                boxShadow: '0 6px 24px rgba(10,102,255,0.06)',
+                display: { xs: 'none', lg: 'block' },
+              }}
+            >
+              <Grid container spacing={1.5} alignItems="center">
+                <Grid item xs={12} md>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder={strings.SEARCH_PLACEHOLDER}
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Select
+                    size="small"
+                    fullWidth
+                    value={status}
+                    onChange={(event) => setStatus(event.target.value as ('all' | bookcarsTypes.BookingStatus))}
+                  >
+                    <MenuItem value="all">{strings.STATUS_ALL}</MenuItem>
+                    {bookingStatusOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                    ))}
+                  </Select>
+                </Grid>
+                <Grid item xs={12} sm={6} md={2}>
+                  <Select
+                    size="small"
+                    fullWidth
+                    value={month.toString()}
+                    onChange={(event) => setMonth(Number(event.target.value))}
+                  >
+                    {months.map((label, index) => (
+                      <MenuItem key={label} value={index.toString()}>{label}</MenuItem>
+                    ))}
+                  </Select>
+                </Grid>
+                <Grid item xs={8} sm={4} md={2}>
+                  <Select
+                    size="small"
+                    fullWidth
+                    value={year.toString()}
+                    onChange={(event) => setYear(Number(event.target.value))}
+                  >
+                    {yearOptions.map((option) => (
+                      <MenuItem key={option} value={option.toString()}>{option}</MenuItem>
+                    ))}
+                  </Select>
+                </Grid>
+                <Grid item xs={4} sm={2} md={1}>
+                  <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                    <IconButton onClick={handlePreviousMonth} aria-label={strings.PREVIOUS_MONTH}>
+                      <ChevronLeftIcon />
+                    </IconButton>
+                    <IconButton onClick={handleNextMonth} aria-label={strings.NEXT_MONTH}>
+                      <ChevronRightIcon />
+                    </IconButton>
+                  </Stack>
+                </Grid>
+              </Grid>
+            </Paper>
+
+            <Drawer
+              anchor="bottom"
+              open={filtersOpen && isMobileOrTablet}
+              onClose={() => setFiltersOpen(false)}
+              PaperProps={{
+                sx: {
+                  borderTopLeftRadius: 24,
+                  borderTopRightRadius: 24,
+                  maxHeight: '90vh',
+                  p: 3,
+                },
+              }}
+            >
+              <Stack spacing={2}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="h6">{strings.FILTER_BUTTON}</Typography>
+                  <IconButton onClick={() => setFiltersOpen(false)} aria-label={commonStrings.CLOSE}>
+                    <CloseIcon />
+                  </IconButton>
+                </Stack>
                 <TextField
                   fullWidth
                   size="small"
@@ -445,8 +625,6 @@ const AgencyDetailsCommissions = () => {
                     ),
                   }}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
                 <Select
                   size="small"
                   fullWidth
@@ -458,240 +636,389 @@ const AgencyDetailsCommissions = () => {
                     <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
                   ))}
                 </Select>
-              </Grid>
-              <Grid item xs={12} sm={6} md={2}>
-                <Select
-                  size="small"
-                  fullWidth
-                  value={month.toString()}
-                  onChange={(event) => setMonth(Number(event.target.value))}
-                >
-                  {months.map((label, index) => (
-                    <MenuItem key={label} value={index.toString()}>{label}</MenuItem>
-                  ))}
-                </Select>
-              </Grid>
-              <Grid item xs={8} sm={4} md={2}>
-                <Select
-                  size="small"
-                  fullWidth
-                  value={year.toString()}
-                  onChange={(event) => setYear(Number(event.target.value))}
-                >
-                  {yearOptions.map((option) => (
-                    <MenuItem key={option} value={option.toString()}>{option}</MenuItem>
-                  ))}
-                </Select>
-              </Grid>
-              <Grid item xs={4} sm={2} md={1}>
-                <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                  <IconButton onClick={handlePreviousMonth} aria-label={strings.PREVIOUS_MONTH}>
-                    <ChevronLeftIcon />
-                  </IconButton>
-                  <IconButton onClick={handleNextMonth} aria-label={strings.NEXT_MONTH}>
-                    <ChevronRightIcon />
-                  </IconButton>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Select
+                      size="small"
+                      fullWidth
+                      value={month.toString()}
+                      onChange={(event) => setMonth(Number(event.target.value))}
+                    >
+                      {months.map((label, index) => (
+                        <MenuItem key={label} value={index.toString()}>{label}</MenuItem>
+                      ))}
+                    </Select>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Select
+                      size="small"
+                      fullWidth
+                      value={year.toString()}
+                      onChange={(event) => setYear(Number(event.target.value))}
+                    >
+                      {yearOptions.map((option) => (
+                        <MenuItem key={option} value={option.toString()}>{option}</MenuItem>
+                      ))}
+                    </Select>
+                  </Grid>
+                </Grid>
+                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                  <Button variant="text" onClick={() => setFiltersOpen(false)}>
+                    {commonStrings.CLOSE}
+                  </Button>
+                  <Button variant="contained" onClick={() => setFiltersOpen(false)}>
+                    {commonStrings.APPLY_FILTERS}
+                  </Button>
                 </Stack>
-              </Grid>
-            </Grid>
-          </Paper>
+              </Stack>
+            </Drawer>
 
-          <Box
-            sx={{
-              width: '100%',
-              display: 'grid',
-              gap: 2,
-              gridTemplateColumns: {
-                xs: 'repeat(auto-fit, minmax(220px, 1fr))',
-                lg: 'repeat(5, 1fr)',
-              },
-            }}
-          >
-            {kpiItems.map((item) => (
-              <Kpi
-                key={item.key}
-                title={item.title}
-                value={item.value}
-                icon={item.icon}
-                helperText={item.helperText}
-                loading={loading}
-              />
-            ))}
-          </Box>
+            <Box
+              sx={{
+                width: '100%',
+                display: 'grid',
+                gap: 2,
+                gridTemplateColumns: {
+                  xs: 'repeat(2, minmax(0, 1fr))',
+                  md: 'repeat(3, minmax(0, 1fr))',
+                  lg: `repeat(${displayedKpis.length}, minmax(0, 1fr))`,
+                },
+              }}
+            >
+              {displayedKpis.map((item) => (
+                <Kpi
+                  key={item.key}
+                  title={item.title}
+                  value={item.value}
+                  icon={item.icon}
+                  helperText={item.helperText}
+                  loading={loading}
+                  sx={{ height: '100%' }}
+                />
+              ))}
+            </Box>
 
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 3, mb: 1 }}>{strings.MONTHLY_BOOKINGS}</Typography>
+            <Typography variant="subtitle2" color="text.secondary">{strings.MONTHLY_BOOKINGS}</Typography>
 
-          <Paper elevation={0}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>{strings.BOOKING_NUMBER}</TableCell>
-                  <TableCell>{strings.CLIENT}</TableCell>
-                  <TableCell>{strings.START_DATE}</TableCell>
-                  <TableCell>{strings.END_DATE}</TableCell>
-                  <TableCell align="right">{strings.DAYS}</TableCell>
-                  <TableCell align="right">{strings.PRICE_PER_DAY}</TableCell>
-                  <TableCell align="right">{strings.TOTAL_CLIENT}</TableCell>
-                  <TableCell align="right">{strings.COMMISSION}</TableCell>
-                  <TableCell align="right">{strings.NET_AGENCY}</TableCell>
-                  <TableCell align="center">{strings.BOOKING_STATUS}</TableCell>
-                  <TableCell align="center">{strings.COMMISSION_STATUS}</TableCell>
-                  <TableCell align="center">{strings.ACTIONS}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {loading && sortedRows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={12}>
-                      <Skeleton variant="rectangular" height={40} />
-                    </TableCell>
-                  </TableRow>
-                )}
-                {!loading && sortedRows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={12}>
-                      <Typography align="center" color="text.secondary" sx={{ py: 2 }}>
+            <Box
+              sx={{
+                display: { xs: 'flex', lg: 'none' },
+                flexDirection: 'column',
+                gap: 2,
+              }}
+            >
+              {loading && sortedRows.length === 0
+                ? Array.from({ length: 3 }).map((_, index) => (
+                    <Paper
+                      // eslint-disable-next-line react/no-array-index-key
+                      key={index}
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        borderRadius: 2,
+                        boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 1.5,
+                      }}
+                    >
+                      <Skeleton variant="text" height={24} width="60%" />
+                      <Skeleton variant="text" height={18} width="80%" />
+                      <Skeleton variant="rectangular" height={32} />
+                    </Paper>
+                  ))
+                : !loading && sortedRows.length === 0
+                  ? (
+                    <Paper elevation={0} sx={{ p: 3, borderRadius: 2, boxShadow: '0 10px 24px rgba(15, 23, 42, 0.08)' }}>
+                      <Typography variant="body2" color="text.secondary" align="center">
                         {strings.EMPTY_LIST}
                       </Typography>
-                    </TableCell>
+                    </Paper>
+                  )
+                  : (
+                    sortedRows.map((booking) => (
+                      <Paper
+                        key={booking.bookingId}
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 1.5,
+                        }}
+                      >
+                        <Stack direction="row" justifyContent="space-between" spacing={1} alignItems="flex-start">
+                          <Box sx={{ minWidth: 0 }}>
+                            <Tooltip title={booking.bookingNumber}>
+                              <Typography
+                                component={Link}
+                                href={`/update-booking?b=${booking.bookingId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                underline="none"
+                                variant="subtitle1"
+                                fontWeight={700}
+                                color="primary"
+                                noWrap
+                                sx={{ display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                              >
+                                {booking.bookingNumber}
+                              </Typography>
+                            </Tooltip>
+                            <Tooltip title={booking.driver.fullName}>
+                              <Typography
+                                component={Link}
+                                href={`/user?u=${booking.driver._id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                underline="none"
+                                variant="body2"
+                                color="text.secondary"
+                                noWrap
+                                sx={{ display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                              >
+                                {booking.driver.fullName}
+                              </Typography>
+                            </Tooltip>
+                          </Box>
+                          <Stack direction="row" spacing={0.5} flexWrap="wrap" justifyContent="flex-end">
+                            {renderBookingStatusChip(booking.bookingStatus)}
+                            <Chip
+                              size="small"
+                              label={commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING]}
+                              color={paymentColor(booking.commissionStatus)}
+                              variant={booking.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
+                            />
+                          </Stack>
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary">
+                          {`${strings.DRAWER_PERIOD}: ${renderDate(booking.from)} → ${renderDate(booking.to)}`}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {`${strings.DAYS}: ${booking.days}`}
+                        </Typography>
+                        <Stack spacing={0.5}>
+                          <Typography variant="body2">{`${strings.PRICE_PER_DAY}: ${formatCurrency(booking.pricePerDay)}`}</Typography>
+                          <Typography variant="body2">{`${strings.TOTAL_CLIENT}: ${formatCurrency(booking.totalClient)}`}</Typography>
+                          <Typography variant="body2">{`${strings.COMMISSION}: ${formatCurrency(booking.commission)}`}</Typography>
+                          <Typography variant="body2">{`${strings.NET_AGENCY}: ${formatCurrency(booking.netAgency)}`}</Typography>
+                        </Stack>
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <Tooltip title={strings.VIEW_DETAILS}>
+                            <IconButton
+                              color="primary"
+                              onClick={() => setDrawer(booking)}
+                              aria-label={strings.VIEW_DETAILS}
+                              sx={{ width: 48, height: 48 }}
+                            >
+                              <OpenInNewIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={strings.DOWNLOAD_INVOICE}>
+                            <span>
+                              <IconButton
+                                color="primary"
+                                onClick={() => handleDownloadBookingInvoice(booking.bookingId)}
+                                disabled={bookingInvoiceLoading === booking.bookingId}
+                                aria-label={strings.DOWNLOAD_INVOICE}
+                                sx={{ width: 48, height: 48 }}
+                              >
+                                {bookingInvoiceLoading === booking.bookingId ? (
+                                  <CircularProgress size={20} />
+                                ) : (
+                                  <ReceiptLongIcon />
+                                )}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Stack>
+                      </Paper>
+                    ))
+                  )}
+            </Box>
+
+            <Paper elevation={0} sx={{ display: { xs: 'none', lg: 'block' } }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>{strings.BOOKING_NUMBER}</TableCell>
+                    <TableCell>{strings.CLIENT}</TableCell>
+                    <TableCell>{strings.START_DATE}</TableCell>
+                    <TableCell>{strings.END_DATE}</TableCell>
+                    <TableCell align="right">{strings.DAYS}</TableCell>
+                    <TableCell align="right">{strings.PRICE_PER_DAY}</TableCell>
+                    <TableCell align="right">{strings.TOTAL_CLIENT}</TableCell>
+                    <TableCell align="right">{strings.COMMISSION}</TableCell>
+                    <TableCell align="right">{strings.NET_AGENCY}</TableCell>
+                    <TableCell align="center">{strings.BOOKING_STATUS}</TableCell>
+                    <TableCell align="center">{strings.COMMISSION_STATUS}</TableCell>
+                    <TableCell align="center">{strings.ACTIONS}</TableCell>
                   </TableRow>
-                )}
-                {sortedRows.map((booking) => (
-                  <TableRow key={booking.bookingId} hover>
-                    <TableCell>
-                      <Link
-                        href={`/update-booking?b=${booking.bookingId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        underline="hover"
-                      >
-                        {booking.bookingNumber}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/user?u=${booking.driver._id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        underline="hover"
-                      >
-                        {booking.driver.fullName}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{renderDate(booking.from)}</TableCell>
-                    <TableCell>{renderDate(booking.to)}</TableCell>
-                    <TableCell align="right">{booking.days}</TableCell>
-                    <TableCell align="right">{formatCurrency(booking.pricePerDay)}</TableCell>
-                    <TableCell align="right">{formatCurrency(booking.totalClient)}</TableCell>
-                    <TableCell align="right">{formatCurrency(booking.commission)}</TableCell>
-                    <TableCell align="right">{formatCurrency(booking.netAgency)}</TableCell>
-                    <TableCell align="center">{renderBookingStatusChip(booking.bookingStatus)}</TableCell>
-                    <TableCell align="center">
+                </TableHead>
+                <TableBody>
+                  {loading && sortedRows.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={12}>
+                        <Skeleton variant="rectangular" height={40} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!loading && sortedRows.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={12}>
+                        <Typography align="center" color="text.secondary" sx={{ py: 2 }}>
+                          {strings.EMPTY_LIST}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {sortedRows.map((booking) => (
+                    <TableRow key={booking.bookingId} hover>
+                      <TableCell>
+                        <Link
+                          href={`/update-booking?b=${booking.bookingId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          underline="hover"
+                        >
+                          {booking.bookingNumber}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Link
+                          href={`/user?u=${booking.driver._id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          underline="hover"
+                        >
+                          {booking.driver.fullName}
+                        </Link>
+                      </TableCell>
+                      <TableCell>{renderDate(booking.from)}</TableCell>
+                      <TableCell>{renderDate(booking.to)}</TableCell>
+                      <TableCell align="right">{booking.days}</TableCell>
+                      <TableCell align="right">{formatCurrency(booking.pricePerDay)}</TableCell>
+                      <TableCell align="right">{formatCurrency(booking.totalClient)}</TableCell>
+                      <TableCell align="right">{formatCurrency(booking.commission)}</TableCell>
+                      <TableCell align="right">{formatCurrency(booking.netAgency)}</TableCell>
+                      <TableCell align="center">{renderBookingStatusChip(booking.bookingStatus)}</TableCell>
+                      <TableCell align="center">
+                        <Chip
+                          size="small"
+                          label={commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING]}
+                          color={paymentColor(booking.commissionStatus)}
+                          variant={booking.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Stack direction="row" spacing={0.5} justifyContent="center">
+                          <Tooltip title={strings.VIEW_DETAILS}>
+                            <IconButton size="small" onClick={() => setDrawer(booking)}>
+                              <OpenInNewIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={strings.DOWNLOAD_INVOICE}>
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDownloadBookingInvoice(booking.bookingId)}
+                                disabled={bookingInvoiceLoading === booking.bookingId}
+                              >
+                                {bookingInvoiceLoading === booking.bookingId ? <CircularProgress size={16} /> : <ReceiptLongIcon fontSize="small" />}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Paper>
+
+            <Drawer
+              anchor={isDesktop ? 'right' : 'bottom'}
+              open={Boolean(drawer)}
+              onClose={() => setDrawer(null)}
+              PaperProps={{
+                sx: {
+                  width: isDesktop ? { xs: '100%', md: 520 } : '100%',
+                  maxHeight: isDesktop ? '100vh' : '90vh',
+                  borderTopLeftRadius: isDesktop ? 0 : 24,
+                  borderTopRightRadius: isDesktop ? 0 : 24,
+                },
+              }}
+            >
+              <Box sx={{ p: 3, maxHeight: isDesktop ? 'none' : '90vh', overflowY: 'auto' }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1} flexWrap="wrap" rowGap={1}>
+                  <Typography variant="h6" fontWeight={800}>{strings.DRAWER_TITLE}</Typography>
+                  {drawer && (
+                    <Button
+                      variant="outlined"
+                      startIcon={bookingInvoiceLoading === drawer.bookingId ? <CircularProgress size={18} /> : <ReceiptLongIcon />}
+                      onClick={() => handleDownloadBookingInvoice(drawer.bookingId)}
+                      disabled={bookingInvoiceLoading === drawer.bookingId}
+                      fullWidth={!isDesktop}
+                    >
+                      {strings.DOWNLOAD_INVOICE}
+                    </Button>
+                  )}
+                </Stack>
+                <Divider sx={{ mb: 2 }} />
+                {drawer && (
+                  <>
+                    <Typography variant="subtitle2" color="text.secondary">{strings.DRAWER_BOOKING_SECTION}</Typography>
+                    <List dense>
+                      <ListItem>
+                        <ListItemText primary={strings.BOOKING_NUMBER} secondary={drawer.bookingNumber} />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText primary={strings.CLIENT} secondary={drawer.driver.fullName} />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText
+                          primary={strings.DRAWER_PERIOD}
+                          secondary={`${renderDate(drawer.from)} → ${renderDate(drawer.to)}`}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText primary={strings.DAYS} secondary={drawer.days} />
+                      </ListItem>
+                    </List>
+
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_AMOUNTS_SECTION}</Typography>
+                    <List dense>
+                      <ListItem>
+                        <ListItemText primary={strings.PRICE_PER_DAY} secondary={formatCurrency(drawer.pricePerDay)} />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText primary={strings.TOTAL_CLIENT} secondary={formatCurrency(drawer.totalClient)} />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText primary={strings.COMMISSION} secondary={formatCurrency(drawer.commission)} />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText primary={strings.NET_AGENCY} secondary={formatCurrency(drawer.netAgency)} />
+                      </ListItem>
+                    </List>
+
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_STATUS_SECTION}</Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={1}>
+                      {renderBookingStatusChip(drawer.bookingStatus)}
                       <Chip
                         size="small"
-                        label={commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING]}
-                        color={paymentColor(booking.commissionStatus)}
-                        variant={booking.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
+                        label={commissionPaymentLabels[drawer.commissionStatus || COMMISSION_STATUS_PENDING]}
+                        color={paymentColor(drawer.commissionStatus)}
+                        variant={drawer.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
                       />
-                    </TableCell>
-                    <TableCell align="center">
-                      <Stack direction="row" spacing={0.5} justifyContent="center">
-                        <Tooltip title={strings.VIEW_DETAILS}>
-                          <IconButton size="small" onClick={() => setDrawer(booking)}>
-                            <OpenInNewIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title={strings.DOWNLOAD_INVOICE}>
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDownloadBookingInvoice(booking.bookingId)}
-                              disabled={bookingInvoiceLoading === booking.bookingId}
-                            >
-                              {bookingInvoiceLoading === booking.bookingId ? <CircularProgress size={16} /> : <ReceiptLongIcon fontSize="small" />}
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Paper>
-
-          <Drawer
-            anchor="right"
-            open={Boolean(drawer)}
-            onClose={() => setDrawer(null)}
-            PaperProps={{ sx: { width: { xs: '100%', md: 520 } } }}
-          >
-            <Box sx={{ p: 3 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="h6" fontWeight={800}>{strings.DRAWER_TITLE}</Typography>
-                {drawer && (
-                  <Button
-                    variant="outlined"
-                    startIcon={bookingInvoiceLoading === drawer.bookingId ? <CircularProgress size={18} /> : <ReceiptLongIcon />}
-                    onClick={() => handleDownloadBookingInvoice(drawer.bookingId)}
-                    disabled={bookingInvoiceLoading === drawer.bookingId}
-                  >
-                    {strings.DOWNLOAD_INVOICE}
-                  </Button>
+                    </Stack>
+                  </>
                 )}
-              </Stack>
-              <Divider sx={{ mb: 2 }} />
-              {drawer && (
-                <>
-                  <Typography variant="subtitle2" color="text.secondary">{strings.DRAWER_BOOKING_SECTION}</Typography>
-                  <List dense>
-                    <ListItem>
-                      <ListItemText primary={strings.BOOKING_NUMBER} secondary={drawer.bookingNumber} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary={strings.CLIENT} secondary={drawer.driver.fullName} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText
-                        primary={strings.DRAWER_PERIOD}
-                        secondary={`${renderDate(drawer.from)} → ${renderDate(drawer.to)}`}
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary={strings.DAYS} secondary={drawer.days} />
-                    </ListItem>
-                  </List>
-
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_AMOUNTS_SECTION}</Typography>
-                  <List dense>
-                    <ListItem>
-                      <ListItemText primary={strings.PRICE_PER_DAY} secondary={formatCurrency(drawer.pricePerDay)} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary={strings.TOTAL_CLIENT} secondary={formatCurrency(drawer.totalClient)} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary={strings.COMMISSION} secondary={formatCurrency(drawer.commission)} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary={strings.NET_AGENCY} secondary={formatCurrency(drawer.netAgency)} />
-                    </ListItem>
-                  </List>
-
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_STATUS_SECTION}</Typography>
-                  <Stack direction="row" spacing={1}>
-                    {renderBookingStatusChip(drawer.bookingStatus)}
-                    <Chip
-                      size="small"
-                      label={commissionPaymentLabels[drawer.commissionStatus || COMMISSION_STATUS_PENDING]}
-                      color={paymentColor(drawer.commissionStatus)}
-                      variant={drawer.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
-                    />
-                  </Stack>
-                </>
-              )}
-            </Box>
-          </Drawer>
+              </Box>
+            </Drawer>
+          </Stack>
         </Box>
       )}
     </Layout>

@@ -42,6 +42,27 @@ const ensureAdmin = async (req: Request): Promise<env.User | null> => {
   return user
 }
 
+const ensureCommissionUser = async (req: Request): Promise<env.User | null> => {
+  const sessionData = await authHelper.getSessionData(req)
+  if (!sessionData || !sessionData.id) {
+    return null
+  }
+
+  const user = await User.findById(sessionData.id)
+  if (!user) {
+    return null
+  }
+
+  if (
+    user.type !== bookcarsTypes.UserType.Admin
+    && user.type !== bookcarsTypes.UserType.Supplier
+  ) {
+    return null
+  }
+
+  return user
+}
+
 const getPeriodBoundaries = (year: number, month: number) => {
   const start = new Date(Date.UTC(year, month - 1, 1))
   const end = new Date(Date.UTC(year, month, 1))
@@ -603,6 +624,165 @@ const loadAgencyCommissionDetail = async (
   }
 }
 
+export const getAgencyCommissionBookings = async (req: Request, res: Response) => {
+  try {
+    const user = await ensureCommissionUser(req)
+
+    if (!user || user.type !== bookcarsTypes.UserType.Supplier) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const { body }: { body: bookcarsTypes.AgencyCommissionBookingsPayload } = req
+
+    if (!body) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const parsedYear = Number.parseInt(String(body.year), 10)
+    const parsedMonthIndex = Number.parseInt(String(body.month), 10)
+
+    if (
+      Number.isNaN(parsedYear)
+      || Number.isNaN(parsedMonthIndex)
+      || parsedMonthIndex < 0
+      || parsedMonthIndex > 11
+    ) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const supplierId = getUserId(user)
+    const supplierObjectId = ensureObjectId(supplierId)
+
+    if (!supplierObjectId) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const month = parsedMonthIndex + 1
+    const { start, end } = getPeriodBoundaries(parsedYear, month)
+    const config = getCommissionConfig()
+    const effectiveStart = start.getTime() < config.effectiveDate.getTime() ? config.effectiveDate : start
+
+    const bookings = await Booking.find({
+      supplier: supplierObjectId,
+      expireAt: null,
+      from: { $lt: end },
+      to: { $gte: effectiveStart },
+    })
+      .sort({ from: 1 })
+      .populate<{ driver: env.User }>('driver')
+      .lean()
+
+    const events = await AgencyCommissionEvent.find({
+      agency: supplierObjectId,
+      month,
+      year: parsedYear,
+    }).lean()
+
+    let collected = 0
+    events.forEach((event) => {
+      if (event.type === bookcarsTypes.AgencyCommissionEventType.Payment) {
+        collected += event.amount || 0
+      }
+    })
+
+    let remainingCommission = normalizeNumber(collected)
+    const msPerDay = 24 * 60 * 60 * 1000
+    const rows: bookcarsTypes.AgencyCommissionBooking[] = []
+
+    bookings.forEach((booking) => {
+      const bookingStatus = booking.status as bookcarsTypes.BookingStatus | undefined
+      const status = bookingStatus || bookcarsTypes.BookingStatus.Pending
+      const eligible = isCommissionEligibleStatus(status)
+      const totalClient = normalizeNumber(booking.price || 0)
+      const commissionValue = eligible ? normalizeNumber(booking.commissionTotal || 0) : 0
+      const netAgency = normalizeNumber(Math.max(totalClient - commissionValue, 0))
+      const fromDate = booking.from instanceof Date ? booking.from : new Date(booking.from)
+      const toDate = booking.to instanceof Date ? booking.to : new Date(booking.to)
+      const duration = Math.max(toDate.getTime() - fromDate.getTime(), 0)
+      const days = Math.max(1, Math.ceil(duration / msPerDay))
+      const pricePerDay = Math.round(totalClient / days)
+
+      let paymentStatus = bookcarsTypes.CommissionPaymentStatus.Unpaid
+
+      if (commissionValue <= 0) {
+        paymentStatus = bookcarsTypes.CommissionPaymentStatus.Paid
+      } else if (remainingCommission >= commissionValue) {
+        paymentStatus = bookcarsTypes.CommissionPaymentStatus.Paid
+        remainingCommission -= commissionValue
+      } else if (remainingCommission > 0) {
+        paymentStatus = bookcarsTypes.CommissionPaymentStatus.Partial
+        remainingCommission = 0
+      }
+
+      const commissionStatus = paymentStatus === bookcarsTypes.CommissionPaymentStatus.Paid
+        ? bookcarsTypes.CommissionStatus.Paid
+        : bookcarsTypes.CommissionStatus.Pending
+
+      const driverRecord = booking.driver as env.User | undefined
+      const driverId = driverRecord ? getUserId(driverRecord) : ''
+      const driverName = driverRecord?.fullName || driverRecord?.email || ''
+
+      rows.push({
+        bookingId: booking._id.toString(),
+        bookingNumber: booking._id.toString(),
+        driver: {
+          _id: driverId,
+          fullName: driverName,
+        },
+        from: fromDate,
+        to: toDate,
+        days,
+        pricePerDay,
+        totalClient,
+        commission: commissionValue,
+        netAgency,
+        bookingStatus: status,
+        commissionStatus,
+      })
+    })
+
+    const normalizedQuery = (body.query || '').trim().toLowerCase()
+    const filteredRows = normalizedQuery
+      ? rows.filter((row) => (
+        row.bookingNumber.toLowerCase().includes(normalizedQuery)
+        || row.driver.fullName.toLowerCase().includes(normalizedQuery)
+      ))
+      : rows
+
+    const summary: bookcarsTypes.AgencyCommissionMonthlySummary = {
+      gross: 0,
+      grossAll: 0,
+      commission: 0,
+      net: 0,
+      reservations: 0,
+      commissionPercentage: config.rate,
+    }
+
+    filteredRows.forEach((row) => {
+      summary.grossAll += row.totalClient
+      if (isCommissionEligibleStatus(row.bookingStatus)) {
+        summary.gross += row.totalClient
+        summary.commission += row.commission
+        summary.net += row.netAgency
+        summary.reservations += 1
+      }
+    })
+
+    summary.gross = normalizeNumber(summary.gross)
+    summary.grossAll = normalizeNumber(summary.grossAll)
+    summary.commission = normalizeNumber(summary.commission)
+    summary.net = normalizeNumber(summary.net)
+
+    return res.json({
+      bookings: filteredRows,
+      summary,
+    })
+  } catch (err) {
+    logger.error('[commission.getAgencyCommissionBookings]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
 const serializeSettings = async (
   settings: env.AgencyCommissionSettings,
 ): Promise<bookcarsTypes.CommissionSettings> => {
@@ -615,6 +795,72 @@ const serializeSettings = async (
     updatedAt: settings.updatedAt || undefined,
     updatedBy: updatedByUser ? toAgency(updatedByUser) : undefined,
   }
+}
+
+const streamCommissionInvoice = (
+  detail: bookcarsTypes.AgencyCommissionDetail,
+  res: Response,
+  year: number,
+  month: number,
+) => {
+  const doc = new PDFDocument({ margin: 50 })
+  const filename = `commission_${detail.agency.slug || detail.agency.id}_${year}_${String(month).padStart(2, '0')}.pdf`
+
+  res.setHeader('Content-Type', 'application/pdf')
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+
+  doc.pipe(res)
+
+  doc.fontSize(18).text('Commissions agences', { align: 'center' })
+  doc.moveDown()
+  doc.fontSize(12).text(`Agence : ${detail.agency.name}`)
+  if (detail.agency.city) {
+    doc.text(`Ville : ${detail.agency.city}`)
+  }
+  if (detail.agency.email) {
+    doc.text(`Email : ${detail.agency.email}`)
+  }
+  if (detail.agency.phone) {
+    doc.text(`Téléphone : ${detail.agency.phone}`)
+  }
+
+  doc.moveDown()
+  doc.text(`Période : ${getMonthLabel(year, month)} ${year}`)
+
+  doc.moveDown()
+  doc.text(`Nombre de réservations : ${detail.summary.reservations}`)
+  doc.text(`CA brut : ${detail.summary.grossTurnover} TND`)
+  doc.text(`Commission due : ${detail.summary.commissionDue} TND`)
+  doc.text(`Commission encaissée : ${detail.summary.commissionCollected} TND`)
+  doc.text(`Solde : ${detail.summary.balance} TND`)
+
+  doc.moveDown()
+  doc.fontSize(14).text('Détail des réservations', { underline: true })
+  doc.moveDown(0.5)
+  doc.fontSize(12)
+
+  if (detail.bookings.length === 0) {
+    doc.text('Aucune réservation pour cette période.')
+  } else {
+    detail.bookings.forEach((booking) => {
+      const paymentStatus = (() => {
+        switch (booking.paymentStatus) {
+          case bookcarsTypes.CommissionPaymentStatus.Paid:
+            return 'Payé'
+          case bookcarsTypes.CommissionPaymentStatus.Partial:
+            return 'Partiel'
+          default:
+            return 'Non payé'
+        }
+      })()
+
+      doc.text(
+        `${booking.id} | du ${formatDate(booking.from)} au ${formatDate(booking.to)} | Total ${booking.totalPrice} TND | Commission ${booking.commission} TND | Statut commission : ${paymentStatus}`,
+      )
+    })
+  }
+
+  doc.end()
 }
 
 export const getAgencyCommissionDetails = async (req: Request, res: Response) => {
@@ -1016,68 +1262,146 @@ export const generateCommissionInvoice = async (req: Request, res: Response) => 
       return res.status(404).send(i18n.t('USER_NOT_FOUND'))
     }
 
+    streamCommissionInvoice(detail, res, parsedYear, parsedMonth)
+
+    return undefined
+  } catch (err) {
+    logger.error('[commission.generateCommissionInvoice]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const downloadAgencyCommissionInvoice = async (req: Request, res: Response) => {
+  try {
+    const user = await ensureCommissionUser(req)
+
+    if (!user) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const { agencyId, year, month } = req.params
+    const parsedYear = Number.parseInt(year, 10)
+    const parsedMonthIndex = Number.parseInt(month, 10)
+
+    if (
+      !agencyId
+      || Number.isNaN(parsedYear)
+      || Number.isNaN(parsedMonthIndex)
+      || parsedMonthIndex < 0
+      || parsedMonthIndex > 11
+    ) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const monthValue = parsedMonthIndex + 1
+    const userId = getUserId(user)
+
+    if (
+      user.type !== bookcarsTypes.UserType.Admin
+      && userId !== agencyId
+    ) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const detail = await loadAgencyCommissionDetail(agencyId, parsedYear, monthValue)
+
+    if (!detail) {
+      return res.status(404).send(i18n.t('USER_NOT_FOUND'))
+    }
+
+    streamCommissionInvoice(detail, res, parsedYear, monthValue)
+
+    return undefined
+  } catch (err) {
+    logger.error('[commission.downloadAgencyCommissionInvoice]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const downloadAgencyBookingInvoice = async (req: Request, res: Response) => {
+  try {
+    const user = await ensureCommissionUser(req)
+
+    if (!user) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const { bookingId } = req.params
+
+    if (!bookingId) {
+      return res.status(400).send(i18n.t('DB_ERROR'))
+    }
+
+    const booking = await Booking.findById(bookingId)
+      .populate<{ driver: env.User }>('driver')
+      .populate<{ supplier: env.User }>('supplier')
+      .populate<{ car: env.Car }>('car')
+
+    if (!booking || booking.expireAt) {
+      return res.status(404).send(i18n.t('BOOKING_NOT_FOUND'))
+    }
+
+    const supplierRecord = booking.supplier as env.User | undefined
+    const supplierId = supplierRecord ? getUserId(supplierRecord) : ''
+    const userId = getUserId(user)
+
+    if (
+      user.type !== bookcarsTypes.UserType.Admin
+      && supplierId
+      && supplierId !== userId
+    ) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const totalClient = normalizeNumber(booking.price || 0)
+    const commission = normalizeNumber(booking.commissionTotal || 0)
+    const netAgency = normalizeNumber(Math.max(totalClient - commission, 0))
+    const fromDate = booking.from instanceof Date ? booking.from : new Date(booking.from)
+    const toDate = booking.to instanceof Date ? booking.to : new Date(booking.to)
+    const duration = Math.max(toDate.getTime() - fromDate.getTime(), 0)
+    const days = Math.max(1, Math.ceil(duration / (24 * 60 * 60 * 1000)))
+    const pricePerDay = Math.round(totalClient / days)
+
+    const driverRecord = booking.driver as env.User | undefined
+    const carRecord = booking.car as env.Car | undefined
+
     const doc = new PDFDocument({ margin: 50 })
-    const filename = `commission_${detail.agency.slug || detail.agency.id}_${parsedYear}_${String(parsedMonth).padStart(2, '0')}.pdf`
+    const filename = `commission_booking_${bookingId}.pdf`
 
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
 
     doc.pipe(res)
 
-    doc.fontSize(18).text('Commissions agences', { align: 'center' })
+    doc.fontSize(18).text('Commission réservation', { align: 'center' })
     doc.moveDown()
-    doc.fontSize(12).text(`Agence : ${detail.agency.name}`)
-    if (detail.agency.city) {
-      doc.text(`Ville : ${detail.agency.city}`)
+    doc.fontSize(12).text(`Réservation : ${bookingId}`)
+    if (supplierRecord?.fullName) {
+      doc.text(`Agence : ${supplierRecord.fullName}`)
     }
-    if (detail.agency.email) {
-      doc.text(`Email : ${detail.agency.email}`)
+    if (carRecord?.name) {
+      doc.text(`Véhicule : ${carRecord.name}`)
     }
-    if (detail.agency.phone) {
-      doc.text(`Téléphone : ${detail.agency.phone}`)
+    if (driverRecord?.fullName) {
+      doc.text(`Client : ${driverRecord.fullName}`)
+    } else if (driverRecord?.email) {
+      doc.text(`Client : ${driverRecord.email}`)
     }
-
-    doc.moveDown()
-    doc.text(`Période : ${getMonthLabel(parsedYear, parsedMonth)} ${parsedYear}`)
-
-    doc.moveDown()
-    doc.text(`Nombre de réservations : ${detail.summary.reservations}`)
-    doc.text(`CA brut : ${detail.summary.grossTurnover} TND`)
-    doc.text(`Commission due : ${detail.summary.commissionDue} TND`)
-    doc.text(`Commission encaissée : ${detail.summary.commissionCollected} TND`)
-    doc.text(`Solde : ${detail.summary.balance} TND`)
+    doc.text(`Période : ${formatDate(fromDate)} - ${formatDate(toDate)}`)
+    doc.text(`Nombre de jours : ${days}`)
 
     doc.moveDown()
-    doc.fontSize(14).text('Détail des réservations', { underline: true })
-    doc.moveDown(0.5)
-    doc.fontSize(12)
-
-    if (detail.bookings.length === 0) {
-      doc.text('Aucune réservation pour cette période.')
-    } else {
-      detail.bookings.forEach((booking) => {
-        const paymentStatus = (() => {
-          switch (booking.paymentStatus) {
-            case bookcarsTypes.CommissionPaymentStatus.Paid:
-              return 'Payé'
-            case bookcarsTypes.CommissionPaymentStatus.Partial:
-              return 'Partiel'
-            default:
-              return 'Non payé'
-          }
-        })()
-
-        doc.text(
-          `${booking.id} | du ${formatDate(booking.from)} au ${formatDate(booking.to)} | Total ${booking.totalPrice} TND | Commission ${booking.commission} TND | Statut commission : ${paymentStatus}`,
-        )
-      })
-    }
+    doc.text(`Prix par jour : ${pricePerDay} TND`)
+    doc.text(`Total client : ${totalClient} TND`)
+    doc.text(`Commission : ${commission} TND`)
+    doc.text(`Net agence : ${netAgency} TND`)
+    doc.text(`Statut réservation : ${booking.status}`)
 
     doc.end()
 
     return undefined
   } catch (err) {
-    logger.error('[commission.generateCommissionInvoice]', err)
+    logger.error('[commission.downloadAgencyBookingInvoice]', err)
     return res.status(400).send(i18n.t('DB_ERROR') + err)
   }
 }

@@ -77,6 +77,18 @@ export enum CommissionPaymentStatus {
   Unpaid = 'unpaid'
 }
 
+export enum CommissionStatus {
+  Pending = 'pending',
+  Paid = 'paid'
+}
+
+export enum AgencyCommissionPaymentStatus {
+  Unpaid = 'unpaid',
+  FollowUp = 'follow_up',
+  Partial = 'partial',
+  Paid = 'paid'
+}
+
 export enum Mileage {
   Limited = 'limited',
   Unlimited = 'unlimited'
@@ -204,6 +216,12 @@ export interface AgencyCommissionSummary {
   commissionCollected: number
   agenciesAboveThreshold: number
   threshold: number
+  gross?: number
+  grossAll?: number
+  commission?: number
+  net?: number
+  reservations?: number
+  commissionPercentage?: number
 }
 
 export interface AgencyCommissionListResponse {
@@ -220,6 +238,47 @@ export interface CommissionListPayload {
   search?: string
   status?: AgencyCommissionStatus | 'all'
   aboveThreshold?: boolean
+}
+
+export interface AgencyCommissionBookingDriver {
+  _id: string
+  fullName: string
+}
+
+export interface AgencyCommissionBooking {
+  bookingId: string
+  bookingNumber: string
+  driver: AgencyCommissionBookingDriver
+  from: Date
+  to: Date
+  days: number
+  pricePerDay: number
+  totalClient: number
+  commission: number
+  netAgency: number
+  bookingStatus: BookingStatus
+  commissionStatus?: CommissionStatus
+}
+
+export interface AgencyCommissionMonthlySummary {
+  gross: number
+  grossAll: number
+  commission: number
+  net: number
+  reservations: number
+  commissionPercentage: number
+}
+
+export interface AgencyCommissionBookingsResponse {
+  bookings: AgencyCommissionBooking[]
+  summary?: AgencyCommissionMonthlySummary
+}
+
+export interface AgencyCommissionBookingsPayload {
+  suppliers?: string[]
+  month: number
+  year: number
+  query?: string
 }
 
 export interface CommissionReminderPayload {

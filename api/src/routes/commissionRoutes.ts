@@ -15,5 +15,8 @@ routes.route(routeNames.addNote).post(authJwt.verifyToken, commissionController.
 routes.route(routeNames.getSettings).get(authJwt.verifyToken, commissionController.getCommissionSettings)
 routes.route(routeNames.updateSettings).put(authJwt.verifyToken, commissionController.updateCommissionSettings)
 routes.route(routeNames.generateInvoice).get(authJwt.verifyToken, commissionController.generateCommissionInvoice)
+routes.route(routeNames.getAgencyBookings).post(authJwt.verifyToken, commissionController.getAgencyCommissionBookings)
+routes.route(routeNames.downloadAgencyInvoice).get(authJwt.verifyToken, commissionController.downloadAgencyCommissionInvoice)
+routes.route(routeNames.downloadAgencyBookingInvoice).get(authJwt.verifyToken, commissionController.downloadAgencyBookingInvoice)
 
 export default routes

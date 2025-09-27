@@ -408,6 +408,23 @@ export const PLANY_COMMISSION_PERCENTAGE = commissionRateOverride
 export const PLANY_COMMISSION_RATE = PLANY_COMMISSION_PERCENTAGE / 100
 
 /**
+ * Commission effective date (YYYY-MM-DD).
+ */
+export const COMMISSION_EFFECTIVE_DATE = __env__('BC_COMMISSION_EFFECTIVE_DATE', false)
+
+/**
+ * Monthly commission threshold in TND.
+ */
+export const COMMISSION_MONTHLY_THRESHOLD = (() => {
+  const raw = __env__('BC_COMMISSION_MONTHLY_THRESHOLD', false, '50')
+  const parsed = Number.parseFloat(raw)
+  if (Number.isNaN(parsed)) {
+    return 50
+  }
+  return Math.max(0, parsed)
+})()
+
+/**
  * Admin email.
  *
  * @type {string}

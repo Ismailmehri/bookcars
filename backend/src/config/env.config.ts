@@ -79,6 +79,14 @@ const env = {
     (import.meta.env.VITE_BC_PRICING_ENABLED
       && import.meta.env.VITE_BC_PRICING_ENABLED.toLowerCase()) === 'true',
   CONTACT_EMAIL: import.meta.env.VITE_BC_CONTACT_EMAIL,
+  COMMISSION_EFFECTIVE_DATE: String(import.meta.env.VITE_BC_COMMISSION_EFFECTIVE_DATE || ''),
+  COMMISSION_MONTHLY_THRESHOLD: (() => {
+    const raw = Number.parseFloat(String(import.meta.env.VITE_BC_COMMISSION_MONTHLY_THRESHOLD ?? '50'))
+    if (Number.isNaN(raw)) {
+      return 50
+    }
+    return Math.max(0, Math.round(raw))
+  })(),
 }
 
 export default env

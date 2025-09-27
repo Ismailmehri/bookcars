@@ -12,6 +12,17 @@ export const getAgencyCommissions = (
     )
     .then((res) => res.data)
 
+export const getAdminCommissions = (
+  payload: bookcarsTypes.GetAdminCommissionsPayload,
+): Promise<bookcarsTypes.GetAdminCommissionsResponse> =>
+  axiosInstance
+    .post(
+      '/api/admin/commissions',
+      payload,
+      { withCredentials: true },
+    )
+    .then((res) => res.data)
+
 export const downloadMonthlyInvoice = (
   supplierId: string,
   year: number,
@@ -39,6 +50,73 @@ export const sendReminder = (
   axiosInstance
     .post(
       `/api/agency-commissions/${encodeURIComponent(bookingId)}/reminders`,
+      payload,
+      { withCredentials: true },
+    )
+    .then((res) => res.data)
+
+export const updateAgencyCommissionStatus = (
+  stateId: string,
+  payload: bookcarsTypes.UpdateAgencyCommissionStatusPayload,
+): Promise<bookcarsTypes.AgencyCommissionStateUpdateResponse> =>
+  axiosInstance
+    .put(
+      `/api/admin/commissions/${encodeURIComponent(stateId)}/status`,
+      payload,
+      { withCredentials: true },
+    )
+    .then((res) => res.data)
+
+export const toggleAgencyCommissionBlock = (
+  stateId: string,
+  payload: bookcarsTypes.ToggleAgencyCommissionBlockPayload,
+): Promise<bookcarsTypes.AgencyCommissionStateUpdateResponse> =>
+  axiosInstance
+    .put(
+      `/api/admin/commissions/${encodeURIComponent(stateId)}/block`,
+      payload,
+      { withCredentials: true },
+    )
+    .then((res) => res.data)
+
+export const addAgencyCommissionNote = (
+  stateId: string,
+  payload: bookcarsTypes.CreateAgencyCommissionNotePayload,
+): Promise<bookcarsTypes.AgencyCommissionStateUpdateResponse> =>
+  axiosInstance
+    .post(
+      `/api/admin/commissions/${encodeURIComponent(stateId)}/notes`,
+      payload,
+      { withCredentials: true },
+    )
+    .then((res) => res.data)
+
+export const sendAgencyCommissionReminder = (
+  stateId: string,
+  payload: bookcarsTypes.SendAgencyCommissionReminderPayload,
+): Promise<bookcarsTypes.AgencyCommissionStateUpdateResponse> =>
+  axiosInstance
+    .post(
+      `/api/admin/commissions/${encodeURIComponent(stateId)}/reminders`,
+      payload,
+      { withCredentials: true },
+    )
+    .then((res) => res.data)
+
+export const getCommissionSettings = (): Promise<bookcarsTypes.AgencyCommissionSettings> =>
+  axiosInstance
+    .get(
+      '/api/admin/commission-settings',
+      { withCredentials: true },
+    )
+    .then((res) => res.data)
+
+export const updateCommissionSettings = (
+  payload: bookcarsTypes.UpsertAgencyCommissionSettingsPayload,
+): Promise<bookcarsTypes.AgencyCommissionSettings> =>
+  axiosInstance
+    .put(
+      '/api/admin/commission-settings',
       payload,
       { withCredentials: true },
     )

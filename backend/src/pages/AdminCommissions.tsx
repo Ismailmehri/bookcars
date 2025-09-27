@@ -8,12 +8,11 @@ import {
   Chip,
   Divider,
   Drawer,
+  FormControl,
   Grid,
   IconButton,
   InputAdornment,
-  List,
-  ListItem,
-  ListItemText,
+  InputLabel,
   MenuItem,
   Paper,
   Select,
@@ -22,904 +21,989 @@ import {
   TableBody,
   TableCell,
   TableHead,
+  TablePagination,
   TableRow,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Tooltip,
   Typography,
-  Skeleton,
-  Link,
-  CircularProgress,
   Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Skeleton,
 } from '@mui/material'
-import type { SelectChangeEvent } from '@mui/material/Select'
 import SearchIcon from '@mui/icons-material/Search'
-import DownloadIcon from '@mui/icons-material/Download'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined'
-import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined'
-import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined'
-import MailOutlineIcon from '@mui/icons-material/MailOutline'
+import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined'
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
+import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined'
+import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined'
+import CloseIcon from '@mui/icons-material/Close'
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
 import { strings } from '@/lang/admin-commissions'
 import * as helper from '@/common/helper'
 import env from '@/config/env.config'
 import * as CommissionService from '@/services/CommissionService'
-import * as SupplierService from '@/services/SupplierService'
+
+type Filters = {
+  status: 'all' | 'active' | 'blocked' | 'follow_up'
+  aboveThreshold: boolean
+  month: number
+  year: number
+  query: string
+  page: number
+  pageSize: number
+}
+
+type ReminderChannel = 'email' | 'sms' | 'both'
 
 const formatter = new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 0 })
-const formatCurrency = (value: number) => `${formatter.format(Math.round(value || 0))} ${strings.CURRENCY}`
-const formatPercentage = (value: number) => `${formatter.format(Math.round(Number.isFinite(value) ? value : 0))} %`
-const COMMISSION_STATUS_PAID: bookcarsTypes.CommissionStatus = 'paid'
-const COMMISSION_STATUS_PENDING: bookcarsTypes.CommissionStatus = 'pending'
+
+const formatCurrency = (value: number) => `${formatter.format(Math.round(value || 0))} TND`
+
 const LOCALE_MAP: Record<string, string> = {
   fr: 'fr-FR',
   en: 'en-GB',
   es: 'es-ES',
 }
 
-const BILLABLE_STATUSES = new Set<bookcarsTypes.BookingStatus>([
-  bookcarsTypes.BookingStatus.Deposit,
-  bookcarsTypes.BookingStatus.Reserved,
-  bookcarsTypes.BookingStatus.Paid,
-])
-
-const BOOKING_STATUS_CHIP_STYLES: Record<bookcarsTypes.BookingStatus, { background: string; color: string }> = {
-  [bookcarsTypes.BookingStatus.Void]: { background: '#D9D9D9', color: '#6E7C86' },
-  [bookcarsTypes.BookingStatus.Pending]: { background: '#FBDCC2', color: '#EF6C00' },
-  [bookcarsTypes.BookingStatus.Deposit]: { background: '#CDECDA', color: '#3CB371' },
-  [bookcarsTypes.BookingStatus.Paid]: { background: '#D1F9D1', color: '#77BC23' },
-  [bookcarsTypes.BookingStatus.Reserved]: { background: '#D9E7F4', color: '#1E88E5' },
-  [bookcarsTypes.BookingStatus.Cancelled]: { background: '#FBDFDE', color: '#E53935' },
+const PAYMENT_STATUS_COLOR: Record<bookcarsTypes.AgencyCommissionPaymentStatus, 'default' | 'warning' | 'info' | 'success' | 'error'> = {
+  [bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid]: 'error',
+  [bookcarsTypes.AgencyCommissionPaymentStatus.FollowUp]: 'warning',
+  [bookcarsTypes.AgencyCommissionPaymentStatus.Partial]: 'info',
+  [bookcarsTypes.AgencyCommissionPaymentStatus.Paid]: 'success',
 }
-const FALLBACK_STATUS_CHIP_STYLE = { background: '#ECEFF1', color: '#455A64' }
 
-const reminderKey = (bookingId: string, target: bookcarsTypes.CommissionReminderTarget) => `${target}:${bookingId}`
+const CHANNEL_OPTIONS: Array<{ value: ReminderChannel; label: string }> = [
+  { value: 'email', label: strings.REMINDER_CHANNEL_EMAIL },
+  { value: 'sms', label: strings.REMINDER_CHANNEL_SMS },
+  { value: 'both', label: strings.REMINDER_CHANNEL_BOTH },
+]
 
-type CommissionRow = bookcarsTypes.AgencyCommissionBooking
-type DrawerState = CommissionRow | null
+const PAGE_SIZE_OPTIONS = [10, 25, 50]
 
-const Kpi = ({ title, value, icon, loading, helperText }: {
-  title: string
-  value: string
-  icon: React.ReactNode
-  loading: boolean
-  helperText?: string
-}) => (
-  <Card sx={{ borderRadius: 3, height: '100%', boxShadow: '0 6px 24px rgba(10,102,255,0.06)' }}>
-    <CardContent>
-      <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
-        {icon}
-        <Typography variant="overline" color="text.secondary">{title}</Typography>
-      </Stack>
-      {loading ? (
-        <Skeleton width="60%" height={36} />
-      ) : (
-        <Stack spacing={0.5}>
-          <Typography variant="h5" fontWeight={900}>{value}</Typography>
-          {helperText && (
-            <Typography variant="caption" color="text.secondary" fontWeight={600}>
-              {helperText}
-            </Typography>
-          )}
-        </Stack>
-      )}
-    </CardContent>
-  </Card>
-)
+const mapLocale = (language?: string) => LOCALE_MAP[language || 'fr'] || 'fr-FR'
 
-const paymentColor = (status?: bookcarsTypes.CommissionStatus): 'success' | 'warning' => (
-  status === COMMISSION_STATUS_PAID ? 'success' : 'warning'
-)
+const applyTemplate = (
+  template: string,
+  agency: bookcarsTypes.AgencyCommissionAgencySummary,
+  data: bookcarsTypes.GetAdminCommissionsResponse,
+) => {
+  const months = strings.MONTHS as string[]
+  const variables: Record<string, string> = {
+    agency_name: agency.supplier.fullName || '',
+    month_label: months[data.month] || `${data.month + 1}`,
+    year: String(data.year),
+    commission_due: formatter.format(Math.round(agency.commissionDue || 0)),
+    threshold: formatter.format(Math.round(data.threshold || 0)),
+    payment_link: `${window.location.origin}/payments`,
+  }
+
+  return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key: string) => variables[key] ?? '')
+}
 
 const AdminCommissions = () => {
   const navigate = useNavigate()
   const [user, setUser] = useState<bookcarsTypes.User>()
-  const [status, setStatus] = useState<'all' | bookcarsTypes.BookingStatus>('all')
-  const [query, setQuery] = useState('')
-  const [month, setMonth] = useState(new Date().getMonth())
-  const [year, setYear] = useState(new Date().getFullYear())
+  const [filters, setFilters] = useState<Filters>(() => ({
+    status: 'all',
+    aboveThreshold: false,
+    month: new Date().getMonth(),
+    year: new Date().getFullYear(),
+    query: '',
+    page: 1,
+    pageSize: 25,
+  }))
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [loading, setLoading] = useState(false)
-  const [data, setData] = useState<CommissionRow[]>([])
-  const [summary, setSummary] = useState<bookcarsTypes.AgencyCommissionSummary | null>(null)
-  const [drawer, setDrawer] = useState<DrawerState>(null)
-  const [bookingInvoiceLoading, setBookingInvoiceLoading] = useState<string | null>(null)
-  const [suppliers, setSuppliers] = useState<Array<Pick<bookcarsTypes.User, '_id' | 'fullName'>>>([])
-  const [supplierLoading, setSupplierLoading] = useState(false)
-  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([])
-  const [reminderLoading, setReminderLoading] = useState<string | null>(null)
+  const [response, setResponse] = useState<bookcarsTypes.GetAdminCommissionsResponse | null>(null)
+  const [selected, setSelected] = useState<bookcarsTypes.AgencyCommissionAgencySummary | null>(null)
+  const [settings, setSettings] = useState<bookcarsTypes.AgencyCommissionSettings | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsLoading, setSettingsLoading] = useState(false)
+  const [reminderOpen, setReminderOpen] = useState(false)
+  const [statusOpen, setStatusOpen] = useState(false)
+  const [noteValue, setNoteValue] = useState('')
+  const [noteLoading, setNoteLoading] = useState(false)
+  const [reminderForm, setReminderForm] = useState<{ channel: ReminderChannel; emailSubject: string; emailBody: string; smsBody: string }>(() => ({
+    channel: 'email',
+    emailSubject: '',
+    emailBody: '',
+    smsBody: '',
+  }))
+  const [reminderLoading, setReminderLoading] = useState(false)
+  const [statusForm, setStatusForm] = useState<{ status: bookcarsTypes.AgencyCommissionPaymentStatus; amountPaid: string; note: string }>(() => ({
+    status: bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid,
+    amountPaid: '',
+    note: '',
+  }))
+  const [statusLoading, setStatusLoading] = useState(false)
+  const [blockLoading, setBlockLoading] = useState(false)
+  const [csvLoading, setCsvLoading] = useState(false)
 
-  const locale = LOCALE_MAP[user?.language || 'fr'] || 'fr-FR'
   const months = strings.MONTHS as string[]
-  const language = strings.getLanguage()
-  const commissionPaymentLabels = strings.COMMISSION_PAYMENT_LABELS as Record<bookcarsTypes.CommissionStatus, string>
-  const bookingStatusOptions = useMemo(() => helper.getBookingStatuses(), [language])
-  const supplierNames = useMemo(() => new Map(suppliers.map((supplier) => [supplier._id, supplier.fullName])), [suppliers])
-  const allSuppliersSelected = selectedSuppliers.length === suppliers.length && suppliers.length > 0
+  const locale = mapLocale(user?.language)
 
   useEffect(() => {
-    setSelectedSuppliers((current) => {
-      if (suppliers.length === 0) {
-        return []
-      }
-      const filtered = current.filter((id) => supplierNames.has(id))
-      return filtered.length === current.length ? current : filtered
-    })
-  }, [supplierNames, suppliers.length])
-
-  useEffect(() => {
-    if (!user?._id) {
-      return
-    }
-
-    if (!helper.admin(user)) {
-      navigate('/agency-commissions', { replace: true })
-      return
-    }
-
-    let active = true
-    setSupplierLoading(true)
-    SupplierService.getAllSuppliers()
-      .then((result) => {
-        if (!active) {
-          return
-        }
-        const mapped = result
-          .map((supplier) => ({ _id: supplier._id, fullName: supplier.fullName }))
-          .sort((a, b) => a.fullName.localeCompare(b.fullName))
-        setSuppliers(mapped)
-        if (mapped.length > 0) {
-          setSelectedSuppliers((current) => (current.length > 0 ? current : mapped.map((supplier) => supplier._id)))
-        }
-      })
-      .catch((err) => {
-        if (active) {
-          helper.error(err)
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setSupplierLoading(false)
-        }
-      })
+    const handle = window.setTimeout(() => {
+      setDebouncedSearch(search.trim())
+    }, 400)
 
     return () => {
-      active = false
+      window.clearTimeout(handle)
     }
-  }, [user?._id, navigate])
+  }, [search])
 
   useEffect(() => {
-    if (!user?._id || !helper.admin(user)) {
-      setData([])
-      setSummary(null)
-      return
-    }
+    setFilters((prev) => ({ ...prev, query: debouncedSearch, page: 1 }))
+  }, [debouncedSearch])
 
-    const supplierIds = selectedSuppliers.length > 0
-      ? selectedSuppliers
-      : suppliers.map((supplier) => supplier._id)
-
-    if (supplierIds.length === 0) {
-      setData([])
-      setSummary(null)
-      return
-    }
-
-    let active = true
-    setLoading(true)
-    const timeout = window.setTimeout(() => {
-      CommissionService.getAgencyCommissions({
-        suppliers: supplierIds,
-        month,
-        year,
-        query: query.trim() || undefined,
-      })
-        .then((response) => {
-          if (!active) {
-            return
-          }
-
-          const rows = response.bookings.map((booking) => ({
-            ...booking,
-            commissionStatus: booking.commissionStatus || COMMISSION_STATUS_PENDING,
-          }))
-
-          setData(rows)
-          setSummary(response.summary)
-        })
-        .catch((err) => {
-          if (active) {
-            helper.error(err)
-            setData([])
-            setSummary(null)
-          }
-        })
-        .finally(() => {
-          if (active) {
-            setLoading(false)
-          }
-        })
-    }, 300)
-
-    return () => {
-      active = false
-      window.clearTimeout(timeout)
-    }
-  }, [user?._id, month, year, query, selectedSuppliers, suppliers, navigate])
-
-  const filteredRows = useMemo(() => (
-    status === 'all'
-      ? data
-      : data.filter((booking) => booking.bookingStatus === status)
-  ), [data, status])
-
-  const sortedRows = useMemo(() => [...filteredRows].sort((a, b) => {
-    const supplierA = a.supplier?.fullName || ''
-    const supplierB = b.supplier?.fullName || ''
-    if (supplierA !== supplierB) {
-      return supplierA.localeCompare(supplierB)
-    }
-    return b.totalClient - a.totalClient
-  }), [filteredRows])
-
-  const computedSummary = useMemo(() => {
-    if (summary) {
-      return summary
-    }
-
-    return data.reduce<bookcarsTypes.AgencyCommissionSummary>((acc, booking) => {
-      const isBillable = BILLABLE_STATUSES.has(booking.bookingStatus)
-
-      acc.grossAll += booking.totalClient
-
-      if (isBillable) {
-        acc.gross += booking.totalClient
-        acc.commission += booking.commission
-        acc.net += booking.netAgency
-        acc.reservations += 1
-      }
-
-      return acc
-    }, {
-      gross: 0,
-      grossAll: 0,
-      commission: 0,
-      net: 0,
-      reservations: 0,
-      commissionPercentage: env.PLANY_COMMISSION_PERCENTAGE,
-    })
-  }, [data, summary])
-
-  const metrics = useMemo(() => ({
-    grossAll: formatCurrency(computedSummary.grossAll),
-    gross: formatCurrency(computedSummary.gross),
-    net: formatCurrency(computedSummary.net),
-    commission: formatCurrency(computedSummary.commission),
-    commissionRate: formatPercentage(computedSummary.commissionPercentage),
-    reservations: `${computedSummary.reservations}`,
-  }), [computedSummary])
-
-  const kpiItems = useMemo(() => ([
-    {
-      key: 'grossAll',
-      title: strings.KPI_GROSS_ALL,
-      value: metrics.grossAll,
-      icon: <InfoOutlinedIcon />,
-    },
-    {
-      key: 'gross',
-      title: strings.KPI_GROSS,
-      value: metrics.gross,
-      icon: <InfoOutlinedIcon />,
-    },
-    {
-      key: 'net',
-      title: strings.KPI_NET,
-      value: metrics.net,
-      icon: <PaidOutlinedIcon />,
-    },
-    {
-      key: 'commission',
-      title: strings.KPI_COMMISSION,
-      value: metrics.commission,
-      icon: <LocalOfferOutlinedIcon />,
-      helperText: strings.KPI_COMMISSION_PERCENTAGE.replace('{value}', metrics.commissionRate),
-    },
-    {
-      key: 'reservations',
-      title: strings.KPI_RESERVATIONS,
-      value: metrics.reservations,
-      icon: <PeopleAltOutlinedIcon />,
-    },
-  ]), [metrics, strings, language])
-
-  const yearOptions = useMemo(() => {
-    const currentYear = new Date().getFullYear()
-    return [currentYear - 1, currentYear, currentYear + 1, currentYear + 2]
-  }, [])
-
-  const handlePreviousMonth = () => {
-    setMonth((prev) => {
-      if (prev === 0) {
-        setYear((current) => current - 1)
-        return 11
-      }
-      return prev - 1
-    })
-  }
-
-  const handleNextMonth = () => {
-    setMonth((prev) => {
-      if (prev === 11) {
-        setYear((current) => current + 1)
-        return 0
-      }
-      return prev + 1
-    })
-  }
-
-  const handleLoad = (_user?: bookcarsTypes.User) => {
-    if (_user) {
-      if (!helper.admin(_user)) {
-        navigate('/agency-commissions', { replace: true })
-        return
-      }
-
-      setUser(_user)
-    }
-  }
-
-  const handleSupplierChange = (event: SelectChangeEvent<string[]>) => {
-    const { value } = event.target
-    const values = typeof value === 'string' ? value.split(',') : value
-
-    if (values.includes('__all__')) {
-      if (allSuppliersSelected) {
-        setSelectedSuppliers([])
-      } else {
-        setSelectedSuppliers(suppliers.map((supplier) => supplier._id))
-      }
-      return
-    }
-
-    setSelectedSuppliers(values)
-  }
-
-  const renderDate = (date: string) => new Date(date).toLocaleDateString(locale)
-
-  const renderBookingStatusChip = (bookingStatus: bookcarsTypes.BookingStatus) => {
-    const statusStyle = BOOKING_STATUS_CHIP_STYLES[bookingStatus] || FALLBACK_STATUS_CHIP_STYLE
-
-    return (
-      <Chip
-        size="small"
-        label={helper.getBookingStatus(bookingStatus)}
-        variant="filled"
-        sx={{
-          bgcolor: statusStyle.background,
-          color: statusStyle.color,
-          fontWeight: 600,
-          '& .MuiChip-label': {
-            fontWeight: 600,
-          },
-        }}
-      />
-    )
-  }
-
-  const renderReminderTooltip = (
-    _target: bookcarsTypes.CommissionReminderTarget,
-    stats?: bookcarsTypes.CommissionReminderStats,
-  ) => {
-    if (!stats || !stats.count) {
-      return strings.REMINDER_TOOLTIP_NEVER
-    }
-
-    const date = stats.lastSent
-      ? new Date(stats.lastSent).toLocaleString(locale)
-      : strings.REMINDER_UNKNOWN_DATE
-
-    return strings.REMINDER_TOOLTIP
-      .replace('{count}', `${stats.count}`)
-      .replace('{date}', date)
-  }
-
-  const renderReminderSummary = (stats?: bookcarsTypes.CommissionReminderStats) => {
-    if (!stats || !stats.count) {
-      return strings.REMINDER_NONE
-    }
-
-    const date = stats.lastSent
-      ? new Date(stats.lastSent).toLocaleString(locale)
-      : strings.REMINDER_UNKNOWN_DATE
-
-    return strings.REMINDER_SUMMARY
-      .replace('{count}', `${stats.count}`)
-      .replace('{date}', date)
-  }
-
-  const handleExportCsv = () => {
-    const header = [
-      strings.BOOKING_NUMBER,
-      strings.SUPPLIER,
-      strings.CLIENT,
-      strings.START_DATE,
-      strings.END_DATE,
-      strings.DAYS,
-      strings.PRICE_PER_DAY,
-      strings.TOTAL_CLIENT,
-      strings.COMMISSION,
-      strings.NET_AGENCY,
-      strings.BOOKING_STATUS,
-      strings.COMMISSION_STATUS,
-    ]
-
-    const rows = sortedRows.map((booking) => [
-      booking.bookingNumber,
-      booking.supplier?.fullName || '',
-      booking.driver.fullName,
-      renderDate(booking.from),
-      renderDate(booking.to),
-      booking.days.toString(),
-      formatCurrency(booking.pricePerDay),
-      formatCurrency(booking.totalClient),
-      formatCurrency(booking.commission),
-      formatCurrency(booking.netAgency),
-      helper.getBookingStatus(booking.bookingStatus),
-      commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING],
-    ])
-
-    const csvContent = [header, ...rows]
-      .map((row) => row.map((value) => `"${value.replace(/"/g, '""')}"`).join(';'))
-      .join('\n')
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const filename = `commissions_admin_${year}_${String(month + 1).padStart(2, '0')}.csv`
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', filename)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-  }
-
-  const handleDownloadBookingInvoice = async (bookingId: string) => {
+  const loadSettings = async () => {
     try {
-      setBookingInvoiceLoading(bookingId)
-      const response = await CommissionService.downloadBookingInvoice(bookingId)
-      const blob = new Blob([response.data], { type: 'application/pdf' })
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', `commission_booking_${bookingId}.pdf`)
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
+      setSettingsLoading(true)
+      const data = await CommissionService.getCommissionSettings()
+      setSettings(data)
+    } catch (err) {
+      helper.error(err, strings.SETTINGS_ERROR)
+    } finally {
+      setSettingsLoading(false)
+    }
+  }
+
+  const handleLoad = async (_user?: bookcarsTypes.User) => {
+    if (!_user || !helper.admin(_user)) {
+      navigate('/sign-in')
+      return
+    }
+
+    setUser(_user)
+
+    try {
+      const data = await CommissionService.getCommissionSettings()
+      setSettings(data)
+    } catch (err) {
+      helper.error(err)
+    }
+  }
+
+  const fetchCommissions = async (nextFilters?: Partial<Filters>, showLoader = true) => {
+    if (!user || !helper.admin(user)) {
+      return
+    }
+
+    const updatedFilters = nextFilters ? { ...filters, ...nextFilters } : filters
+    if (nextFilters) {
+      setFilters(updatedFilters)
+    }
+
+    try {
+      if (showLoader) {
+        setLoading(true)
+      }
+
+      const data = await CommissionService.getAdminCommissions({ filters: updatedFilters })
+      setResponse(data)
+
+      if (selected) {
+        const updatedSelection = data.agencies.find((agency) => agency.stateId === selected.stateId) || null
+        setSelected(updatedSelection)
+      }
     } catch (err) {
       helper.error(err)
     } finally {
-      setBookingInvoiceLoading(null)
+      if (showLoader) {
+        setLoading(false)
+      }
     }
   }
 
-  const handleSendReminder = async (bookingId: string, target: bookcarsTypes.CommissionReminderTarget) => {
+  useEffect(() => {
+    if (!user || !helper.admin(user)) {
+      return
+    }
+
+    fetchCommissions(undefined, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, filters.month, filters.year, filters.status, filters.aboveThreshold, filters.page, filters.pageSize, filters.query])
+
+  const handleMonthChange = (delta: number) => {
+    setFilters((prev) => {
+      const nextDate = new Date(prev.year, prev.month + delta, 1)
+      return {
+        ...prev,
+        month: nextDate.getMonth(),
+        year: nextDate.getFullYear(),
+        page: 1,
+      }
+    })
+  }
+
+  const handleOpenDrawer = (agency: bookcarsTypes.AgencyCommissionAgencySummary) => {
+    setSelected(agency)
+  }
+
+  const handleCloseDrawer = () => {
+    setSelected(null)
+    setNoteValue('')
+  }
+
+  const handleReminderOpen = (agency: bookcarsTypes.AgencyCommissionAgencySummary) => {
+    if (!response) {
+      return
+    }
+
+    setSelected(agency)
+    const baseSettings = settings
+    setReminderForm({
+      channel: 'email',
+      emailSubject: baseSettings ? applyTemplate(baseSettings.email_subject || '', agency, response) : '',
+      emailBody: baseSettings ? applyTemplate(baseSettings.email_body || '', agency, response) : '',
+      smsBody: baseSettings ? applyTemplate(baseSettings.sms_body || '', agency, response) : '',
+    })
+    setReminderOpen(true)
+  }
+
+  const handleReminderSubmit = async () => {
+    if (!selected) {
+      return
+    }
+
     try {
-      const key = reminderKey(bookingId, target)
-      setReminderLoading(key)
-      const response = await CommissionService.sendReminder(bookingId, { target })
-      setData((rows) => rows.map((row) => (
-        row.bookingId === bookingId
-          ? { ...row, notifications: response.notifications }
-          : row
-      )))
-      setDrawer((current) => (current && current.bookingId === bookingId
-        ? { ...current, notifications: response.notifications }
-        : current))
+      setReminderLoading(true)
+      await CommissionService.sendAgencyCommissionReminder(selected.stateId, reminderForm)
       helper.info(strings.REMINDER_SUCCESS)
+      setReminderOpen(false)
+      await fetchCommissions(undefined, false)
     } catch (err) {
       helper.error(err, strings.REMINDER_ERROR)
     } finally {
-      setReminderLoading(null)
+      setReminderLoading(false)
     }
   }
 
+  const handleStatusOpen = (agency: bookcarsTypes.AgencyCommissionAgencySummary) => {
+    setSelected(agency)
+    setStatusForm({
+      status: agency.paymentStatus,
+      amountPaid: agency.commissionPaid ? String(Math.round(agency.commissionPaid)) : '',
+      note: '',
+    })
+    setStatusOpen(true)
+  }
+
+  const handleStatusSubmit = async () => {
+    if (!selected) {
+      return
+    }
+
+    try {
+      setStatusLoading(true)
+      await CommissionService.updateAgencyCommissionStatus(selected.stateId, {
+        status: statusForm.status,
+        amountPaid: statusForm.amountPaid ? Number.parseFloat(statusForm.amountPaid) : undefined,
+        note: statusForm.note?.trim() || undefined,
+      })
+      helper.info(strings.STATUS_SUCCESS)
+      setStatusOpen(false)
+      await fetchCommissions(undefined, false)
+    } catch (err) {
+      helper.error(err, strings.STATUS_ERROR)
+    } finally {
+      setStatusLoading(false)
+    }
+  }
+
+  const handleBlockToggle = async (agency: bookcarsTypes.AgencyCommissionAgencySummary, blocked: boolean) => {
+    try {
+      setBlockLoading(true)
+      await CommissionService.toggleAgencyCommissionBlock(agency.stateId, {
+        blocked,
+      })
+      helper.info(strings.BLOCK_SUCCESS)
+      await fetchCommissions(undefined, false)
+    } catch (err) {
+      helper.error(err, strings.BLOCK_ERROR)
+    } finally {
+      setBlockLoading(false)
+    }
+  }
+
+  const handleAddNote = async () => {
+    if (!selected || !noteValue.trim()) {
+      return
+    }
+
+    try {
+      setNoteLoading(true)
+      await CommissionService.addAgencyCommissionNote(selected.stateId, { message: noteValue.trim() })
+      helper.info(strings.NOTE_SUCCESS)
+      setNoteValue('')
+      await fetchCommissions(undefined, false)
+    } catch (err) {
+      helper.error(err, strings.NOTE_ERROR)
+    } finally {
+      setNoteLoading(false)
+    }
+  }
+
+  const handleSettingsOpen = async () => {
+    if (!settings) {
+      await loadSettings()
+    }
+    setSettingsOpen(true)
+  }
+
+  const handleSettingsSave = async () => {
+    if (!settings) {
+      return
+    }
+
+    try {
+      setSettingsLoading(true)
+      const updated = await CommissionService.updateCommissionSettings({
+        email_subject: settings.email_subject,
+        email_body: settings.email_body,
+        sms_body: settings.sms_body,
+        from_email: settings.from_email,
+        from_name: settings.from_name,
+        from_sms_sender: settings.from_sms_sender,
+      })
+      setSettings(updated)
+      helper.info(strings.SETTINGS_SUCCESS)
+      setSettingsOpen(false)
+    } catch (err) {
+      helper.error(err, strings.SETTINGS_ERROR)
+    } finally {
+      setSettingsLoading(false)
+    }
+  }
+
+  const handleExportCsv = async () => {
+    if (!user || !helper.admin(user)) {
+      return
+    }
+
+    try {
+      setCsvLoading(true)
+      const total = response?.total || filters.pageSize
+      const exportData = await CommissionService.getAdminCommissions({
+        filters: {
+          ...filters,
+          page: 1,
+          pageSize: Math.max(total, filters.pageSize),
+        },
+      })
+
+      const rows = exportData.agencies.map((agency) => {
+        const lastReminder = [agency.reminders.lastEmailAt, agency.reminders.lastSmsAt]
+          .filter(Boolean)
+          .map((value) => new Date(String(value)))
+          .sort((a, b) => b.getTime() - a.getTime())[0]
+
+        return {
+          agency_id: agency.supplier._id,
+          agency_name: agency.supplier.fullName,
+          reservations_count: agency.bookingsCount,
+          ca_brut: Math.round(agency.grossTotal),
+          commission_due: Math.round(agency.commissionDue),
+          commission_paid: Math.round(agency.commissionPaid),
+          payment_status: agency.paymentStatus,
+          blocked: agency.blocked,
+          over_threshold: agency.overThreshold,
+          last_reminder_at: lastReminder ? lastReminder.toISOString() : '',
+        }
+      })
+
+      const headers = Object.keys(rows[0] || {})
+      const csvContent = [
+        headers.join(','),
+        ...rows.map((row) => headers.map((header) => String((row as Record<string, unknown>)[header] ?? '')).join(',')),
+      ].join('\n')
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const monthLabel = months[exportData.month] || `${exportData.month + 1}`
+      link.href = URL.createObjectURL(blob)
+      link.setAttribute('download', strings.CSV_FILENAME.replace('{year}', String(exportData.year)).replace('{month}', monthLabel))
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (err) {
+      helper.error(err)
+    } finally {
+      setCsvLoading(false)
+    }
+  }
+
+  const page = filters.page - 1
+  const rowsPerPage = filters.pageSize
+  const agencies = response?.agencies || []
+  const summary = response?.summary
+  const threshold = response?.threshold || env.COMMISSION_MONTHLY_THRESHOLD || 0
+  const monthLabel = months[filters.month] || `${filters.month + 1}`
+
   return (
     <Layout onLoad={handleLoad} strict admin>
-      {user && (
-        <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: '#f7f9fc', minHeight: '100vh' }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Typography variant="h5" fontWeight={800}>{strings.HEADER}</Typography>
-              <Chip size="small" variant="outlined" label={`${strings.PERIOD_LABEL} ${months[month]} ${year}`} />
-              <Chip
-                size="small"
-                variant="outlined"
-                label={suppliers.length === 0
-                  ? strings.ALL_AGENCIES
-                  : allSuppliersSelected
-                    ? strings.ALL_AGENCIES
-                    : `${selectedSuppliers.length}/${suppliers.length}`}
-              />
-            </Stack>
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="outlined"
-                startIcon={<DownloadIcon />}
-                onClick={handleExportCsv}
-                disabled={sortedRows.length === 0 && !loading}
-              >
-                {strings.EXPORT_CSV}
-              </Button>
+      <Box padding={3} display="flex" flexDirection="column" gap={3}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" gap={2}>
+          <Box>
+            <Typography variant="h4" fontWeight={700}>{strings.PAGE_TITLE}</Typography>
+            <Typography variant="subtitle2" color="text.secondary">{strings.HEADER_TITLE}</Typography>
+          </Box>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadOutlinedIcon />}
+              onClick={handleExportCsv}
+              disabled={loading || csvLoading || !response}
+            >
+              {csvLoading ? '...' : strings.EXPORT_CSV}
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<SettingsOutlinedIcon />}
+              onClick={handleSettingsOpen}
+            >
+              {strings.SETTINGS_BUTTON}
+            </Button>
+          </Stack>
+        </Stack>
+
+        <Paper sx={{ padding: 2 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} gap={2} alignItems={{ xs: 'stretch', md: 'center' }} justifyContent="space-between">
+            <TextField
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={strings.FILTER_SEARCH_PLACEHOLDER}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+              fullWidth
+            />
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', md: 'center' }}>
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel>{strings.FILTER_STATUS_LABEL}</InputLabel>
+                <Select
+                  label={strings.FILTER_STATUS_LABEL}
+                  value={filters.status}
+                  onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value as Filters['status'], page: 1 }))}
+                >
+                  <MenuItem value="all">{strings.STATUS_ALL}</MenuItem>
+                  <MenuItem value="active">{strings.STATUS_ACTIVE}</MenuItem>
+                  <MenuItem value="blocked">{strings.STATUS_BLOCKED}</MenuItem>
+                  <MenuItem value="follow_up">{strings.STATUS_FOLLOW_UP}</MenuItem>
+                </Select>
+              </FormControl>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Checkbox
+                  checked={filters.aboveThreshold}
+                  onChange={(event) => setFilters((prev) => ({ ...prev, aboveThreshold: event.target.checked, page: 1 }))}
+                />
+                <Typography variant="body2">{strings.ABOVE_THRESHOLD} ({formatCurrency(threshold)})</Typography>
+              </Stack>
             </Stack>
           </Stack>
 
-          <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 3, boxShadow: '0 6px 24px rgba(10,102,255,0.06)' }}>
-            <Grid container spacing={1.5} alignItems="center">
-              <Grid item xs={12} md>
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder={strings.SEARCH_PLACEHOLDER}
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Stack spacing={0.5}>
-                  <Typography variant="caption" color="text.secondary" fontWeight={600}>{strings.SUPPLIER_FILTER_LABEL}</Typography>
-                  <Select
-                    multiple
-                    size="small"
-                    fullWidth
-                    value={selectedSuppliers}
-                    onChange={handleSupplierChange}
-                    renderValue={(selected) => {
-                      if (selected.length === 0 || selected.length === suppliers.length) {
-                        return strings.ALL_AGENCIES
-                      }
-                      return selected
-                        .map((id) => supplierNames.get(id) || id)
-                        .join(', ')
-                    }}
-                    displayEmpty
-                    disabled={supplierLoading || suppliers.length === 0}
-                  >
-                    <MenuItem value="__all__">
-                      <Checkbox
-                        checked={allSuppliersSelected}
-                        indeterminate={!allSuppliersSelected && selectedSuppliers.length > 0}
-                      />
-                      <ListItemText primary={strings.ALL_AGENCIES} />
-                    </MenuItem>
-                    {suppliers.map((supplier) => (
-                      <MenuItem key={supplier._id} value={supplier._id}>
-                        <Checkbox checked={selectedSuppliers.includes(supplier._id)} />
-                        <ListItemText primary={supplier.fullName} />
-                      </MenuItem>
+          <Divider sx={{ my: 2 }} />
+
+          <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" flexWrap="wrap">
+            <Stack direction="row" spacing={1} alignItems="center">
+              <IconButton onClick={() => handleMonthChange(-1)} aria-label={strings.PREVIOUS_MONTH}>
+                <ChevronLeftIcon />
+              </IconButton>
+              <Typography variant="h6" fontWeight={700}>{monthLabel} {filters.year}</Typography>
+              <IconButton onClick={() => handleMonthChange(1)} aria-label={strings.NEXT_MONTH}>
+                <ChevronRightIcon />
+              </IconButton>
+            </Stack>
+            <FormControl size="small" sx={{ minWidth: 160 }}>
+              <InputLabel>{strings.PAGE_SIZE_LABEL}</InputLabel>
+              <Select
+                label={strings.PAGE_SIZE_LABEL}
+                value={filters.pageSize}
+                onChange={(event) => setFilters((prev) => ({ ...prev, pageSize: Number.parseInt(event.target.value as string, 10), page: 1 }))}
+              >
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <MenuItem key={option} value={option}>{option}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </Paper>
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="overline" color="text.secondary">{strings.KPI_GROSS}</Typography>
+                {loading && !summary ? <Skeleton height={36} width="60%" /> : <Typography variant="h5" fontWeight={700}>{formatCurrency(summary?.grossRevenue || 0)}</Typography>}
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="overline" color="text.secondary">{strings.KPI_COMMISSION_DUE}</Typography>
+                {loading && !summary ? <Skeleton height={36} width="60%" /> : <Typography variant="h5" fontWeight={700}>{formatCurrency(summary?.commissionDue || 0)}</Typography>}
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="overline" color="text.secondary">{strings.KPI_COMMISSION_COLLECTED}</Typography>
+                {loading && !summary ? <Skeleton height={36} width="60%" /> : <Typography variant="h5" fontWeight={700}>{formatCurrency(summary?.commissionCollected || 0)}</Typography>}
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <Card>
+              <CardContent>
+                <Typography variant="overline" color="text.secondary">{strings.KPI_OVER_THRESHOLD}</Typography>
+                {loading && !summary ? <Skeleton height={36} width="60%" /> : <Typography variant="h5" fontWeight={700}>{summary?.agenciesOverThreshold || 0}</Typography>}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>{strings.TABLE_AGENCY}</TableCell>
+                <TableCell align="right">{strings.TABLE_BOOKINGS}</TableCell>
+                <TableCell align="right">{strings.TABLE_GROSS}</TableCell>
+                <TableCell align="right">{strings.TABLE_COMMISSION_DUE}</TableCell>
+                <TableCell align="right">{strings.TABLE_COMMISSION_PAID}</TableCell>
+                <TableCell>{strings.TABLE_PAYMENT_STATUS}</TableCell>
+                <TableCell>{strings.TABLE_AGENCY_STATUS}</TableCell>
+                <TableCell align="center">{strings.TABLE_ACTIONS}</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading && !response ? (
+                Array.from({ length: filters.pageSize }).map((_, index) => (
+                  <TableRow key={`skeleton-${index}`}>
+                    {Array.from({ length: 8 }).map((__, cellIndex) => (
+                      <TableCell key={`cell-${cellIndex}`}>
+                        <Skeleton variant="text" />
+                      </TableCell>
                     ))}
-                  </Select>
-                </Stack>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Select
-                  size="small"
-                  fullWidth
-                  value={status}
-                  onChange={(event) => setStatus(event.target.value as ('all' | bookcarsTypes.BookingStatus))}
-                >
-                  <MenuItem value="all">{strings.STATUS_ALL}</MenuItem>
-                  {bookingStatusOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
-                  ))}
-                </Select>
-              </Grid>
-              <Grid item xs={12} sm={6} md={2}>
-                <Select
-                  size="small"
-                  fullWidth
-                  value={month.toString()}
-                  onChange={(event) => setMonth(Number(event.target.value))}
-                >
-                  {months.map((label, index) => (
-                    <MenuItem key={label} value={index.toString()}>{label}</MenuItem>
-                  ))}
-                </Select>
-              </Grid>
-              <Grid item xs={8} sm={4} md={2}>
-                <Select
-                  size="small"
-                  fullWidth
-                  value={year.toString()}
-                  onChange={(event) => setYear(Number(event.target.value))}
-                >
-                  {yearOptions.map((option) => (
-                    <MenuItem key={option} value={option.toString()}>{option}</MenuItem>
-                  ))}
-                </Select>
-              </Grid>
-              <Grid item xs={4} sm={2} md={1}>
-                <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                  <IconButton onClick={handlePreviousMonth} aria-label={strings.PREVIOUS_MONTH}>
-                    <ChevronLeftIcon />
-                  </IconButton>
-                  <IconButton onClick={handleNextMonth} aria-label={strings.NEXT_MONTH}>
-                    <ChevronRightIcon />
-                  </IconButton>
-                </Stack>
-              </Grid>
-            </Grid>
-          </Paper>
-
-          <Box
-            sx={{
-              width: '100%',
-              display: 'grid',
-              gap: 2,
-              gridTemplateColumns: {
-                xs: 'repeat(auto-fit, minmax(220px, 1fr))',
-                lg: 'repeat(5, 1fr)',
-              },
-            }}
-          >
-            {kpiItems.map((item) => (
-              <Kpi
-                key={item.key}
-                title={item.title}
-                value={item.value}
-                icon={item.icon}
-                helperText={item.helperText}
-                loading={loading}
-              />
-            ))}
-          </Box>
-
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 3, mb: 1 }}>{strings.MONTHLY_BOOKINGS}</Typography>
-
-          <Paper elevation={0}>
-            <Table>
-              <TableHead>
+                  </TableRow>
+                ))
+              ) : agencies.length === 0 ? (
                 <TableRow>
-                  <TableCell>{strings.BOOKING_NUMBER}</TableCell>
-                  <TableCell>{strings.SUPPLIER}</TableCell>
-                  <TableCell>{strings.CLIENT}</TableCell>
-                  <TableCell>{strings.START_DATE}</TableCell>
-                  <TableCell>{strings.END_DATE}</TableCell>
-                  <TableCell align="right">{strings.DAYS}</TableCell>
-                  <TableCell align="right">{strings.PRICE_PER_DAY}</TableCell>
-                  <TableCell align="right">{strings.TOTAL_CLIENT}</TableCell>
-                  <TableCell align="right">{strings.COMMISSION}</TableCell>
-                  <TableCell align="right">{strings.NET_AGENCY}</TableCell>
-                  <TableCell align="center">{strings.BOOKING_STATUS}</TableCell>
-                  <TableCell align="center">{strings.COMMISSION_STATUS}</TableCell>
-                  <TableCell align="center">{strings.REMINDERS}</TableCell>
-                  <TableCell align="center">{strings.ACTIONS}</TableCell>
+                  <TableCell colSpan={8} align="center">
+                    <Typography variant="body2" color="text.secondary">
+                      {strings.EMPTY_STATE.replace('{month}', monthLabel).replace('{year}', String(filters.year))}
+                    </Typography>
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {loading && sortedRows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={14}>
-                      <Skeleton variant="rectangular" height={40} />
-                    </TableCell>
-                  </TableRow>
-                )}
-                {!loading && sortedRows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={14}>
-                      <Typography align="center" color="text.secondary" sx={{ py: 2 }}>
-                        {strings.EMPTY_LIST}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-                {sortedRows.map((booking) => (
-                  <TableRow key={booking.bookingId} hover>
+              ) : (
+                agencies.map((agency) => (
+                  <TableRow key={agency.stateId} hover>
                     <TableCell>
-                      <Link
-                        href={`/update-booking?b=${booking.bookingId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        underline="hover"
-                      >
-                        {booking.bookingNumber}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/update-supplier?c=${booking.supplier._id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        underline="hover"
-                      >
-                        {booking.supplier.fullName}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/user?u=${booking.driver._id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        underline="hover"
-                      >
-                        {booking.driver.fullName}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{renderDate(booking.from)}</TableCell>
-                    <TableCell>{renderDate(booking.to)}</TableCell>
-                    <TableCell align="right">{booking.days}</TableCell>
-                    <TableCell align="right">{formatCurrency(booking.pricePerDay)}</TableCell>
-                    <TableCell align="right">{formatCurrency(booking.totalClient)}</TableCell>
-                    <TableCell align="right">{formatCurrency(booking.commission)}</TableCell>
-                    <TableCell align="right">{formatCurrency(booking.netAgency)}</TableCell>
-                    <TableCell align="center">{renderBookingStatusChip(booking.bookingStatus)}</TableCell>
-                    <TableCell align="center">
-                      <Chip
-                        size="small"
-                        label={commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING]}
-                        color={paymentColor(booking.commissionStatus)}
-                        variant={booking.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      <Stack direction="row" spacing={0.5} justifyContent="center">
-                        <Tooltip title={renderReminderTooltip('supplier', booking.notifications?.supplier)}>
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleSendReminder(booking.bookingId, 'supplier')}
-                              disabled={reminderLoading === reminderKey(booking.bookingId, 'supplier')}
-                              aria-label={strings.REMINDER_SUPPLIER}
-                            >
-                              {reminderLoading === reminderKey(booking.bookingId, 'supplier')
-                                ? <CircularProgress size={16} />
-                                : <CampaignOutlinedIcon fontSize="small" />}
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                        <Tooltip title={renderReminderTooltip('client', booking.notifications?.client)}>
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleSendReminder(booking.bookingId, 'client')}
-                              disabled={reminderLoading === reminderKey(booking.bookingId, 'client')}
-                              aria-label={strings.REMINDER_CLIENT}
-                            >
-                              {reminderLoading === reminderKey(booking.bookingId, 'client')
-                                ? <CircularProgress size={16} />
-                                : <MailOutlineIcon fontSize="small" />}
-                            </IconButton>
-                          </span>
-                        </Tooltip>
+                      <Stack spacing={0.5}>
+                        <Typography fontWeight={600}>{agency.supplier.fullName}</Typography>
+                        <Typography variant="caption" color="text.secondary">{agency.supplier._id}</Typography>
                       </Stack>
                     </TableCell>
+                    <TableCell align="right">{agency.bookingsCount}</TableCell>
+                    <TableCell align="right">{formatCurrency(agency.grossTotal)}</TableCell>
+                    <TableCell align="right">{formatCurrency(agency.commissionDue)}</TableCell>
+                    <TableCell align="right">{formatCurrency(agency.commissionPaid)}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={(strings.PAYMENT_STATUS_LABELS as Record<bookcarsTypes.AgencyCommissionPaymentStatus, string>)[agency.paymentStatus]}
+                        color={PAYMENT_STATUS_COLOR[agency.paymentStatus]}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={agency.blocked ? strings.AGENCY_STATUS_BLOCKED : strings.AGENCY_STATUS_ACTIVE}
+                        color={agency.blocked ? 'error' : 'success'}
+                        size="small"
+                      />
+                    </TableCell>
                     <TableCell align="center">
-                      <Stack direction="row" spacing={0.5} justifyContent="center">
-                        <Tooltip title={strings.VIEW_DETAILS}>
-                          <IconButton size="small" onClick={() => setDrawer(booking)}>
-                            <OpenInNewIcon fontSize="small" />
+                      <Stack direction="row" spacing={1} justifyContent="center">
+                        <Tooltip title={strings.ACTION_VIEW_DETAILS}>
+                          <IconButton onClick={() => handleOpenDrawer(agency)}>
+                            <VisibilityOutlinedIcon />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title={strings.DOWNLOAD_INVOICE}>
+                        <Tooltip title={strings.ACTION_SEND_REMINDER}>
+                          <IconButton onClick={() => handleReminderOpen(agency)}>
+                            <CampaignOutlinedIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title={strings.ACTION_UPDATE_STATUS}>
+                          <IconButton onClick={() => handleStatusOpen(agency)}>
+                            <PaidOutlinedIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title={agency.blocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}>
                           <span>
                             <IconButton
-                              size="small"
-                              onClick={() => handleDownloadBookingInvoice(booking.bookingId)}
-                              disabled={bookingInvoiceLoading === booking.bookingId}
+                              onClick={() => handleBlockToggle(agency, !agency.blocked)}
+                              disabled={blockLoading}
+                              color={agency.blocked ? 'success' : 'default'}
                             >
-                              {bookingInvoiceLoading === booking.bookingId ? <CircularProgress size={16} /> : <ReceiptLongIcon fontSize="small" />}
+                              {agency.blocked ? <CheckCircleOutlineIcon /> : <BlockOutlinedIcon />}
                             </IconButton>
                           </span>
                         </Tooltip>
                       </Stack>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Paper>
-
-          <Drawer
-            anchor="right"
-            open={Boolean(drawer)}
-            onClose={() => setDrawer(null)}
-            PaperProps={{ sx: { width: { xs: '100%', md: 520 } } }}
-          >
-            <Box sx={{ p: 3 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="h6" fontWeight={800}>{strings.DRAWER_TITLE}</Typography>
-                {drawer && (
-                  <Button
-                    variant="outlined"
-                    startIcon={bookingInvoiceLoading === drawer.bookingId ? <CircularProgress size={18} /> : <ReceiptLongIcon />}
-                    onClick={() => handleDownloadBookingInvoice(drawer.bookingId)}
-                    disabled={bookingInvoiceLoading === drawer.bookingId}
-                  >
-                    {strings.DOWNLOAD_INVOICE}
-                  </Button>
-                )}
-              </Stack>
-              <Divider sx={{ mb: 2 }} />
-              {drawer && (
-                <>
-                  <Typography variant="subtitle2" color="text.secondary">{strings.DRAWER_BOOKING_SECTION}</Typography>
-                  <List dense>
-                    <ListItem>
-                      <ListItemText primary={strings.BOOKING_NUMBER} secondary={drawer.bookingNumber} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary={strings.DRAWER_SUPPLIER} secondary={drawer.supplier.fullName} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary={strings.CLIENT} secondary={drawer.driver.fullName} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText
-                        primary={strings.DRAWER_PERIOD}
-                        secondary={`${renderDate(drawer.from)} → ${renderDate(drawer.to)}`}
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary={strings.DAYS} secondary={drawer.days} />
-                    </ListItem>
-                  </List>
-
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_AMOUNTS_SECTION}</Typography>
-                  <List dense>
-                    <ListItem>
-                      <ListItemText primary={strings.PRICE_PER_DAY} secondary={formatCurrency(drawer.pricePerDay)} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary={strings.TOTAL_CLIENT} secondary={formatCurrency(drawer.totalClient)} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary={strings.COMMISSION} secondary={formatCurrency(drawer.commission)} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary={strings.NET_AGENCY} secondary={formatCurrency(drawer.netAgency)} />
-                    </ListItem>
-                  </List>
-
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_STATUS_SECTION}</Typography>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    {renderBookingStatusChip(drawer.bookingStatus)}
-                    <Chip
-                      size="small"
-                      label={commissionPaymentLabels[drawer.commissionStatus || COMMISSION_STATUS_PENDING]}
-                      color={paymentColor(drawer.commissionStatus)}
-                      variant={drawer.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
-                    />
-                  </Stack>
-
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 1 }}>{strings.DRAWER_REMINDERS_SECTION}</Typography>
-                  <List dense>
-                    <ListItem>
-                      <ListItemText primary={strings.REMINDER_SUPPLIER} secondary={renderReminderSummary(drawer.notifications?.supplier)} />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText primary={strings.REMINDER_CLIENT} secondary={renderReminderSummary(drawer.notifications?.client)} />
-                    </ListItem>
-                  </List>
-                </>
+                ))
               )}
+            </TableBody>
+          </Table>
+          <TablePagination
+            component="div"
+            count={response?.total || 0}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={(_, newPage) => setFilters((prev) => ({ ...prev, page: newPage + 1 }))}
+            onRowsPerPageChange={(event) => setFilters((prev) => ({ ...prev, pageSize: Number.parseInt(event.target.value, 10), page: 1 }))}
+            rowsPerPageOptions={PAGE_SIZE_OPTIONS}
+          />
+        </Paper>
+      </Box>
+
+      <Drawer anchor="right" open={Boolean(selected)} onClose={handleCloseDrawer} PaperProps={{ sx: { width: { xs: '100%', md: 480 } } }}>
+        {selected && (
+          <Box height="100%" display="flex" flexDirection="column">
+            <Stack direction="row" justifyContent="space-between" alignItems="center" padding={2}>
+              <Box>
+                <Typography variant="h6" fontWeight={700}>{strings.DRAWER_TITLE.replace('{month}', monthLabel).replace('{year}', String(filters.year))}</Typography>
+                <Typography variant="subtitle2" color="text.secondary">{selected.supplier.fullName}</Typography>
+              </Box>
+              <IconButton onClick={handleCloseDrawer}>
+                <CloseIcon />
+              </IconButton>
+            </Stack>
+
+            <Divider />
+
+            <Box padding={2} display="flex" flexDirection="column" gap={2} sx={{ overflowY: 'auto', flexGrow: 1 }}>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>{strings.DRAWER_CONTACT}</Typography>
+                <Stack spacing={0.5}>
+                  {selected.supplier.email && (
+                    <Typography variant="body2">{strings.DRAWER_CONTACT_EMAIL}: {selected.supplier.email}</Typography>
+                  )}
+                  {selected.supplier.phone && (
+                    <Typography variant="body2">{strings.DRAWER_CONTACT_PHONE}: {selected.supplier.phone}</Typography>
+                  )}
+                </Stack>
+              </Box>
+
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="caption" color="text.secondary">{strings.DRAWER_KPI_BOOKINGS}</Typography>
+                      <Typography variant="h6" fontWeight={700}>{selected.bookingsCount}</Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={6}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="caption" color="text.secondary">{strings.DRAWER_KPI_GROSS}</Typography>
+                      <Typography variant="h6" fontWeight={700}>{formatCurrency(selected.grossTotal)}</Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={6}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="caption" color="text.secondary">{strings.DRAWER_KPI_DUE}</Typography>
+                      <Typography variant="h6" fontWeight={700}>{formatCurrency(selected.commissionDue)}</Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={6}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="caption" color="text.secondary">{strings.DRAWER_KPI_STATUS}</Typography>
+                      <Chip
+                        label={(strings.PAYMENT_STATUS_LABELS as Record<bookcarsTypes.AgencyCommissionPaymentStatus, string>)[selected.paymentStatus]}
+                        color={PAYMENT_STATUS_COLOR[selected.paymentStatus]}
+                        size="small"
+                      />
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+
+              <Stack direction="row" spacing={1}>
+                <Button variant="contained" startIcon={<CampaignOutlinedIcon />} onClick={() => handleReminderOpen(selected)}>
+                  {strings.DRAWER_ACTION_SEND_REMINDER}
+                </Button>
+                <Button variant="outlined" startIcon={<PaidOutlinedIcon />} onClick={() => handleStatusOpen(selected)}>
+                  {strings.DRAWER_ACTION_MARK_PAYMENT}
+                </Button>
+                <Button
+                  variant={selected.blocked ? 'contained' : 'outlined'}
+                  color={selected.blocked ? 'success' : 'error'}
+                  startIcon={selected.blocked ? <CheckCircleOutlineIcon /> : <BlockOutlinedIcon />}
+                  onClick={() => handleBlockToggle(selected, !selected.blocked)}
+                  disabled={blockLoading}
+                >
+                  {selected.blocked ? strings.DRAWER_BLOCK_BUTTON_UNBLOCK : strings.DRAWER_BLOCK_BUTTON_BLOCK}
+                </Button>
+              </Stack>
+
+              <Divider />
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>{strings.DRAWER_NOTES_TITLE}</Typography>
+                <Stack spacing={1}>
+                  <TextField
+                    value={noteValue}
+                    onChange={(event) => setNoteValue(event.target.value)}
+                    placeholder={strings.NOTE_PLACEHOLDER}
+                    multiline
+                    minRows={3}
+                  />
+                  <Button
+                    variant="contained"
+                    startIcon={<NoteAddOutlinedIcon />}
+                    onClick={handleAddNote}
+                    disabled={noteLoading || !noteValue.trim()}
+                  >
+                    {noteLoading ? '...' : strings.NOTE_SUBMIT}
+                  </Button>
+                  <Stack spacing={1}>
+                    {(selected.notes || []).map((note) => (
+                      <Box key={note._id} sx={{ backgroundColor: '#f5f7fb', borderRadius: 2, padding: 1.5 }}>
+                        <Typography variant="body2">{note.message}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(note.createdAt).toLocaleString(locale)}
+                          {note.createdBy?.fullName ? ` • ${note.createdBy.fullName}` : ''}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                </Stack>
+              </Box>
+
+              <Divider />
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>{strings.DRAWER_LOGS_TITLE}</Typography>
+                <Stack spacing={1}>
+                  {(selected.logs || []).length === 0 && (
+                    <Typography variant="body2" color="text.secondary">{strings.DRAWER_LOG_EMPTY}</Typography>
+                  )}
+                  {(selected.logs || []).map((log) => (
+                    <Box key={log._id} sx={{ borderLeft: '3px solid #0A66FF', paddingLeft: 1.5 }}>
+                      <Typography variant="body2">{log.message}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(log.createdAt).toLocaleString(locale)}
+                        {log.createdBy?.fullName ? ` • ${log.createdBy.fullName}` : ''}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              </Box>
+
+              <Divider />
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>{strings.DRAWER_BOOKINGS_TITLE}</Typography>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>{strings.BOOKING_ID}</TableCell>
+                      <TableCell>{strings.BOOKING_FROM}</TableCell>
+                      <TableCell>{strings.BOOKING_TO}</TableCell>
+                      <TableCell align="right">{strings.BOOKING_TOTAL}</TableCell>
+                      <TableCell align="right">{strings.BOOKING_COMMISSION}</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {selected.bookings.map((booking) => (
+                      <TableRow key={booking.bookingId}>
+                        <TableCell>{booking.bookingId}</TableCell>
+                        <TableCell>{new Date(booking.from).toLocaleDateString(locale)}</TableCell>
+                        <TableCell>{new Date(booking.to).toLocaleDateString(locale)}</TableCell>
+                        <TableCell align="right">{formatCurrency(booking.totalClient)}</TableCell>
+                        <TableCell align="right">{formatCurrency(booking.commission)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Box>
             </Box>
-          </Drawer>
-        </Box>
-      )}
+          </Box>
+        )}
+      </Drawer>
+
+      <Dialog open={reminderOpen} onClose={() => setReminderOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{strings.REMINDER_DIALOG_TITLE}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} mt={1}>
+            <FormControl>
+              <Typography variant="subtitle2" gutterBottom>{strings.REMINDER_CHANNEL}</Typography>
+              <ToggleButtonGroup
+                exclusive
+                value={reminderForm.channel}
+                onChange={(_, value: ReminderChannel) => {
+                  if (value) {
+                    setReminderForm((prev) => ({ ...prev, channel: value }))
+                  }
+                }}
+                size="small"
+              >
+                {CHANNEL_OPTIONS.map((option) => (
+                  <ToggleButton key={option.value} value={option.value}>{option.label}</ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </FormControl>
+            <TextField
+              label={strings.REMINDER_SUBJECT_LABEL}
+              value={reminderForm.emailSubject}
+              onChange={(event) => setReminderForm((prev) => ({ ...prev, emailSubject: event.target.value }))}
+              fullWidth
+            />
+            <TextField
+              label={strings.REMINDER_EMAIL_LABEL}
+              value={reminderForm.emailBody}
+              onChange={(event) => setReminderForm((prev) => ({ ...prev, emailBody: event.target.value }))}
+              fullWidth
+              multiline
+              minRows={4}
+            />
+            <TextField
+              label={strings.REMINDER_SMS_LABEL}
+              value={reminderForm.smsBody}
+              onChange={(event) => setReminderForm((prev) => ({ ...prev, smsBody: event.target.value }))}
+              fullWidth
+              multiline
+              minRows={3}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReminderOpen(false)}>{strings.REMINDER_CANCEL}</Button>
+          <Button variant="contained" onClick={handleReminderSubmit} disabled={reminderLoading}>
+            {reminderLoading ? '...' : strings.REMINDER_SEND}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={statusOpen} onClose={() => setStatusOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{strings.STATUS_DIALOG_TITLE}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} mt={1}>
+            <FormControl fullWidth>
+              <InputLabel>{strings.STATUS_SELECT_LABEL}</InputLabel>
+              <Select
+                label={strings.STATUS_SELECT_LABEL}
+                value={statusForm.status}
+                onChange={(event) => setStatusForm((prev) => ({ ...prev, status: event.target.value as bookcarsTypes.AgencyCommissionPaymentStatus }))}
+              >
+                <MenuItem value={bookcarsTypes.AgencyCommissionPaymentStatus.Unpaid}>{strings.PAYMENT_STATUS_LABELS.unpaid}</MenuItem>
+                <MenuItem value={bookcarsTypes.AgencyCommissionPaymentStatus.FollowUp}>{strings.PAYMENT_STATUS_LABELS.follow_up}</MenuItem>
+                <MenuItem value={bookcarsTypes.AgencyCommissionPaymentStatus.Partial}>{strings.PAYMENT_STATUS_LABELS.partial}</MenuItem>
+                <MenuItem value={bookcarsTypes.AgencyCommissionPaymentStatus.Paid}>{strings.PAYMENT_STATUS_LABELS.paid}</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              label={strings.STATUS_AMOUNT_LABEL}
+              value={statusForm.amountPaid}
+              onChange={(event) => setStatusForm((prev) => ({ ...prev, amountPaid: event.target.value }))}
+              type="number"
+            />
+            <TextField
+              label={strings.STATUS_NOTE_LABEL}
+              value={statusForm.note}
+              onChange={(event) => setStatusForm((prev) => ({ ...prev, note: event.target.value }))}
+              multiline
+              minRows={3}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setStatusOpen(false)}>{strings.STATUS_CANCEL}</Button>
+          <Button variant="contained" onClick={handleStatusSubmit} disabled={statusLoading}>
+            {statusLoading ? '...' : strings.STATUS_SAVE}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{strings.SETTINGS_TITLE}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} mt={1}>
+            <TextField
+              label={strings.SETTINGS_EMAIL_SUBJECT}
+              value={settings?.email_subject || ''}
+              onChange={(event) => setSettings((prev) => (prev ? { ...prev, email_subject: event.target.value } : prev))}
+            />
+            <TextField
+              label={strings.SETTINGS_EMAIL_BODY}
+              value={settings?.email_body || ''}
+              onChange={(event) => setSettings((prev) => (prev ? { ...prev, email_body: event.target.value } : prev))}
+              multiline
+              minRows={4}
+            />
+            <TextField
+              label={strings.SETTINGS_SMS_BODY}
+              value={settings?.sms_body || ''}
+              onChange={(event) => setSettings((prev) => (prev ? { ...prev, sms_body: event.target.value } : prev))}
+              multiline
+              minRows={3}
+            />
+            <TextField
+              label={strings.SETTINGS_FROM_EMAIL}
+              value={settings?.from_email || ''}
+              onChange={(event) => setSettings((prev) => (prev ? { ...prev, from_email: event.target.value } : prev))}
+            />
+            <TextField
+              label={strings.SETTINGS_FROM_NAME}
+              value={settings?.from_name || ''}
+              onChange={(event) => setSettings((prev) => (prev ? { ...prev, from_name: event.target.value } : prev))}
+            />
+            <TextField
+              label={strings.SETTINGS_SMS_SENDER}
+              value={settings?.from_sms_sender || ''}
+              onChange={(event) => setSettings((prev) => (prev ? { ...prev, from_sms_sender: event.target.value } : prev))}
+            />
+            {settings?.updated_at && (
+              <Typography variant="caption" color="text.secondary">
+                {strings.SETTINGS_UPDATED_AT.replace('{date}', new Date(settings.updated_at).toLocaleString(locale))}
+              </Typography>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSettingsOpen(false)}>{strings.SETTINGS_CANCEL}</Button>
+          <Button variant="contained" onClick={handleSettingsSave} disabled={settingsLoading}>
+            {settingsLoading ? '...' : strings.SETTINGS_SAVE}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Layout>
   )
 }

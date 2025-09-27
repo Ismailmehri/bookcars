@@ -3,6 +3,8 @@ import * as bookcarsTypes from ':bookcars-types'
 import i18n from '../lang/i18n'
 import * as logger from '../common/logger'
 import * as env from '../config/env.config'
+import * as authHelper from '../common/authHelper'
+import User from '../models/User'
 import {
   fetchAgencyCommissions,
   generateMonthlyInvoice,
@@ -10,7 +12,32 @@ import {
   fetchCommissionBookingById,
   getSupplierById,
   triggerCommissionReminder,
+  fetchAdminCommissions,
+  updateAgencyCommissionStatus,
+  toggleAgencyCommissionBlock,
+  addAgencyCommissionNote,
+  sendAgencyCommissionReminder,
+  getAgencyCommissionSettings,
+  upsertAgencyCommissionSettings,
 } from '../common/commissionHelper'
+
+const getActor = async (req: Request) => {
+  try {
+    const session = await authHelper.getSessionData(req)
+    if (session?.id) {
+      const actor = await User.findById(session.id, 'fullName').lean<{ _id: string; fullName: string }>()
+      if (actor) {
+        return {
+          _id: actor._id?.toString(),
+          fullName: actor.fullName,
+        }
+      }
+    }
+  } catch (err) {
+    logger.error('[commission.getActor] unable to resolve actor', err)
+  }
+  return undefined
+}
 
 export const getAgencyCommissions = async (req: Request, res: Response) => {
   try {
@@ -34,6 +61,17 @@ export const getAgencyCommissions = async (req: Request, res: Response) => {
     return res.json(data)
   } catch (err) {
     logger.error(`[commission.getAgencyCommissions] ${i18n.t('DB_ERROR')} ${JSON.stringify(req.body)}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const getAdminCommissions = async (req: Request, res: Response) => {
+  try {
+    const { body }: { body: bookcarsTypes.GetAdminCommissionsPayload } = req
+    const data = await fetchAdminCommissions(body)
+    return res.json(data)
+  } catch (err) {
+    logger.error(`[commission.getAdminCommissions] ${i18n.t('DB_ERROR')} ${JSON.stringify(req.body)}`, err)
     return res.status(400).send(i18n.t('DB_ERROR') + err)
   }
 }
@@ -103,6 +141,124 @@ export const sendCommissionReminder = async (req: Request, res: Response) => {
     return res.json(result)
   } catch (err) {
     logger.error(`[commission.sendCommissionReminder] ${i18n.t('DB_ERROR')} ${JSON.stringify(req.params)}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const updateAgencyCommissionStatusController = async (req: Request, res: Response) => {
+  try {
+    const { stateId } = req.params
+    const { body }: { body: bookcarsTypes.UpdateAgencyCommissionStatusPayload } = req
+
+    if (!stateId || !body) {
+      return res.sendStatus(400)
+    }
+
+    const actor = await getActor(req)
+    const result = await updateAgencyCommissionStatus(stateId, body, actor)
+
+    if (!result) {
+      return res.sendStatus(404)
+    }
+
+    return res.json(result)
+  } catch (err) {
+    logger.error(`[commission.updateAgencyCommissionStatus] ${i18n.t('DB_ERROR')} ${JSON.stringify({ params: req.params, body: req.body })}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const toggleAgencyCommissionBlockController = async (req: Request, res: Response) => {
+  try {
+    const { stateId } = req.params
+    const { body }: { body: bookcarsTypes.ToggleAgencyCommissionBlockPayload } = req
+
+    if (!stateId || !body) {
+      return res.sendStatus(400)
+    }
+
+    const actor = await getActor(req)
+    const result = await toggleAgencyCommissionBlock(stateId, body, actor)
+
+    if (!result) {
+      return res.sendStatus(404)
+    }
+
+    return res.json(result)
+  } catch (err) {
+    logger.error(`[commission.toggleAgencyCommissionBlock] ${i18n.t('DB_ERROR')} ${JSON.stringify({ params: req.params, body: req.body })}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const addAgencyCommissionNoteController = async (req: Request, res: Response) => {
+  try {
+    const { stateId } = req.params
+    const { body }: { body: bookcarsTypes.CreateAgencyCommissionNotePayload } = req
+
+    if (!stateId || !body) {
+      return res.sendStatus(400)
+    }
+
+    const actor = await getActor(req)
+    const result = await addAgencyCommissionNote(stateId, body, actor)
+
+    if (!result) {
+      return res.sendStatus(404)
+    }
+
+    return res.json(result)
+  } catch (err) {
+    logger.error(`[commission.addAgencyCommissionNote] ${i18n.t('DB_ERROR')} ${JSON.stringify({ params: req.params, body: req.body })}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const sendAgencyCommissionReminderController = async (req: Request, res: Response) => {
+  try {
+    const { stateId } = req.params
+    const { body }: { body: bookcarsTypes.SendAgencyCommissionReminderPayload } = req
+
+    if (!stateId || !body) {
+      return res.sendStatus(400)
+    }
+
+    const actor = await getActor(req)
+    const result = await sendAgencyCommissionReminder(stateId, body, actor)
+
+    if (!result) {
+      return res.sendStatus(404)
+    }
+
+    return res.json(result)
+  } catch (err) {
+    logger.error(`[commission.sendAgencyCommissionReminder] ${i18n.t('DB_ERROR')} ${JSON.stringify({ params: req.params, body: req.body })}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const getCommissionSettings = async (_req: Request, res: Response) => {
+  try {
+    const settings = await getAgencyCommissionSettings()
+    return res.json(settings)
+  } catch (err) {
+    logger.error(`[commission.getCommissionSettings] ${i18n.t('DB_ERROR')}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const updateCommissionSettings = async (req: Request, res: Response) => {
+  try {
+    const { body }: { body: bookcarsTypes.UpsertAgencyCommissionSettingsPayload } = req
+    if (!body) {
+      return res.sendStatus(400)
+    }
+
+    const actor = await getActor(req)
+    const settings = await upsertAgencyCommissionSettings(body, actor)
+    return res.json(settings)
+  } catch (err) {
+    logger.error(`[commission.updateCommissionSettings] ${i18n.t('DB_ERROR')} ${JSON.stringify(req.body)}`, err)
     return res.status(400).send(i18n.t('DB_ERROR') + err)
   }
 }

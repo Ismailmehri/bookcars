@@ -56,6 +56,13 @@ export enum CommissionStatus {
   Paid = 'paid'
 }
 
+export enum AgencyCommissionPaymentStatus {
+  Unpaid = 'unpaid',
+  FollowUp = 'follow_up',
+  Partial = 'partial',
+  Paid = 'paid',
+}
+
 export enum Mileage {
   Limited = 'limited',
   Unlimited = 'unlimited'
@@ -200,6 +207,140 @@ export interface AgencyCommissionsResponse {
   bookings: AgencyCommissionBooking[]
   summary: AgencyCommissionSummary
   supplier?: Pick<User, '_id' | 'fullName'>
+}
+
+export type AgencyCommissionLogType =
+  | 'status'
+  | 'reminder_email'
+  | 'reminder_sms'
+  | 'note'
+  | 'block'
+  | 'unblock'
+  | 'invoice'
+
+export interface AgencyCommissionLogEntry {
+  _id: string
+  type: AgencyCommissionLogType
+  message: string
+  createdAt: string
+  createdBy?: Pick<User, '_id' | 'fullName'>
+}
+
+export interface AgencyCommissionNote {
+  _id: string
+  message: string
+  createdAt: string
+  createdBy?: Pick<User, '_id' | 'fullName'>
+}
+
+export interface AgencyCommissionReminderStats {
+  emailCount: number
+  smsCount: number
+  lastEmailAt?: string
+  lastSmsAt?: string
+}
+
+export interface AgencyCommissionAgencySummary {
+  supplier: Pick<User, '_id' | 'fullName' | 'email' | 'phone' | 'slug'>
+  stateId: string
+  bookingsCount: number
+  grossTotal: number
+  commissionDue: number
+  commissionPaid: number
+  paymentStatus: AgencyCommissionPaymentStatus
+  blocked: boolean
+  overThreshold: boolean
+  reminders: AgencyCommissionReminderStats
+  notes: AgencyCommissionNote[]
+  logs: AgencyCommissionLogEntry[]
+  bookings: AgencyCommissionBooking[]
+}
+
+export interface AgencyCommissionKpis {
+  grossRevenue: number
+  commissionDue: number
+  commissionCollected: number
+  agenciesOverThreshold: number
+}
+
+export interface GetAdminCommissionsFilters {
+  month: number
+  year: number
+  query?: string
+  agencyStatus?: 'all' | 'active' | 'blocked' | 'follow_up'
+  paymentStatus?: AgencyCommissionPaymentStatus | 'all'
+  aboveThreshold?: boolean
+  page?: number
+  pageSize?: number
+}
+
+export interface GetAdminCommissionsPayload {
+  filters: GetAdminCommissionsFilters
+}
+
+export interface GetAdminCommissionsResponse {
+  agencies: AgencyCommissionAgencySummary[]
+  total: number
+  page: number
+  pageSize: number
+  summary: AgencyCommissionKpis
+  month: number
+  year: number
+  threshold: number
+  effectiveDate?: string
+}
+
+export interface AgencyCommissionSettings {
+  _id: string
+  email_subject: string
+  email_body: string
+  sms_body: string
+  from_email: string
+  from_name: string
+  from_sms_sender: string
+  updated_by?: Pick<User, '_id' | 'fullName'>
+  updated_at?: string
+}
+
+export interface AgencyCommissionStateUpdateResponse {
+  stateId: string
+  paymentStatus: AgencyCommissionPaymentStatus
+  commissionPaid: number
+  blocked: boolean
+  reminders: AgencyCommissionReminderStats
+  notes: AgencyCommissionNote[]
+  logs: AgencyCommissionLogEntry[]
+}
+
+export interface UpsertAgencyCommissionSettingsPayload {
+  email_subject: string
+  email_body: string
+  sms_body: string
+  from_email: string
+  from_name: string
+  from_sms_sender: string
+}
+
+export interface UpdateAgencyCommissionStatusPayload {
+  status: AgencyCommissionPaymentStatus
+  note?: string
+  amountPaid?: number
+}
+
+export interface ToggleAgencyCommissionBlockPayload {
+  blocked: boolean
+  reason?: string
+}
+
+export interface CreateAgencyCommissionNotePayload {
+  message: string
+}
+
+export interface SendAgencyCommissionReminderPayload {
+  channel: 'email' | 'sms' | 'both'
+  emailSubject?: string
+  emailBody?: string
+  smsBody?: string
 }
 
 export interface SendCommissionReminderPayload {

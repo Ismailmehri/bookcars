@@ -921,13 +921,6 @@ const CreateCar = () => {
                     commissionRateLabel,
                   )}
                 </Typography>
-                <Typography variant="body2">{strings.CLIENT_PRICE_INFO_FORMULA}</Typography>
-                <Typography variant="body2">
-                  {strings.CLIENT_PRICE_INFO_EXAMPLE.replace('{agencyPrice}', exampleAgencyPriceLabel)
-                    .replace('{rate}', commissionRateLabel)
-                    .replace('{commissionAmount}', exampleCommissionAmountLabel)
-                    .replace('{clientPrice}', exampleClientPriceLabel)}
-                </Typography>
                 <Typography variant="body2">{strings.CLIENT_PRICE_INFO_COLLECTION}</Typography>
                 <Typography variant="body2">
                   {commissionLinkSegments[0] ?? ''}

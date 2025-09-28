@@ -22,13 +22,12 @@ const strings = new LocalizedStrings({
     COMMISSION_COLUMN_LABEL: `Commission (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
     CLIENT_PRICE_INFO_TITLE: 'Information sur la commission Plany',
     CLIENT_PRICE_INFO_INTRO:
-      'À partir du {date} (configurable dans le fichier .env), chaque réservation inclura une commission de {rate} ajoutée automatiquement par Plany au prix agence que vous saisissez.',
-    CLIENT_PRICE_INFO_FORMULA: '👉 Le prix affiché au client = Prix agence + Commission Plany.',
+      'À partir du {date}, chaque réservation inclura une commission de {rate} ajoutée automatiquement par Plany au prix agence que vous saisissez.',
     CLIENT_PRICE_INFO_EXAMPLE:
-      'Exemple : Prix agence = {agencyPrice}, commission = {rate} ({commissionAmount}) → Prix client = {clientPrice}.',
+      '',
     CLIENT_PRICE_INFO_COLLECTION:
       'La commission est collectée par votre agence au moment de la réservation puis reversée à Plany chaque mois.',
-    CLIENT_PRICE_INFO_LINK: 'ℹ️ Consultez la page {link} pour plus de détails.',
+    CLIENT_PRICE_INFO_LINK: 'Consultez la page {link} pour plus de détails.',
     CLIENT_PRICE_INFO_LINK_LABEL: 'Gestion des commissions',
     COMMISSION_DETAIL_WITH_AMOUNT: 'Inclut commission Plany, {rate} ({amount})',
     SPECIAL_PRICE_TITLE: 'Tarifs spéciaux par période',

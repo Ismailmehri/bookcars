@@ -40,6 +40,7 @@ import {
   Info as InfoIcon,
   AutoAwesome as AutoAwesomeIcon,
 } from '@mui/icons-material'
+import { Link as RouterLink } from 'react-router-dom'
 import DateTimePicker from '@/components/DateTimePicker'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -66,7 +67,6 @@ import FuelPolicyList from '@/components/FuelPolicyList'
 import MultimediaList from '@/components/MultimediaList'
 import CarRangeList from '@/components/CarRangeList'
 import { Discount } from ':bookcars-types'
-import { Link as RouterLink } from 'react-router-dom'
 import '@/assets/css/create-car.css'
 
 interface PricePeriod {
@@ -278,8 +278,7 @@ const UpdateCar = () => {
     month: 'long',
     year: 'numeric',
   }).format(env.COMMISSION_EFFECTIVE_DATE)
-  const commissionManagementPath =
-    user?.type === bookcarsTypes.RecordType.Supplier ? '/agency-commissions' : '/admin-commissions'
+  const commissionManagementPath = user?.type === bookcarsTypes.RecordType.Supplier ? '/agency-commissions' : '/admin-commissions'
   const exampleCommissionInfo = computeCommissionInfo(COMMISSION_EXAMPLE_PRICE)
   const exampleAgencyPriceLabel = formatPriceWithCurrency(COMMISSION_EXAMPLE_PRICE)
   const exampleCommissionAmountLabel = formatPriceWithCurrency(
@@ -484,8 +483,7 @@ const UpdateCar = () => {
     if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice !== null) {
       const start = new Date(newPeriod.startDate)
       const end = new Date(newPeriod.endDate)
-      const dailyPriceValue =
-        typeof newPeriod.dailyPrice === 'string'
+      const dailyPriceValue = typeof newPeriod.dailyPrice === 'string'
           ? Number.parseFloat(newPeriod.dailyPrice)
           : newPeriod.dailyPrice
 
@@ -1166,32 +1164,25 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                 />
               </FormControl>
 
-            <Alert severity="info" sx={{ mt: 2 }}>
-              <Typography fontWeight={600}>{strings.CLIENT_PRICE_INFO_TITLE}</Typography>
-              <Stack spacing={1} sx={{ mt: 1 }}>
-                <Typography variant="body2">
-                  {strings.CLIENT_PRICE_INFO_INTRO.replace('{date}', commissionEffectiveDateLabel).replace(
+              <Alert severity="info" sx={{ mt: 2 }}>
+                <Typography fontWeight={600}>{strings.CLIENT_PRICE_INFO_TITLE}</Typography>
+                <Stack spacing={1} sx={{ mt: 1 }}>
+                  <Typography variant="body2">
+                    {strings.CLIENT_PRICE_INFO_INTRO.replace('{date}', commissionEffectiveDateLabel).replace(
                     '{rate}',
                     commissionRateLabel,
                   )}
-                </Typography>
-                <Typography variant="body2">{strings.CLIENT_PRICE_INFO_FORMULA}</Typography>
-                <Typography variant="body2">
-                  {strings.CLIENT_PRICE_INFO_EXAMPLE.replace('{agencyPrice}', exampleAgencyPriceLabel)
-                    .replace('{rate}', commissionRateLabel)
-                    .replace('{commissionAmount}', exampleCommissionAmountLabel)
-                    .replace('{clientPrice}', exampleClientPriceLabel)}
-                </Typography>
-                <Typography variant="body2">{strings.CLIENT_PRICE_INFO_COLLECTION}</Typography>
-                <Typography variant="body2">
-                  {commissionLinkSegments[0] ?? ''}
-                  <Link component={RouterLink} to={commissionManagementPath} underline="hover">
-                    {strings.CLIENT_PRICE_INFO_LINK_LABEL}
-                  </Link>
-                  {commissionLinkSegments[1] ?? ''}
-                </Typography>
-              </Stack>
-              {dailyCommissionInfo && (
+                  </Typography>
+                  <Typography variant="body2">{strings.CLIENT_PRICE_INFO_COLLECTION}</Typography>
+                  <Typography variant="body2">
+                    {commissionLinkSegments[0] ?? ''}
+                    <Link component={RouterLink} to={commissionManagementPath} underline="hover">
+                      {strings.CLIENT_PRICE_INFO_LINK_LABEL}
+                    </Link>
+                    {commissionLinkSegments[1] ?? ''}
+                  </Typography>
+                </Stack>
+                {dailyCommissionInfo && (
                 <Box
                   sx={{
                       mt: 2,
@@ -1199,18 +1190,21 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                       flexDirection: isMobile ? 'column' : 'row',
                       gap: isMobile ? 1 : 3,
                     }}
-                  >
-                    <Typography variant="body2">
-                      <strong>{strings.CLIENT_PRICE_LABEL}:</strong>
-                      {' '}
-                      {formatPriceWithCurrency(dailyCommissionInfo.clientPrice)}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mt: isMobile ? 0.5 : 0 }}>
-                      {strings.COMMISSION_DETAIL_WITH_AMOUNT
+                >
+                  <Typography variant="body2">
+                    <strong>
+                      {strings.CLIENT_PRICE_LABEL}
+                      :
+                    </strong>
+                    {' '}
+                    {formatPriceWithCurrency(dailyCommissionInfo.clientPrice)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: isMobile ? 0.5 : 0 }}>
+                    {strings.COMMISSION_DETAIL_WITH_AMOUNT
                         .replace('{rate}', commissionRateLabel)
                         .replace('{amount}', formatPriceWithCurrency(dailyCommissionInfo.commissionValue))}
-                    </Typography>
-                  </Box>
+                  </Typography>
+                </Box>
                 )}
               </Alert>
 
@@ -1323,7 +1317,10 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                           />
                           {newPeriodCommissionInfo && (
                             <FormHelperText sx={{ mt: 1 }}>
-                              <strong>{strings.CLIENT_PRICE_LABEL}:</strong>
+                              <strong>
+                                {strings.CLIENT_PRICE_LABEL}
+                                :
+                              </strong>
                               {' '}
                               {formatPriceWithCurrency(newPeriodCommissionInfo.clientPrice)}
                               {' • '}
@@ -1361,8 +1358,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                           <Stack spacing={2}>
                             {sortedPricePeriods.map((period, index) => {
                               const commissionInfo = computeCommissionInfo(period.dailyPrice)
-                              const agencyPrice =
-                                typeof period.dailyPrice === 'number'
+                              const agencyPrice = typeof period.dailyPrice === 'number'
                                   ? formatPriceWithCurrency(period.dailyPrice)
                                   : '—'
                               const clientPrice = commissionInfo
@@ -1436,8 +1432,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                               <TableBody>
                                 {sortedPricePeriods.map((period, index) => {
                                   const commissionInfo = computeCommissionInfo(period.dailyPrice)
-                                  const agencyPrice =
-                                    typeof period.dailyPrice === 'number'
+                                  const agencyPrice = typeof period.dailyPrice === 'number'
                                       ? formatPriceWithCurrency(period.dailyPrice)
                                       : '—'
                                   const clientPrice = commissionInfo
@@ -1456,23 +1451,23 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                                       <TableCell align="right">{clientPrice}</TableCell>
                                       <TableCell align="right">{commissionAmount}</TableCell>
                                       <TableCell align="center">
-                                      <IconButton
-                                        onClick={() => handleEditPeriod(index)}
-                                        size="small"
-                                        sx={{ mr: 1 }}
-                                        disabled={periodSaveLoading}
-                                      >
-                                        <EditIcon fontSize="small" />
-                                      </IconButton>
-                                      <IconButton
-                                        onClick={() => handleDeletePeriod(index)}
-                                        size="small"
-                                        color="error"
-                                        disabled={periodSaveLoading}
-                                      >
-                                        <DeleteIcon fontSize="small" />
-                                      </IconButton>
-                                    </TableCell>
+                                        <IconButton
+                                          onClick={() => handleEditPeriod(index)}
+                                          size="small"
+                                          sx={{ mr: 1 }}
+                                          disabled={periodSaveLoading}
+                                        >
+                                          <EditIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton
+                                          onClick={() => handleDeletePeriod(index)}
+                                          size="small"
+                                          color="error"
+                                          disabled={periodSaveLoading}
+                                        >
+                                          <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                      </TableCell>
                                     </TableRow>
                                   )
                                 })}
@@ -1650,8 +1645,8 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                       label={strings.START_DATE}
                       value={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined}
                       maxDate={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined} // Limite la date max en fonction de la date de fin
-                    onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, startDate: date })}
-                    language={language}
+                      onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, startDate: date })}
+                      language={language}
                       showTime={false}
                     />
                   </FormControl>
@@ -1660,8 +1655,8 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                       label={strings.END_DATE}
                       value={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined}
                       minDate={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined} // Limite la date min en fonction de la date de début
-                    onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, endDate: date })}
-                    language={language}
+                      onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, endDate: date })}
+                      language={language}
                       showTime={false}
                     />
                   </FormControl>
@@ -1891,14 +1886,17 @@ const discount: Discount | undefined = dayValue && discountValue ? {
               />
               {editingPeriodCommissionInfo && (
                 <FormHelperText sx={{ mt: 1 }}>
-                  <strong>{strings.CLIENT_PRICE_LABEL}:</strong>
+                  <strong>
+                    {strings.CLIENT_PRICE_LABEL}
+                    :
+                  </strong>
                   {' '}
                   {formatPriceWithCurrency(editingPeriodCommissionInfo.clientPrice)}
                   {' • '}
                   {strings.COMMISSION_DETAIL_WITH_AMOUNT
                     .replace('{rate}', commissionRateLabel)
                     .replace('{amount}', formatPriceWithCurrency(editingPeriodCommissionInfo.commissionValue))}
-              </FormHelperText>
+                </FormHelperText>
               )}
             </FormControl>
             {editPeriodError && (

@@ -20,9 +20,15 @@ const strings = new LocalizedStrings({
     AGENCY_PRICE_COLUMN_LABEL: `Prix agence (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
     CLIENT_PRICE_COLUMN_LABEL: `Prix client (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
     COMMISSION_COLUMN_LABEL: `Commission (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
-    CLIENT_PRICE_INFO_TITLE: 'Affichage des prix côté client',
-    CLIENT_PRICE_INFO_BODY:
-      "Plany calcule le prix affiché au client à partir du prix agence, en ajoutant la commission Plany. Les remises de longue durée s'appliquent ensuite sur le prix affiché. Les prix spéciaux par période remplacent le prix par défaut lorsqu'ils sont applicables.",
+    CLIENT_PRICE_INFO_TITLE: 'Information sur la commission Plany',
+    CLIENT_PRICE_INFO_INTRO:
+      'À partir du {date}, chaque réservation inclura une commission de {rate} ajoutée automatiquement par Plany au prix agence que vous saisissez.',
+    CLIENT_PRICE_INFO_EXAMPLE:
+      '',
+    CLIENT_PRICE_INFO_COLLECTION:
+      'La commission est collectée par votre agence au moment de la réservation puis reversée à Plany chaque mois.',
+    CLIENT_PRICE_INFO_LINK: 'Consultez la page {link} pour plus de détails.',
+    CLIENT_PRICE_INFO_LINK_LABEL: 'Gestion des commissions',
     COMMISSION_DETAIL_WITH_AMOUNT: 'Inclut commission Plany, {rate} ({amount})',
     SPECIAL_PRICE_TITLE: 'Tarifs spéciaux par période',
     SPECIAL_PRICE_SUBHEADER: 'Utilisez des plages de dates pour ajuster automatiquement le prix client pendant les temps forts.',
@@ -86,9 +92,16 @@ const strings = new LocalizedStrings({
     AGENCY_PRICE_COLUMN_LABEL: `Agency price (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
     CLIENT_PRICE_COLUMN_LABEL: `Client price (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
     COMMISSION_COLUMN_LABEL: `Commission (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
-    CLIENT_PRICE_INFO_TITLE: 'Client-facing price display',
-    CLIENT_PRICE_INFO_BODY:
-      'Plany calculates the price shown to clients from the agency price by adding the Plany commission. Long-term discounts are then applied on top of the client price. Special prices per period replace the default price whenever they apply.',
+    CLIENT_PRICE_INFO_TITLE: 'Plany commission information',
+    CLIENT_PRICE_INFO_INTRO:
+      'Starting {date} (configurable in the .env file), every booking will include a {rate} commission automatically added by Plany to the agency price you enter.',
+    CLIENT_PRICE_INFO_FORMULA: '👉 Client price displayed = Agency price + Plany commission.',
+    CLIENT_PRICE_INFO_EXAMPLE:
+      'Example: Agency price = {agencyPrice}, commission = {rate} ({commissionAmount}) → Client price = {clientPrice}.',
+    CLIENT_PRICE_INFO_COLLECTION:
+      'The commission is collected by your agency at booking time and then paid back to Plany every month.',
+    CLIENT_PRICE_INFO_LINK: 'ℹ️ See the {link} page for more details.',
+    CLIENT_PRICE_INFO_LINK_LABEL: 'Commission management',
     COMMISSION_DETAIL_WITH_AMOUNT: 'Includes Plany commission, {rate} ({amount})',
     SPECIAL_PRICE_TITLE: 'Special pricing by period',
     SPECIAL_PRICE_SUBHEADER: 'Use date windows to automatically adapt the client price for peak demand.',

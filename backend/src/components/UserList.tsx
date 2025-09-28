@@ -23,7 +23,8 @@ import {
   AccountCircle, Check as VerifiedIcon,
   PriorityHigh as NotActivatedIcon,
   HourglassEmpty as UnverifiedIcon,
-  CheckCircle as ActivateIcon
+  CheckCircle as ActivateIcon,
+  SwapHoriz as ChangeTypeIcon
 } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -34,6 +35,7 @@ import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
 
 import '@/assets/css/user-list.css'
+import defaultAgencyAvatar from '@/assets/img/default-agency.svg'
 
 interface UserListProps {
   types?: bookcarsTypes.UserType[]
@@ -62,6 +64,10 @@ const UserList = ({
   const [selectedId, setSelectedId] = useState('')
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
+  const [openChangeTypeDialog, setOpenChangeTypeDialog] = useState(false)
+  const [changeTypeTarget, setChangeTypeTarget] = useState<bookcarsTypes.User>()
+  const [nextUserType, setNextUserType] = useState<bookcarsTypes.UserType>()
+  const [changeTypeLoading, setChangeTypeLoading] = useState(false)
   const [types, setTypes] = useState<bookcarsTypes.UserType[]>()
   const [keyword, setKeyword] = useState(userListKeyword)
   const [reloadColumns, setReloadColumns] = useState(false)
@@ -143,6 +149,58 @@ const UserList = ({
       console.error('Erreur lors de l\'activation du fournisseur :', error)
     }
   }
+
+  const handleOpenChangeTypeDialog = (
+    event: React.MouseEvent<HTMLElement>,
+    target: bookcarsTypes.User,
+    userType: bookcarsTypes.UserType,
+  ) => {
+    event.stopPropagation()
+    setChangeTypeTarget(target)
+    setNextUserType(userType)
+    setOpenChangeTypeDialog(true)
+  }
+
+  const handleCancelChangeType = () => {
+    setOpenChangeTypeDialog(false)
+    setChangeTypeTarget(undefined)
+    setNextUserType(undefined)
+  }
+
+  const handleConfirmChangeType = async () => {
+    if (!changeTypeTarget || !nextUserType) {
+      return
+    }
+
+    try {
+      setChangeTypeLoading(true)
+      const payload: bookcarsTypes.UpdateUserTypePayload = {
+        _id: changeTypeTarget._id as string,
+        type: nextUserType,
+      }
+
+      const updatedUser = await UserService.changeUserType(payload)
+
+      if (updatedUser && updatedUser._id) {
+        setRows((prevRows) => prevRows.map((row) => (
+          row._id === updatedUser._id
+            ? { ...row, type: updatedUser.type, avatar: updatedUser.avatar }
+            : row
+        )))
+        helper.info(strings.CHANGE_TYPE_SUCCESS)
+      } else {
+        helper.error()
+      }
+    } catch (err) {
+      helper.error(err)
+    } finally {
+      setChangeTypeLoading(false)
+      setOpenChangeTypeDialog(false)
+      setChangeTypeTarget(undefined)
+      setNextUserType(undefined)
+    }
+  }
+
   const getColumns = (_user: bookcarsTypes.User): GridColDef<bookcarsTypes.User>[] => {
     const _columns: GridColDef<bookcarsTypes.User>[] = [
       {
@@ -153,81 +211,87 @@ const UserList = ({
           const __user = row
           let userAvatar
 
-          if (__user.avatar) {
-            if (__user.type === bookcarsTypes.RecordType.Supplier) {
-              const supplierAvatar = (
-                <img
-                  src={bookcarsHelper.joinURL(env.CDN_USERS, row.avatar)}
-                  alt={row.fullName}
-                />
-              )
+          const isSupplier = __user.type === bookcarsTypes.RecordType.Supplier
 
-              // Vérification si le fournisseur est activé
-              userAvatar = __user.active ? (
-                supplierAvatar
-              ) : (
-                <Badge
-                  overlap="circular"
-                  anchorOrigin={{
+          if (isSupplier) {
+            const supplierAvatarSrc = __user.avatar
+              ? (__user.avatar.startsWith('http')
+                ? __user.avatar
+                : bookcarsHelper.joinURL(env.CDN_USERS, __user.avatar))
+              : defaultAgencyAvatar
+
+            const supplierAvatar = (
+              <img
+                src={supplierAvatarSrc}
+                alt={row.fullName}
+                className={`supplier-avatar${__user.avatar ? '' : ' supplier-avatar-placeholder'}`}
+              />
+            )
+
+            userAvatar = __user.active ? (
+              supplierAvatar
+            ) : (
+              <Badge
+                overlap="circular"
+                anchorOrigin={{
                   vertical: 'bottom',
                   horizontal: 'right',
                 }}
+                badgeContent={(
+                  <Tooltip title={commonStrings.UNVERIFIED}>
+                    <Box borderRadius="50%" className="user-avatar-notactivated-small">
+                      <NotActivatedIcon className="user-avatar-verified-icon-small" />
+                    </Box>
+                  </Tooltip>
+                )}
+              >
+                {supplierAvatar}
+              </Badge>
+            )
+          } else if (__user.avatar) {
+            const userAvatarUrl = __user.avatar.startsWith('http')
+              ? __user.avatar
+              : bookcarsHelper.joinURL(env.CDN_USERS, __user.avatar)
+
+            const avatar = <Avatar src={userAvatarUrl} className="avatar-small" />
+            if (__user.verified) {
+              userAvatar = (
+                <Badge
+                  overlap="circular"
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                  }}
                   badgeContent={(
-                    <Tooltip title={commonStrings.UNVERIFIED}>
-                      <Box borderRadius="50%" className="user-avatar-notactivated-small">
-                        <NotActivatedIcon className="user-avatar-verified-icon-small" />
+                    <Tooltip title={commonStrings.VERIFIED}>
+                      <Box borderRadius="50%" className="user-avatar-verified-small">
+                        <VerifiedIcon className="user-avatar-verified-icon-small" />
                       </Box>
                     </Tooltip>
-                )}
+                  )}
                 >
-                  {supplierAvatar}
+                  {avatar}
                 </Badge>
               )
             } else {
-              const userAvatarUrl = __user.avatar
-                ? (__user.avatar.startsWith('http') ? __user.avatar : bookcarsHelper.joinURL(env.CDN_USERS, __user.avatar))
-                : ''
-
-              const avatar = <Avatar src={userAvatarUrl} className="avatar-small" />
-              if (__user.verified) {
-                userAvatar = (
-                  <Badge
-                    overlap="circular"
-                    anchorOrigin={{
-                      vertical: 'bottom',
-                      horizontal: 'right',
-                    }}
-                    badgeContent={(
-                      <Tooltip title={commonStrings.VERIFIED}>
-                        <Box borderRadius="50%" className="user-avatar-verified-small">
-                          <VerifiedIcon className="user-avatar-verified-icon-small" />
-                        </Box>
-                      </Tooltip>
-                    )}
-                  >
-                    {avatar}
-                  </Badge>
-                )
-              } else {
-                userAvatar = (
-                  <Badge
-                    overlap="circular"
-                    anchorOrigin={{
-                      vertical: 'bottom',
-                      horizontal: 'right',
-                    }}
-                    badgeContent={(
-                      <Tooltip title={commonStrings.UNVERIFIED}>
-                        <Box borderRadius="50%" className="user-avatar-unverified-small">
-                          <UnverifiedIcon className="user-avatar-verified-icon-small" />
-                        </Box>
-                      </Tooltip>
-                    )}
-                  >
-                    {avatar}
-                  </Badge>
-                )
-              }
+              userAvatar = (
+                <Badge
+                  overlap="circular"
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'right',
+                  }}
+                  badgeContent={(
+                    <Tooltip title={commonStrings.UNVERIFIED}>
+                      <Box borderRadius="50%" className="user-avatar-unverified-small">
+                        <UnverifiedIcon className="user-avatar-verified-icon-small" />
+                      </Box>
+                    </Tooltip>
+                  )}
+                >
+                  {avatar}
+                </Badge>
+              )
             }
           } else {
             const avatar = <AccountCircle className="avatar-small" color="disabled" />
@@ -314,21 +378,49 @@ const UserList = ({
           }
 
           const __user = row
-          return _user.type === bookcarsTypes.RecordType.Admin || __user.supplier === _user._id ? (
+          const isAdmin = _user.type === bookcarsTypes.RecordType.Admin
+          const canManage = isAdmin || __user.supplier === _user._id
+
+          if (!canManage) {
+            return <></>
+          }
+
+          const currentType = (__user.type || '') as bookcarsTypes.UserType
+          const canChangeType = isAdmin
+            && __user._id !== _user._id
+            && [bookcarsTypes.UserType.Supplier, bookcarsTypes.UserType.User].includes(currentType)
+
+          const targetType = currentType === bookcarsTypes.UserType.Supplier
+            ? bookcarsTypes.UserType.User
+            : bookcarsTypes.UserType.Supplier
+
+          const changeTypeTooltip = targetType === bookcarsTypes.UserType.Supplier
+            ? strings.CHANGE_TYPE_TO_SUPPLIER
+            : strings.CHANGE_TYPE_TO_USER
+
+          return (
             <div>
               <Tooltip title={commonStrings.UPDATE}>
                 <IconButton href={`update-user?u=${row._id}`}>
                   <EditIcon />
                 </IconButton>
               </Tooltip>
+              {canChangeType && (
+                <Tooltip title={changeTypeTooltip}>
+                  <IconButton
+                    onClick={(event) => handleOpenChangeTypeDialog(event, __user, targetType)}
+                    disabled={changeTypeLoading}
+                  >
+                    <ChangeTypeIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
               <Tooltip title={commonStrings.DELETE}>
                 <IconButton onClick={handleDelete}>
                   <DeleteIcon />
                 </IconButton>
               </Tooltip>
             </div>
-          ) : (
-            <></>
           )
         },
         renderHeader: () => (selectedIds.length > 0 ? (
@@ -466,6 +558,41 @@ const UserList = ({
           disableRowSelectionOnClick
         />
       )}
+
+      <Dialog
+        disableEscapeKeyDown
+        maxWidth="xs"
+        open={openChangeTypeDialog}
+        onClose={() => {
+          if (!changeTypeLoading) {
+            handleCancelChangeType()
+          }
+        }}
+      >
+        <DialogTitle className="dialog-header">{commonStrings.CONFIRM_TITLE}</DialogTitle>
+        <DialogContent className="dialog-content">
+          {nextUserType === bookcarsTypes.UserType.Supplier && strings.CONFIRM_CHANGE_TYPE_SUPPLIER}
+          {nextUserType === bookcarsTypes.UserType.User && strings.CONFIRM_CHANGE_TYPE_USER}
+        </DialogContent>
+        <DialogActions className="dialog-actions">
+          <Button
+            onClick={handleCancelChangeType}
+            variant="contained"
+            className="btn-secondary"
+            disabled={changeTypeLoading}
+          >
+            {commonStrings.CANCEL}
+          </Button>
+          <Button
+            onClick={handleConfirmChangeType}
+            variant="contained"
+            className="btn-primary"
+            disabled={changeTypeLoading}
+          >
+            {commonStrings.CONFIRM}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog disableEscapeKeyDown maxWidth="xs" open={openDeleteDialog}>
         <DialogTitle className="dialog-header">{commonStrings.CONFIRM_TITLE}</DialogTitle>

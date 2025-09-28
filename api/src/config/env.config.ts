@@ -302,6 +302,13 @@ export const CDN_INVOICES = __env__('BC_CDN_INVOICES', true)
 export const CDN_AGENCY_DOCS = __env__('BC_CDN_AGENCY_DOCS', true)
 
 /**
+ * Default supplier avatar filename.
+ *
+ * @type {string}
+ */
+export const DEFAULT_SUPPLIER_AVATAR = __env__('BC_DEFAULT_SUPPLIER_AVATAR', false, '')
+
+/**
  * Backend host.
  *
  * @type {string}

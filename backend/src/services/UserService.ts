@@ -100,14 +100,14 @@ export const resend = (email?: string, reset = false, appType: string = bookcars
     )
     .then((res) => res.status)
 
-   export const activateSupplier = (data: bookcarsTypes.ActivatePayload): Promise<number> =>
-     axiosInstance
-       .post(
-         '/api/activate-supplier/ ',
-         data,
-         { withCredentials: true }
-       )
-       .then((res) => res.status)
+export const activateSupplier = (data: bookcarsTypes.ActivatePayload): Promise<number> =>
+  axiosInstance
+    .post(
+      '/api/activate-supplier',
+      data,
+      { withCredentials: true }
+    )
+    .then((res) => res.status)
 /**
  * Activate an account.
  *
@@ -117,7 +117,7 @@ export const resend = (email?: string, reset = false, appType: string = bookcars
 export const activate = (data: bookcarsTypes.ActivatePayload): Promise<number> =>
   axiosInstance
     .post(
-      '/api/activate/ ',
+      '/api/activate',
       data,
       { withCredentials: true }
     )
@@ -378,6 +378,15 @@ export const updateUser = (data: bookcarsTypes.UpdateUserPayload): Promise<numbe
       { withCredentials: true }
     )
     .then((res) => res.status)
+
+export const changeUserType = (data: bookcarsTypes.UpdateUserTypePayload): Promise<bookcarsTypes.User> =>
+  axiosInstance
+    .post(
+      '/api/users/type',
+      data,
+      { withCredentials: true }
+    )
+    .then((res) => res.data)
 
     /**
  * Update a User.

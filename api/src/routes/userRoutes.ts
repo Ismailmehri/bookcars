@@ -26,6 +26,7 @@ routes.route(routeNames.validateAccessToken).post(authJwt.verifyToken, userContr
 routes.route(routeNames.confirmEmail).get(userController.confirmEmail)
 routes.route(routeNames.resendLink).post(authJwt.verifyToken, userController.resendLink)
 routes.route(routeNames.update).post(authJwt.verifyToken, userController.update)
+routes.route(routeNames.updateType).post(authJwt.verifyToken, userController.updateType)
 routes.route(routeNames.updateEmailNotifications).post(authJwt.verifyToken, userController.updateEmailNotifications)
 routes.route(routeNames.updateLanguage).post(authJwt.verifyToken, userController.updateLanguage)
 routes.route(routeNames.getUser).get(authJwt.verifyToken, userController.getUser)

@@ -1,0 +1,23 @@
+<svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="buildingGradient" x1="0" y1="0" x2="0" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1976d2" />
+      <stop offset="1" stop-color="#0d47a1" />
+    </linearGradient>
+    <linearGradient id="groundGradient" x1="0" y1="45" x2="120" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f9d58" />
+      <stop offset="1" stop-color="#26a69a" />
+    </linearGradient>
+  </defs>
+  <rect x="0" y="45" width="120" height="15" fill="url(#groundGradient)" />
+  <rect x="20" y="10" width="45" height="35" rx="4" fill="url(#buildingGradient)" />
+  <rect x="73" y="18" width="27" height="27" rx="6" fill="#ffffff" opacity="0.85" />
+  <rect x="27" y="17" width="12" height="10" rx="1.5" fill="#bbdefb" />
+  <rect x="46" y="17" width="12" height="10" rx="1.5" fill="#bbdefb" />
+  <rect x="27" y="32" width="12" height="10" rx="1.5" fill="#bbdefb" />
+  <rect x="46" y="32" width="12" height="10" rx="1.5" fill="#bbdefb" />
+  <path d="M82.5 40C79.4624 40 77 37.5376 77 34.5C77 31.4624 79.4624 29 82.5 29C85.5376 29 88 31.4624 88 34.5C88 37.5376 85.5376 40 82.5 40Z" fill="#1976d2" opacity="0.9" />
+  <path d="M95 42C92.7909 42 91 40.2091 91 38C91 35.7909 92.7909 34 95 34C97.2091 34 99 35.7909 99 38C99 40.2091 97.2091 42 95 42Z" fill="#1976d2" opacity="0.6" />
+  <rect x="33" y="40" width="19" height="5" fill="#0f9d58" opacity="0.6" />
+  <path d="M76 46H102" stroke="#0d47a1" stroke-width="3" stroke-linecap="round" />
+</svg>

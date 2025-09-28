@@ -18,6 +18,7 @@ const routes = {
   validateAccessToken: '/api/validate-access-token',
   getUser: '/api/user/:id',
   update: '/api/update-user',
+  updateType: '/api/users/type',
   updateLanguage: '/api/update-language',
   updateEmailNotifications: '/api/update-email-notifications',
   changePassword: '/api/change-password',

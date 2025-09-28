@@ -32,6 +32,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Link,
 } from '@mui/material'
 import {
   Delete as DeleteIcon,
@@ -65,6 +66,7 @@ import FuelPolicyList from '@/components/FuelPolicyList'
 import MultimediaList from '@/components/MultimediaList'
 import CarRangeList from '@/components/CarRangeList'
 import { Discount } from ':bookcars-types'
+import { Link as RouterLink } from 'react-router-dom'
 import '@/assets/css/create-car.css'
 
 interface PricePeriod {
@@ -149,6 +151,8 @@ const getLocale = (language: string) => {
       return 'en-US'
   }
 }
+
+const COMMISSION_EXAMPLE_PRICE = 70
 
 const UpdateCar = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
@@ -269,6 +273,20 @@ const UpdateCar = () => {
   }
 
   const commissionRateLabel = `${formatCommissionRate(env.COMMISSION_RATE)}%`
+  const commissionEffectiveDateLabel = new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(env.COMMISSION_EFFECTIVE_DATE)
+  const commissionManagementPath =
+    user?.type === bookcarsTypes.RecordType.Supplier ? '/agency-commissions' : '/admin-commissions'
+  const exampleCommissionInfo = computeCommissionInfo(COMMISSION_EXAMPLE_PRICE)
+  const exampleAgencyPriceLabel = formatPriceWithCurrency(COMMISSION_EXAMPLE_PRICE)
+  const exampleCommissionAmountLabel = formatPriceWithCurrency(
+    exampleCommissionInfo?.commissionValue ?? 0,
+  )
+  const exampleClientPriceLabel = formatPriceWithCurrency(exampleCommissionInfo?.clientPrice ?? 0)
+  const commissionLinkSegments = strings.CLIENT_PRICE_INFO_LINK.split('{link}')
 
   const dailyCommissionInfo = computeCommissionInfo(dailyPrice)
   const newPeriodCommissionInfo = computeCommissionInfo(newPeriod.dailyPrice)
@@ -1148,14 +1166,34 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                 />
               </FormControl>
 
-              <Alert severity="info" sx={{ mt: 2 }}>
-                <Typography fontWeight={600}>{strings.CLIENT_PRICE_INFO_TITLE}</Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  {strings.CLIENT_PRICE_INFO_BODY}
+            <Alert severity="info" sx={{ mt: 2 }}>
+              <Typography fontWeight={600}>{strings.CLIENT_PRICE_INFO_TITLE}</Typography>
+              <Stack spacing={1} sx={{ mt: 1 }}>
+                <Typography variant="body2">
+                  {strings.CLIENT_PRICE_INFO_INTRO.replace('{date}', commissionEffectiveDateLabel).replace(
+                    '{rate}',
+                    commissionRateLabel,
+                  )}
                 </Typography>
-                {dailyCommissionInfo && (
-                  <Box
-                    sx={{
+                <Typography variant="body2">{strings.CLIENT_PRICE_INFO_FORMULA}</Typography>
+                <Typography variant="body2">
+                  {strings.CLIENT_PRICE_INFO_EXAMPLE.replace('{agencyPrice}', exampleAgencyPriceLabel)
+                    .replace('{rate}', commissionRateLabel)
+                    .replace('{commissionAmount}', exampleCommissionAmountLabel)
+                    .replace('{clientPrice}', exampleClientPriceLabel)}
+                </Typography>
+                <Typography variant="body2">{strings.CLIENT_PRICE_INFO_COLLECTION}</Typography>
+                <Typography variant="body2">
+                  {commissionLinkSegments[0] ?? ''}
+                  <Link component={RouterLink} to={commissionManagementPath} underline="hover">
+                    {strings.CLIENT_PRICE_INFO_LINK_LABEL}
+                  </Link>
+                  {commissionLinkSegments[1] ?? ''}
+                </Typography>
+              </Stack>
+              {dailyCommissionInfo && (
+                <Box
+                  sx={{
                       mt: 2,
                       display: 'flex',
                       flexDirection: isMobile ? 'column' : 'row',

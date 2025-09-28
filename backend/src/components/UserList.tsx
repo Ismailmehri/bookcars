@@ -370,6 +370,8 @@ const UserList = ({
         headerName: '',
         sortable: false,
         disableColumnMenu: true,
+        minWidth: 180,
+        flex: 0,
         renderCell: ({ row }: GridRenderCellParams<bookcarsTypes.User>) => {
           const handleDelete = (e: React.MouseEvent<HTMLElement>) => {
             e.stopPropagation() // don't select this row after clicking
@@ -399,7 +401,7 @@ const UserList = ({
             : strings.CHANGE_TYPE_TO_USER
 
           return (
-            <div>
+            <div className="us-actions">
               <Tooltip title={commonStrings.UPDATE}>
                 <IconButton href={`update-user?u=${row._id}`}>
                   <EditIcon />
@@ -424,7 +426,7 @@ const UserList = ({
           )
         },
         renderHeader: () => (selectedIds.length > 0 ? (
-          <div>
+          <div className="us-actions us-actions-header">
             <div style={{ width: 40, display: 'inline-block' }} />
             <Tooltip title={strings.DELETE_SELECTION}>
               <IconButton

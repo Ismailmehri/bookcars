@@ -66,6 +66,27 @@ div.us-list span.us-avatar img.supplier-avatar-placeholder {
   box-shadow: inset 0 0 0 1px rgba(25, 118, 210, 0.2);
 }
 
+div.us-list div.us-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+div.us-list div.us-actions-header {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+@media (max-width: 600px) {
+  div.us-list div.us-actions {
+    gap: 2px;
+  }
+
+  div.us-list div.us-actions .MuiIconButton-root {
+    padding: 4px;
+  }
+}
+
 div.us-list .us-blacklisted,
 div.us-list .us-blacklisted:hover {
   background: #f0f0f0;

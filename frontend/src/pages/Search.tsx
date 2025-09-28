@@ -224,15 +224,60 @@ const Search = () => {
     }
 
     const now = new Date()
-    const defaultFrom = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-    const defaultTo = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
+    const minPickupDate = new Date(now)
+    minPickupDate.setDate(minPickupDate.getDate() + 1)
+    minPickupDate.setHours(10, 0, 0, 0)
 
-    // Définir l'heure à 9h pour les dates par défaut
-    defaultFrom.setHours(9, 0, 0, 0)
-    defaultTo.setHours(9, 0, 0, 0)
+    const maxDropOffDate = new Date()
+    maxDropOffDate.setMonth(maxDropOffDate.getMonth() + env.MAX_BOOKING_MONTHS)
+    maxDropOffDate.setHours(20, 30, 0, 0)
 
-    const startDate = _from ? new Date(_from) : defaultFrom
-    const endDate = _to ? new Date(_to) : defaultTo
+    const maxPickupDate = new Date(maxDropOffDate)
+    maxPickupDate.setDate(maxPickupDate.getDate() - 1)
+    if (maxPickupDate < minPickupDate) {
+      maxPickupDate.setTime(minPickupDate.getTime())
+    }
+
+    const defaultFrom = new Date(minPickupDate)
+
+    const minDefaultTo = new Date(defaultFrom)
+    minDefaultTo.setDate(minDefaultTo.getDate() + 1)
+
+    let defaultTo = new Date(defaultFrom)
+    defaultTo.setDate(defaultTo.getDate() + 3)
+
+    if (defaultTo < minDefaultTo) {
+      defaultTo = new Date(minDefaultTo)
+    }
+
+    if (defaultTo > maxDropOffDate) {
+      defaultTo = new Date(maxDropOffDate)
+    }
+
+    let startDate = _from ? new Date(_from) : defaultFrom
+    if (startDate < minPickupDate) {
+      startDate = new Date(minPickupDate)
+    }
+
+    if (startDate > maxPickupDate) {
+      startDate = new Date(maxPickupDate)
+    }
+
+    let endDate = _to ? new Date(_to) : defaultTo
+    let minEndDate = new Date(startDate)
+    minEndDate.setDate(startDate.getDate() + 1)
+
+    if (minEndDate > maxDropOffDate) {
+      minEndDate = new Date(maxDropOffDate)
+    }
+
+    if (endDate < minEndDate) {
+      endDate = new Date(minEndDate)
+    }
+
+    if (endDate > maxDropOffDate) {
+      endDate = new Date(maxDropOffDate)
+    }
 
     try {
       const _pickupLocation = await LocationService.getLocation(pickupLocationId, supplierSlug)

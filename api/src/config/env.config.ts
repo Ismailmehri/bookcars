@@ -454,6 +454,7 @@ export interface Review {
  * @extends {Document}
  */
 export interface User extends Document {
+  _id: Types.ObjectId
   supplier?: Types.ObjectId
   fullName: string
   email: string

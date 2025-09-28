@@ -8,7 +8,7 @@
     "dev": "vite",
     "preview": "vite preview",
     "fix": "eslint --fix .",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "ncu": "ncu -u -x typescript,date-fns,eslint,eslint-plugin-react-hooks,eslint-plugin-react-refresh",
     "stylelint": "stylelint \"src/**/*.css\"",
     "stylelint:fix": "stylelint \"src/**/*.css\" --fix"

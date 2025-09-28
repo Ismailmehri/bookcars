@@ -20,11 +20,14 @@ import {
   Box,
   Slider,
   MenuItem,
+  Alert,
+  Typography,
 } from '@mui/material'
 import { Delete as DeleteIcon, Edit as EditIcon, Info as InfoIcon } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import DateTimePicker from '@/components/DateTimePicker'
 import * as bookcarsTypes from ':bookcars-types'
+import * as bookcarsHelper from ':bookcars-helper'
 import Layout from '@/components/Layout'
 import env from '@/config/env.config'
 import { strings as commonStrings } from '@/lang/common'
@@ -115,6 +118,17 @@ const marksDays = [
   }
 ]
 
+const getLocale = (language: string) => {
+  switch (language) {
+    case 'fr':
+      return 'fr-FR'
+    case 'es':
+      return 'es-ES'
+    default:
+      return 'en-US'
+  }
+}
+
 const CreateCar = () => {
   const navigate = useNavigate()
   const [isSupplier, setIsSupplier] = useState(false)
@@ -165,6 +179,48 @@ const CreateCar = () => {
     endDate: null,
   })
   const [locationsError, setLocationsError] = useState<string | null>(null) // État pour l'erreur des localisations
+
+  const language = UserService.getLanguage()
+  const locale = getLocale(language)
+  const isMobile = env.isMobile()
+
+  const formatCommissionRate = (value: number) =>
+    new Intl.NumberFormat(locale, {
+      minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(value)
+
+  const formatPriceWithCurrency = (value: number) =>
+    bookcarsHelper.formatPrice(value, commonStrings.CURRENCY, language)
+
+  const computeCommissionInfo = (value: number | string | null | undefined) => {
+    if (value === null || value === undefined) {
+      return undefined
+    }
+
+    const numeric = typeof value === 'string' ? Number.parseFloat(value) : value
+
+    if (numeric === null || numeric === undefined) {
+      return undefined
+    }
+
+    if (Number.isNaN(numeric) || !Number.isFinite(numeric) || numeric <= 0) {
+      return undefined
+    }
+
+    const commissionValue = Number(((numeric * env.COMMISSION_RATE) / 100).toFixed(2))
+    const clientPrice = Number((numeric + commissionValue).toFixed(2))
+
+    return {
+      commissionValue,
+      clientPrice,
+    }
+  }
+
+  const commissionRateLabel = `${formatCommissionRate(env.COMMISSION_RATE)}%`
+
+  const dailyCommissionInfo = computeCommissionInfo(dailyPrice)
+  const newPeriodCommissionInfo = computeCommissionInfo(newPeriod.dailyPrice)
 
   const handleAddPeriod = () => {
     if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice) {
@@ -680,7 +736,7 @@ const CreateCar = () => {
 
             <FormControl fullWidth margin="dense">
               <TextField
-                label={`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}
+                label={`${strings.AGENCY_DEFAULT_PRICE_LABEL} (${commonStrings.CURRENCY}${commonStrings.DAILY})`}
                 slotProps={{
                   htmlInput: {
                     inputMode: 'numeric',
@@ -697,6 +753,34 @@ const CreateCar = () => {
                 value={dailyPrice}
               />
             </FormControl>
+
+            <Alert severity="info" sx={{ mt: 2 }}>
+              <Typography fontWeight={600}>{strings.CLIENT_PRICE_INFO_TITLE}</Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                {strings.CLIENT_PRICE_INFO_BODY}
+              </Typography>
+              {dailyCommissionInfo && (
+                <Box
+                  sx={{
+                    mt: 2,
+                    display: 'flex',
+                    flexDirection: isMobile ? 'column' : 'row',
+                    gap: isMobile ? 1 : 3,
+                  }}
+                >
+                  <Typography variant="body2">
+                    <strong>{strings.CLIENT_PRICE_LABEL}:</strong>
+                    {' '}
+                    {formatPriceWithCurrency(dailyCommissionInfo.clientPrice)}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mt: isMobile ? 0.5 : 0 }}>
+                    {strings.COMMISSION_DETAIL_WITH_AMOUNT
+                      .replace('{rate}', commissionRateLabel)
+                      .replace('{amount}', formatPriceWithCurrency(dailyCommissionInfo.commissionValue))}
+                  </Typography>
+                </Box>
+              )}
+            </Alert>
 
             <div className="add-border">
               <span className="text-title">
@@ -736,7 +820,7 @@ const CreateCar = () => {
                     value={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
                     maxDate={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined} // Limite la date max en fonction de la date de fin
                     onChange={(date) => setNewPeriod({ ...newPeriod, startDate: date })}
-                    language={UserService.getLanguage()}
+                    language={language}
                     showTime={false}
                   />
                 </FormControl>
@@ -750,7 +834,7 @@ const CreateCar = () => {
                     value={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
                     minDate={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined} // Limite la date min en fonction de la date de début
                     onChange={(date) => setNewPeriod({ ...newPeriod, endDate: date })}
-                    language={UserService.getLanguage()}
+                    language={language}
                     showTime={false}
                   />
                 </FormControl>
@@ -778,19 +862,30 @@ const CreateCar = () => {
                   {' '}
                   {/* Largeur réduite */}
                   <TextField
-                    label={`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}
+                    label={`${strings.AGENCY_PRICE_LABEL} (${commonStrings.CURRENCY}${commonStrings.DAILY})`}
                     slotProps={{
-                        htmlInput: {
-                          inputMode: 'numeric',
-                          pattern: '^\\d+(.\\d+)?$',
-                        },
-                      }}
+                      htmlInput: {
+                        inputMode: 'numeric',
+                        pattern: '^\\d+(.\\d+)?$',
+                      },
+                    }}
                     value={newPeriod.dailyPrice !== null ? newPeriod.dailyPrice : ''}
                     variant="standard"
                     autoComplete="off"
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setNewPeriod({ ...newPeriod, dailyPrice: Number(e.target.value) })}
                   />
+                  {newPeriodCommissionInfo && (
+                    <FormHelperText>
+                      <strong>{strings.CLIENT_PRICE_LABEL}:</strong>
+                      {' '}
+                      {formatPriceWithCurrency(newPeriodCommissionInfo.clientPrice)}
+                      {' • '}
+                      {strings.COMMISSION_DETAIL_WITH_AMOUNT
+                        .replace('{rate}', commissionRateLabel)
+                        .replace('{amount}', formatPriceWithCurrency(newPeriodCommissionInfo.commissionValue))}
+                    </FormHelperText>
+                  )}
                 </FormControl>
 
                 {/* Bouton pour ajouter la période */}
@@ -806,38 +901,114 @@ const CreateCar = () => {
               </div>
 
               {pricePeriods.length > 0 && (
-                <TableContainer component={Paper}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>{strings.START_DATE}</TableCell>
-                        <TableCell>{strings.END_DATE}</TableCell>
-                        <TableCell>{strings.REASON}</TableCell>
-                        <TableCell>{`${strings.DAILY_PRICE} (${commonStrings.CURRENCY})`}</TableCell>
-                        <TableCell>{strings.ACTIONS_BUTTON}</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {pricePeriods.map((period, index) => (
+                isMobile ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {pricePeriods.map((period, index) => {
+                      const commissionInfo = computeCommissionInfo(period.dailyPrice)
+                      const agencyPrice = typeof period.dailyPrice === 'number'
+                        ? formatPriceWithCurrency(period.dailyPrice)
+                        : '—'
+                      const clientPrice = commissionInfo
+                        ? formatPriceWithCurrency(commissionInfo.clientPrice)
+                        : '—'
+                      const commissionAmount = commissionInfo
+                        ? formatPriceWithCurrency(commissionInfo.commissionValue)
+                        : '—'
+
+                      return (
                         // eslint-disable-next-line react/no-array-index-key
-                        <TableRow key={index}>
-                          <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
-                          <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
-                          <TableCell>{period.reason || '-'}</TableCell>
-                          <TableCell>{`${period.dailyPrice} (${commonStrings.CURRENCY})`}</TableCell>
-                          <TableCell>
+                        <Paper key={index} sx={{ p: 2 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="subtitle2">{strings.START_DATE}</Typography>
+                            <Typography variant="body2">
+                              {period.startDate ? period.startDate.toLocaleDateString() : ''}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                            <Typography variant="subtitle2">{strings.END_DATE}</Typography>
+                            <Typography variant="body2">
+                              {period.endDate ? period.endDate.toLocaleDateString() : ''}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ mt: 1 }}>
+                            <Typography variant="subtitle2">{strings.REASON}</Typography>
+                            <Typography variant="body2">{period.reason || '-'}</Typography>
+                          </Box>
+                          <Box sx={{ mt: 1 }}>
+                            <Typography variant="subtitle2">{strings.AGENCY_PRICE_LABEL}</Typography>
+                            <Typography variant="body2">{agencyPrice}</Typography>
+                          </Box>
+                          <Box sx={{ mt: 1 }}>
+                            <Typography variant="subtitle2">{strings.CLIENT_PRICE_LABEL}</Typography>
+                            <Typography variant="body2">{clientPrice}</Typography>
+                          </Box>
+                          <Box sx={{ mt: 1 }}>
+                            <Typography variant="subtitle2">{strings.COMMISSION_LABEL}</Typography>
+                            <Typography variant="body2">{commissionAmount}</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
                             <IconButton onClick={() => handleEditPeriod(index)}>
                               <EditIcon />
                             </IconButton>
                             <IconButton onClick={() => handleDeletePeriod(index)}>
                               <DeleteIcon />
                             </IconButton>
-                          </TableCell>
+                          </Box>
+                        </Paper>
+                      )
+                    })}
+                  </Box>
+                ) : (
+                  <TableContainer component={Paper}>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>{strings.START_DATE}</TableCell>
+                          <TableCell>{strings.END_DATE}</TableCell>
+                          <TableCell>{strings.REASON}</TableCell>
+                          <TableCell>{`${strings.AGENCY_PRICE_LABEL} (${commonStrings.CURRENCY}${commonStrings.DAILY})`}</TableCell>
+                          <TableCell>{`${strings.CLIENT_PRICE_LABEL} (${commonStrings.CURRENCY}${commonStrings.DAILY})`}</TableCell>
+                          <TableCell>{`${strings.COMMISSION_LABEL} (${commonStrings.CURRENCY}${commonStrings.DAILY})`}</TableCell>
+                          <TableCell>{strings.ACTIONS_BUTTON}</TableCell>
                         </TableRow>
-              ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                      </TableHead>
+                      <TableBody>
+                        {pricePeriods.map((period, index) => {
+                          const commissionInfo = computeCommissionInfo(period.dailyPrice)
+                          const agencyPrice = typeof period.dailyPrice === 'number'
+                            ? formatPriceWithCurrency(period.dailyPrice)
+                            : '—'
+                          const clientPrice = commissionInfo
+                            ? formatPriceWithCurrency(commissionInfo.clientPrice)
+                            : '—'
+                          const commissionAmount = commissionInfo
+                            ? formatPriceWithCurrency(commissionInfo.commissionValue)
+                            : '—'
+
+                          return (
+                            // eslint-disable-next-line react/no-array-index-key
+                            <TableRow key={index}>
+                              <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
+                              <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
+                              <TableCell>{period.reason || '-'}</TableCell>
+                              <TableCell>{agencyPrice}</TableCell>
+                              <TableCell>{clientPrice}</TableCell>
+                              <TableCell>{commissionAmount}</TableCell>
+                              <TableCell>
+                                <IconButton onClick={() => handleEditPeriod(index)}>
+                                  <EditIcon />
+                                </IconButton>
+                                <IconButton onClick={() => handleDeletePeriod(index)}>
+                                  <DeleteIcon />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )
               )}
             </div>
 
@@ -1006,7 +1177,7 @@ const CreateCar = () => {
                     value={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined}
                     maxDate={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined} // Limite la date max en fonction de la date de fin
                     onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, startDate: date })}
-                    language={UserService.getLanguage()}
+                    language={language}
                     showTime={false}
                   />
                 </FormControl>
@@ -1016,7 +1187,7 @@ const CreateCar = () => {
                     value={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined}
                     minDate={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined} // Limite la date min en fonction de la date de début
                     onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, endDate: date })}
-                    language={UserService.getLanguage()}
+                    language={language}
                     showTime={false}
                   />
                 </FormControl>

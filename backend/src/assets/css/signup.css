@@ -5,13 +5,25 @@ div.signup {
   flex: 1 0 auto;
   justify-content: center;
   margin: 45px 0;
+  padding: 0 16px;
   transform: translate3d(0, 0, 0);
+}
+
+div.signup .signup-form {
+  box-sizing: border-box;
+  max-width: 560px;
+  padding: 30px;
+  width: 100%;
 }
 
 .signup-form-title {
   text-align: center;
   text-transform: capitalize;
   color: #121212;
+}
+
+.signup-portal-alert {
+  margin: 16px 0 24px;
 }
 
 .signup .buttons {
@@ -28,10 +40,15 @@ div.signup {
 /* Device width is less than or equal to 960px */
 
 @media only screen and (max-width: 960px) {
+  div.signup {
+    flex-direction: column;
+    margin: 32px 0;
+  }
+
   .signup-form {
-    width: 350px;
     height: 730px;
-    padding: 30px;
+    max-width: 420px;
+    padding: 24px;
   }
 
   .recaptcha {
@@ -40,13 +57,29 @@ div.signup {
   }
 }
 
+@media only screen and (max-width: 600px) {
+  div.signup {
+    margin: 20px 0;
+    padding: 0 12px;
+  }
+
+  .signup-form {
+    height: auto;
+    max-width: none;
+    padding: 20px;
+  }
+
+  .recaptcha {
+    margin-left: 0;
+  }
+}
+
 /* Device width is greater than or equal to 960px */
 
 @media only screen and (min-width: 960px) {
   .signup-form {
-    width: 550px;
+    max-width: 550px;
     height: 610px;
-    padding: 30px;
   }
 
   .recaptcha {

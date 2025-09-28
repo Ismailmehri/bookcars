@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import escapeStringRegexp from 'escape-string-regexp'
 import PDFDocument from 'pdfkit'
+import axios from 'axios'
 import mongoose from 'mongoose'
 import * as bookcarsTypes from ':bookcars-types'
 import { getCommissionConfig } from ':bookcars-helper'
@@ -27,6 +28,7 @@ type CommissionEventRecord = Omit<env.AgencyCommissionEvent, 'admin'> & {
   admin?: env.User | mongoose.Types.ObjectId
 }
 const CSV_SEPARATOR = ';'
+const LOGO_URL = 'https://plany.tn/logo.tn'
 
 const ensureAdmin = async (req: Request): Promise<env.User | null> => {
   const sessionData = await authHelper.getSessionData(req)
@@ -545,6 +547,7 @@ const loadAgencyCommissionDetail = async (
       from: { $lt: end },
       to: { $gte: effectiveStart },
     })
+      .populate<{ driver: env.User }>('driver')
       .sort({ from: 1 })
       .lean()
     : []
@@ -593,6 +596,9 @@ const loadAgencyCommissionDetail = async (
       remainingCommission = 0
     }
 
+    const driverRecord = booking.driver as env.User | undefined
+    const driverName = driverRecord?.fullName || driverRecord?.email || undefined
+
     bookingInfos.push({
       id: booking._id.toString(),
       from: booking.from,
@@ -601,6 +607,7 @@ const loadAgencyCommissionDetail = async (
       commission,
       status: bookingStatus || bookcarsTypes.BookingStatus.Pending,
       paymentStatus,
+      driverName,
     })
   })
 
@@ -797,7 +804,7 @@ const serializeSettings = async (
   }
 }
 
-const streamCommissionInvoice = (
+const streamCommissionInvoice = async (
   detail: bookcarsTypes.AgencyCommissionDetail,
   res: Response,
   year: number,
@@ -811,54 +818,232 @@ const streamCommissionInvoice = (
 
   doc.pipe(res)
 
-  doc.fontSize(18).text('Commissions agences', { align: 'center' })
-  doc.moveDown()
-  doc.fontSize(12).text(`Agence : ${detail.agency.name}`)
-  if (detail.agency.city) {
-    doc.text(`Ville : ${detail.agency.city}`)
+  let logo: Buffer | null = null
+  try {
+    const response = await axios.get(LOGO_URL, { responseType: 'arraybuffer' })
+    logo = Buffer.from(response.data)
+  } catch {
+    logo = null
   }
+
+  const formatCurrency = (value: number) => value.toLocaleString('fr-FR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+
+  const marginLeft = doc.page.margins.left
+  const marginRight = doc.page.margins.right
+  const contentWidth = doc.page.width - marginLeft - marginRight
+  const rightColumnWidth = 220
+  const rightColumnX = marginLeft + contentWidth - rightColumnWidth
+  const headerStartY = doc.y
+
+  if (logo) {
+    doc.image(logo, marginLeft, headerStartY, { height: 80 })
+  }
+
+  let agencyInfoY = headerStartY
+  doc.font('Helvetica-Bold').fontSize(12).fillColor('#000000').text(
+    detail.agency.name,
+    rightColumnX,
+    agencyInfoY,
+    { width: rightColumnWidth, align: 'right' },
+  )
+  agencyInfoY = doc.y
+  doc.font('Helvetica').fontSize(10)
+  const agencyLocation = detail.agency.city || 'Tunisie'
+  doc.text(
+    agencyLocation,
+    rightColumnX,
+    agencyInfoY,
+    { width: rightColumnWidth, align: 'right' },
+  )
+  agencyInfoY = doc.y
   if (detail.agency.email) {
-    doc.text(`Email : ${detail.agency.email}`)
+    doc.text(
+      detail.agency.email,
+      rightColumnX,
+      agencyInfoY,
+      { width: rightColumnWidth, align: 'right' },
+    )
+    agencyInfoY = doc.y
   }
   if (detail.agency.phone) {
-    doc.text(`Téléphone : ${detail.agency.phone}`)
+    doc.text(
+      detail.agency.phone,
+      rightColumnX,
+      agencyInfoY,
+      { width: rightColumnWidth, align: 'right' },
+    )
+    agencyInfoY = doc.y
   }
 
-  doc.moveDown()
-  doc.text(`Période : ${getMonthLabel(year, month)} ${year}`)
+  const headerBottom = Math.max(headerStartY + (logo ? 80 : 0), agencyInfoY)
+  const infoSectionY = headerBottom + 20
+  const today = new Date()
+  doc.font('Helvetica').fontSize(10).fillColor('#000000').text(
+    `Date : ${today.toLocaleDateString('fr-FR')}`,
+    marginLeft,
+    infoSectionY,
+  )
 
-  doc.moveDown()
-  doc.text(`Nombre de réservations : ${detail.summary.reservations}`)
-  doc.text(`CA brut : ${detail.summary.grossTurnover} TND`)
-  doc.text(`Commission due : ${detail.summary.commissionDue} TND`)
-  doc.text(`Commission encaissée : ${detail.summary.commissionCollected} TND`)
-  doc.text(`Solde : ${detail.summary.balance} TND`)
+  const invoiceSequence = Math.max(detail.summary.reservations || 0, 1)
+  const invoiceNumber = `FACT-${year}-${String(month).padStart(2, '0')}-${String(invoiceSequence).padStart(3, '0')}`
+  doc.font('Helvetica-Bold').text(
+    `Facture n° : ${invoiceNumber}`,
+    rightColumnX,
+    infoSectionY,
+    { width: rightColumnWidth, align: 'right' },
+  )
 
-  doc.moveDown()
-  doc.fontSize(14).text('Détail des réservations', { underline: true })
-  doc.moveDown(0.5)
-  doc.fontSize(12)
+  doc.y = infoSectionY + 40
+  doc.font('Helvetica-Bold').fontSize(22).text(
+    'FACTURE DE COMMISSION',
+    marginLeft,
+    doc.y,
+    { width: contentWidth, align: 'center' },
+  )
+
+  doc.moveDown(1)
+  doc.font('Helvetica').fontSize(11)
+  doc.text(`Agence : ${detail.agency.name}`, marginLeft, doc.y)
+  doc.text(`Période : ${getMonthLabel(year, month)} ${year}`, marginLeft, doc.y)
+  doc.text(`Nombre de réservations : ${detail.summary.reservations}`, marginLeft, doc.y)
+
+  const tableX = marginLeft
+  const colWidths = [100, 120, 70, 110, 95]
+  const columnAlign: ('left' | 'center' | 'right')[] = ['left', 'left', 'center', 'right', 'right']
+  const rowHeight = 28
+  const tableWidth = colWidths.reduce((sum, width) => sum + width, 0)
+  const headerLabels = [
+    'Numéro de réservation',
+    'Nom du client',
+    'Nombre de jours',
+    'Montant de la réservation (TND)',
+    'Commission (TND)',
+  ]
+  const getPageBottom = () => doc.page.height - doc.page.margins.bottom
+
+  let tableY = doc.y + 20
+
+  const drawTableHeader = (y: number) => {
+    doc.save()
+    doc.fillColor('#007BFF').rect(tableX, y, tableWidth, rowHeight).fill()
+    doc.restore()
+
+    doc.save()
+    doc.lineWidth(1)
+    doc.strokeColor('#007BFF').rect(tableX, y, tableWidth, rowHeight).stroke()
+    doc.font('Helvetica-Bold').fontSize(10).fillColor('#FFFFFF')
+    let x = tableX
+    headerLabels.forEach((label, index) => {
+      doc.text(label, x + 5, y + 8, {
+        width: colWidths[index] - 10,
+        align: 'center',
+      })
+      x += colWidths[index]
+    })
+    doc.restore()
+    doc.y = y + rowHeight
+    return y + rowHeight
+  }
+
+  const drawRow = (
+    y: number,
+    values: string[],
+    backgroundColor: string,
+  ) => {
+    doc.save()
+    doc.fillColor(backgroundColor).rect(tableX, y, tableWidth, rowHeight).fill()
+    doc.restore()
+
+    doc.save()
+    doc.lineWidth(0.5)
+    doc.strokeColor('#D9E2EF').rect(tableX, y, tableWidth, rowHeight).stroke()
+    doc.font('Helvetica').fontSize(10).fillColor('#000000')
+    let x = tableX
+    values.forEach((value, index) => {
+      doc.text(value, x + 5, y + 8, {
+        width: colWidths[index] - 10,
+        align: columnAlign[index] || 'left',
+      })
+      x += colWidths[index]
+    })
+    doc.restore()
+    doc.y = y + rowHeight
+    return y + rowHeight
+  }
+
+  tableY = drawTableHeader(tableY)
 
   if (detail.bookings.length === 0) {
-    doc.text('Aucune réservation pour cette période.')
+    tableY = drawRow(
+      tableY,
+      ['Aucune réservation pour cette période', '', '', '', ''],
+      '#FFFFFF',
+    )
   } else {
-    detail.bookings.forEach((booking) => {
-      const paymentStatus = (() => {
-        switch (booking.paymentStatus) {
-          case bookcarsTypes.CommissionPaymentStatus.Paid:
-            return 'Payé'
-          case bookcarsTypes.CommissionPaymentStatus.Partial:
-            return 'Partiel'
-          default:
-            return 'Non payé'
-        }
-      })()
+    detail.bookings.forEach((booking, index) => {
+      if (tableY + rowHeight > getPageBottom()) {
+        doc.addPage()
+        tableY = drawTableHeader(doc.y)
+      }
 
-      doc.text(
-        `${booking.id} | du ${formatDate(booking.from)} au ${formatDate(booking.to)} | Total ${booking.totalPrice} TND | Commission ${booking.commission} TND | Statut commission : ${paymentStatus}`,
+      const fromDate = booking.from instanceof Date ? booking.from : new Date(booking.from)
+      const toDate = booking.to instanceof Date ? booking.to : new Date(booking.to)
+      const duration = Math.max(toDate.getTime() - fromDate.getTime(), 0)
+      const days = Math.max(1, Math.ceil(duration / (24 * 60 * 60 * 1000)))
+      const backgroundColor = index % 2 === 0 ? '#FFFFFF' : '#F8F9FA'
+
+      tableY = drawRow(
+        tableY,
+        [
+          booking.id,
+          booking.driverName || 'N/A',
+          String(days),
+          formatCurrency(booking.totalPrice),
+          formatCurrency(booking.commission),
+        ],
+        backgroundColor,
       )
     })
   }
+
+  const totalBoxHeight = 55
+  doc.y = tableY + 20
+  if (doc.y + totalBoxHeight > getPageBottom()) {
+    doc.addPage()
+    doc.y = doc.page.margins.top
+  }
+  const totalCommissionDue = Math.max(detail.summary.balance, 0)
+  const formattedTotal = formatCurrency(totalCommissionDue)
+
+  doc.save()
+  doc.fillColor('#E6F0FF').rect(tableX, doc.y, tableWidth, totalBoxHeight).fill()
+  doc.restore()
+
+  doc.font('Helvetica-Bold').fontSize(12).fillColor('#000000').text(
+    `TOTAL COMMISSION À PAYER : ${formattedTotal} TND`,
+    tableX + 15,
+    doc.y + 15,
+  )
+  doc.font('Helvetica').fontSize(10).fillColor('#D9534F').text(
+    '⚠️ Ce montant doit être réglé au plus tard le 15 du mois prochain.',
+    tableX + 15,
+    doc.y + 32,
+  )
+
+  doc.y += totalBoxHeight + 30
+  if (doc.y > getPageBottom()) {
+    doc.addPage()
+    doc.y = doc.page.margins.top
+  }
+  doc.font('Helvetica').fontSize(9).fillColor('#6C757D').text(
+    'Plany.tn – Location de voitures en Tunisie',
+    marginLeft,
+    doc.y,
+    { width: contentWidth, align: 'center' },
+  )
 
   doc.end()
 }
@@ -1262,7 +1447,7 @@ export const generateCommissionInvoice = async (req: Request, res: Response) => 
       return res.status(404).send(i18n.t('USER_NOT_FOUND'))
     }
 
-    streamCommissionInvoice(detail, res, parsedYear, parsedMonth)
+    await streamCommissionInvoice(detail, res, parsedYear, parsedMonth)
 
     return undefined
   } catch (err) {
@@ -1309,7 +1494,7 @@ export const downloadAgencyCommissionInvoice = async (req: Request, res: Respons
       return res.status(404).send(i18n.t('USER_NOT_FOUND'))
     }
 
-    streamCommissionInvoice(detail, res, parsedYear, monthValue)
+    await streamCommissionInvoice(detail, res, parsedYear, monthValue)
 
     return undefined
   } catch (err) {

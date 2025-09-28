@@ -6,7 +6,7 @@ import * as env from '../config/env.config'
 import * as helper from './helper'
 import * as bookcarsTypes from ':bookcars-types'
 
-const LOGO_URL = 'https://plany.tn/logo.png'
+const LOGO_URL = 'https://plany.tn/logo.tn'
 
 const basePrices: Record<bookcarsTypes.SubscriptionPlan, number> = {
   [bookcarsTypes.SubscriptionPlan.Free]: 0,

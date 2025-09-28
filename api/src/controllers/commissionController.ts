@@ -1068,7 +1068,6 @@ const streamBookingCommissionInvoice = async (
 
   const supplierRecord = booking.supplier as unknown as env.User | undefined
   const driverRecord = booking.driver as unknown as env.User | undefined
-  const carRecord = booking.car as unknown as env.Car | undefined
 
   const marginLeft = doc.page.margins.left
   const marginRight = doc.page.margins.right
@@ -1150,27 +1149,9 @@ const streamBookingCommissionInvoice = async (
   const days = Math.max(1, Math.ceil(duration / (24 * 60 * 60 * 1000)))
   const totalClient = normalizeNumber(booking.price || 0)
   const commissionDue = normalizeNumber(booking.commissionTotal || 0)
-  const netAgency = normalizeNumber(Math.max(totalClient - commissionDue, 0))
   const driverName = driverRecord?.fullName || driverRecord?.email || 'N/A'
 
-  doc.moveDown(1)
-  doc.font('Helvetica').fontSize(11)
-  doc.text(`Agence : ${agencyName}`, marginLeft, doc.y)
-  doc.text(`Réservation : ${bookingId}`, marginLeft, doc.y)
-  doc.text(`Client : ${driverName}`, marginLeft, doc.y)
-  doc.text(
-    `Période : ${fromDate.toLocaleDateString('fr-FR')} - ${toDate.toLocaleDateString('fr-FR')}`,
-    marginLeft,
-    doc.y,
-  )
-  if (carRecord?.name) {
-    doc.text(`Véhicule : ${carRecord.name}`, marginLeft, doc.y)
-  }
-  doc.text(`Nombre de jours : ${days}`, marginLeft, doc.y)
-  doc.text(`Total client : ${formatCurrency(totalClient)} TND`, marginLeft, doc.y)
-  doc.text(`Commission : ${formatCurrency(commissionDue)} TND`, marginLeft, doc.y)
-  doc.text(`Net agence : ${formatCurrency(netAgency)} TND`, marginLeft, doc.y)
-  doc.text(`Statut réservation : ${booking.status}`, marginLeft, doc.y)
+  doc.moveDown(2)
 
   const tableX = marginLeft
   const colWidths = [100, 120, 70, 110, 95]
@@ -1198,8 +1179,11 @@ const streamBookingCommissionInvoice = async (
     doc.strokeColor('#007BFF').rect(tableX, y, tableWidth, rowHeight).stroke()
     doc.font('Helvetica-Bold').fontSize(10).fillColor('#FFFFFF')
     let x = tableX
+    const textHeight = doc.currentLineHeight()
+    const textOffsetY = y + (rowHeight - textHeight) / 2
+
     headerLabels.forEach((label, index) => {
-      doc.text(label, x + 5, y + 8, {
+      doc.text(label, x + 5, textOffsetY, {
         width: colWidths[index] - 10,
         align: 'center',
       })
@@ -1222,9 +1206,11 @@ const streamBookingCommissionInvoice = async (
     doc.lineWidth(0.5)
     doc.strokeColor('#D9E2EF').rect(tableX, y, tableWidth, rowHeight).stroke()
     doc.font('Helvetica').fontSize(10).fillColor('#000000')
+    const textHeight = doc.currentLineHeight()
+    const textOffsetY = y + (rowHeight - textHeight) / 2
     let x = tableX
     values.forEach((value, index) => {
-      doc.text(value, x + 5, y + 8, {
+      doc.text(value, x + 5, textOffsetY, {
         width: colWidths[index] - 10,
         align: columnAlign[index] || 'left',
       })

@@ -169,8 +169,8 @@ describe('commissionController settings endpoints', () => {
       smsTemplate: 'Initial sms',
       updatedBy: new mongoose.Types.ObjectId(updatedById),
     })
-    settingsDocument.updatedAt = new Date()
-    ;(settingsDocument as any).save = jest.fn(async () => settingsDocument)
+    settingsDocument.updatedAt = new Date();
+(settingsDocument as any).save = jest.fn(async () => settingsDocument)
     jest.spyOn(AgencyCommissionSettings, 'findOne').mockResolvedValue(settingsDocument)
 
     const req = await createRequestWithToken(adminId, {

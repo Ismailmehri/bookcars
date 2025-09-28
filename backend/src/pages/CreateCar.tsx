@@ -209,8 +209,11 @@ const CreateCar = () => {
       maximumFractionDigits: 2,
     }).format(value)
 
-  const formatPriceWithCurrency = (value: number) =>
-    bookcarsHelper.formatPrice(value, commonStrings.CURRENCY, language)
+  const formatPriceWithCurrency = (value: number) => {
+    const sanitizedValue = Number.isFinite(value) ? value : 0
+    const roundedValue = Math.ceil(sanitizedValue)
+    return bookcarsHelper.formatPrice(roundedValue, commonStrings.CURRENCY, language)
+  }
 
   const formatDateForDisplay = (value: Date | null) => {
     if (!value) {
@@ -930,39 +933,37 @@ const CreateCar = () => {
                   '& .MuiCardHeader-content': {
                     minWidth: 0,
                   },
-                  '& .MuiCardHeader-action': {
-                    alignSelf: isMobile ? 'stretch' : 'center',
-                    width: isMobile ? '100%' : 'auto',
-                    mt: isMobile ? 2 : 0,
-                  },
                 }}
-                action={(
-                  <Stack
-                    direction={isMobile ? 'column' : 'row'}
-                    spacing={1}
-                    alignItems={isMobile ? 'stretch' : 'center'}
-                    sx={{ width: isMobile ? '100%' : 'auto' }}
-                  >
-                    <Chip
-                      label={strings.OPTIONAL_BADGE}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                      sx={{ alignSelf: isMobile ? 'flex-start' : 'center' }}
-                    />
-                    <Button
-                      variant="text"
-                      startIcon={<AutoAwesomeIcon fontSize="small" />}
-                      onClick={handleApplyDefaultPeriods}
-                      fullWidth={isMobile}
-                    >
-                      {strings.ADD_DEFAULT_PERIODS}
-                    </Button>
-                  </Stack>
-                )}
+                action={
+                  !isMobile && (
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip label={strings.OPTIONAL_BADGE} size="small" color="primary" variant="outlined" />
+                      <Button
+                        variant="text"
+                        startIcon={<AutoAwesomeIcon fontSize="small" />}
+                        onClick={handleApplyDefaultPeriods}
+                      >
+                        {strings.ADD_DEFAULT_PERIODS}
+                      </Button>
+                    </Stack>
+                  )
+                }
               />
               <CardContent>
                 <Stack spacing={3}>
+                  {isMobile && (
+                    <Stack spacing={1}>
+                      <Chip label={strings.OPTIONAL_BADGE} size="small" color="primary" variant="outlined" />
+                      <Button
+                        variant="text"
+                        startIcon={<AutoAwesomeIcon fontSize="small" />}
+                        onClick={handleApplyDefaultPeriods}
+                        fullWidth
+                      >
+                        {strings.ADD_DEFAULT_PERIODS}
+                      </Button>
+                    </Stack>
+                  )}
                   <Grid container spacing={2}>
                     <Grid item xs={12} md={3}>
                       <FormControl fullWidth margin="dense">
@@ -1019,7 +1020,7 @@ const CreateCar = () => {
                         <TextField
                           label={`${strings.AGENCY_PRICE_LABEL} (${commonStrings.CURRENCY}${commonStrings.DAILY})`}
                           type="number"
-                          inputProps={{ min: 0, step: 0.01 }}
+                          inputProps={{ min: 0, step: 1 }}
                           value={newPeriod.dailyPrice ?? ''}
                           variant="standard"
                           autoComplete="off"
@@ -1535,7 +1536,7 @@ const CreateCar = () => {
               <TextField
                 label={`${strings.AGENCY_PRICE_LABEL} (${commonStrings.CURRENCY}${commonStrings.DAILY})`}
                 type="number"
-                inputProps={{ min: 0, step: 0.01 }}
+                inputProps={{ min: 0, step: 1 }}
                 value={editingPeriod?.dailyPrice ?? ''}
                 variant="standard"
                 autoComplete="off"

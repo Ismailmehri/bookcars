@@ -6,9 +6,11 @@ export const getMonthlyCommissions = async (
   size: number,
   payload: bookcarsTypes.CommissionListPayload,
 ): Promise<bookcarsTypes.AgencyCommissionListResponse> => {
-  const response = await axiosInstance.post(`/api/commission/list/${page}/${size}`,
+  const response = await axiosInstance.post(
+`/api/commission/list/${page}/${size}`,
     payload,
-    { withCredentials: true })
+    { withCredentials: true }
+)
   return response.data
 }
 
@@ -17,9 +19,11 @@ export const exportMonthlyCommissions = async (
   size: number,
   payload: bookcarsTypes.CommissionListPayload,
 ): Promise<Blob> => {
-  const response = await axiosInstance.post(`/api/commission/export/${page}/${size}`,
+  const response = await axiosInstance.post(
+`/api/commission/export/${page}/${size}`,
     payload,
-    { responseType: 'blob', withCredentials: true })
+    { responseType: 'blob', withCredentials: true }
+)
 
   return response.data as Blob
 }
@@ -29,8 +33,10 @@ export const getAgencyCommissionDetails = async (
   year: number,
   month: number,
 ): Promise<bookcarsTypes.AgencyCommissionDetail> => {
-  const response = await axiosInstance.get(`/api/commission/details/${agencyId}/${year}/${month}`,
-    { withCredentials: true })
+  const response = await axiosInstance.get(
+`/api/commission/details/${agencyId}/${year}/${month}`,
+    { withCredentials: true }
+)
   return response.data
 }
 
@@ -67,17 +73,21 @@ export const generateInvoice = async (
   year: number,
   month: number,
 ): Promise<Blob> => {
-  const response = await axiosInstance.get(`/api/commission/invoice/${agencyId}/${year}/${month}`,
-    { responseType: 'blob', withCredentials: true })
+  const response = await axiosInstance.get(
+`/api/commission/invoice/${agencyId}/${year}/${month}`,
+    { responseType: 'blob', withCredentials: true }
+)
   return response.data as Blob
 }
 
 export const getAgencyCommissions = async (
   payload: bookcarsTypes.AgencyCommissionBookingsPayload,
 ): Promise<bookcarsTypes.AgencyCommissionBookingsResponse> => {
-  const response = await axiosInstance.post('/api/commission/agency/bookings',
+  const response = await axiosInstance.post(
+'/api/commission/agency/bookings',
     payload,
-    { withCredentials: true })
+    { withCredentials: true }
+)
   return response.data
 }
 
@@ -85,8 +95,10 @@ export const downloadMonthlyInvoice = async (
   agencyId: string,
   year: number,
   month: number,
-) => axiosInstance.get(`/api/commission/agency/${agencyId}/invoice/${year}/${month}`,
-  { responseType: 'blob', withCredentials: true })
+) => axiosInstance.get(
+`/api/commission/agency/${agencyId}/invoice/${year}/${month}`,
+  { responseType: 'blob', withCredentials: true }
+)
 
 export const downloadBookingInvoice = async (bookingId: string) => axiosInstance.get(
   `/api/commission/agency/invoice/booking/${bookingId}`,

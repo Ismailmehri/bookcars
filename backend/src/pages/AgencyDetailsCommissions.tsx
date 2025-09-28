@@ -91,7 +91,10 @@ const RESERVATION_STATUS_STYLES: Record<ReservationStatusKey, { background: stri
 
 type MonthlyCommissionStatusKey = 'paid' | 'unpaid' | 'partial' | 'followUp'
 
-const MONTHLY_COMMISSION_STATUS_CONFIG: Record<MonthlyCommissionStatusKey, { color: 'success' | 'warning' | 'info'; variant: 'filled' | 'outlined' }> = {
+const MONTHLY_COMMISSION_STATUS_CONFIG: Record<
+  MonthlyCommissionStatusKey,
+  { color: 'success' | 'warning' | 'info'; variant: 'filled' | 'outlined' }
+> = {
   paid: { color: 'success', variant: 'filled' },
   unpaid: { color: 'warning', variant: 'outlined' },
   partial: { color: 'info', variant: 'filled' },
@@ -115,13 +118,17 @@ const Kpi = ({ title, value, icon, loading, helperText, sx }: KpiProps) => (
     <CardContent>
       <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
         {icon}
-        <Typography variant="overline" color="text.secondary">{title}</Typography>
+        <Typography variant="overline" color="text.secondary">
+          {title}
+        </Typography>
       </Stack>
       {loading ? (
         <Skeleton width="60%" height={36} />
       ) : (
         <Stack spacing={0.5}>
-          <Typography variant="h5" fontWeight={900}>{value}</Typography>
+          <Typography variant="h5" fontWeight={900}>
+            {value}
+          </Typography>
           {helperText && (
             <Typography variant="caption" color="text.secondary" fontWeight={600}>
               {helperText}
@@ -133,9 +140,8 @@ const Kpi = ({ title, value, icon, loading, helperText, sx }: KpiProps) => (
   </Card>
 )
 
-const paymentColor = (status?: bookcarsTypes.CommissionStatus): 'success' | 'warning' => (
-  status === COMMISSION_STATUS_PAID ? 'success' : 'warning'
-)
+const paymentColor = (status?: bookcarsTypes.CommissionStatus): 'success' | 'warning' =>
+  (status === COMMISSION_STATUS_PAID ? 'success' : 'warning')
 
 const AgencyDetailsCommissions = () => {
   const navigate = useNavigate()
@@ -157,30 +163,35 @@ const AgencyDetailsCommissions = () => {
 
   const locale = LOCALE_MAP[user?.language || 'fr'] || 'fr-FR'
   const months = strings.MONTHS as string[]
-  const language = strings.getLanguage()
   const commissionPaymentLabels = strings.COMMISSION_PAYMENT_LABELS as Record<bookcarsTypes.CommissionStatus, string>
-  const bookingStatusOptions = useMemo(() => helper.getBookingStatuses(), [language])
+
+  // Pas besoin de dépendance "language" ici -> évite l'avertissement react-hooks/exhaustive-deps
+  const bookingStatusOptions = useMemo(() => helper.getBookingStatuses(), [])
 
   useEffect(() => {
+    let active = true
+
     if (!user?._id) {
       setData([])
       setSummary(null)
-      return
+      setLoading(false)
+      // cleanup cohérent pour "consistent-return"
+      return () => {
+        active = false
+      }
     }
 
-    let active = true
     setLoading(true)
+
     const timeout = window.setTimeout(() => {
       CommissionService.getAgencyCommissions({
-        suppliers: [user._id],
+        suppliers: [user._id as string],
         month,
         year,
         query: query.trim() || undefined,
       })
         .then((response) => {
-          if (!active) {
-            return
-          }
+          if (!active) return
 
           const rows = response.bookings.map((booking) => ({
             ...booking,
@@ -198,9 +209,7 @@ const AgencyDetailsCommissions = () => {
           }
         })
         .finally(() => {
-          if (active) {
-            setLoading(false)
-          }
+          if (active) setLoading(false)
         })
     }, 400)
 
@@ -210,90 +219,96 @@ const AgencyDetailsCommissions = () => {
     }
   }, [user?._id, month, year, query])
 
-  const filteredRows = useMemo(() => (
-    status === 'all'
-      ? data
-      : data.filter((booking) => booking.bookingStatus === status)
-  ), [data, status])
+  const filteredRows = useMemo(
+    () => (status === 'all' ? data : data.filter((booking) => booking.bookingStatus === status)),
+    [data, status]
+  )
 
-  const sortedRows = useMemo(() => [...filteredRows].sort((a, b) => b.totalClient - a.totalClient), [filteredRows])
+  const sortedRows = useMemo(
+    () => [...filteredRows].sort((a, b) => b.totalClient - a.totalClient),
+    [filteredRows]
+  )
 
   const computedSummary = useMemo(() => {
-    if (summary) {
-      return summary
-    }
+    if (summary) return summary
 
-    return data.reduce<bookcarsTypes.AgencyCommissionMonthlySummary>((acc, booking) => {
-      const isBillable = BILLABLE_STATUSES.has(booking.bookingStatus)
+    return data.reduce<bookcarsTypes.AgencyCommissionMonthlySummary>(
+      (acc, booking) => {
+        const isBillable = BILLABLE_STATUSES.has(booking.bookingStatus)
 
-      acc.grossAll += booking.totalClient
+        acc.grossAll += booking.totalClient
 
-      if (isBillable) {
-        acc.gross += booking.totalClient
-        acc.commission += booking.commission
-        acc.net += booking.netAgency
-        acc.reservations += 1
+        if (isBillable) {
+          acc.gross += booking.totalClient
+          acc.commission += booking.commission
+          acc.net += booking.netAgency
+          acc.reservations += 1
+        }
+
+        return acc
+      },
+      {
+        gross: 0,
+        grossAll: 0,
+        commission: 0,
+        net: 0,
+        reservations: 0,
+        commissionPercentage: env.COMMISSION_RATE,
       }
-
-      return acc
-    }, {
-      gross: 0,
-      grossAll: 0,
-      commission: 0,
-      net: 0,
-      reservations: 0,
-      commissionPercentage: env.COMMISSION_RATE,
-    })
+    )
   }, [data, summary])
 
-  const metrics = useMemo(() => ({
-    grossAll: formatCurrency(computedSummary.grossAll),
-    gross: formatCurrency(computedSummary.gross),
-    net: formatCurrency(computedSummary.net),
-    commission: formatCurrency(computedSummary.commission),
-    commissionRate: formatPercentage(computedSummary.commissionPercentage),
-    reservations: `${computedSummary.reservations}`,
-  }), [computedSummary])
+  const metrics = useMemo(
+    () => ({
+      grossAll: formatCurrency(computedSummary.grossAll),
+      gross: formatCurrency(computedSummary.gross),
+      net: formatCurrency(computedSummary.net),
+      commission: formatCurrency(computedSummary.commission),
+      commissionRate: formatPercentage(computedSummary.commissionPercentage),
+      reservations: `${computedSummary.reservations}`,
+    }),
+    [computedSummary]
+  )
 
-  const kpiItems = useMemo(() => ([
-    {
-      key: 'grossAll',
-      title: strings.KPI_GROSS_ALL,
-      value: metrics.grossAll,
-      icon: <InfoOutlinedIcon />,
-    },
-    {
-      key: 'gross',
-      title: strings.KPI_GROSS,
-      value: metrics.gross,
-      icon: <InfoOutlinedIcon />,
-    },
-    {
-      key: 'net',
-      title: strings.KPI_NET,
-      value: metrics.net,
-      icon: <PaidOutlinedIcon />,
-    },
-    {
-      key: 'commission',
-      title: strings.KPI_COMMISSION,
-      value: metrics.commission,
-      icon: <LocalOfferOutlinedIcon />,
-      helperText: strings.KPI_COMMISSION_PERCENTAGE.replace('{value}', metrics.commissionRate),
-    },
-    {
-      key: 'reservations',
-      title: strings.KPI_RESERVATIONS,
-      value: metrics.reservations,
-      icon: <PeopleAltOutlinedIcon />,
-    },
-  ]), [metrics])
+  const kpiItems = useMemo(
+    () => [
+      {
+        key: 'grossAll',
+        title: strings.KPI_GROSS_ALL,
+        value: metrics.grossAll,
+        icon: <InfoOutlinedIcon />,
+      },
+      {
+        key: 'gross',
+        title: strings.KPI_GROSS,
+        value: metrics.gross,
+        icon: <InfoOutlinedIcon />,
+      },
+      {
+        key: 'net',
+        title: strings.KPI_NET,
+        value: metrics.net,
+        icon: <PaidOutlinedIcon />,
+      },
+      {
+        key: 'commission',
+        title: strings.KPI_COMMISSION,
+        value: metrics.commission,
+        icon: <LocalOfferOutlinedIcon />,
+        helperText: strings.KPI_COMMISSION_PERCENTAGE.replace('{value}', metrics.commissionRate),
+      },
+      {
+        key: 'reservations',
+        title: strings.KPI_RESERVATIONS,
+        value: metrics.reservations,
+        icon: <PeopleAltOutlinedIcon />,
+      },
+    ],
+    [metrics]
+  )
 
   const displayedKpis = useMemo(() => {
-    if (isDesktop) {
-      return kpiItems
-    }
-
+    if (isDesktop) return kpiItems
     const mobileKeys = new Set(['gross', 'net', 'commission', 'reservations'])
     return kpiItems.filter((item) => mobileKeys.has(item.key))
   }, [isDesktop, kpiItems])
@@ -306,9 +321,7 @@ const AgencyDetailsCommissions = () => {
     let overdue = false
 
     data.forEach((booking) => {
-      if (!BILLABLE_STATUSES.has(booking.bookingStatus)) {
-        return
-      }
+      if (!BILLABLE_STATUSES.has(booking.bookingStatus)) return
 
       const commissionValue = booking.commission || 0
 
@@ -318,20 +331,12 @@ const AgencyDetailsCommissions = () => {
       }
 
       due += commissionValue
-
-      if (new Date(booking.to) < today) {
-        overdue = true
-      }
+      if (new Date(booking.to) < today) overdue = true
     })
 
     if (due <= 0) {
-      return {
-        key: 'paid' as MonthlyCommissionStatusKey,
-        label: labels.paid,
-        ...MONTHLY_COMMISSION_STATUS_CONFIG.paid,
-      }
+      return { key: 'paid' as MonthlyCommissionStatusKey, label: labels.paid, ...MONTHLY_COMMISSION_STATUS_CONFIG.paid }
     }
-
     if (overdue) {
       return {
         key: 'followUp' as MonthlyCommissionStatusKey,
@@ -339,7 +344,6 @@ const AgencyDetailsCommissions = () => {
         ...MONTHLY_COMMISSION_STATUS_CONFIG.followUp,
       }
     }
-
     if (collected > 0) {
       return {
         key: 'partial' as MonthlyCommissionStatusKey,
@@ -347,13 +351,8 @@ const AgencyDetailsCommissions = () => {
         ...MONTHLY_COMMISSION_STATUS_CONFIG.partial,
       }
     }
-
-    return {
-      key: 'unpaid' as MonthlyCommissionStatusKey,
-      label: labels.unpaid,
-      ...MONTHLY_COMMISSION_STATUS_CONFIG.unpaid,
-    }
-  }, [data, language])
+    return { key: 'unpaid' as MonthlyCommissionStatusKey, label: labels.unpaid, ...MONTHLY_COMMISSION_STATUS_CONFIG.unpaid }
+  }, [data])
 
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear()
@@ -386,7 +385,6 @@ const AgencyDetailsCommissions = () => {
         navigate('/admin-commissions', { replace: true })
         return
       }
-
       setUser(_user)
     }
   }
@@ -395,7 +393,6 @@ const AgencyDetailsCommissions = () => {
 
   const renderBookingStatusChip = (bookingStatus: bookcarsTypes.BookingStatus) => {
     const statusStyle = BOOKING_STATUS_CHIP_STYLES[bookingStatus] || FALLBACK_STATUS_CHIP_STYLE
-
     return (
       <Chip
         size="small"
@@ -405,9 +402,7 @@ const AgencyDetailsCommissions = () => {
           bgcolor: statusStyle.background,
           color: statusStyle.color,
           fontWeight: 600,
-          '& .MuiChip-label': {
-            fontWeight: 600,
-          },
+          '& .MuiChip-label': { fontWeight: 600 },
         }}
       />
     )
@@ -420,29 +415,19 @@ const AgencyDetailsCommissions = () => {
     ) {
       return 'cancelled'
     }
-
-    if (booking.bookingStatus === bookcarsTypes.BookingStatus.Paid) {
-      return 'paid'
-    }
+    if (booking.bookingStatus === bookcarsTypes.BookingStatus.Paid) return 'paid'
 
     const fromDate = new Date(booking.from)
     const toDate = new Date(booking.to)
 
-    if (referenceDate < fromDate) {
-      return 'reserved'
-    }
-
-    if (referenceDate > toDate) {
-      return 'completed'
-    }
-
+    if (referenceDate < fromDate) return 'reserved'
+    if (referenceDate > toDate) return 'completed'
     return 'ongoing'
   }
 
   const renderReservationStatusChip = (statusKey: ReservationStatusKey) => {
     const labels = strings.RESERVATION_STATUS as Record<ReservationStatusKey, string>
     const style = RESERVATION_STATUS_STYLES[statusKey]
-
     return (
       <Chip
         size="small"
@@ -451,9 +436,7 @@ const AgencyDetailsCommissions = () => {
           bgcolor: style.background,
           color: style.color,
           fontWeight: 600,
-          '& .MuiChip-label': {
-            fontWeight: 600,
-          },
+          '& .MuiChip-label': { fontWeight: 600 },
         }}
       />
     )
@@ -500,7 +483,7 @@ const AgencyDetailsCommissions = () => {
     ])
 
     const csvContent = [header, ...rows]
-      .map((row) => row.map((value) => `"${value.replace(/"/g, '""')}"`).join(';'))
+      .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(';'))
       .join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -508,9 +491,7 @@ const AgencyDetailsCommissions = () => {
   }
 
   const handleDownloadMonthlyInvoice = async () => {
-    if (!user?._id) {
-      return
-    }
+    if (!user?._id) return
 
     try {
       setMonthInvoiceLoading(true)
@@ -537,8 +518,10 @@ const AgencyDetailsCommissions = () => {
     }
   }
 
-  const handleCopyBookingNumber = async (bookingNumber: string) => {
+  // Accepte maintenant string | undefined pour corriger "Type 'string | undefined'..."
+  const handleCopyBookingNumber = async (bookingNumber?: string) => {
     try {
+      if (!bookingNumber) return
       if (navigator?.clipboard?.writeText) {
         await navigator.clipboard.writeText(bookingNumber)
       }
@@ -562,12 +545,7 @@ const AgencyDetailsCommissions = () => {
             >
               <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
                 <Stack spacing={0.75} sx={{ minWidth: 0 }}>
-                  <Typography
-                    variant="h5"
-                    fontWeight={800}
-                    noWrap
-                    sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
-                  >
+                  <Typography variant="h5" fontWeight={800} noWrap sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {strings.HEADER}
                   </Typography>
                   <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={0.5}>
@@ -627,14 +605,11 @@ const AgencyDetailsCommissions = () => {
               </Stack>
             </Box>
 
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              sx={{ display: { xs: 'none', lg: 'flex' } }}
-            >
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ display: { xs: 'none', lg: 'flex' } }}>
               <Stack direction="row" spacing={2} alignItems="center">
-                <Typography variant="h5" fontWeight={800}>{strings.HEADER}</Typography>
+                <Typography variant="h5" fontWeight={800}>
+                  {strings.HEADER}
+                </Typography>
                 <Chip size="small" variant="outlined" label={`${strings.PERIOD_LABEL} ${months[month]} ${year}`} />
               </Stack>
               <Stack direction="row" spacing={1}>
@@ -688,35 +663,31 @@ const AgencyDetailsCommissions = () => {
                     size="small"
                     fullWidth
                     value={status}
-                    onChange={(event) => setStatus(event.target.value as ('all' | bookcarsTypes.BookingStatus))}
+                    onChange={(event) => setStatus(event.target.value as 'all' | bookcarsTypes.BookingStatus)}
                   >
                     <MenuItem value="all">{strings.STATUS_ALL}</MenuItem>
                     {bookingStatusOptions.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
                     ))}
                   </Select>
                 </Grid>
                 <Grid item xs={12} sm={6} md={2}>
-                  <Select
-                    size="small"
-                    fullWidth
-                    value={month.toString()}
-                    onChange={(event) => setMonth(Number(event.target.value))}
-                  >
+                  <Select size="small" fullWidth value={month.toString()} onChange={(event) => setMonth(Number(event.target.value))}>
                     {months.map((label, index) => (
-                      <MenuItem key={label} value={index.toString()}>{label}</MenuItem>
+                      <MenuItem key={label} value={index.toString()}>
+                        {label}
+                      </MenuItem>
                     ))}
                   </Select>
                 </Grid>
                 <Grid item xs={8} sm={4} md={2}>
-                  <Select
-                    size="small"
-                    fullWidth
-                    value={year.toString()}
-                    onChange={(event) => setYear(Number(event.target.value))}
-                  >
+                  <Select size="small" fullWidth value={year.toString()} onChange={(event) => setYear(Number(event.target.value))}>
                     {yearOptions.map((option) => (
-                      <MenuItem key={option} value={option.toString()}>{option}</MenuItem>
+                      <MenuItem key={option} value={option.toString()}>
+                        {option}
+                      </MenuItem>
                     ))}
                   </Select>
                 </Grid>
@@ -771,35 +742,31 @@ const AgencyDetailsCommissions = () => {
                   size="small"
                   fullWidth
                   value={status}
-                  onChange={(event) => setStatus(event.target.value as ('all' | bookcarsTypes.BookingStatus))}
+                  onChange={(event) => setStatus(event.target.value as 'all' | bookcarsTypes.BookingStatus)}
                 >
                   <MenuItem value="all">{strings.STATUS_ALL}</MenuItem>
                   {bookingStatusOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
                   ))}
                 </Select>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <Select
-                      size="small"
-                      fullWidth
-                      value={month.toString()}
-                      onChange={(event) => setMonth(Number(event.target.value))}
-                    >
+                    <Select size="small" fullWidth value={month.toString()} onChange={(event) => setMonth(Number(event.target.value))}>
                       {months.map((label, index) => (
-                        <MenuItem key={label} value={index.toString()}>{label}</MenuItem>
+                        <MenuItem key={label} value={index.toString()}>
+                          {label}
+                        </MenuItem>
                       ))}
                     </Select>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Select
-                      size="small"
-                      fullWidth
-                      value={year.toString()}
-                      onChange={(event) => setYear(Number(event.target.value))}
-                    >
+                    <Select size="small" fullWidth value={year.toString()} onChange={(event) => setYear(Number(event.target.value))}>
                       {yearOptions.map((option) => (
-                        <MenuItem key={option} value={option.toString()}>{option}</MenuItem>
+                        <MenuItem key={option} value={option.toString()}>
+                          {option}
+                        </MenuItem>
                       ))}
                     </Select>
                   </Grid>
@@ -840,8 +807,11 @@ const AgencyDetailsCommissions = () => {
               ))}
             </Box>
 
-            <Typography variant="subtitle2" color="text.secondary">{strings.MONTHLY_BOOKINGS}</Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              {strings.MONTHLY_BOOKINGS}
+            </Typography>
 
+            {/* LISTE MOBILE */}
             <Box
               sx={{
                 display: { xs: 'flex', lg: 'none' },
@@ -850,12 +820,11 @@ const AgencyDetailsCommissions = () => {
               }}
             >
               {loading && sortedRows.length === 0
-                ? Array.from({ length: 3 }).map((_, index) => (
-                    <Paper
-                      // eslint-disable-next-line react/no-array-index-key
-                      key={index}
-                      elevation={0}
-                      sx={{
+                ? [0, 1, 2].map((id) => (
+                  <Paper
+                    key={`skeleton-${id}`}
+                    elevation={0}
+                    sx={{
                         p: 2,
                         borderRadius: 2,
                         boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
@@ -863,135 +832,135 @@ const AgencyDetailsCommissions = () => {
                         flexDirection: 'column',
                         gap: 1.5,
                       }}
-                    >
-                      <Skeleton variant="text" height={24} width="60%" />
-                      <Skeleton variant="text" height={18} width="80%" />
-                      <Skeleton variant="rectangular" height={32} />
-                    </Paper>
+                  >
+                    <Skeleton variant="text" height={24} width="60%" />
+                    <Skeleton variant="text" height={18} width="80%" />
+                    <Skeleton variant="rectangular" height={32} />
+                  </Paper>
                   ))
                 : !loading && sortedRows.length === 0
-                  ? (
-                    <Paper elevation={0} sx={{ p: 3, borderRadius: 2, boxShadow: '0 10px 24px rgba(15, 23, 42, 0.08)' }}>
-                      <Typography variant="body2" color="text.secondary" align="center">
-                        {strings.EMPTY_LIST}
-                      </Typography>
-                    </Paper>
+                ? (
+                  <Paper elevation={0} sx={{ p: 3, borderRadius: 2, boxShadow: '0 10px 24px rgba(15, 23, 42, 0.08)' }}>
+                    <Typography variant="body2" color="text.secondary" align="center">
+                      {strings.EMPTY_LIST}
+                    </Typography>
+                  </Paper>
                   )
-                  : (
-                    sortedRows.map((booking) => {
-                      const reservationStatus = getReservationStatus(booking, new Date())
-                      const isCancelled = reservationStatus === 'cancelled'
-                      const detailItems = [
-                        { label: strings.DAYS, value: `${booking.days}` },
-                        { label: strings.PRICE_PER_DAY, value: formatCurrency(booking.pricePerDay) },
-                        { label: strings.TOTAL_CLIENT, value: formatCurrency(booking.totalClient) },
-                        { label: strings.COMMISSION_PLANY, value: formatCurrency(booking.commission) },
-                        { label: strings.NET_AGENCY, value: formatCurrency(booking.netAgency) },
-                      ]
+                : (
+                  sortedRows.map((booking) => {
+                    const reservationStatus = getReservationStatus(booking, new Date())
+                    const isCancelled = reservationStatus === 'cancelled'
+                    const detailItems = [
+                      { label: strings.DAYS, value: `${booking.days}` },
+                      { label: strings.PRICE_PER_DAY, value: formatCurrency(booking.pricePerDay) },
+                      { label: strings.TOTAL_CLIENT, value: formatCurrency(booking.totalClient) },
+                      { label: strings.COMMISSION_PLANY, value: formatCurrency(booking.commission) },
+                      { label: strings.NET_AGENCY, value: formatCurrency(booking.netAgency) },
+                    ]
 
-                      return (
-                        <Paper
-                          key={booking.bookingId}
-                          elevation={0}
-                          sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 1.5,
-                            bgcolor: isCancelled ? '#f5f5f5' : 'common.white',
-                            opacity: isCancelled ? 0.7 : 1,
-                          }}
-                        >
-                          <Stack direction="row" justifyContent="space-between" spacing={1.5} alignItems="flex-start">
-                            <Stack spacing={0.5} sx={{ minWidth: 0 }}>
-                              <Tooltip title={`#${booking.bookingNumber}`}>
-                                <Button
-                                  variant="text"
-                                  size="small"
-                                  color="primary"
-                                  onClick={() => handleCopyBookingNumber(booking.bookingNumber)}
-                                  startIcon={<ContentCopyIcon fontSize="small" />}
-                                  sx={{
-                                    px: 0,
-                                    minWidth: 0,
-                                    justifyContent: 'flex-start',
-                                    textTransform: 'none',
-                                    fontWeight: 700,
-                                  }}
-                                  aria-label={`${strings.BOOKING_NUMBER} ${booking.bookingNumber}`}
-                                >
-                                  #{booking.bookingNumber}
-                                </Button>
-                              </Tooltip>
-                              <Tooltip title={booking.driver.fullName}>
-                                <Typography
-                                  component={Link}
-                                  href={`/user?u=${booking.driver._id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  underline="none"
-                                  variant="body2"
-                                  color="text.secondary"
-                                  noWrap
-                                  sx={{ display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                                >
-                                  {booking.driver.fullName}
-                                </Typography>
-                              </Tooltip>
-                            </Stack>
-                            {renderReservationStatusChip(reservationStatus)}
+                    return (
+                      <Paper
+                        key={booking.bookingId}
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 1.5,
+                          bgcolor: isCancelled ? '#f5f5f5' : 'common.white',
+                          opacity: isCancelled ? 0.7 : 1,
+                        }}
+                      >
+                        <Stack direction="row" justifyContent="space-between" spacing={1.5} alignItems="flex-start">
+                          <Stack spacing={0.5} sx={{ minWidth: 0 }}>
+                            <Tooltip title={`#${booking.bookingNumber ?? ''}`}>
+                              <Button
+                                variant="text"
+                                size="small"
+                                color="primary"
+                                onClick={() => handleCopyBookingNumber(booking.bookingNumber)}
+                                startIcon={<ContentCopyIcon fontSize="small" />}
+                                sx={{
+                                  px: 0,
+                                  minWidth: 0,
+                                  justifyContent: 'flex-start',
+                                  textTransform: 'none',
+                                  fontWeight: 700,
+                                }}
+                                aria-label={`${strings.BOOKING_NUMBER} ${booking.bookingNumber ?? ''}`}
+                              >
+                                #
+                                {booking.bookingNumber}
+                              </Button>
+                            </Tooltip>
+                            <Tooltip title={booking.driver.fullName}>
+                              <Typography
+                                component={Link}
+                                href={`/user?u=${booking.driver._id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                underline="none"
+                                variant="body2"
+                                color="text.secondary"
+                                noWrap
+                                sx={{ display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                              >
+                                {booking.driver.fullName}
+                              </Typography>
+                            </Tooltip>
                           </Stack>
-                          <Typography variant="body2" color="text.secondary">
-                            <Box component="span" fontWeight={600}>{`${strings.DRAWER_PERIOD}: `}</Box>
-                            {`${renderDate(booking.from)} → ${renderDate(booking.to)}`}
-                          </Typography>
-                          <Grid container spacing={1} columns={12}>
-                            {detailItems.map((item) => (
-                              <Grid item xs={6} key={item.label}>
-                                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
-                                  {item.label}
-                                </Typography>
-                                <Typography variant="body2" fontWeight={600}>{item.value}</Typography>
-                              </Grid>
-                            ))}
-                          </Grid>
-                          <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            <Tooltip title={strings.VIEW_DETAILS}>
+                          {renderReservationStatusChip(reservationStatus)}
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary">
+                          <Box component="span" fontWeight={600}>{`${strings.DRAWER_PERIOD}: `}</Box>
+                          {`${renderDate(booking.from)} → ${renderDate(booking.to)}`}
+                        </Typography>
+                        <Grid container spacing={1} columns={12}>
+                          {detailItems.map((item) => (
+                            <Grid item xs={6} key={item.label}>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                                {item.label}
+                              </Typography>
+                              <Typography variant="body2" fontWeight={600}>
+                                {item.value}
+                              </Typography>
+                            </Grid>
+                          ))}
+                        </Grid>
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <Tooltip title={strings.VIEW_DETAILS}>
+                            <IconButton
+                              color="primary"
+                              onClick={() => setDrawer(booking)}
+                              aria-label={strings.VIEW_DETAILS}
+                              sx={{ width: 48, height: 48 }}
+                            >
+                              <OpenInNewIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={strings.DOWNLOAD_INVOICE}>
+                            <span>
                               <IconButton
                                 color="primary"
-                                onClick={() => setDrawer(booking)}
-                                aria-label={strings.VIEW_DETAILS}
+                                onClick={() => handleDownloadBookingInvoice(booking.bookingId)}
+                                disabled={bookingInvoiceLoading === booking.bookingId}
+                                aria-label={strings.DOWNLOAD_INVOICE}
                                 sx={{ width: 48, height: 48 }}
                               >
-                                <OpenInNewIcon />
+                                {bookingInvoiceLoading === booking.bookingId ? <CircularProgress size={20} /> : <ReceiptLongIcon />}
                               </IconButton>
-                            </Tooltip>
-                            <Tooltip title={strings.DOWNLOAD_INVOICE}>
-                              <span>
-                                <IconButton
-                                  color="primary"
-                                  onClick={() => handleDownloadBookingInvoice(booking.bookingId)}
-                                  disabled={bookingInvoiceLoading === booking.bookingId}
-                                  aria-label={strings.DOWNLOAD_INVOICE}
-                                  sx={{ width: 48, height: 48 }}
-                                >
-                                  {bookingInvoiceLoading === booking.bookingId ? (
-                                    <CircularProgress size={20} />
-                                  ) : (
-                                    <ReceiptLongIcon />
-                                  )}
-                                </IconButton>
-                              </span>
-                            </Tooltip>
-                          </Stack>
-                        </Paper>
-                      )
-                    })
+                            </span>
+                          </Tooltip>
+                        </Stack>
+                      </Paper>
+                    )
+                  })
                   )}
             </Box>
 
+            {/* TABLEAU DESKTOP */}
             <Paper elevation={0} sx={{ display: { xs: 'none', lg: 'block' } }}>
               <Table>
                 <TableHead>
@@ -1036,6 +1005,7 @@ const AgencyDetailsCommissions = () => {
                           rel="noopener noreferrer"
                           underline="hover"
                         >
+                          {/* règle jsx-one-expression-per-line */}
                           {booking.bookingNumber}
                         </Link>
                       </TableCell>
@@ -1079,7 +1049,11 @@ const AgencyDetailsCommissions = () => {
                                 onClick={() => handleDownloadBookingInvoice(booking.bookingId)}
                                 disabled={bookingInvoiceLoading === booking.bookingId}
                               >
-                                {bookingInvoiceLoading === booking.bookingId ? <CircularProgress size={16} /> : <ReceiptLongIcon fontSize="small" />}
+                                {bookingInvoiceLoading === booking.bookingId ? (
+                                  <CircularProgress size={16} />
+                                ) : (
+                                  <ReceiptLongIcon fontSize="small" />
+                                )}
                               </IconButton>
                             </span>
                           </Tooltip>
@@ -1106,7 +1080,9 @@ const AgencyDetailsCommissions = () => {
             >
               <Box sx={{ p: 3, maxHeight: isDesktop ? 'none' : '90vh', overflowY: 'auto' }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1} flexWrap="wrap" rowGap={1}>
-                  <Typography variant="h6" fontWeight={800}>{strings.DRAWER_TITLE}</Typography>
+                  <Typography variant="h6" fontWeight={800}>
+                    {strings.DRAWER_TITLE}
+                  </Typography>
                   {drawer && (
                     <Button
                       variant="outlined"
@@ -1123,27 +1099,20 @@ const AgencyDetailsCommissions = () => {
                 {drawer && (
                   <>
                     <Grid container spacing={2} columns={12}>
-                      {[{
-                        label: strings.DAYS,
-                        value: `${drawer.days}`,
-                      }, {
-                        label: strings.PRICE_PER_DAY,
-                        value: formatCurrency(drawer.pricePerDay),
-                      }, {
-                        label: strings.TOTAL_CLIENT,
-                        value: formatCurrency(drawer.totalClient),
-                      }, {
-                        label: strings.COMMISSION_PLANY,
-                        value: formatCurrency(drawer.commission),
-                      }, {
-                        label: strings.NET_AGENCY,
-                        value: formatCurrency(drawer.netAgency),
-                      }].map((item) => (
+                      {[
+                        { label: strings.DAYS, value: `${drawer.days}` },
+                        { label: strings.PRICE_PER_DAY, value: formatCurrency(drawer.pricePerDay) },
+                        { label: strings.TOTAL_CLIENT, value: formatCurrency(drawer.totalClient) },
+                        { label: strings.COMMISSION_PLANY, value: formatCurrency(drawer.commission) },
+                        { label: strings.NET_AGENCY, value: formatCurrency(drawer.netAgency) },
+                      ].map((item) => (
                         <Grid item xs={6} key={item.label}>
                           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
                             {item.label}
                           </Typography>
-                          <Typography variant="body1" fontWeight={700}>{item.value}</Typography>
+                          <Typography variant="body1" fontWeight={700}>
+                            {item.value}
+                          </Typography>
                         </Grid>
                       ))}
                     </Grid>
@@ -1166,19 +1135,25 @@ const AgencyDetailsCommissions = () => {
 
                     <Divider sx={{ my: 3 }} />
 
-                    <Typography variant="subtitle2" color="text.secondary">{strings.DRAWER_BOOKING_SECTION}</Typography>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      {strings.DRAWER_BOOKING_SECTION}
+                    </Typography>
                     <Stack spacing={1.5} sx={{ mt: 1 }}>
                       <Box>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
                           {strings.BOOKING_NUMBER}
                         </Typography>
-                        <Typography variant="body1" fontWeight={700}>{drawer.bookingNumber}</Typography>
+                        <Typography variant="body1" fontWeight={700}>
+                          {drawer.bookingNumber}
+                        </Typography>
                       </Box>
                       <Box>
                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
                           {strings.CLIENT}
                         </Typography>
-                        <Typography variant="body1" fontWeight={700}>{drawer.driver.fullName}</Typography>
+                        <Typography variant="body1" fontWeight={700}>
+                          {drawer.driver.fullName}
+                        </Typography>
                       </Box>
                     </Stack>
                   </>

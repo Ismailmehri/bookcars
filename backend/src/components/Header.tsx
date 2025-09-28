@@ -36,6 +36,7 @@ import {
   FactCheck as VerificationIcon
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
 import * as bookcarsTypes from ':bookcars-types'
 import env from '@/config/env.config'
 import { strings } from '@/lang/header'
@@ -46,8 +47,6 @@ import Avatar from './Avatar'
 import * as langHelper from '@/common/langHelper'
 import * as helper from '@/common/helper'
 import { useGlobalContext, GlobalContextType } from '@/context/GlobalContext'
-
-import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'
 
 import '@/assets/css/header.css'
 

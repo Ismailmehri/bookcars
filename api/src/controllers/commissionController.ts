@@ -28,7 +28,7 @@ type CommissionEventRecord = Omit<env.AgencyCommissionEvent, 'admin'> & {
   admin?: env.User | mongoose.Types.ObjectId
 }
 const CSV_SEPARATOR = ';'
-const LOGO_URL = 'https://plany.tn/logo.tn'
+const LOGO_URL = 'https://plany.tn/logo.png'
 
 const ensureAdmin = async (req: Request): Promise<env.User | null> => {
   const sessionData = await authHelper.getSessionData(req)
@@ -76,6 +76,20 @@ const normalizeNumber = (value: number | undefined | null): number => {
     return 0
   }
   return Math.round(value)
+}
+
+const formatCurrency = (value: number) => value.toLocaleString('fr-FR', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+const fetchLogo = async (): Promise<Buffer | null> => {
+  try {
+    const response = await axios.get(LOGO_URL, { responseType: 'arraybuffer' })
+    return Buffer.from(response.data)
+  } catch {
+    return null
+  }
 }
 
 const COMMISSION_ELIGIBLE_STATUSES: bookcarsTypes.BookingStatus[] = [
@@ -818,18 +832,7 @@ const streamCommissionInvoice = async (
 
   doc.pipe(res)
 
-  let logo: Buffer | null = null
-  try {
-    const response = await axios.get(LOGO_URL, { responseType: 'arraybuffer' })
-    logo = Buffer.from(response.data)
-  } catch {
-    logo = null
-  }
-
-  const formatCurrency = (value: number) => value.toLocaleString('fr-FR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
+  const logo = await fetchLogo()
 
   const marginLeft = doc.page.margins.left
   const marginRight = doc.page.margins.right
@@ -1028,7 +1031,7 @@ const streamCommissionInvoice = async (
     doc.y + 15,
   )
   doc.font('Helvetica').fontSize(10).fillColor('#D9534F').text(
-    '⚠️ Ce montant doit être réglé au plus tard le 15 du mois prochain.',
+    'Ce montant doit être réglé au plus tard le 15 du mois prochain.',
     tableX + 15,
     doc.y + 32,
   )
@@ -1038,6 +1041,242 @@ const streamCommissionInvoice = async (
     doc.addPage()
     doc.y = doc.page.margins.top
   }
+  doc.font('Helvetica').fontSize(9).fillColor('#6C757D').text(
+    'Plany.tn – Location de voitures en Tunisie',
+    marginLeft,
+    doc.y,
+    { width: contentWidth, align: 'center' },
+  )
+
+  doc.end()
+}
+
+const streamBookingCommissionInvoice = async (
+  booking: env.Booking,
+  res: Response,
+) => {
+  const doc = new PDFDocument({ margin: 50 })
+  const bookingId = booking._id.toString()
+  const filename = `commission_booking_${bookingId}.pdf`
+
+  res.setHeader('Content-Type', 'application/pdf')
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+
+  doc.pipe(res)
+
+  const logo = await fetchLogo()
+
+  const supplierRecord = booking.supplier as unknown as env.User | undefined
+  const driverRecord = booking.driver as unknown as env.User | undefined
+  const carRecord = booking.car as unknown as env.Car | undefined
+
+  const marginLeft = doc.page.margins.left
+  const marginRight = doc.page.margins.right
+  const contentWidth = doc.page.width - marginLeft - marginRight
+  const rightColumnWidth = 220
+  const rightColumnX = marginLeft + contentWidth - rightColumnWidth
+  const headerStartY = doc.y
+
+  if (logo) {
+    doc.image(logo, marginLeft, headerStartY, { height: 80 })
+  }
+
+  let agencyInfoY = headerStartY
+  const agencyName = supplierRecord?.fullName || 'Agence partenaire'
+  doc.font('Helvetica-Bold').fontSize(12).fillColor('#000000').text(
+    agencyName,
+    rightColumnX,
+    agencyInfoY,
+    { width: rightColumnWidth, align: 'right' },
+  )
+  agencyInfoY = doc.y
+  doc.font('Helvetica').fontSize(10)
+  const agencyLocation = supplierRecord?.location || 'Tunisie'
+  doc.text(
+    agencyLocation,
+    rightColumnX,
+    agencyInfoY,
+    { width: rightColumnWidth, align: 'right' },
+  )
+  agencyInfoY = doc.y
+  if (supplierRecord?.email) {
+    doc.text(
+      supplierRecord.email,
+      rightColumnX,
+      agencyInfoY,
+      { width: rightColumnWidth, align: 'right' },
+    )
+    agencyInfoY = doc.y
+  }
+  if (supplierRecord?.phone) {
+    doc.text(
+      supplierRecord.phone,
+      rightColumnX,
+      agencyInfoY,
+      { width: rightColumnWidth, align: 'right' },
+    )
+    agencyInfoY = doc.y
+  }
+
+  const headerBottom = Math.max(headerStartY + (logo ? 80 : 0), agencyInfoY)
+  const infoSectionY = headerBottom + 20
+  const today = new Date()
+
+  doc.font('Helvetica').fontSize(10).fillColor('#000000').text(
+    `Date : ${today.toLocaleDateString('fr-FR')}`,
+    marginLeft,
+    infoSectionY,
+  )
+
+  const invoiceNumber = `FACT-RES-${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${bookingId.slice(-6).toUpperCase()}`
+  doc.font('Helvetica-Bold').text(
+    `Facture n° : ${invoiceNumber}`,
+    rightColumnX,
+    infoSectionY,
+    { width: rightColumnWidth, align: 'right' },
+  )
+
+  doc.y = infoSectionY + 40
+  doc.font('Helvetica-Bold').fontSize(22).text(
+    'FACTURE DE COMMISSION',
+    marginLeft,
+    doc.y,
+    { width: contentWidth, align: 'center' },
+  )
+
+  const fromDate = booking.from instanceof Date ? booking.from : new Date(booking.from)
+  const toDate = booking.to instanceof Date ? booking.to : new Date(booking.to)
+  const duration = Math.max(toDate.getTime() - fromDate.getTime(), 0)
+  const days = Math.max(1, Math.ceil(duration / (24 * 60 * 60 * 1000)))
+  const totalClient = normalizeNumber(booking.price || 0)
+  const commissionDue = normalizeNumber(booking.commissionTotal || 0)
+  const netAgency = normalizeNumber(Math.max(totalClient - commissionDue, 0))
+  const driverName = driverRecord?.fullName || driverRecord?.email || 'N/A'
+
+  doc.moveDown(1)
+  doc.font('Helvetica').fontSize(11)
+  doc.text(`Agence : ${agencyName}`, marginLeft, doc.y)
+  doc.text(`Réservation : ${bookingId}`, marginLeft, doc.y)
+  doc.text(`Client : ${driverName}`, marginLeft, doc.y)
+  doc.text(
+    `Période : ${fromDate.toLocaleDateString('fr-FR')} - ${toDate.toLocaleDateString('fr-FR')}`,
+    marginLeft,
+    doc.y,
+  )
+  if (carRecord?.name) {
+    doc.text(`Véhicule : ${carRecord.name}`, marginLeft, doc.y)
+  }
+  doc.text(`Nombre de jours : ${days}`, marginLeft, doc.y)
+  doc.text(`Total client : ${formatCurrency(totalClient)} TND`, marginLeft, doc.y)
+  doc.text(`Commission : ${formatCurrency(commissionDue)} TND`, marginLeft, doc.y)
+  doc.text(`Net agence : ${formatCurrency(netAgency)} TND`, marginLeft, doc.y)
+  doc.text(`Statut réservation : ${booking.status}`, marginLeft, doc.y)
+
+  const tableX = marginLeft
+  const colWidths = [100, 120, 70, 110, 95]
+  const columnAlign: ('left' | 'center' | 'right')[] = ['left', 'left', 'center', 'right', 'right']
+  const rowHeight = 28
+  const tableWidth = colWidths.reduce((sum, width) => sum + width, 0)
+  const headerLabels = [
+    'Numéro de réservation',
+    'Nom du client',
+    'Nombre de jours',
+    'Montant de la réservation (TND)',
+    'Commission (TND)',
+  ]
+  const getPageBottom = () => doc.page.height - doc.page.margins.bottom
+
+  let tableY = doc.y + 20
+
+  const drawTableHeader = (y: number) => {
+    doc.save()
+    doc.fillColor('#007BFF').rect(tableX, y, tableWidth, rowHeight).fill()
+    doc.restore()
+
+    doc.save()
+    doc.lineWidth(1)
+    doc.strokeColor('#007BFF').rect(tableX, y, tableWidth, rowHeight).stroke()
+    doc.font('Helvetica-Bold').fontSize(10).fillColor('#FFFFFF')
+    let x = tableX
+    headerLabels.forEach((label, index) => {
+      doc.text(label, x + 5, y + 8, {
+        width: colWidths[index] - 10,
+        align: 'center',
+      })
+      x += colWidths[index]
+    })
+    doc.restore()
+    doc.y = y + rowHeight
+    return y + rowHeight
+  }
+
+  const drawRow = (
+    y: number,
+    values: string[],
+  ) => {
+    doc.save()
+    doc.fillColor('#FFFFFF').rect(tableX, y, tableWidth, rowHeight).fill()
+    doc.restore()
+
+    doc.save()
+    doc.lineWidth(0.5)
+    doc.strokeColor('#D9E2EF').rect(tableX, y, tableWidth, rowHeight).stroke()
+    doc.font('Helvetica').fontSize(10).fillColor('#000000')
+    let x = tableX
+    values.forEach((value, index) => {
+      doc.text(value, x + 5, y + 8, {
+        width: colWidths[index] - 10,
+        align: columnAlign[index] || 'left',
+      })
+      x += colWidths[index]
+    })
+    doc.restore()
+    doc.y = y + rowHeight
+    return y + rowHeight
+  }
+
+  tableY = drawTableHeader(tableY)
+
+  tableY = drawRow(
+    tableY,
+    [
+      bookingId,
+      driverName,
+      String(days),
+      formatCurrency(totalClient),
+      formatCurrency(commissionDue),
+    ],
+  )
+
+  const totalBoxHeight = 55
+  doc.y = tableY + 20
+  if (doc.y + totalBoxHeight > getPageBottom()) {
+    doc.addPage()
+    doc.y = doc.page.margins.top
+  }
+  const formattedTotal = formatCurrency(Math.max(commissionDue, 0))
+
+  doc.save()
+  doc.fillColor('#E6F0FF').rect(tableX, doc.y, tableWidth, totalBoxHeight).fill()
+  doc.restore()
+
+  doc.font('Helvetica-Bold').fontSize(12).fillColor('#000000').text(
+    `TOTAL COMMISSION À PAYER : ${formattedTotal} TND`,
+    tableX + 15,
+    doc.y + 15,
+  )
+  doc.font('Helvetica').fontSize(10).fillColor('#D9534F').text(
+    'Ce montant doit être réglé au plus tard le 15 du mois prochain.',
+    tableX + 15,
+    doc.y + 32,
+  )
+
+  doc.y += totalBoxHeight + 30
+  if (doc.y > getPageBottom()) {
+    doc.addPage()
+    doc.y = doc.page.margins.top
+  }
+
   doc.font('Helvetica').fontSize(9).fillColor('#6C757D').text(
     'Plany.tn – Location de voitures en Tunisie',
     marginLeft,
@@ -1538,51 +1777,7 @@ export const downloadAgencyBookingInvoice = async (req: Request, res: Response) 
       return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
     }
 
-    const totalClient = normalizeNumber(booking.price || 0)
-    const commission = normalizeNumber(booking.commissionTotal || 0)
-    const netAgency = normalizeNumber(Math.max(totalClient - commission, 0))
-    const fromDate = booking.from instanceof Date ? booking.from : new Date(booking.from)
-    const toDate = booking.to instanceof Date ? booking.to : new Date(booking.to)
-    const duration = Math.max(toDate.getTime() - fromDate.getTime(), 0)
-    const days = Math.max(1, Math.ceil(duration / (24 * 60 * 60 * 1000)))
-    const pricePerDay = Math.round(totalClient / days)
-
-    const driverRecord = booking.driver as env.User | undefined
-    const carRecord = booking.car as env.Car | undefined
-
-    const doc = new PDFDocument({ margin: 50 })
-    const filename = `commission_booking_${bookingId}.pdf`
-
-    res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
-
-    doc.pipe(res)
-
-    doc.fontSize(18).text('Commission réservation', { align: 'center' })
-    doc.moveDown()
-    doc.fontSize(12).text(`Réservation : ${bookingId}`)
-    if (supplierRecord?.fullName) {
-      doc.text(`Agence : ${supplierRecord.fullName}`)
-    }
-    if (carRecord?.name) {
-      doc.text(`Véhicule : ${carRecord.name}`)
-    }
-    if (driverRecord?.fullName) {
-      doc.text(`Client : ${driverRecord.fullName}`)
-    } else if (driverRecord?.email) {
-      doc.text(`Client : ${driverRecord.email}`)
-    }
-    doc.text(`Période : ${formatDate(fromDate)} - ${formatDate(toDate)}`)
-    doc.text(`Nombre de jours : ${days}`)
-
-    doc.moveDown()
-    doc.text(`Prix par jour : ${pricePerDay} TND`)
-    doc.text(`Total client : ${totalClient} TND`)
-    doc.text(`Commission : ${commission} TND`)
-    doc.text(`Net agence : ${netAgency} TND`)
-    doc.text(`Statut réservation : ${booking.status}`)
-
-    doc.end()
+    await streamBookingCommissionInvoice(booking, res)
 
     return undefined
   } catch (err) {

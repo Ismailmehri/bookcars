@@ -1,6 +1,7 @@
 import LocalizedStrings from 'react-localization'
 import env from '@/config/env.config'
 import * as langHelper from '@/common/langHelper'
+import { strings as commonStrings } from '@/lang/common'
 
 const strings = new LocalizedStrings({
   fr: {
@@ -16,10 +17,20 @@ const strings = new LocalizedStrings({
     AGENCY_PRICE_LABEL: 'Prix agence',
     CLIENT_PRICE_LABEL: 'Prix client',
     COMMISSION_LABEL: 'Commission Plany',
+    AGENCY_PRICE_COLUMN_LABEL: `Prix agence (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
+    CLIENT_PRICE_COLUMN_LABEL: `Prix client (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
+    COMMISSION_COLUMN_LABEL: `Commission (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
     CLIENT_PRICE_INFO_TITLE: 'Affichage des prix côté client',
     CLIENT_PRICE_INFO_BODY:
       "Plany calcule le prix affiché au client à partir du prix agence, en ajoutant la commission Plany. Les remises de longue durée s'appliquent ensuite sur le prix affiché. Les prix spéciaux par période remplacent le prix par défaut lorsqu'ils sont applicables.",
     COMMISSION_DETAIL_WITH_AMOUNT: 'Inclut commission Plany, {rate} ({amount})',
+    SPECIAL_PRICE_TITLE: 'Tarifs spéciaux par période',
+    SPECIAL_PRICE_SUBHEADER: 'Utilisez des plages de dates pour ajuster automatiquement le prix client pendant les temps forts.',
+    OPTIONAL_BADGE: 'Optionnel',
+    ADD_PERIOD: 'Ajouter la période',
+    EDIT_PERIOD_TITLE: 'Modifier le tarif spécial',
+    EDIT_PERIOD_DESCRIPTION: 'Ajustez les dates et les montants. Le prix client sera mis à jour automatiquement avec la commission Plany.',
+    SAVE_CHANGES: 'Enregistrer',
     START_DATE: 'Date de début',
     ACTIONS_BUTTON: 'Actions',
     END_DATE: 'Date de fin',
@@ -64,10 +75,20 @@ const strings = new LocalizedStrings({
     AGENCY_PRICE_LABEL: 'Agency price',
     CLIENT_PRICE_LABEL: 'Client price',
     COMMISSION_LABEL: 'Plany commission',
+    AGENCY_PRICE_COLUMN_LABEL: `Agency price (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
+    CLIENT_PRICE_COLUMN_LABEL: `Client price (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
+    COMMISSION_COLUMN_LABEL: `Commission (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
     CLIENT_PRICE_INFO_TITLE: 'Client-facing price display',
     CLIENT_PRICE_INFO_BODY:
       'Plany calculates the price shown to clients from the agency price by adding the Plany commission. Long-term discounts are then applied on top of the client price. Special prices per period replace the default price whenever they apply.',
     COMMISSION_DETAIL_WITH_AMOUNT: 'Includes Plany commission, {rate} ({amount})',
+    SPECIAL_PRICE_TITLE: 'Special pricing by period',
+    SPECIAL_PRICE_SUBHEADER: 'Use date windows to automatically adapt the client price for peak demand.',
+    OPTIONAL_BADGE: 'Optional',
+    ADD_PERIOD: 'Add period',
+    EDIT_PERIOD_TITLE: 'Edit special price',
+    EDIT_PERIOD_DESCRIPTION: 'Update the date range and agency price. The client price automatically reflects the Plany commission.',
+    SAVE_CHANGES: 'Save changes',
     DAILY_PRICE: 'Daily Price',
     START_DATE: 'Date de début',
     ACTIONS_BUTTON: 'Actions',

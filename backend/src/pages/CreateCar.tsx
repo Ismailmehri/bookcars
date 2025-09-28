@@ -189,8 +189,10 @@ const CreateCar = () => {
     dailyPrice: null,
     reason: '',
   })
+  const [newPeriodError, setNewPeriodError] = useState<string | null>(null)
   const [editingPeriodIndex, setEditingPeriodIndex] = useState<number | null>(null)
   const [editingPeriod, setEditingPeriod] = useState<PricePeriod | null>(null)
+  const [editPeriodError, setEditPeriodError] = useState<string | null>(null)
   const [newUnavailablePeriod, setNewUnavailablePeriod] = useState<UnavailablePeriod>({
     startDate: null,
     endDate: null,
@@ -268,22 +270,67 @@ const CreateCar = () => {
   )
 
   const isEditDialogOpen = editingPeriodIndex !== null && editingPeriod !== null
-  const isEditingPeriodValid = Boolean(
-    editingPeriod &&
-      editingPeriod.startDate &&
-      editingPeriod.endDate &&
-      editingPeriod.dailyPrice &&
-      Number(editingPeriod.dailyPrice) > 0
-  )
+
+  const getPeriodValidationError = (period: PricePeriod | null): string | null => {
+    if (!period) {
+      return strings.PERIOD_REQUIRED_ERROR
+    }
+
+    const { startDate, endDate, dailyPrice } = period
+
+    if (!startDate || !endDate || dailyPrice === null || dailyPrice === undefined) {
+      return strings.PERIOD_REQUIRED_ERROR
+    }
+
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return strings.PERIOD_REQUIRED_ERROR
+    }
+
+    if (start > end) {
+      return strings.PERIOD_DATE_ORDER_ERROR
+    }
+
+    const numericPrice = typeof dailyPrice === 'string' ? Number.parseFloat(dailyPrice) : dailyPrice
+
+    if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
+      return strings.PERIOD_PRICE_ERROR
+    }
+
+    return null
+  }
+
+  const isEditingPeriodValid = !getPeriodValidationError(editingPeriod)
 
   const handleAddPeriod = () => {
-    if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice) {
+    const validationError = getPeriodValidationError(newPeriod)
+
+    if (validationError) {
+      setNewPeriodError(validationError)
+      return
+    }
+
+    if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice !== null) {
       const start = new Date(newPeriod.startDate)
       const end = new Date(newPeriod.endDate)
-      if (start <= end) {
-        setPricePeriods([...pricePeriods, { ...newPeriod, startDate: start, endDate: end }])
-        setNewPeriod({ startDate: null, endDate: null, dailyPrice: null, reason: '' })
-      }
+      const dailyPriceValue =
+        typeof newPeriod.dailyPrice === 'string'
+          ? Number.parseFloat(newPeriod.dailyPrice)
+          : newPeriod.dailyPrice
+
+      setPricePeriods([
+        ...pricePeriods,
+        {
+          ...newPeriod,
+          startDate: start,
+          endDate: end,
+          dailyPrice: dailyPriceValue,
+        },
+      ])
+      setNewPeriod({ startDate: null, endDate: null, dailyPrice: null, reason: '' })
+      setNewPeriodError(null)
     }
   }
 
@@ -301,19 +348,29 @@ const CreateCar = () => {
       dailyPrice: periodToEdit.dailyPrice,
       reason: periodToEdit.reason || '',
     })
+    setEditPeriodError(null)
   }
 
   const handleEditingPeriodChange = <K extends keyof PricePeriod>(key: K, value: PricePeriod[K]) => {
     setEditingPeriod((prev) => (prev ? { ...prev, [key]: value } : prev))
+    setEditPeriodError(null)
   }
 
   const handleCloseEditPeriod = () => {
     setEditingPeriodIndex(null)
     setEditingPeriod(null)
+    setEditPeriodError(null)
   }
 
   const handleSaveEditedPeriod = () => {
     if (editingPeriodIndex === null || !editingPeriod) {
+      return
+    }
+
+    const validationError = getPeriodValidationError(editingPeriod)
+
+    if (validationError) {
+      setEditPeriodError(validationError)
       return
     }
 
@@ -327,6 +384,7 @@ const CreateCar = () => {
     }
 
     setPricePeriods(updatedPeriods)
+    setEditPeriodError(null)
     handleCloseEditPeriod()
   }
 
@@ -867,13 +925,36 @@ const CreateCar = () => {
               <CardHeader
                 title={strings.SPECIAL_PRICE_TITLE}
                 subheader={strings.SPECIAL_PRICE_SUBHEADER}
+                subheaderTypographyProps={{ sx: { whiteSpace: 'normal' } }}
+                sx={{
+                  '& .MuiCardHeader-content': {
+                    minWidth: 0,
+                  },
+                  '& .MuiCardHeader-action': {
+                    alignSelf: isMobile ? 'stretch' : 'center',
+                    width: isMobile ? '100%' : 'auto',
+                    mt: isMobile ? 2 : 0,
+                  },
+                }}
                 action={(
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                    <Chip label={strings.OPTIONAL_BADGE} size="small" color="primary" variant="outlined" />
+                  <Stack
+                    direction={isMobile ? 'column' : 'row'}
+                    spacing={1}
+                    alignItems={isMobile ? 'stretch' : 'center'}
+                    sx={{ width: isMobile ? '100%' : 'auto' }}
+                  >
+                    <Chip
+                      label={strings.OPTIONAL_BADGE}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      sx={{ alignSelf: isMobile ? 'flex-start' : 'center' }}
+                    />
                     <Button
                       variant="text"
                       startIcon={<AutoAwesomeIcon fontSize="small" />}
                       onClick={handleApplyDefaultPeriods}
+                      fullWidth={isMobile}
                     >
                       {strings.ADD_DEFAULT_PERIODS}
                     </Button>
@@ -889,7 +970,10 @@ const CreateCar = () => {
                           label={strings.START_DATE}
                           value={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
                           maxDate={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
-                          onChange={(date) => setNewPeriod({ ...newPeriod, startDate: date })}
+                          onChange={(date) => {
+                            setNewPeriod({ ...newPeriod, startDate: date })
+                            setNewPeriodError(null)
+                          }}
                           language={language}
                           showTime={false}
                         />
@@ -901,7 +985,10 @@ const CreateCar = () => {
                           label={strings.END_DATE}
                           value={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
                           minDate={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
-                          onChange={(date) => setNewPeriod({ ...newPeriod, endDate: date })}
+                          onChange={(date) => {
+                            setNewPeriod({ ...newPeriod, endDate: date })
+                            setNewPeriodError(null)
+                          }}
                           language={language}
                           showTime={false}
                         />
@@ -914,8 +1001,10 @@ const CreateCar = () => {
                           label={strings.REASON}
                           value={newPeriod.reason || ''}
                           variant="standard"
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setNewPeriod({ ...newPeriod, reason: e.target.value })}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            setNewPeriod({ ...newPeriod, reason: e.target.value })
+                            setNewPeriodError(null)
+                          }}
                         >
                           <MenuItem value="">-</MenuItem>
                           <MenuItem value={strings.EID_AL_FITR}>{strings.EID_AL_FITR}</MenuItem>
@@ -934,8 +1023,10 @@ const CreateCar = () => {
                           value={newPeriod.dailyPrice ?? ''}
                           variant="standard"
                           autoComplete="off"
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            setNewPeriod({ ...newPeriod, dailyPrice: e.target.value ? Number(e.target.value) : null })}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            setNewPeriod({ ...newPeriod, dailyPrice: e.target.value ? Number(e.target.value) : null })
+                            setNewPeriodError(null)
+                          }}
                         />
                         {newPeriodCommissionInfo && (
                           <FormHelperText sx={{ mt: 1 }}>
@@ -950,16 +1041,23 @@ const CreateCar = () => {
                         )}
                       </FormControl>
                     </Grid>
-                    <Grid item xs={12} md={12} lg={3} sx={{ display: 'flex', alignItems: 'flex-end' }}>
-                      <Button
-                        variant="contained"
-                        size="medium"
-                        onClick={handleAddPeriod}
-                        disabled={!newPeriod.startDate || !newPeriod.endDate || !newPeriod.dailyPrice}
-                        fullWidth={isMobile}
-                      >
-                        {strings.ADD_PERIOD}
-                      </Button>
+                    <Grid item xs={12} md={3}>
+                      <Stack spacing={1} sx={{ height: '100%', justifyContent: 'flex-end' }}>
+                        <Button
+                          variant="contained"
+                          size="medium"
+                          onClick={handleAddPeriod}
+                          disabled={Boolean(getPeriodValidationError(newPeriod))}
+                          fullWidth={isMobile}
+                        >
+                          {strings.ADD_PERIOD}
+                        </Button>
+                        {newPeriodError && (
+                          <Typography variant="caption" color="error">
+                            {newPeriodError}
+                          </Typography>
+                        )}
+                      </Stack>
                     </Grid>
                   </Grid>
 
@@ -1456,6 +1554,11 @@ const CreateCar = () => {
                 </FormHelperText>
               )}
             </FormControl>
+            {editPeriodError && (
+              <Typography variant="body2" color="error">
+                {editPeriodError}
+              </Typography>
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>

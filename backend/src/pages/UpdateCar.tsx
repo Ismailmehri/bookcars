@@ -214,8 +214,11 @@ const UpdateCar = () => {
     dailyPrice: null,
     reason: '',
   })
+  const [newPeriodError, setNewPeriodError] = useState<string | null>(null)
   const [editingPeriodIndex, setEditingPeriodIndex] = useState<number | null>(null)
   const [editingPeriod, setEditingPeriod] = useState<PricePeriod | null>(null)
+  const [editPeriodError, setEditPeriodError] = useState<string | null>(null)
+  const [periodSaveLoading, setPeriodSaveLoading] = useState(false)
 
   const language = UserService.getLanguage()
   const locale = getLocale(language)
@@ -287,13 +290,144 @@ const UpdateCar = () => {
     [pricePeriods]
   )
   const isEditDialogOpen = editingPeriodIndex !== null && editingPeriod !== null
-  const isEditingPeriodValid = Boolean(
-    editingPeriod &&
-      editingPeriod.startDate &&
-      editingPeriod.endDate &&
-      editingPeriod.dailyPrice &&
-      Number(editingPeriod.dailyPrice) > 0
-  )
+
+  const getPeriodValidationError = (period: PricePeriod | null): string | null => {
+    if (!period) {
+      return strings.PERIOD_REQUIRED_ERROR
+    }
+
+    const { startDate, endDate, dailyPrice } = period
+
+    if (!startDate || !endDate || dailyPrice === null || dailyPrice === undefined) {
+      return strings.PERIOD_REQUIRED_ERROR
+    }
+
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return strings.PERIOD_REQUIRED_ERROR
+    }
+
+    if (start > end) {
+      return strings.PERIOD_DATE_ORDER_ERROR
+    }
+
+    const numericPrice = typeof dailyPrice === 'string' ? Number.parseFloat(dailyPrice) : dailyPrice
+
+    if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
+      return strings.PERIOD_PRICE_ERROR
+    }
+
+    return null
+  }
+
+  const isEditingPeriodValid = !getPeriodValidationError(editingPeriod)
+
+  const resolveDiscountForPayload = (): Discount | undefined => {
+    const dayValue = days ? Number.parseInt(days, 10) : null
+    const discountValue = discountPercentage ? Number.parseInt(discountPercentage, 10) : null
+
+    if (dayValue === null || discountValue === null) {
+      return undefined
+    }
+
+    if (Number.isNaN(dayValue) || Number.isNaN(discountValue)) {
+      return undefined
+    }
+
+    if (dayValue < 3 || dayValue > 30 || discountValue < 0 || discountValue >= 50) {
+      return undefined
+    }
+
+    return {
+      threshold: dayValue,
+      percentage: discountValue,
+    }
+  }
+
+  const buildUpdatePayload = (periods: PricePeriod[]): bookcarsTypes.UpdateCarPayload | null => {
+    if (!car || !supplier || !supplier._id) {
+      return null
+    }
+
+    const basePrice = Number(dailyPrice)
+
+    if (!Number.isFinite(basePrice) || basePrice <= 0) {
+      return null
+    }
+
+    return {
+      _id: car._id,
+      name,
+      supplier: supplier._id,
+      minimumAge: Number.parseInt(minimumAge, 10),
+      locations: locations.map((l) => l._id),
+      dailyPrice: basePrice,
+      discountedDailyPrice: getPrice(discountedDailyPrice),
+      biWeeklyPrice: getPrice(biWeeklyPrice),
+      discountedBiWeeklyPrice: getPrice(discountedBiWeeklyPrice),
+      weeklyPrice: getPrice(weeklyPrice),
+      discountedWeeklyPrice: getPrice(discountedWeeklyPrice),
+      monthlyPrice: getPrice(monthlyPrice),
+      discountedMonthlyPrice: getPrice(discountedMonthlyPrice),
+      periodicPrices: periods,
+      deposit: Number(deposit),
+      available,
+      type,
+      gearbox,
+      aircon,
+      image,
+      seats: Number.parseInt(seats, 10),
+      doors: Number.parseInt(doors, 10),
+      fuelPolicy,
+      mileage: extraToNumber(mileage),
+      cancellation: extraToNumber(cancellation),
+      amendments: extraToNumber(amendments),
+      theftProtection: extraToNumber(theftProtection),
+      collisionDamageWaiver: extraToNumber(collisionDamageWaiver),
+      fullInsurance: extraToNumber(fullInsurance),
+      additionalDriver: extraToNumber(additionalDriver),
+      range,
+      multimedia,
+      rating: Number(rating) || undefined,
+      co2: Number(co2) || undefined,
+      minimumDrivingLicenseYears,
+      unavailablePeriods,
+      minimumRentalDays,
+      discounts: resolveDiscountForPayload(),
+    }
+  }
+
+  const persistPeriodicPrices = async (periods: PricePeriod[], notify = true) => {
+    const payload = buildUpdatePayload(periods)
+
+    if (!payload) {
+      helper.error(undefined, strings.PERIOD_SAVE_ERROR)
+      return false
+    }
+
+    try {
+      setPeriodSaveLoading(true)
+      const status = await CarService.update(payload)
+
+      if (status === 200) {
+        if (notify) {
+          helper.info(strings.PERIOD_SAVE_SUCCESS)
+        }
+
+        return true
+      }
+
+      helper.error(undefined, strings.PERIOD_SAVE_ERROR)
+      return false
+    } catch (err) {
+      helper.error(err, strings.PERIOD_SAVE_ERROR)
+      return false
+    } finally {
+      setPeriodSaveLoading(false)
+    }
+  }
 
   const handleAddUnavailablePeriod = () => {
     if (newUnavailablePeriod.startDate && newUnavailablePeriod.endDate) {
@@ -318,22 +452,53 @@ const UpdateCar = () => {
     handleDeleteUnavailablePeriod(index)
     setPeriodUnvalableError(false)
   }
-  const handleAddPeriod = () => {
-    if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice) {
+  const handleAddPeriod = async () => {
+    const validationError = getPeriodValidationError(newPeriod)
+
+    if (validationError) {
+      setNewPeriodError(validationError)
+      return
+    }
+
+    if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice !== null) {
       const start = new Date(newPeriod.startDate)
       const end = new Date(newPeriod.endDate)
-      if (start <= end) {
-        setPricePeriods([...pricePeriods, { ...newPeriod, startDate: start, endDate: end }])
+      const dailyPriceValue =
+        typeof newPeriod.dailyPrice === 'string'
+          ? Number.parseFloat(newPeriod.dailyPrice)
+          : newPeriod.dailyPrice
+
+      const updatedPeriods = [
+        ...pricePeriods,
+        {
+          ...newPeriod,
+          startDate: start,
+          endDate: end,
+          dailyPrice: dailyPriceValue,
+        },
+      ]
+
+      setNewPeriodError(null)
+      const persisted = await persistPeriodicPrices(updatedPeriods)
+
+      if (persisted) {
+        setPricePeriods(updatedPeriods)
         setNewPeriod({ startDate: null, endDate: null, dailyPrice: null, reason: '' })
+        setPeriodPriceError(false)
+      } else {
+        setNewPeriodError(strings.PERIOD_SAVE_ERROR)
       }
     }
-    setPeriodPriceError(false)
   }
 
-  const handleDeletePeriod = (index: number) => {
+  const handleDeletePeriod = async (index: number) => {
     const updatedPeriods = pricePeriods.filter((_, i) => i !== index)
-    setPricePeriods(updatedPeriods)
-    setPeriodPriceError(false)
+    const persisted = await persistPeriodicPrices(updatedPeriods, false)
+
+    if (persisted) {
+      setPricePeriods(updatedPeriods)
+      setPeriodPriceError(false)
+    }
   }
 
   const handleEditPeriod = (index: number) => {
@@ -346,19 +511,29 @@ const UpdateCar = () => {
       reason: periodToEdit.reason || '',
     })
     setPeriodPriceError(false)
+    setEditPeriodError(null)
   }
 
   const handleEditingPeriodChange = <K extends keyof PricePeriod>(key: K, value: PricePeriod[K]) => {
     setEditingPeriod((prev) => (prev ? { ...prev, [key]: value } : prev))
+    setEditPeriodError(null)
   }
 
   const handleCloseEditPeriod = () => {
     setEditingPeriodIndex(null)
     setEditingPeriod(null)
+    setEditPeriodError(null)
   }
 
-  const handleSaveEditedPeriod = () => {
+  const handleSaveEditedPeriod = async () => {
     if (editingPeriodIndex === null || !editingPeriod) {
+      return
+    }
+
+    const validationError = getPeriodValidationError(editingPeriod)
+
+    if (validationError) {
+      setEditPeriodError(validationError)
       return
     }
 
@@ -371,15 +546,23 @@ const UpdateCar = () => {
         editingPeriod.dailyPrice !== null ? Number.parseFloat(String(editingPeriod.dailyPrice)) : null,
     }
 
-    setPricePeriods(updatedPeriods)
-    setPeriodPriceError(false)
-    handleCloseEditPeriod()
+    const persisted = await persistPeriodicPrices(updatedPeriods)
+
+    if (persisted) {
+      setPricePeriods(updatedPeriods)
+      setPeriodPriceError(false)
+      setEditPeriodError(null)
+      handleCloseEditPeriod()
+    } else {
+      setEditPeriodError(strings.PERIOD_SAVE_ERROR)
+    }
   }
 
-  const handleApplyDefaultPeriods = () => {
+  const handleApplyDefaultPeriods = async () => {
     const base = Number(dailyPrice)
     if (Number.isNaN(base)) {
       setPricePeriods([])
+      setPeriodPriceError(false)
       return
     }
 
@@ -437,8 +620,12 @@ const UpdateCar = () => {
       },
     ]
 
-    setPricePeriods(defaults)
-    setPeriodPriceError(false)
+    const persisted = await persistPeriodicPrices(defaults)
+
+    if (persisted) {
+      setPricePeriods(defaults)
+      setPeriodPriceError(false)
+    }
   }
 
   const handleBeforeUpload = () => {
@@ -990,13 +1177,37 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                 <CardHeader
                   title={strings.SPECIAL_PRICE_TITLE}
                   subheader={strings.SPECIAL_PRICE_SUBHEADER}
+                  subheaderTypographyProps={{ sx: { whiteSpace: 'normal' } }}
+                  sx={{
+                    '& .MuiCardHeader-content': {
+                      minWidth: 0,
+                    },
+                    '& .MuiCardHeader-action': {
+                      alignSelf: isMobile ? 'stretch' : 'center',
+                      width: isMobile ? '100%' : 'auto',
+                      mt: isMobile ? 2 : 0,
+                    },
+                  }}
                   action={(
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                      <Chip label={strings.OPTIONAL_BADGE} size="small" color="primary" variant="outlined" />
+                    <Stack
+                      direction={isMobile ? 'column' : 'row'}
+                      spacing={1}
+                      alignItems={isMobile ? 'stretch' : 'center'}
+                      sx={{ width: isMobile ? '100%' : 'auto' }}
+                    >
+                      <Chip
+                        label={strings.OPTIONAL_BADGE}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        sx={{ alignSelf: isMobile ? 'flex-start' : 'center' }}
+                      />
                       <Button
                         variant="text"
                         startIcon={<AutoAwesomeIcon fontSize="small" />}
                         onClick={handleApplyDefaultPeriods}
+                        disabled={periodSaveLoading}
+                        fullWidth={isMobile}
                       >
                         {strings.ADD_DEFAULT_PERIODS}
                       </Button>
@@ -1012,7 +1223,10 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                             label={strings.START_DATE}
                             value={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
                             maxDate={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
-                            onChange={(date) => setNewPeriod({ ...newPeriod, startDate: date })}
+                            onChange={(date) => {
+                              setNewPeriod({ ...newPeriod, startDate: date })
+                              setNewPeriodError(null)
+                            }}
                             language={language}
                             showTime={false}
                           />
@@ -1024,7 +1238,10 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                             label={strings.END_DATE}
                             value={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
                             minDate={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
-                            onChange={(date) => setNewPeriod({ ...newPeriod, endDate: date })}
+                            onChange={(date) => {
+                              setNewPeriod({ ...newPeriod, endDate: date })
+                              setNewPeriodError(null)
+                            }}
                             language={language}
                             showTime={false}
                           />
@@ -1037,8 +1254,10 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                             label={strings.REASON}
                             value={newPeriod.reason || ''}
                             variant="standard"
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                              setNewPeriod({ ...newPeriod, reason: e.target.value })}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              setNewPeriod({ ...newPeriod, reason: e.target.value })
+                              setNewPeriodError(null)
+                            }}
                           >
                             <MenuItem value="">-</MenuItem>
                             <MenuItem value={strings.EID_AL_FITR}>{strings.EID_AL_FITR}</MenuItem>
@@ -1057,8 +1276,10 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                             value={newPeriod.dailyPrice ?? ''}
                             variant="standard"
                             autoComplete="off"
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                              setNewPeriod({ ...newPeriod, dailyPrice: e.target.value ? Number(e.target.value) : null })}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              setNewPeriod({ ...newPeriod, dailyPrice: e.target.value ? Number(e.target.value) : null })
+                              setNewPeriodError(null)
+                            }}
                           />
                           {newPeriodCommissionInfo && (
                             <FormHelperText sx={{ mt: 1 }}>
@@ -1073,16 +1294,23 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                           )}
                         </FormControl>
                       </Grid>
-                      <Grid item xs={12} md={12} lg={3} sx={{ display: 'flex', alignItems: 'flex-end' }}>
-                        <Button
-                          variant="contained"
-                          size="medium"
-                          onClick={handleAddPeriod}
-                          disabled={!newPeriod.startDate || !newPeriod.endDate || !newPeriod.dailyPrice}
-                          fullWidth={isMobile}
-                        >
-                          {strings.ADD_PERIOD}
-                        </Button>
+                      <Grid item xs={12} md={3}>
+                        <Stack spacing={1} sx={{ height: '100%', justifyContent: 'flex-end' }}>
+                          <Button
+                            variant="contained"
+                            size="medium"
+                            onClick={handleAddPeriod}
+                            disabled={periodSaveLoading || Boolean(getPeriodValidationError(newPeriod))}
+                            fullWidth={isMobile}
+                          >
+                            {strings.ADD_PERIOD}
+                          </Button>
+                          {newPeriodError && (
+                            <Typography variant="caption" color="error">
+                              {newPeriodError}
+                            </Typography>
+                          )}
+                        </Stack>
                       </Grid>
                     </Grid>
 
@@ -1134,10 +1362,15 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                                       <Typography variant="body2">{commissionAmount}</Typography>
                                     </Stack>
                                     <Stack direction="row" justifyContent="flex-end" spacing={1}>
-                                      <IconButton onClick={() => handleEditPeriod(index)} size="small">
+                                      <IconButton onClick={() => handleEditPeriod(index)} size="small" disabled={periodSaveLoading}>
                                         <EditIcon fontSize="small" />
                                       </IconButton>
-                                      <IconButton onClick={() => handleDeletePeriod(index)} size="small" color="error">
+                                      <IconButton
+                                        onClick={() => handleDeletePeriod(index)}
+                                        size="small"
+                                        color="error"
+                                        disabled={periodSaveLoading}
+                                      >
                                         <DeleteIcon fontSize="small" />
                                       </IconButton>
                                     </Stack>
@@ -1183,13 +1416,23 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                                       <TableCell align="right">{clientPrice}</TableCell>
                                       <TableCell align="right">{commissionAmount}</TableCell>
                                       <TableCell align="center">
-                                        <IconButton onClick={() => handleEditPeriod(index)} size="small" sx={{ mr: 1 }}>
-                                          <EditIcon fontSize="small" />
-                                        </IconButton>
-                                        <IconButton onClick={() => handleDeletePeriod(index)} size="small" color="error">
-                                          <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                      </TableCell>
+                                      <IconButton
+                                        onClick={() => handleEditPeriod(index)}
+                                        size="small"
+                                        sx={{ mr: 1 }}
+                                        disabled={periodSaveLoading}
+                                      >
+                                        <EditIcon fontSize="small" />
+                                      </IconButton>
+                                      <IconButton
+                                        onClick={() => handleDeletePeriod(index)}
+                                        size="small"
+                                        color="error"
+                                        disabled={periodSaveLoading}
+                                      >
+                                        <DeleteIcon fontSize="small" />
+                                      </IconButton>
+                                    </TableCell>
                                     </TableRow>
                                   )
                                 })}
@@ -1545,8 +1788,8 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                 {imageRequired && <ErrorMessage message={commonStrings.IMAGE_REQUIRED} />}
                 {imageSizeError && <ErrorMessage message={strings.CAR_IMAGE_SIZE_ERROR} />}
                 {formError && <ErrorMessage message={commonStrings.FORM_ERROR} />}
-                {periodPriceError && <ErrorMessage message="Veuillez cliquer sur 'Ajouter' pour enregistrer la période avant de soumettre le formulaire." />}
-                {periodUnvalableError && <ErrorMessage message="Veuillez cliquer sur 'Ajouter' pour enregistrer la période avant de soumettre le formulaire." />}
+                {periodPriceError && <ErrorMessage message={strings.PERIOD_PENDING_WARNING} />}
+                {periodUnvalableError && <ErrorMessage message={strings.UNAVAILABLE_PERIOD_PENDING_WARNING} />}
               </div>
             </form>
           </Paper>
@@ -1615,21 +1858,30 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                   {strings.COMMISSION_DETAIL_WITH_AMOUNT
                     .replace('{rate}', commissionRateLabel)
                     .replace('{amount}', formatPriceWithCurrency(editingPeriodCommissionInfo.commissionValue))}
-                </FormHelperText>
+              </FormHelperText>
               )}
             </FormControl>
+            {editPeriodError && (
+              <Typography variant="body2" color="error">
+                {editPeriodError}
+              </Typography>
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseEditPeriod} color="inherit">
+          <Button onClick={handleCloseEditPeriod} color="inherit" disabled={periodSaveLoading}>
             {commonStrings.CANCEL}
           </Button>
-          <Button onClick={handleSaveEditedPeriod} variant="contained" disabled={!isEditingPeriodValid}>
+          <Button
+            onClick={handleSaveEditedPeriod}
+            variant="contained"
+            disabled={periodSaveLoading || !isEditingPeriodValid}
+          >
             {strings.SAVE_CHANGES}
           </Button>
         </DialogActions>
       </Dialog>
-      {loading && <Backdrop text={commonStrings.PLEASE_WAIT} />}
+      {(loading || periodSaveLoading) && <Backdrop text={commonStrings.PLEASE_WAIT} />}
       {error && <Error />}
       {noMatch && <NoMatch hideHeader />}
     </Layout>

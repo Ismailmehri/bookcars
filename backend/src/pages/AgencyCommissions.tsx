@@ -37,11 +37,7 @@ import {
   TableRow,
   InputAdornment,
   Link,
-  Grid,
-  Skeleton,
-  useMediaQuery,
 } from '@mui/material'
-import { useTheme } from '@mui/material/styles'
 import { SelectChangeEvent } from '@mui/material/Select'
 import {
   ChevronLeft as ChevronLeftIcon,
@@ -60,8 +56,6 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   Fingerprint as FingerprintIcon,
-  FilterList as FilterListIcon,
-  Close as CloseIcon,
 } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -74,15 +68,54 @@ import * as CommissionService from '@/services/CommissionService'
 
 import '@/assets/css/agency-commissions.css'
 
+/** ---------- FIX ESLint: move nested component out ---------- */
+type ContactInfoRowProps = {
+  icon: React.ReactNode
+  label: string
+  value?: string
+  href?: string
+  /** Texte affiché quand value est vide */
+  emptyText?: string
+}
+
+const ContactInfoRow: React.FC<ContactInfoRowProps> = ({
+  icon,
+  label,
+  value,
+  href,
+  emptyText = strings.DRAWER_CONTACT_NONE,
+}) => (
+  <Box className="ac-contact-row">
+    <Box>{icon}</Box>
+    <Box className="ac-contact-value">
+      <Typography variant="caption" className="ac-contact-label">
+        {label}
+      </Typography>
+      {value ? (
+        href ? (
+          <a className="ac-contact-link" href={href} target="_blank" rel="noreferrer">
+            {value}
+          </a>
+        ) : (
+          <Typography variant="body2">{value}</Typography>
+        )
+      ) : (
+        <Typography variant="body2" color="text.secondary">
+          {emptyText}
+        </Typography>
+      )}
+    </Box>
+  </Box>
+)
+/** ----------------------------------------------------------- */
+
 const buildMonthLabel = (month: number, year: number, language: string) => {
   const date = new Date(Date.UTC(year, month - 1, 1))
   const label = date.toLocaleString(language, { month: 'long' })
   return bookcarsHelper.capitalize(label)
 }
 
-const formatNumber = (value: number, language: string) => {
-  return bookcarsHelper.formatNumber(Math.round(value), language)
-}
+const formatNumber = (value: number, language: string) => bookcarsHelper.formatNumber(Math.round(value), language)
 
 const getReminderChannelLabel = (
   channel?: bookcarsTypes.CommissionReminderChannel,
@@ -141,9 +174,6 @@ const mapPaymentStatusToLabel = (status: bookcarsTypes.CommissionPaymentStatus) 
 }
 
 const AgencyCommissions = () => {
-  const theme = useTheme()
-  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
-  const isMobileOrTablet = !isDesktop
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [admin, setAdmin] = useState(false)
   const now = useMemo(() => new Date(), [])
@@ -180,7 +210,6 @@ const AgencyCommissions = () => {
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [invoiceLoading, setInvoiceLoading] = useState(false)
-  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const detailRequestRef = useRef(0)
 
@@ -190,21 +219,6 @@ const AgencyCommissions = () => {
     value: index + 1,
     label: buildMonthLabel(index + 1, year, language),
   })), [language, year])
-
-  useEffect(() => {
-    if (isDesktop) {
-      return undefined
-    }
-
-    const handler = window.setTimeout(() => {
-      const trimmed = searchTerm.trim()
-      setSearch((prev) => (prev === trimmed ? prev : trimmed))
-    }, 400)
-
-    return () => {
-      window.clearTimeout(handler)
-    }
-  }, [isDesktop, searchTerm])
 
   const activeAgency = useMemo<bookcarsTypes.AgencyCommissionDetail['agency'] | undefined>(() => {
     if (detail?.agency) {
@@ -455,13 +469,13 @@ const AgencyCommissions = () => {
   const buildTemplateMessage = useCallback((
     template: string,
     agency: bookcarsTypes.AgencyCommissionRow,
-    summary?: bookcarsTypes.AgencyCommissionDetailSummary,
+    summaryAgency?: bookcarsTypes.AgencyCommissionDetailSummary,
   ) => {
     if (!template) {
       return ''
     }
 
-    const amount = summary ? summary.balance : agency.balance
+    const amount = summaryAgency ? summaryAgency.balance : agency.balance
     const placeholders: Record<string, string> = {
       agencyName: agency.agency.name,
       month: buildMonthLabel(month, year, language),
@@ -482,8 +496,8 @@ const AgencyCommissions = () => {
       const template = defaultChannel === bookcarsTypes.CommissionReminderChannel.Sms
         ? currentSettings.smsTemplate
         : currentSettings.emailTemplate
-      const summary = detail && detail.agency.id === agency.agency.id ? detail.summary : undefined
-      const message = buildTemplateMessage(template, agency, summary)
+      const summaryAgency = detail && detail.agency.id === agency.agency.id ? detail.summary : undefined
+      const message = buildTemplateMessage(template, agency, summaryAgency)
       setReminderMessage(message)
       setReminderSubject(`Relance commission - ${buildMonthLabel(month, year, language)} ${year}`)
       setReminderDialogOpen(true)
@@ -499,8 +513,8 @@ const AgencyCommissions = () => {
       const template = channel === bookcarsTypes.CommissionReminderChannel.Sms
         ? settings.smsTemplate
         : settings.emailTemplate
-      const summary = detail && detail.agency.id === selectedAgency.agency.id ? detail.summary : undefined
-      const message = buildTemplateMessage(template, selectedAgency, summary)
+      const summaryAgency = detail && detail.agency.id === selectedAgency.agency.id ? detail.summary : undefined
+      const message = buildTemplateMessage(template, selectedAgency, summaryAgency)
       setReminderMessage(message)
     }
   }
@@ -600,8 +614,8 @@ const AgencyCommissions = () => {
       return
     }
 
-    const currentStatus = detail?.agency.status ?? selectedAgency.status
-    const block = currentStatus !== bookcarsTypes.AgencyCommissionStatus.Blocked
+    const agencyCurrentStatus = detail?.agency.status ?? selectedAgency.status
+    const block = agencyCurrentStatus !== bookcarsTypes.AgencyCommissionStatus.Blocked
 
     try {
       await CommissionService.toggleAgencyBlock({
@@ -708,45 +722,12 @@ const AgencyCommissions = () => {
   const rowCount = data?.total || 0
   const summaryData = data?.summary
 
-  const getRowPaymentStatus = (
-    row: bookcarsTypes.AgencyCommissionRow,
-  ): {
-    label: string
-    color: 'success' | 'warning' | 'error'
-    variant: 'filled' | 'outlined'
-  } => {
-    if (row.balance <= 0) {
-      return {
-        label: strings.PAYMENT_STATUS_PAID,
-        color: 'success',
-        variant: 'filled',
-      }
-    }
-
-    if (row.commissionCollected > 0) {
-      return {
-        label: strings.PAYMENT_STATUS_PARTIAL,
-        color: 'warning',
-        variant: 'outlined',
-      }
-    }
-
-    return {
-      label: strings.PAYMENT_STATUS_UNPAID,
-      color: 'error',
-      variant: 'outlined',
-    }
-  }
-
   const paginationFrom = rows.length === 0 ? 0 : page * pageSize + 1
   const paginationTo = rows.length === 0
     ? 0
     : Math.min(rowCount, page * pageSize + rows.length)
   const isPreviousDisabled = page === 0 || loading
   const isNextDisabled = paginationTo >= rowCount || loading
-  const paginationLabel = rowCount === 0
-    ? `0 ${commonStrings.OF} 0`
-    : `${paginationFrom}–${paginationTo} ${commonStrings.OF} ${rowCount}`
 
   const handlePreviousPage = () => {
     if (page > 0 && !loading) {
@@ -761,40 +742,6 @@ const AgencyCommissions = () => {
   }
 
   const formatCurrency = (value: number) => `${formatNumber(value, language)} TND`
-
-  const ContactInfoRow = ({
-    icon,
-    label,
-    value,
-    href,
-  }: {
-    icon: React.ReactNode
-    label: string
-    value?: string
-    href?: string
-  }) => (
-    <Box className="ac-contact-row">
-      <Box>{icon}</Box>
-      <Box className="ac-contact-value">
-        <Typography variant="caption" className="ac-contact-label">
-          {label}
-        </Typography>
-        {value ? (
-          href ? (
-            <a className="ac-contact-link" href={href} target="_blank" rel="noreferrer">
-              {value}
-            </a>
-          ) : (
-            <Typography variant="body2">{value}</Typography>
-          )
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            {strings.DRAWER_CONTACT_NONE}
-          </Typography>
-        )}
-      </Box>
-    </Box>
-  )
 
   const agencyInitials = activeAgency?.name
     ? activeAgency.name
@@ -816,84 +763,7 @@ const AgencyCommissions = () => {
       {admin && (
         <Box className="agency-commissions">
           <Stack spacing={3}>
-            <Box
-              sx={{
-                display: { xs: 'flex', lg: 'none' },
-                flexDirection: 'column',
-                gap: 2,
-              }}
-            >
-              <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2}>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography
-                    variant="h5"
-                    fontWeight={600}
-                    noWrap
-                    sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
-                  >
-                    {strings.TITLE}
-                  </Typography>
-                  <Chip
-                    size="small"
-                    variant="outlined"
-                    label={`${strings.THRESHOLD_LABEL}: ${summaryData ? formatCurrency(summaryData.threshold) : '—'}`}
-                    sx={{ mt: 0.5 }}
-                  />
-                </Box>
-                <Stack direction="row" spacing={1}>
-                  <IconButton
-                    color="primary"
-                    onClick={handleSettingsOpen}
-                    disabled={loadingSettings}
-                    aria-label={strings.SETTINGS}
-                    sx={{ width: 48, height: 48 }}
-                  >
-                    {loadingSettings ? <CircularProgress size={20} /> : <SettingsIcon />}
-                  </IconButton>
-                  <IconButton
-                    color="primary"
-                    onClick={handleExport}
-                    disabled={exporting || loading}
-                    aria-label={strings.EXPORT_CSV}
-                    sx={{ width: 48, height: 48 }}
-                  >
-                    {exporting ? <CircularProgress size={20} /> : <FileDownloadIcon />}
-                  </IconButton>
-                </Stack>
-              </Stack>
-              <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
-                <Button
-                  variant="contained"
-                  startIcon={<FilterListIcon />}
-                  onClick={() => setFiltersOpen(true)}
-                >
-                  {strings.FILTER_BUTTON}
-                </Button>
-                <Stack direction="row" spacing={0.5}>
-                  <IconButton
-                    onClick={handlePreviousMonth}
-                    disabled={loading}
-                    aria-label={strings.PREVIOUS_MONTH}
-                    sx={{ width: 48, height: 48 }}
-                  >
-                    <ChevronLeftIcon />
-                  </IconButton>
-                  <IconButton
-                    onClick={handleNextMonth}
-                    disabled={loading}
-                    aria-label={strings.NEXT_MONTH}
-                    sx={{ width: 48, height: 48 }}
-                  >
-                    <ChevronRightIcon />
-                  </IconButton>
-                </Stack>
-              </Stack>
-              <Typography variant="body2" color="text.secondary">
-                {`${strings.MONTH_LABEL}: ${monthOptions.find((option) => option.value === month)?.label || month} ${year}`}
-              </Typography>
-            </Box>
-
-            <Box className="ac-header" sx={{ display: { xs: 'none', lg: 'flex' } }}>
+            <Box className="ac-header">
               <Stack direction="row" spacing={2} alignItems="center">
                 <Typography variant="h5">{strings.TITLE}</Typography>
                 <Chip
@@ -922,7 +792,7 @@ const AgencyCommissions = () => {
               </Stack>
             </Box>
 
-            <Paper elevation={0} className="ac-filters-card" sx={{ display: { xs: 'none', lg: 'block' } }}>
+            <Paper elevation={0} className="ac-filters-card">
               <Stack
                 direction={{ xs: 'column', lg: 'row' }}
                 spacing={2}
@@ -1002,90 +872,6 @@ const AgencyCommissions = () => {
               </Stack>
             </Paper>
 
-            <Drawer
-              anchor="bottom"
-              open={filtersOpen && isMobileOrTablet}
-              onClose={() => setFiltersOpen(false)}
-              PaperProps={{
-                sx: {
-                  borderTopLeftRadius: 24,
-                  borderTopRightRadius: 24,
-                  p: 3,
-                  maxHeight: '90vh',
-                },
-              }}
-            >
-              <Stack spacing={2}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography variant="h6">{strings.FILTER_BUTTON}</Typography>
-                  <IconButton onClick={() => setFiltersOpen(false)} aria-label={commonStrings.CLOSE}>
-                    <CloseIcon />
-                  </IconButton>
-                </Stack>
-                <TextField
-                  fullWidth
-                  placeholder={strings.SEARCH_PLACEHOLDER}
-                  size="small"
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <FormControl fullWidth size="small">
-                  <InputLabel>{strings.STATUS_FILTER_LABEL}</InputLabel>
-                  <Select value={statusFilter} label={strings.STATUS_FILTER_LABEL} onChange={handleStatusChange}>
-                    <MenuItem value="all">{strings.STATUS_ALL}</MenuItem>
-                    <MenuItem value={bookcarsTypes.AgencyCommissionStatus.Active}>{strings.STATUS_ACTIVE}</MenuItem>
-                    <MenuItem value={bookcarsTypes.AgencyCommissionStatus.Blocked}>{strings.STATUS_BLOCKED}</MenuItem>
-                    <MenuItem value={bookcarsTypes.AgencyCommissionStatus.NeedsFollowUp}>{strings.STATUS_NEEDS_FOLLOW_UP}</MenuItem>
-                  </Select>
-                </FormControl>
-                <FormControlLabel
-                  control={<Switch checked={aboveThreshold} onChange={handleAboveThresholdChange} />}
-                  label={strings.FILTER_ABOVE_THRESHOLD}
-                />
-                <Divider />
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>{strings.MONTH_LABEL}</InputLabel>
-                      <Select value={month} label={strings.MONTH_LABEL} onChange={handleMonthChange}>
-                        {monthOptions.map((option) => (
-                          <MenuItem key={option.value} value={option.value}>
-                            {option.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>{strings.YEAR_LABEL}</InputLabel>
-                      <Select value={year} label={strings.YEAR_LABEL} onChange={handleYearChange}>
-                        {Array.from({ length: 5 }).map((_, index) => {
-                          const value = now.getFullYear() - 2 + index
-                          return <MenuItem key={value} value={value}>{value}</MenuItem>
-                        })}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
-                <Stack direction="row" spacing={1} justifyContent="flex-end">
-                  <Button variant="text" onClick={() => setFiltersOpen(false)}>
-                    {commonStrings.CLOSE}
-                  </Button>
-                  <Button variant="contained" onClick={() => setFiltersOpen(false)}>
-                    {commonStrings.APPLY_FILTERS}
-                  </Button>
-                </Stack>
-              </Stack>
-            </Drawer>
-
             <Box className="ac-kpis">
               {[{
                 title: strings.GROSS_TURNOVER,
@@ -1099,171 +885,19 @@ const AgencyCommissions = () => {
               }, {
                 title: strings.ABOVE_THRESHOLD_COUNT,
                 value: summaryData ? formatNumber(summaryData.agenciesAboveThreshold, language) : '—',
-              }].map((item) => {
-                const showSkeleton = loading && !summaryData
-                return (
-                  <Paper key={item.title} elevation={0} className="ac-kpi-card">
-                    <Typography variant="caption" color="text.secondary">{item.title}</Typography>
-                    {showSkeleton ? <Skeleton width="60%" height={28} /> : <Typography variant="h6">{item.value}</Typography>}
-                  </Paper>
-                )
-              })}
+              }].map((item) => (
+                <Paper key={item.title} elevation={0} className="ac-kpi-card">
+                  <Typography variant="caption" color="text.secondary">{item.title}</Typography>
+                  <Typography variant="h6">{item.value}</Typography>
+                </Paper>
+              ))}
             </Box>
 
             <Typography variant="subtitle2" color="text.secondary">
               {strings.AGENCIES_SECTION_TITLE}
             </Typography>
 
-            <Box
-              sx={{
-                display: { xs: 'flex', lg: 'none' },
-                flexDirection: 'column',
-                gap: 2,
-              }}
-            >
-              {loading && rows.length > 0 && <LinearProgress color="primary" />}
-              {loading && rows.length === 0
-                ? Array.from({ length: 3 }).map((_, index) => (
-                    <Paper
-                      // eslint-disable-next-line react/no-array-index-key
-                      key={index}
-                      elevation={0}
-                      sx={{
-                        p: 2,
-                        borderRadius: 2,
-                        boxShadow: '0 12px 24px rgba(15, 23, 42, 0.08)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 1.5,
-                      }}
-                    >
-                      <Skeleton variant="text" height={24} width="70%" />
-                      <Skeleton variant="text" height={18} width="90%" />
-                      <Skeleton variant="rectangular" height={32} />
-                    </Paper>
-                  ))
-                : rows.length === 0
-                  ? (
-                    <Paper elevation={0} sx={{ p: 3, borderRadius: 2, boxShadow: '0 12px 24px rgba(15, 23, 42, 0.04)' }}>
-                      <Typography variant="body2" color="text.secondary" align="center">
-                        {aboveThreshold ? strings.EMPTY_THRESHOLD_STATE : strings.EMPTY_STATE}
-                      </Typography>
-                    </Paper>
-                  )
-                  : (
-                    rows.map((row) => {
-                      const { agency } = row
-                      const paymentStatus = getRowPaymentStatus(row)
-                      const statusLabel = mapStatusToLabel(row.status)
-
-                      return (
-                        <Paper
-                          key={agency.id}
-                          elevation={0}
-                          sx={{
-                            p: 2,
-                            borderRadius: 2,
-                            boxShadow: '0 12px 24px rgba(15, 23, 42, 0.08)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 1.5,
-                          }}
-                        >
-                          <Stack direction="row" spacing={1.5} alignItems="flex-start" justifyContent="space-between">
-                            <Box sx={{ minWidth: 0, flex: 1 }}>
-                              <Tooltip title={agency.name}>
-                                <Typography
-                                  variant="subtitle1"
-                                  fontWeight={700}
-                                  noWrap
-                                  sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
-                                >
-                                  {agency.name}
-                                </Typography>
-                              </Tooltip>
-                              <Typography variant="caption" color="text.secondary">
-                                {agency.id}
-                              </Typography>
-                            </Box>
-                            <Chip
-                              size="small"
-                              color={getStatusChipColor(row.status)}
-                              label={statusLabel}
-                              sx={{ flexShrink: 0 }}
-                            />
-                          </Stack>
-                          <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            <Box component="span">{`${strings.COLUMN_RESERVATIONS}: ${formatNumber(row.reservations, language)}`}</Box>
-                            <Box component="span">•</Box>
-                            <Box component="span">{`${strings.COLUMN_GROSS}: ${formatCurrency(row.grossTurnover)}`}</Box>
-                            <Box component="span">•</Box>
-                            <Box component="span">{`${strings.COLUMN_DUE}: ${formatCurrency(row.commissionDue)}`}</Box>
-                          </Typography>
-                          <Chip
-                            size="small"
-                            color={paymentStatus.color}
-                            variant={paymentStatus.variant}
-                            label={paymentStatus.label}
-                            sx={{ alignSelf: 'flex-start' }}
-                          />
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            justifyContent="space-between"
-                            alignItems="center"
-                            flexWrap="wrap"
-                            rowGap={1}
-                          >
-                            <Stack direction="row" spacing={1}>
-                              <Tooltip title={strings.ACTION_DETAILS}>
-                                <IconButton
-                                  color="primary"
-                                  onClick={() => openDrawer(row)}
-                                  aria-label={strings.ACTION_DETAILS}
-                                  sx={{ width: 48, height: 48 }}
-                                >
-                                  <VisibilityIcon />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title={strings.ACTION_REMIND}>
-                                <IconButton
-                                  color="primary"
-                                  onClick={() => handleOpenReminder(row)}
-                                  aria-label={strings.ACTION_REMIND}
-                                  sx={{ width: 48, height: 48 }}
-                                >
-                                  <SendIcon />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title={strings.ACTION_MARK_PAID}>
-                                <IconButton
-                                  color="primary"
-                                  onClick={() => handleOpenPaymentDialog(row)}
-                                  aria-label={strings.ACTION_MARK_PAID}
-                                  sx={{ width: 48, height: 48 }}
-                                >
-                                  <PaidIcon />
-                                </IconButton>
-                              </Tooltip>
-                            </Stack>
-                            <Tooltip title={row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}>
-                              <IconButton
-                                color="primary"
-                                onClick={() => handleToggleBlock(row)}
-                                aria-label={row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}
-                                sx={{ width: 48, height: 48 }}
-                              >
-                                {row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? <LockOpenIcon /> : <BlockIcon />}
-                              </IconButton>
-                            </Tooltip>
-                          </Stack>
-                        </Paper>
-                      )
-                    })
-                  )}
-            </Box>
-
-            <Paper elevation={0} className="ac-table" sx={{ display: { xs: 'none', lg: 'block' } }}>
+            <Paper elevation={0} className="ac-table">
               {loading && <LinearProgress color="primary" />}
               <Table>
                 <TableHead>
@@ -1295,7 +929,18 @@ const AgencyCommissions = () => {
                   ) : (
                     rows.map((row) => {
                       const { agency } = row
-                      const paymentStatus = getRowPaymentStatus(row)
+                      let paymentStatusLabel = strings.PAYMENT_STATUS_UNPAID
+                      let paymentStatusColor: 'success' | 'warning' | 'error' = 'error'
+                      let paymentStatusVariant: 'filled' | 'outlined' = 'outlined'
+
+                      if (row.balance <= 0) {
+                        paymentStatusLabel = strings.PAYMENT_STATUS_PAID
+                        paymentStatusColor = 'success'
+                        paymentStatusVariant = 'filled'
+                      } else if (row.commissionCollected > 0) {
+                        paymentStatusLabel = strings.PAYMENT_STATUS_PARTIAL
+                        paymentStatusColor = 'warning'
+                      }
 
                       return (
                         <TableRow key={agency.id} hover>
@@ -1320,12 +965,7 @@ const AgencyCommissions = () => {
                           <TableCell align="right">{formatCurrency(row.grossTurnover)}</TableCell>
                           <TableCell align="right">{formatCurrency(row.commissionDue)}</TableCell>
                           <TableCell align="center">
-                            <Chip
-                              size="small"
-                              color={paymentStatus.color}
-                              variant={paymentStatus.variant}
-                              label={paymentStatus.label}
-                            />
+                            <Chip size="small" color={paymentStatusColor} variant={paymentStatusVariant} label={paymentStatusLabel} />
                           </TableCell>
                           <TableCell align="center">
                             <Chip size="small" color={getStatusChipColor(row.status)} label={mapStatusToLabel(row.status)} />
@@ -1362,9 +1002,11 @@ const AgencyCommissions = () => {
               </Table>
             </Paper>
 
-            <Box className="ac-table-footer" sx={{ display: { xs: 'none', lg: 'grid' } }}>
+            <Box className="ac-table-footer">
               <Typography variant="body2" color="text.secondary" className="ac-table-count">
-                {paginationLabel}
+                {rowCount === 0
+                  ? `0 ${commonStrings.OF} 0`
+                  : `${paginationFrom}–${paginationTo} ${commonStrings.OF} ${rowCount}`}
               </Typography>
               <FormControl size="small" className="ac-page-size" variant="outlined">
                 <InputLabel>{strings.ROWS_PER_PAGE}</InputLabel>
@@ -1383,82 +1025,19 @@ const AgencyCommissions = () => {
                 </Button>
               </Stack>
             </Box>
-            {isMobileOrTablet && (
-              <Box
-                sx={{
-                  display: { xs: 'flex', lg: 'none' },
-                  position: 'sticky',
-                  bottom: 16,
-                  left: 0,
-                  right: 0,
-                  justifyContent: 'center',
-                  zIndex: 5,
-                  pointerEvents: 'none',
-                }}
-              >
-                <Paper
-                  elevation={6}
-                  sx={{
-                    px: 2,
-                    py: 1,
-                    borderRadius: 999,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    width: '100%',
-                    maxWidth: 420,
-                    bgcolor: 'background.paper',
-                    boxShadow: '0 12px 32px rgba(15, 23, 42, 0.18)',
-                    pointerEvents: 'auto',
-                    backdropFilter: 'blur(12px)',
-                  }}
-                >
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={handlePreviousPage}
-                    disabled={isPreviousDisabled}
-                    sx={{ flexShrink: 0, minWidth: 96 }}
-                  >
-                    {strings.TABLE_PREVIOUS}
-                  </Button>
-                  <Typography variant="caption" color="text.secondary" sx={{ flexGrow: 1, textAlign: 'center' }}>
-                    {paginationLabel}
-                  </Typography>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={handleNextPage}
-                    disabled={isNextDisabled}
-                    sx={{ flexShrink: 0, minWidth: 96 }}
-                  >
-                    {strings.TABLE_NEXT}
-                  </Button>
-                </Paper>
-              </Box>
-            )}
           </Stack>
 
           <Drawer
-            anchor={isDesktop ? 'right' : 'bottom'}
+            anchor="right"
             open={drawerOpen}
             onClose={handleDrawerClose}
             PaperProps={{
               sx: {
-                width: isDesktop ? { xs: '100%', sm: 520, md: 980 } : '100%',
-                maxHeight: isDesktop ? '100vh' : '90vh',
-                borderTopLeftRadius: isDesktop ? 0 : 24,
-                borderTopRightRadius: isDesktop ? 0 : 24,
+                width: { xs: '100%', sm: 520, md: 980 },
               },
             }}
           >
-            <Box
-              className="ac-drawer-content"
-              sx={{
-                maxHeight: isDesktop ? 'none' : '90vh',
-                overflowY: 'auto',
-              }}
-            >
+            <Box className="ac-drawer-content">
               {detailLoading && <LinearProgress className="ac-drawer-progress" />}
               {selectedAgency && activeAgency ? (
                 <>

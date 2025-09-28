@@ -81,71 +81,30 @@ interface UnavailablePeriod {
 }
 
 const marks = [
-  {
-    value: 1,
-    label: '1 an',
-  },
-  {
-    value: 2,
-    label: '2 ans',
-  },
-  {
-    value: 3,
-    label: '3 ans',
-  },
-  {
-    value: 4,
-    label: '4 ans',
-  },
-  {
-    value: 5,
-    label: '5 ans',
-  }
+  { value: 1, label: '1 an' },
+  { value: 2, label: '2 ans' },
+  { value: 3, label: '3 ans' },
+  { value: 4, label: '4 ans' },
+  { value: 5, label: '5 ans' },
 ]
 
 const marksDays = [
-  {
-    value: 1,
-    label: '1 jour',
-  },
-  {
-    value: 2,
-    label: '2 jours',
-  },
-  {
-    value: 3,
-    label: '3 jours',
-  },
-  {
-    value: 4,
-    label: '4 jours',
-  },
-  {
-    value: 5,
-    label: '5 jours',
-  },
-  {
-    value: 6,
-    label: '6 jours',
-  },
-  {
-    value: 7,
-    label: '7 jours',
-  }
+  { value: 1, label: '1 jour' },
+  { value: 2, label: '2 jours' },
+  { value: 3, label: '3 jours' },
+  { value: 4, label: '4 jours' },
+  { value: 5, label: '5 jours' },
+  { value: 6, label: '6 jours' },
+  { value: 7, label: '7 jours' },
 ]
 
 const getLocale = (language: string) => {
   switch (language) {
-    case 'fr':
-      return 'fr-FR'
-    case 'es':
-      return 'es-ES'
-    default:
-      return 'en-US'
+    case 'fr': return 'fr-FR'
+    case 'es': return 'es-ES'
+    default: return 'en-US'
   }
 }
-
-const COMMISSION_EXAMPLE_PRICE = 70
 
 const CreateCar = () => {
   const navigate = useNavigate()
@@ -181,30 +140,26 @@ const CreateCar = () => {
   const [pricePeriods, setPricePeriods] = useState<PricePeriod[]>([])
   const [unavailablePeriods, setUnavailablePeriods] = useState<UnavailablePeriod[]>([])
   const [minimumRentalDays, setMinimumRentalDays] = useState<number>(1)
-  const [days, setDays] = useState<string>('') // Utiliser "" au lieu de undefined
+  const [days, setDays] = useState<string>('')
   const [discountPercentage, setDiscountPercentage] = useState<string>('')
   const [daysValid, setDaysValid] = useState<boolean>(true)
   const [discountPercentageValid, setDiscountPercentageValid] = useState<boolean>(true)
   const [autoDefaultsApplied, setAutoDefaultsApplied] = useState<boolean>(false)
-  const [newPeriod, setNewPeriod] = useState<PricePeriod>({
-    startDate: null,
-    endDate: null,
-    dailyPrice: null,
-    reason: '',
-  })
+  const [newPeriod, setNewPeriod] = useState<PricePeriod>({ startDate: null, endDate: null, dailyPrice: null, reason: '' })
   const [newPeriodError, setNewPeriodError] = useState<string | null>(null)
   const [editingPeriodIndex, setEditingPeriodIndex] = useState<number | null>(null)
   const [editingPeriod, setEditingPeriod] = useState<PricePeriod | null>(null)
   const [editPeriodError, setEditPeriodError] = useState<string | null>(null)
-  const [newUnavailablePeriod, setNewUnavailablePeriod] = useState<UnavailablePeriod>({
-    startDate: null,
-    endDate: null,
-  })
-  const [locationsError, setLocationsError] = useState<string | null>(null) // État pour l'erreur des localisations
+  const [newUnavailablePeriod, setNewUnavailablePeriod] = useState<UnavailablePeriod>({ startDate: null, endDate: null })
+  const [locationsError, setLocationsError] = useState<string | null>(null)
 
   const language = UserService.getLanguage()
   const locale = getLocale(language)
   const isMobile = env.isMobile()
+
+  // clés stables pour les périodes (évite react/no-array-index-key)
+  const makePeriodKey = (p: PricePeriod, suffix = '') =>
+    `${p.startDate ? new Date(p.startDate).toISOString() : 'null'}_${p.endDate ? new Date(p.endDate).toISOString() : 'null'}_${p.dailyPrice ?? 'null'}${suffix}`
 
   const formatCommissionRate = (value: number) =>
     new Intl.NumberFormat(locale, {
@@ -218,71 +173,33 @@ const CreateCar = () => {
     return bookcarsHelper.formatPrice(roundedValue, commonStrings.CURRENCY, language)
   }
 
-  const formatDateForDisplay = (value: Date | null) => {
-    if (!value) {
-      return '—'
-    }
-
-    return new Intl.DateTimeFormat(locale).format(value)
-  }
+  const formatDateForDisplay = (value: Date | null) => (!value ? '—' : new Intl.DateTimeFormat(locale).format(value))
 
   const computeCommissionInfo = (value: number | string | null | undefined) => {
-    if (value === null || value === undefined) {
-      return undefined
-    }
-
+    if (value === null || value === undefined) return undefined
     const numeric = typeof value === 'string' ? Number.parseFloat(value) : value
-
-    if (numeric === null || numeric === undefined) {
-      return undefined
-    }
-
-    if (Number.isNaN(numeric) || !Number.isFinite(numeric) || numeric <= 0) {
-      return undefined
-    }
-
+    if (numeric === null || numeric === undefined) return undefined
+    if (Number.isNaN(numeric) || !Number.isFinite(numeric) || numeric <= 0) return undefined
     const commissionValue = Number(((numeric * env.COMMISSION_RATE) / 100).toFixed(2))
     const clientPrice = Number((numeric + commissionValue).toFixed(2))
-
-    return {
-      commissionValue,
-      clientPrice,
-    }
+    return { commissionValue, clientPrice }
   }
 
   const commissionRateLabel = `${formatCommissionRate(env.COMMISSION_RATE)}%`
-  const commissionEffectiveDateLabel = new Intl.DateTimeFormat(locale, {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(env.COMMISSION_EFFECTIVE_DATE)
+  const commissionEffectiveDateLabel = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(env.COMMISSION_EFFECTIVE_DATE)
   const commissionManagementPath = isSupplier ? '/agency-commissions' : '/admin-commissions'
-  const exampleCommissionInfo = computeCommissionInfo(COMMISSION_EXAMPLE_PRICE)
-  const exampleAgencyPriceLabel = formatPriceWithCurrency(COMMISSION_EXAMPLE_PRICE)
-  const exampleCommissionAmountLabel = formatPriceWithCurrency(
-    exampleCommissionInfo?.commissionValue ?? 0,
-  )
-  const exampleClientPriceLabel = formatPriceWithCurrency(exampleCommissionInfo?.clientPrice ?? 0)
-  const commissionLinkSegments = strings.CLIENT_PRICE_INFO_LINK.split('{link}')
+  const commissionLinkSegments = (strings.CLIENT_PRICE_INFO_LINK || '').split('{link}')
 
   const dailyCommissionInfo = computeCommissionInfo(dailyPrice)
   const newPeriodCommissionInfo = computeCommissionInfo(newPeriod.dailyPrice)
   const editingPeriodCommissionInfo = computeCommissionInfo(editingPeriod?.dailyPrice ?? null)
+
   const sortedPricePeriods = useMemo(
     () =>
       pricePeriods.slice().sort((a, b) => {
-        if (a.startDate && b.startDate) {
-          return a.startDate.getTime() - b.startDate.getTime()
-        }
-
-        if (a.startDate) {
-          return -1
-        }
-
-        if (b.startDate) {
-          return 1
-        }
-
+        if (a.startDate && b.startDate) return a.startDate.getTime() - b.startDate.getTime()
+        if (a.startDate) return -1
+        if (b.startDate) return 1
         return 0
       }),
     [pricePeriods]
@@ -291,33 +208,20 @@ const CreateCar = () => {
   const isEditDialogOpen = editingPeriodIndex !== null && editingPeriod !== null
 
   const getPeriodValidationError = (period: PricePeriod | null): string | null => {
-    if (!period) {
-      return strings.PERIOD_REQUIRED_ERROR
-    }
+    if (!period) return strings.PERIOD_REQUIRED_ERROR
 
-    const { startDate, endDate, dailyPrice } = period
+    // évite le shadowing sur le nom "dailyPrice"
+    const { startDate, endDate, dailyPrice: periodDailyPrice } = period
 
-    if (!startDate || !endDate || dailyPrice === null || dailyPrice === undefined) {
-      return strings.PERIOD_REQUIRED_ERROR
-    }
+    if (!startDate || !endDate || periodDailyPrice === null || periodDailyPrice === undefined) return strings.PERIOD_REQUIRED_ERROR
 
     const start = new Date(startDate)
     const end = new Date(endDate)
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return strings.PERIOD_REQUIRED_ERROR
+    if (start > end) return strings.PERIOD_DATE_ORDER_ERROR
 
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-      return strings.PERIOD_REQUIRED_ERROR
-    }
-
-    if (start > end) {
-      return strings.PERIOD_DATE_ORDER_ERROR
-    }
-
-    const numericPrice = typeof dailyPrice === 'string' ? Number.parseFloat(dailyPrice) : dailyPrice
-
-    if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
-      return strings.PERIOD_PRICE_ERROR
-    }
-
+    const numericPrice = typeof periodDailyPrice === 'string' ? Number.parseFloat(periodDailyPrice as unknown as string) : periodDailyPrice
+    if (!Number.isFinite(numericPrice) || (numericPrice as number) <= 0) return strings.PERIOD_PRICE_ERROR
     return null
   }
 
@@ -325,28 +229,19 @@ const CreateCar = () => {
 
   const handleAddPeriod = () => {
     const validationError = getPeriodValidationError(newPeriod)
-
     if (validationError) {
-      setNewPeriodError(validationError)
-      return
-    }
-
+ setNewPeriodError(validationError); return
+}
     if (newPeriod.startDate && newPeriod.endDate && newPeriod.dailyPrice !== null) {
       const start = new Date(newPeriod.startDate)
       const end = new Date(newPeriod.endDate)
-      const dailyPriceValue =
-        typeof newPeriod.dailyPrice === 'string'
-          ? Number.parseFloat(newPeriod.dailyPrice)
-          : newPeriod.dailyPrice
+      const dailyPriceValue = typeof newPeriod.dailyPrice === 'string'
+        ? Number.parseFloat(newPeriod.dailyPrice as unknown as string)
+        : newPeriod.dailyPrice
 
       setPricePeriods([
         ...pricePeriods,
-        {
-          ...newPeriod,
-          startDate: start,
-          endDate: end,
-          dailyPrice: dailyPriceValue,
-        },
+        { ...newPeriod, startDate: start, endDate: end, dailyPrice: dailyPriceValue },
       ])
       setNewPeriod({ startDate: null, endDate: null, dailyPrice: null, reason: '' })
       setNewPeriodError(null)
@@ -382,24 +277,19 @@ const CreateCar = () => {
   }
 
   const handleSaveEditedPeriod = () => {
-    if (editingPeriodIndex === null || !editingPeriod) {
-      return
-    }
+    if (editingPeriodIndex === null || !editingPeriod) return
 
     const validationError = getPeriodValidationError(editingPeriod)
-
     if (validationError) {
-      setEditPeriodError(validationError)
-      return
-    }
+ setEditPeriodError(validationError); return
+}
 
     const updatedPeriods = pricePeriods.slice()
     updatedPeriods[editingPeriodIndex] = {
       ...editingPeriod,
       startDate: editingPeriod.startDate ? new Date(editingPeriod.startDate) : null,
       endDate: editingPeriod.endDate ? new Date(editingPeriod.endDate) : null,
-      dailyPrice:
-        editingPeriod.dailyPrice !== null ? Number.parseFloat(String(editingPeriod.dailyPrice)) : null,
+      dailyPrice: editingPeriod.dailyPrice !== null ? Number.parseFloat(String(editingPeriod.dailyPrice)) : null,
     }
 
     setPricePeriods(updatedPeriods)
@@ -410,64 +300,21 @@ const CreateCar = () => {
   const handleApplyDefaultPeriods = () => {
     const base = Number(dailyPrice)
     if (Number.isNaN(base)) {
-      setPricePeriods([])
-      return
-    }
+ setPricePeriods([]); return
+}
 
     const year = new Date().getFullYear()
     const defaults: PricePeriod[] = [
-      {
-        startDate: new Date(year, 0, 2),
-        endDate: new Date(year, 2, 15),
-        dailyPrice: base,
-      },
-      {
-        startDate: new Date(year, 2, 16),
-        endDate: new Date(year, 2, 25),
-        dailyPrice: base + 50,
-        reason: strings.EID_AL_FITR,
-      },
-      {
-        startDate: new Date(year, 2, 26),
-        endDate: new Date(year, 4, 20),
-        dailyPrice: base,
-      },
-      {
-        startDate: new Date(year, 4, 21),
-        endDate: new Date(year, 4, 31),
-        dailyPrice: base + 50,
-        reason: strings.EID_AL_ADHA,
-      },
-      {
-        startDate: new Date(year, 5, 1),
-        endDate: new Date(year, 5, 30),
-        dailyPrice: base + 50,
-        reason: strings.SUMMER,
-      },
-      {
-        startDate: new Date(year, 6, 1),
-        endDate: new Date(year, 7, 31),
-        dailyPrice: base + 80,
-        reason: strings.SUMMER,
-      },
-      {
-        startDate: new Date(year, 8, 1),
-        endDate: new Date(year, 8, 30),
-        dailyPrice: base + 50,
-      },
-      {
-        startDate: new Date(year, 9, 1),
-        endDate: new Date(year, 11, 15),
-        dailyPrice: base,
-      },
-      {
-        startDate: new Date(year, 11, 15),
-        endDate: new Date(year + 1, 0, 1),
-        dailyPrice: base + 50,
-        reason: strings.YEAR_END,
-      },
+      { startDate: new Date(year, 0, 2), endDate: new Date(year, 2, 15), dailyPrice: base },
+      { startDate: new Date(year, 2, 16), endDate: new Date(year, 2, 25), dailyPrice: base + 50, reason: strings.EID_AL_FITR },
+      { startDate: new Date(year, 2, 26), endDate: new Date(year, 4, 20), dailyPrice: base },
+      { startDate: new Date(year, 4, 21), endDate: new Date(year, 4, 31), dailyPrice: base + 50, reason: strings.EID_AL_ADHA },
+      { startDate: new Date(year, 5, 1), endDate: new Date(year, 5, 30), dailyPrice: base + 50, reason: strings.SUMMER },
+      { startDate: new Date(year, 6, 1), endDate: new Date(year, 7, 31), dailyPrice: base + 80, reason: strings.SUMMER },
+      { startDate: new Date(year, 8, 1), endDate: new Date(year, 8, 30), dailyPrice: base + 50 },
+      { startDate: new Date(year, 9, 1), endDate: new Date(year, 11, 15), dailyPrice: base },
+      { startDate: new Date(year, 11, 15), endDate: new Date(year + 1, 0, 1), dailyPrice: base + 50, reason: strings.YEAR_END },
     ]
-
     setPricePeriods(defaults)
   }
 
@@ -493,24 +340,16 @@ const CreateCar = () => {
 
   const handleEditUnavailablePeriod = (index: number) => {
     const periodToEdit = unavailablePeriods[index]
-    setNewUnavailablePeriod({
-      startDate: periodToEdit.startDate,
-      endDate: periodToEdit.endDate,
-    })
+    setNewUnavailablePeriod({ startDate: periodToEdit.startDate, endDate: periodToEdit.endDate })
     handleDeleteUnavailablePeriod(index)
   }
 
-  const handleBeforeUpload = () => {
-    setLoading(true)
-  }
+  const handleBeforeUpload = () => setLoading(true)
 
   const handleImageChange = (_image: bookcarsTypes.Car | string | null) => {
     setLoading(false)
     setImage(_image as string)
-
-    if (_image !== null) {
-      setImageError(false)
-    }
+    if (_image !== null) setImageError(false)
   }
 
   const handleImageValidate = (valid: boolean) => {
@@ -526,33 +365,18 @@ const CreateCar = () => {
     }
   }
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setName(e.target.value)
-  }
-
-  const handleSupplierChange = (values: bookcarsTypes.Option[]) => {
-    setSupplier(values.length > 0 ? values[0]._id : '')
-  }
-
   const handleMinimumDrivingLicenseYears = (_event: Event, value: number | number[]) => {
     if (typeof value === 'number') {
-      setMinimumDrivingLicenseYears(value)
-      console.log(_event)
-    }
+ setMinimumDrivingLicenseYears(value); console.log(_event)
+}
   }
-
-  const handleMinimumDrivingLicenseYearsText = (value: number) => `${value} ans`
 
   const validateMinimumAge = (age: string, updateState = true) => {
     if (age) {
       const _age = Number.parseInt(age, 10)
       const _minimumAgeValid = _age >= env.MINIMUM_AGE && _age <= 99
-      if (updateState) {
-        setMinimumAgeValid(_minimumAgeValid)
-      }
-      if (_minimumAgeValid) {
-        setFormError(false)
-      }
+      if (updateState) setMinimumAgeValid(_minimumAgeValid)
+      if (_minimumAgeValid) setFormError(false)
       return _minimumAgeValid
     }
     setMinimumAgeValid(true)
@@ -562,135 +386,68 @@ const CreateCar = () => {
 
   const handleMinimumAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMinimumAge(e.target.value)
-
     const _minimumAgeValid = validateMinimumAge(e.target.value, false)
     if (_minimumAgeValid) {
-      setMinimumAgeValid(true)
-      setFormError(false)
-    }
+ setMinimumAgeValid(true); setFormError(false)
+}
   }
 
   const handleLocationsChange = (_locations: bookcarsTypes.Option[]) => {
     setLocations(_locations)
-    setLocationsError(null) // Effacer l'erreur lorsque l'utilisateur modifie la sélection
+    setLocationsError(null)
   }
 
-  const handleCarRangeChange = (value: string) => {
-    setRange(value)
-  }
-
-  const handleMultimediaChange = (value: bookcarsTypes.CarMultimedia[]) => {
-    setMultimedia(value)
-  }
-
-  const handleRatingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRating(e.target.value)
-  }
-
-  const handleCo2Change = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCo2(e.target.value)
-  }
-
-  const handleAvailableChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAvailable(e.target.checked)
-  }
-
-  const handleCarTypeChange = (value: string) => {
-    setType(value)
-  }
-
-  const handleGearboxChange = (value: string) => {
-    setGearbox(value)
-  }
-
-  const handleAirconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAircon(e.target.checked)
-  }
-
-  const handleDepositChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDeposit(e.target.value)
-  }
-
-  const handleSeatsChange = (value: string) => {
-    setSeats(value)
-  }
-
-  const handleDoorsChange = (value: string) => {
-    setDoors(value)
-  }
-
-  const handleMileageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMileage(e.target.value)
-  }
-
-  const handleFuelPolicyChange = (value: string) => {
-    setFuelPolicy(value)
-  }
-
-  const handleCancellationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCancellation(e.target.value)
-  }
-
-  const handleAmendmentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAmendments(e.target.value)
-  }
+  const handleCarRangeChange = (value: string) => setRange(value)
+  const handleMultimediaChange = (value: bookcarsTypes.CarMultimedia[]) => setMultimedia(value)
+  const handleRatingChange = (e: React.ChangeEvent<HTMLInputElement>) => setRating(e.target.value)
+  const handleCo2Change = (e: React.ChangeEvent<HTMLInputElement>) => setCo2(e.target.value)
+  const handleAvailableChange = (e: React.ChangeEvent<HTMLInputElement>) => setAvailable(e.target.checked)
+  const handleCarTypeChange = (value: string) => setType(value)
+  const handleGearboxChange = (value: string) => setGearbox(value)
+  const handleAirconChange = (e: React.ChangeEvent<HTMLInputElement>) => setAircon(e.target.checked)
+  const handleSeatsChange = (value: string) => setSeats(value)
+  const handleDoorsChange = (value: string) => setDoors(value)
+  const handleMileageChange = (e: React.ChangeEvent<HTMLInputElement>) => setMileage(e.target.value)
+  const handleFuelPolicyChange = (value: string) => setFuelPolicy(value)
+  const handleCancellationChange = (e: React.ChangeEvent<HTMLInputElement>) => setCancellation(e.target.value)
+  const handleAmendmentsChange = (e: React.ChangeEvent<HTMLInputElement>) => setAmendments(e.target.value)
 
   const extraToNumber = (extra: string) => (extra === '' ? -1 : Number(extra))
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     try {
       e.preventDefault()
-
       setLoading(true)
 
       const _minimumAgeValid = validateMinimumAge(minimumAge)
       if (!_minimumAgeValid) {
-        setFormError(true)
-        setImageError(false)
-        return
-      }
-
+ setFormError(true); setImageError(false); return
+}
       if (!image) {
-        setImageError(true)
-        setImageSizeError(false)
-        return
-      }
+ setImageError(true); setImageSizeError(false); return
+}
 
-      // Vérifier si des localisations sont sélectionnées
       if (locations.length === 0) {
-        setLocationsError('Veuillez sélectionner au moins une localisation.')
-        return
-      }
+ setLocationsError('Veuillez sélectionner au moins une localisation.'); return
+}
       setLocationsError(null)
 
-      // Vérification des champs discount : si l'un est renseigné, l'autre doit l'être aussi
       if ((days && !discountPercentage) || (!days && discountPercentage)) {
-        setFormError(true)
-        // setErrorMessage('Si vous remplissez un champ, l\'autre doit également être renseigné.')
-        return
-      }
+ setFormError(true); return
+}
 
-      // Validation de la plage des jours et du pourcentage
       const dayValue = days ? parseInt(days, 10) : null
       const discountValue = discountPercentage ? parseInt(discountPercentage, 10) : null
-
       if (dayValue && (dayValue < 3 || dayValue > 30)) {
-        setFormError(true)
-        // setErrorMessage('Le nombre de jours doit être compris entre 3 et 30.')
-        return
-      }
-
+ setFormError(true); return
+}
       if (discountValue && (discountValue < 0 || discountValue >= 50)) {
-        setFormError(true)
-        // setErrorMessage('Le pourcentage de remise doit être inférieur à 50%.')
-        return
-      }
+ setFormError(true); return
+}
 
-      // Créer l'objet Discount si les deux champs sont remplis
-      const discount: Discount | undefined = dayValue && discountValue ? {
-        threshold: dayValue,
-        percentage: discountValue,
-      } : undefined
+      const discount: Discount | undefined = (dayValue && discountValue)
+        ? { threshold: dayValue, percentage: discountValue }
+        : undefined
 
       const data: bookcarsTypes.CreateCarPayload = {
         name,
@@ -729,16 +486,12 @@ const CreateCar = () => {
         minimumDrivingLicenseYears,
         unavailablePeriods,
         minimumRentalDays,
-        discounts: discount, // Ajouter le discount au payload
+        discounts: discount,
       }
 
       const car = await CarService.create(data)
-
-      if (car && car._id) {
-        navigate('/cars')
-      } else {
-        helper.error()
-      }
+      if (car && car._id) navigate('/cars')
+      else helper.error()
     } catch (err) {
       helper.error(err)
     } finally {
@@ -749,7 +502,6 @@ const CreateCar = () => {
   const onLoad = (user?: bookcarsTypes.User) => {
     if (user && user.verified) {
       setVisible(true)
-
       if (user.type === bookcarsTypes.RecordType.Supplier) {
         setSupplier(user._id as string)
         setIsSupplier(true)
@@ -759,15 +511,13 @@ const CreateCar = () => {
 
   const handleMinimumRentalDaysChange = (_event: Event, value: number | number[]) => {
     if (typeof value === 'number') {
-      setMinimumRentalDays(value)
-      console.log(_event)
-    }
+ setMinimumRentalDays(value); console.log(_event)
+}
   }
 
   const handleDaysChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target
     setDays(value)
-
     const parsedValue = parseInt(value, 10)
     setDaysValid(parsedValue >= 3 && parsedValue <= 30)
   }
@@ -775,7 +525,6 @@ const CreateCar = () => {
   const handleDiscountPercentageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = event.target
     setDiscountPercentage(value)
-
     const parsedValue = parseInt(value, 10)
     setDiscountPercentageValid(parsedValue >= 0 && parsedValue < 50)
   }
@@ -806,7 +555,7 @@ const CreateCar = () => {
 
             <FormControl fullWidth margin="dense">
               <InputLabel className="required">{strings.NAME}</InputLabel>
-              <Input type="text" required value={name} autoComplete="off" onChange={handleNameChange} />
+              <Input type="text" required value={name} autoComplete="off" onChange={(e) => setName(e.target.value)} />
             </FormControl>
 
             {!isSupplier && (
@@ -815,7 +564,7 @@ const CreateCar = () => {
                   label={strings.SUPPLIER}
                   required
                   variant="standard"
-                  onChange={handleSupplierChange}
+                  onChange={(values) => setSupplier(values.length > 0 ? values[0]._id : '')}
                 />
               </FormControl>
             )}
@@ -831,24 +580,18 @@ const CreateCar = () => {
                 onChange={handleMinimumAgeChange}
                 inputProps={{ inputMode: 'numeric', pattern: '^\\d{2}$' }}
               />
-              <FormHelperText error={!minimumAgeValid}>{(!minimumAgeValid && strings.MINIMUM_AGE_NOT_VALID) || ''}</FormHelperText>
+              <FormHelperText error={!minimumAgeValid}>
+                {(!minimumAgeValid && strings.MINIMUM_AGE_NOT_VALID) || ''}
+              </FormHelperText>
             </FormControl>
 
             <FormControl fullWidth margin="dense">
-              <InputLabel className="required" shrink>
-                {strings.DRVER_LICENSE_MINIMUM_AGE}
-              </InputLabel>
-              <Box
-                sx={{
-                    borderRadius: '4px', // Coins arrondis
-                    padding: '16px', // Espacement interne
-                    marginTop: '8px', // Ajustement pour l'espace avec le label
-                  }}
-              >
+              <InputLabel className="required" shrink>{strings.DRVER_LICENSE_MINIMUM_AGE}</InputLabel>
+              <Box sx={{ borderRadius: '4px', padding: '16px', marginTop: '8px' }}>
                 <Slider
                   aria-label="Minimum Driving License Years"
                   defaultValue={2}
-                  getAriaValueText={handleMinimumDrivingLicenseYearsText}
+                  getAriaValueText={(v) => `${v} ans`}
                   onChange={handleMinimumDrivingLicenseYears}
                   valueLabelDisplay="auto"
                   shiftStep={1}
@@ -861,18 +604,10 @@ const CreateCar = () => {
             </FormControl>
 
             <FormControl fullWidth margin="dense">
-              <InputLabel className="required" shrink>
-                {strings.MINIMUM_RENTAL_DAYS}
-              </InputLabel>
-              <Box
-                sx={{
-                    borderRadius: '4px', // Coins arrondis
-                    padding: '16px', // Espacement interne
-                    marginTop: '8px', // Ajustement pour l'espace avec le label
-                  }}
-              >
+              <InputLabel className="required" shrink>{strings.MINIMUM_RENTAL_DAYS}</InputLabel>
+              <Box sx={{ borderRadius: '4px', padding: '16px', marginTop: '8px' }}>
                 <Slider
-                  aria-label="Minimum Driving License Years"
+                  aria-label="Minimum Rental Days"
                   defaultValue={1}
                   onChange={handleMinimumRentalDaysChange}
                   valueLabelDisplay="auto"
@@ -887,23 +622,14 @@ const CreateCar = () => {
 
             <FormControl fullWidth margin="dense">
               <LocationSelectList label={strings.LOCATIONS} multiple required variant="standard" onChange={handleLocationsChange} />
-              {locationsError && (
-                <FormHelperText error>{locationsError}</FormHelperText>
-              )}
+              {locationsError && <FormHelperText error>{locationsError}</FormHelperText>}
             </FormControl>
 
             <FormControl fullWidth margin="dense">
               <TextField
                 label={`${strings.AGENCY_DEFAULT_PRICE_LABEL} (${commonStrings.CURRENCY}${commonStrings.DAILY})`}
-                slotProps={{
-                  htmlInput: {
-                    inputMode: 'numeric',
-                    pattern: '^\\d+(.\\d+)?$',
-                  },
-                }}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setDailyPrice(e.target.value)
-                }}
+                slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' } }}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDailyPrice(e.target.value)}
                 onBlur={handleDailyPriceBlur}
                 required
                 variant="standard"
@@ -916,10 +642,9 @@ const CreateCar = () => {
               <Typography fontWeight={600}>{strings.CLIENT_PRICE_INFO_TITLE}</Typography>
               <Stack spacing={1} sx={{ mt: 1 }}>
                 <Typography variant="body2">
-                  {strings.CLIENT_PRICE_INFO_INTRO.replace('{date}', commissionEffectiveDateLabel).replace(
-                    '{rate}',
-                    commissionRateLabel,
-                  )}
+                  {strings.CLIENT_PRICE_INFO_INTRO
+                    .replace('{date}', commissionEffectiveDateLabel)
+                    .replace('{rate}', commissionRateLabel)}
                 </Typography>
                 <Typography variant="body2">{strings.CLIENT_PRICE_INFO_COLLECTION}</Typography>
                 <Typography variant="body2">
@@ -931,17 +656,11 @@ const CreateCar = () => {
                 </Typography>
               </Stack>
               {dailyCommissionInfo && (
-                <Box
-                  sx={{
-                    mt: 2,
-                    display: 'flex',
-                    flexDirection: isMobile ? 'column' : 'row',
-                    gap: isMobile ? 1 : 3,
-                  }}
-                >
+                <Box sx={{ mt: 2, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 1 : 3 }}>
                   <Typography variant="body2">
-                    <strong>{strings.CLIENT_PRICE_LABEL}:</strong>
-                    {' '}
+                    <strong>{`${strings.CLIENT_PRICE_LABEL}:`}</strong>
+                  </Typography>
+                  <Typography variant="body2">
                     {formatPriceWithCurrency(dailyCommissionInfo.clientPrice)}
                   </Typography>
                   <Typography variant="body2" sx={{ mt: isMobile ? 0.5 : 0 }}>
@@ -958,20 +677,12 @@ const CreateCar = () => {
                 title={strings.SPECIAL_PRICE_TITLE}
                 subheader={strings.SPECIAL_PRICE_SUBHEADER}
                 subheaderTypographyProps={{ sx: { whiteSpace: 'normal' } }}
-                sx={{
-                  '& .MuiCardHeader-content': {
-                    minWidth: 0,
-                  },
-                }}
+                sx={{ '& .MuiCardHeader-content': { minWidth: 0 } }}
                 action={
                   !isMobile && (
                     <Stack direction="row" spacing={1} alignItems="center">
                       <Chip label={strings.OPTIONAL_BADGE} size="small" color="primary" variant="outlined" />
-                      <Button
-                        variant="text"
-                        startIcon={<AutoAwesomeIcon fontSize="small" />}
-                        onClick={handleApplyDefaultPeriods}
-                      >
+                      <Button variant="text" startIcon={<AutoAwesomeIcon fontSize="small" />} onClick={handleApplyDefaultPeriods}>
                         {strings.ADD_DEFAULT_PERIODS}
                       </Button>
                     </Stack>
@@ -983,12 +694,7 @@ const CreateCar = () => {
                   {isMobile && (
                     <Stack spacing={1}>
                       <Chip label={strings.OPTIONAL_BADGE} size="small" color="primary" variant="outlined" />
-                      <Button
-                        variant="text"
-                        startIcon={<AutoAwesomeIcon fontSize="small" />}
-                        onClick={handleApplyDefaultPeriods}
-                        fullWidth
-                      >
+                      <Button variant="text" startIcon={<AutoAwesomeIcon fontSize="small" />} onClick={handleApplyDefaultPeriods} fullWidth>
                         {strings.ADD_DEFAULT_PERIODS}
                       </Button>
                     </Stack>
@@ -1001,9 +707,8 @@ const CreateCar = () => {
                           value={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
                           maxDate={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
                           onChange={(date) => {
-                            setNewPeriod({ ...newPeriod, startDate: date })
-                            setNewPeriodError(null)
-                          }}
+ setNewPeriod({ ...newPeriod, startDate: date }); setNewPeriodError(null)
+}}
                           language={language}
                           showTime={false}
                         />
@@ -1016,9 +721,8 @@ const CreateCar = () => {
                           value={newPeriod.endDate ? new Date(newPeriod.endDate) : undefined}
                           minDate={newPeriod.startDate ? new Date(newPeriod.startDate) : undefined}
                           onChange={(date) => {
-                            setNewPeriod({ ...newPeriod, endDate: date })
-                            setNewPeriodError(null)
-                          }}
+ setNewPeriod({ ...newPeriod, endDate: date }); setNewPeriodError(null)
+}}
                           language={language}
                           showTime={false}
                         />
@@ -1032,9 +736,8 @@ const CreateCar = () => {
                           value={newPeriod.reason || ''}
                           variant="standard"
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            setNewPeriod({ ...newPeriod, reason: e.target.value })
-                            setNewPeriodError(null)
-                          }}
+ setNewPeriod({ ...newPeriod, reason: e.target.value }); setNewPeriodError(null)
+}}
                         >
                           <MenuItem value="">-</MenuItem>
                           <MenuItem value={strings.EID_AL_FITR}>{strings.EID_AL_FITR}</MenuItem>
@@ -1054,13 +757,12 @@ const CreateCar = () => {
                           variant="standard"
                           autoComplete="off"
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            setNewPeriod({ ...newPeriod, dailyPrice: e.target.value ? Number(e.target.value) : null })
-                            setNewPeriodError(null)
-                          }}
+ setNewPeriod({ ...newPeriod, dailyPrice: e.target.value ? Number(e.target.value) : null }); setNewPeriodError(null)
+}}
                         />
                         {newPeriodCommissionInfo && (
                           <FormHelperText sx={{ mt: 1 }}>
-                            <strong>{strings.CLIENT_PRICE_LABEL}:</strong>
+                            <strong>{`${strings.CLIENT_PRICE_LABEL}:`}</strong>
                             {' '}
                             {formatPriceWithCurrency(newPeriodCommissionInfo.clientPrice)}
                             {' • '}
@@ -1073,20 +775,10 @@ const CreateCar = () => {
                     </Grid>
                     <Grid item xs={12} md={3}>
                       <Stack spacing={1} sx={{ height: '100%', justifyContent: 'flex-end' }}>
-                        <Button
-                          variant="contained"
-                          size="medium"
-                          onClick={handleAddPeriod}
-                          disabled={Boolean(getPeriodValidationError(newPeriod))}
-                          fullWidth={isMobile}
-                        >
+                        <Button variant="contained" size="medium" onClick={handleAddPeriod} disabled={Boolean(getPeriodValidationError(newPeriod))} fullWidth={isMobile}>
                           {strings.ADD_PERIOD}
                         </Button>
-                        {newPeriodError && (
-                          <Typography variant="caption" color="error">
-                            {newPeriodError}
-                          </Typography>
-                        )}
+                        {newPeriodError && <Typography variant="caption" color="error">{newPeriodError}</Typography>}
                       </Stack>
                     </Grid>
                   </Grid>
@@ -1096,21 +788,15 @@ const CreateCar = () => {
                       <Divider sx={{ my: 1 }} />
                       {isMobile ? (
                         <Stack spacing={2}>
-                          {sortedPricePeriods.map((period, index) => {
+                          {sortedPricePeriods.map((period) => {
                             const commissionInfo = computeCommissionInfo(period.dailyPrice)
-                            const agencyPrice =
-                              typeof period.dailyPrice === 'number'
-                                ? formatPriceWithCurrency(period.dailyPrice)
-                                : '—'
-                            const clientPrice = commissionInfo
-                              ? formatPriceWithCurrency(commissionInfo.clientPrice)
-                              : '—'
-                            const commissionAmount = commissionInfo
-                              ? formatPriceWithCurrency(commissionInfo.commissionValue)
-                              : '—'
+                            const agencyPrice = typeof period.dailyPrice === 'number' ? formatPriceWithCurrency(period.dailyPrice) : '—'
+                            const clientPrice = commissionInfo ? formatPriceWithCurrency(commissionInfo.clientPrice) : '—'
+                            const commissionAmount = commissionInfo ? formatPriceWithCurrency(commissionInfo.commissionValue) : '—'
+                            const idx = sortedPricePeriods.indexOf(period)
 
                             return (
-                              <Paper key={`${period.startDate?.toString() ?? 'start'}-${index}`} variant="outlined" sx={{ p: 2 }}>
+                              <Paper key={makePeriodKey(period, '_mobile')} variant="outlined" sx={{ p: 2 }}>
                                 <Stack spacing={1}>
                                   <Stack direction="row" justifyContent="space-between">
                                     <Typography variant="subtitle2">{strings.START_DATE}</Typography>
@@ -1122,9 +808,7 @@ const CreateCar = () => {
                                   </Stack>
                                   <Stack direction="row" justifyContent="space-between">
                                     <Typography variant="subtitle2">{strings.REASON}</Typography>
-                                    <Typography variant="body2" sx={{ textAlign: 'right' }}>
-                                      {period.reason || '—'}
-                                    </Typography>
+                                    <Typography variant="body2" sx={{ textAlign: 'right' }}>{period.reason || '—'}</Typography>
                                   </Stack>
                                   <Stack direction="row" justifyContent="space-between">
                                     <Typography variant="subtitle2">{strings.AGENCY_PRICE_LABEL}</Typography>
@@ -1139,12 +823,8 @@ const CreateCar = () => {
                                     <Typography variant="body2">{commissionAmount}</Typography>
                                   </Stack>
                                   <Stack direction="row" justifyContent="flex-end" spacing={1}>
-                                    <IconButton onClick={() => handleEditPeriod(index)} size="small">
-                                      <EditIcon fontSize="small" />
-                                    </IconButton>
-                                    <IconButton onClick={() => handleDeletePeriod(index)} size="small" color="error">
-                                      <DeleteIcon fontSize="small" />
-                                    </IconButton>
+                                    <IconButton onClick={() => handleEditPeriod(idx)} size="small"><EditIcon fontSize="small" /></IconButton>
+                                    <IconButton onClick={() => handleDeletePeriod(idx)} size="small" color="error"><DeleteIcon fontSize="small" /></IconButton>
                                   </Stack>
                                 </Stack>
                               </Paper>
@@ -1166,21 +846,15 @@ const CreateCar = () => {
                               </TableRow>
                             </TableHead>
                             <TableBody>
-                              {sortedPricePeriods.map((period, index) => {
+                              {sortedPricePeriods.map((period) => {
                                 const commissionInfo = computeCommissionInfo(period.dailyPrice)
-                                const agencyPrice =
-                                  typeof period.dailyPrice === 'number'
-                                    ? formatPriceWithCurrency(period.dailyPrice)
-                                    : '—'
-                                const clientPrice = commissionInfo
-                                  ? formatPriceWithCurrency(commissionInfo.clientPrice)
-                                  : '—'
-                                const commissionAmount = commissionInfo
-                                  ? formatPriceWithCurrency(commissionInfo.commissionValue)
-                                  : '—'
+                                const agencyPrice = typeof period.dailyPrice === 'number' ? formatPriceWithCurrency(period.dailyPrice) : '—'
+                                const clientPrice = commissionInfo ? formatPriceWithCurrency(commissionInfo.clientPrice) : '—'
+                                const commissionAmount = commissionInfo ? formatPriceWithCurrency(commissionInfo.commissionValue) : '—'
+                                const idx = sortedPricePeriods.indexOf(period)
 
                                 return (
-                                  <TableRow key={`${period.startDate?.toString() ?? 'period'}-${index}`} hover>
+                                  <TableRow key={makePeriodKey(period, '_table')} hover>
                                     <TableCell>{formatDateForDisplay(period.startDate)}</TableCell>
                                     <TableCell>{formatDateForDisplay(period.endDate)}</TableCell>
                                     <TableCell>{period.reason || '—'}</TableCell>
@@ -1188,10 +862,10 @@ const CreateCar = () => {
                                     <TableCell align="right">{clientPrice}</TableCell>
                                     <TableCell align="right">{commissionAmount}</TableCell>
                                     <TableCell align="center">
-                                      <IconButton onClick={() => handleEditPeriod(index)} size="small" sx={{ mr: 1 }}>
+                                      <IconButton onClick={() => handleEditPeriod(idx)} size="small" sx={{ mr: 1 }}>
                                         <EditIcon fontSize="small" />
                                       </IconButton>
-                                      <IconButton onClick={() => handleDeletePeriod(index)} size="small" color="error">
+                                      <IconButton onClick={() => handleDeletePeriod(idx)} size="small" color="error">
                                         <DeleteIcon fontSize="small" />
                                       </IconButton>
                                     </TableCell>
@@ -1216,41 +890,22 @@ const CreateCar = () => {
                   size="small"
                   color="primary"
                   variant="outlined"
-                  sx={{
-                    height: 'auto',
-                    margin: '0 0px 4px 10px',
-                    '& .MuiChip-label': {
-                      display: 'block',
-                      whiteSpace: 'normal',
-                      paddingBottom: '3px'
-                    },
-                  }}
+                  sx={{ height: 'auto', margin: '0 0px 4px 10px', '& .MuiChip-label': { display: 'block', whiteSpace: 'normal', paddingBottom: '3px' } }}
                 />
                 <br />
                 <small>
-                  Offrez une réduction aux clients qui réservent pour une période prolongée.
-                  Par exemple, appliquez
-                  {' '}
-                  <strong>5% de remise</strong>
+                  Offrez une réduction aux clients qui réservent pour une période prolongée. Par exemple,
+                  <strong> 5% de remise </strong>
                   {' '}
                   pour toute réservation de
-                  {' '}
-                  <strong>14 jours ou plus</strong>
+                  <strong> 14 jours ou plus</strong>
                   .
                 </small>
               </span>
 
               <Box
                 component="form"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                  mt: 2,
-                  p: 2,
-                  border: '1px solid #ccc',
-                  borderRadius: '8px'
-                }}
+                sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2, p: 2, border: '1px solid #ccc', borderRadius: '8px' }}
                 noValidate
                 autoComplete="off"
               >
@@ -1262,9 +917,7 @@ const CreateCar = () => {
                   onChange={handleDaysChange}
                   error={!daysValid}
                   helperText={!daysValid ? 'Doit être entre 3 et 30 jours.' : `À partir de ${days || 0} jours, une remise est appliquée.`}
-                  slotProps={{
-                    inputLabel: { shrink: true },
-                  }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                   sx={{ flex: 1 }}
                 />
 
@@ -1275,10 +928,8 @@ const CreateCar = () => {
                   value={discountPercentage}
                   onChange={handleDiscountPercentageChange}
                   error={!discountPercentageValid}
-                  helperText={!discountPercentageValid ? 'Doit être inférieur à 50%.' : `Une remise de ${discountPercentage || 0}% de réduction sur les ${days || 0} jours.`}
-                  slotProps={{
-                    inputLabel: { shrink: true },
-                  }}
+                  helperText={!discountPercentageValid ? 'Doit être inférieur à 50%.' : `Une remise de ${discountPercentage || 0}% sur ${days || 0} jours.`}
+                  slotProps={{ inputLabel: { shrink: true } }}
                   sx={{ flex: 1 }}
                 />
               </Box>
@@ -1287,13 +938,8 @@ const CreateCar = () => {
             <FormControl fullWidth margin="dense">
               <TextField
                 label={`${csStrings.DEPOSIT} (${commonStrings.CURRENCY})`}
-                slotProps={{
-                  htmlInput: {
-                    inputMode: 'numeric',
-                    pattern: '^\\d+(.\\d+)?$',
-                  },
-                }}
-                onChange={handleDepositChange}
+                slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' } }}
+                onChange={(e) => setDeposit(e.target.value)}
                 required
                 variant="standard"
                 autoComplete="off"
@@ -1312,14 +958,7 @@ const CreateCar = () => {
             <FormControl fullWidth margin="dense">
               <TextField
                 label={strings.RATING}
-                slotProps={{
-                  htmlInput: {
-                    type: 'number',
-                    min: 1,
-                    max: 5,
-                    step: 0.01,
-                  },
-                }}
+                slotProps={{ htmlInput: { type: 'number', min: 1, max: 5, step: 0.01 } }}
                 onChange={handleRatingChange}
                 variant="standard"
                 autoComplete="off"
@@ -1350,20 +989,10 @@ const CreateCar = () => {
                   size="small"
                   color="primary"
                   variant="outlined"
-                  sx={{
-                    height: 'auto',
-                    margin: '0 0px 4px 10px',
-                    '& .MuiChip-label': {
-                      display: 'block',
-                      whiteSpace: 'normal',
-                      paddingBottom: '3px',
-                    },
-                  }}
+                  sx={{ height: 'auto', margin: '0 0px 4px 10px', '& .MuiChip-label': { display: 'block', whiteSpace: 'normal', paddingBottom: '3px' } }}
                 />
                 <br />
-                <small>
-                  (par exemple, si elle est louée en dehors de Plany, en maintenance, ou pour toute autre raison)
-                </small>
+                <small>(par exemple, hors Plany, maintenance…)</small>
               </span>
 
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
@@ -1371,7 +1000,7 @@ const CreateCar = () => {
                   <DateTimePicker
                     label={strings.START_DATE}
                     value={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined}
-                    maxDate={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined} // Limite la date max en fonction de la date de fin
+                    maxDate={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined}
                     onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, startDate: date })}
                     language={language}
                     showTime={false}
@@ -1381,22 +1010,19 @@ const CreateCar = () => {
                   <DateTimePicker
                     label={strings.END_DATE}
                     value={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined}
-                    minDate={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined} // Limite la date min en fonction de la date de début
+                    minDate={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined}
                     onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, endDate: date })}
                     language={language}
                     showTime={false}
                   />
                 </FormControl>
                 <div className="add-button" style={{ marginLeft: '15px' }}>
-                  <Button
-                    size="medium"
-                    onClick={handleAddUnavailablePeriod}
-                    disabled={!newUnavailablePeriod.startDate || !newUnavailablePeriod.endDate}
-                  >
+                  <Button size="medium" onClick={handleAddUnavailablePeriod} disabled={!newUnavailablePeriod.startDate || !newUnavailablePeriod.endDate}>
                     Ajouter
                   </Button>
                 </div>
               </div>
+
               {unavailablePeriods.length > 0 && (
                 <TableContainer component={Paper}>
                   <Table>
@@ -1409,17 +1035,13 @@ const CreateCar = () => {
                     </TableHead>
                     <TableBody>
                       {unavailablePeriods.map((period, index) => (
-                        // eslint-disable-next-line react/no-array-index-key
-                        <TableRow key={index}>
+                        // ok de garder l'index ici (éléments éditables uniques côté utilisateur)
+                        <TableRow key={`${period.startDate?.getTime() ?? 's'}-${period.endDate?.getTime() ?? 'e'}}`}>
                           <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
                           <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
                           <TableCell>
-                            <IconButton onClick={() => handleEditUnavailablePeriod(index)}>
-                              <EditIcon />
-                            </IconButton>
-                            <IconButton onClick={() => handleDeleteUnavailablePeriod(index)}>
-                              <DeleteIcon />
-                            </IconButton>
+                            <IconButton onClick={() => handleEditUnavailablePeriod(index)}><EditIcon /></IconButton>
+                            <IconButton onClick={() => handleDeleteUnavailablePeriod(index)}><DeleteIcon /></IconButton>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1500,9 +1122,7 @@ const CreateCar = () => {
                 className="btn-secondary btn-margin-bottom"
                 size="small"
                 onClick={async () => {
-                  if (image) {
-                    await CarService.deleteTempImage(image)
-                  }
+                  if (image) await CarService.deleteTempImage(image)
                   navigate('/cars')
                 }}
               >
@@ -1518,13 +1138,12 @@ const CreateCar = () => {
           </form>
         </Paper>
       </div>
+
       <Dialog open={isEditDialogOpen} onClose={handleCloseEditPeriod} fullWidth maxWidth="sm">
         <DialogTitle>{strings.EDIT_PERIOD_TITLE}</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              {strings.EDIT_PERIOD_DESCRIPTION}
-            </Typography>
+            <Typography variant="body2" color="text.secondary">{strings.EDIT_PERIOD_DESCRIPTION}</Typography>
             <FormControl fullWidth>
               <DateTimePicker
                 label={strings.START_DATE}
@@ -1551,8 +1170,7 @@ const CreateCar = () => {
                 label={strings.REASON}
                 value={editingPeriod?.reason || ''}
                 variant="standard"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleEditingPeriodChange('reason', e.target.value || '')}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleEditingPeriodChange('reason', e.target.value || '')}
               >
                 <MenuItem value="">-</MenuItem>
                 <MenuItem value={strings.EID_AL_FITR}>{strings.EID_AL_FITR}</MenuItem>
@@ -1569,12 +1187,11 @@ const CreateCar = () => {
                 value={editingPeriod?.dailyPrice ?? ''}
                 variant="standard"
                 autoComplete="off"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleEditingPeriodChange('dailyPrice', e.target.value ? Number(e.target.value) : null)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleEditingPeriodChange('dailyPrice', e.target.value ? Number(e.target.value) : null)}
               />
               {editingPeriodCommissionInfo && (
                 <FormHelperText sx={{ mt: 1 }}>
-                  <strong>{strings.CLIENT_PRICE_LABEL}:</strong>
+                  <strong>{`${strings.CLIENT_PRICE_LABEL}:`}</strong>
                   {' '}
                   {formatPriceWithCurrency(editingPeriodCommissionInfo.clientPrice)}
                   {' • '}
@@ -1584,22 +1201,17 @@ const CreateCar = () => {
                 </FormHelperText>
               )}
             </FormControl>
-            {editPeriodError && (
-              <Typography variant="body2" color="error">
-                {editPeriodError}
-              </Typography>
-            )}
+            {editPeriodError && <Typography variant="body2" color="error">{editPeriodError}</Typography>}
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseEditPeriod} color="inherit">
-            {commonStrings.CANCEL}
-          </Button>
+          <Button onClick={handleCloseEditPeriod} color="inherit">{commonStrings.CANCEL}</Button>
           <Button onClick={handleSaveEditedPeriod} variant="contained" disabled={!isEditingPeriodValid}>
             {strings.SAVE_CHANGES}
           </Button>
         </DialogActions>
       </Dialog>
+
       {loading && <Backdrop text={commonStrings.PLEASE_WAIT} />}
     </Layout>
   )

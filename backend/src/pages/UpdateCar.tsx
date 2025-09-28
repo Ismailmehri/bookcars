@@ -77,68 +77,27 @@ interface PricePeriod {
 }
 
 interface UnavailablePeriod {
-  startDate: Date | null;
-  endDate: Date | null;
+  startDate: Date | null
+  endDate: Date | null
 }
 
 const marks = [
-  {
-    value: 0,
-    label: '0 an',
-  },
-  {
-    value: 1,
-    label: '1 an',
-  },
-  {
-    value: 2,
-    label: '2 ans',
-  },
-  {
-    value: 3,
-    label: '3 ans',
-  },
-  {
-    value: 4,
-    label: '4 ans',
-  },
-  {
-    value: 5,
-    label: '5 ans',
-  }
+  { value: 0, label: '0 an' },
+  { value: 1, label: '1 an' },
+  { value: 2, label: '2 ans' },
+  { value: 3, label: '3 ans' },
+  { value: 4, label: '4 ans' },
+  { value: 5, label: '5 ans' },
 ]
 
 const marksDays = [
-  {
-    value: 1,
-    label: '1 jour',
-  },
-  {
-    value: 2,
-    label: '2 jours',
-  },
-  {
-    value: 3,
-    label: '3 jours',
-  },
-  {
-    value: 4,
-    label: '4 jours',
-    disabled: true
-  },
-  {
-    value: 5,
-    label: '5 jours',
-    disabled: true
-  },
-  {
-    value: 6,
-    label: '6 jours',
-  },
-  {
-    value: 7,
-    label: '7 jours',
-  }
+  { value: 1, label: '1 jour' },
+  { value: 2, label: '2 jours' },
+  { value: 3, label: '3 jours' },
+  { value: 4, label: '4 jours', disabled: true },
+  { value: 5, label: '5 jours', disabled: true },
+  { value: 6, label: '6 jours' },
+  { value: 7, label: '7 jours' },
 ]
 
 const getLocale = (language: string) => {
@@ -152,8 +111,6 @@ const getLocale = (language: string) => {
   }
 }
 
-const COMMISSION_EXAMPLE_PRICE = 70
-
 const UpdateCar = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [car, setCar] = useState<bookcarsTypes.Car>()
@@ -161,20 +118,24 @@ const UpdateCar = () => {
   const [loading, setLoading] = useState(false)
   const [visible, setVisible] = useState(false)
   const [error, setError] = useState(false)
+
   const [imageRequired, setImageRequired] = useState(false)
   const [imageSizeError, setImageSizeError] = useState(false)
   const [image, setImage] = useState('')
   const [name, setName] = useState('')
+
   const [supplier, setSupplier] = useState<bookcarsTypes.Option>()
   const [locations, setLocations] = useState<bookcarsTypes.Option[]>([])
   const [range, setRange] = useState('')
   const [multimedia, setMultimedia] = useState<bookcarsTypes.CarMultimedia[]>([])
   const [rating, setRating] = useState('')
   const [co2, setCo2] = useState('')
+
   const [minimumDrivingLicenseYears, setMinimumDrivingLicenseYears] = useState<number>(3)
   const [available, setAvailable] = useState(false)
   const [type, setType] = useState('')
   const [gearbox, setGearbox] = useState('')
+
   const [dailyPrice, setDailyPrice] = useState('')
   const [discountedDailyPrice, setDiscountedDailyPrice] = useState('')
   const [biWeeklyPrice, setBiWeeklyPrice] = useState('')
@@ -183,9 +144,11 @@ const UpdateCar = () => {
   const [discountedWeeklyPrice, setDiscountedWeeklyPrice] = useState('')
   const [monthlyPrice, setMonthlyPrice] = useState('')
   const [discountedMonthlyPrice, setDiscountedMonthlyPrice] = useState('')
+
   const [seats, setSeats] = useState('')
   const [doors, setDoors] = useState('')
   const [aircon, setAircon] = useState(false)
+
   const [mileage, setMileage] = useState('')
   const [fuelPolicy, setFuelPolicy] = useState('')
   const [cancellation, setCancellation] = useState('')
@@ -194,19 +157,25 @@ const UpdateCar = () => {
   const [collisionDamageWaiver, setCollisionDamageWaiver] = useState('')
   const [fullInsurance, setFullInsurance] = useState('')
   const [additionalDriver, setAdditionalDriver] = useState('')
+
   const [minimumAge, setMinimumAge] = useState(String(env.MINIMUM_AGE))
   const [minimumAgeValid, setMinimumAgeValid] = useState(true)
   const [formError, setFormError] = useState(false)
+
   const [periodPriceError, setPeriodPriceError] = useState(false)
   const [periodUnvalableError, setPeriodUnvalableError] = useState(false)
+
   const [deposit, setDeposit] = useState('')
   const [pricePeriods, setPricePeriods] = useState<PricePeriod[]>([])
   const [unavailablePeriods, setUnavailablePeriods] = useState<UnavailablePeriod[]>([])
   const [minimumRentalDays, setMinimumRentalDays] = useState<number>(1)
-  const [days, setDays] = useState<string>('') // Utiliser "" au lieu de undefined
+
+  // remise longue durée
+  const [days, setDays] = useState<string>('') // "" plutôt qu'undefined
   const [discountPercentage, setDiscountPercentage] = useState<string>('')
   const [daysValid, setDaysValid] = useState<boolean>(true)
   const [discountPercentageValid, setDiscountPercentageValid] = useState<boolean>(true)
+
   const [newUnavailablePeriod, setNewUnavailablePeriod] = useState<UnavailablePeriod>({
     startDate: null,
     endDate: null,
@@ -228,6 +197,9 @@ const UpdateCar = () => {
   const locale = getLocale(language)
   const isMobile = env.isMobile()
 
+  // ---------------------------
+  // Helpers placés AVANT usage
+  // ---------------------------
   const formatCommissionRate = (value: number) =>
     new Intl.NumberFormat(locale, {
       minimumFractionDigits: value % 1 === 0 ? 0 : 2,
@@ -241,36 +213,36 @@ const UpdateCar = () => {
   }
 
   const formatDateForDisplay = (value: Date | null) => {
-    if (!value) {
-      return '—'
-    }
-
+    if (!value) return '—'
     return new Intl.DateTimeFormat(locale).format(value)
   }
 
   const computeCommissionInfo = (value: number | string | null | undefined) => {
-    if (value === null || value === undefined) {
-      return undefined
-    }
-
+    if (value === null || value === undefined) return undefined
     const numeric = typeof value === 'string' ? Number.parseFloat(value) : value
-
-    if (numeric === null || numeric === undefined) {
-      return undefined
-    }
-
-    if (Number.isNaN(numeric) || !Number.isFinite(numeric) || numeric <= 0) {
-      return undefined
-    }
+    if (numeric === null || numeric === undefined) return undefined
+    if (Number.isNaN(numeric) || !Number.isFinite(numeric) || numeric <= 0) return undefined
 
     const commissionValue = Number(((numeric * env.COMMISSION_RATE) / 100).toFixed(2))
     const clientPrice = Number((numeric + commissionValue).toFixed(2))
-
-    return {
-      commissionValue,
-      clientPrice,
-    }
+    return { commissionValue, clientPrice }
   }
+
+  const extraToString = (extra: number) => (extra === -1 ? '' : String(extra))
+  const extraToNumber = (extra: string) => (extra === '' ? -1 : Number(extra))
+
+  const getPrice = (price: string) => (price && Number(price)) || null
+  const getPriceAsString = (price?: number | null) => (price && price.toString()) || ''
+
+  const resolveDiscountForPayload = (): Discount | undefined => {
+    const dayValue = days ? Number.parseInt(days, 10) : null
+    const discountValue = discountPercentage ? Number.parseInt(discountPercentage, 10) : null
+    if (dayValue === null || discountValue === null) return undefined
+    if (Number.isNaN(dayValue) || Number.isNaN(discountValue)) return undefined
+    if (dayValue < 3 || dayValue > 30 || discountValue < 0 || discountValue >= 50) return undefined
+    return { threshold: dayValue, percentage: discountValue }
+  }
+  // ---------------------------
 
   const commissionRateLabel = `${formatCommissionRate(env.COMMISSION_RATE)}%`
   const commissionEffectiveDateLabel = new Intl.DateTimeFormat(locale, {
@@ -279,103 +251,47 @@ const UpdateCar = () => {
     year: 'numeric',
   }).format(env.COMMISSION_EFFECTIVE_DATE)
   const commissionManagementPath = user?.type === bookcarsTypes.RecordType.Supplier ? '/agency-commissions' : '/admin-commissions'
-  const exampleCommissionInfo = computeCommissionInfo(COMMISSION_EXAMPLE_PRICE)
-  const exampleAgencyPriceLabel = formatPriceWithCurrency(COMMISSION_EXAMPLE_PRICE)
-  const exampleCommissionAmountLabel = formatPriceWithCurrency(
-    exampleCommissionInfo?.commissionValue ?? 0,
-  )
-  const exampleClientPriceLabel = formatPriceWithCurrency(exampleCommissionInfo?.clientPrice ?? 0)
-  const commissionLinkSegments = strings.CLIENT_PRICE_INFO_LINK.split('{link}')
 
+  // (utilisé pour l’alerte prix client)
   const dailyCommissionInfo = computeCommissionInfo(dailyPrice)
   const newPeriodCommissionInfo = computeCommissionInfo(newPeriod.dailyPrice)
   const editingPeriodCommissionInfo = computeCommissionInfo(editingPeriod?.dailyPrice ?? null)
+
   const sortedPricePeriods = useMemo(
     () =>
       pricePeriods.slice().sort((a, b) => {
-        if (a.startDate && b.startDate) {
-          return a.startDate.getTime() - b.startDate.getTime()
-        }
-
-        if (a.startDate) {
-          return -1
-        }
-
-        if (b.startDate) {
-          return 1
-        }
-
+        if (a.startDate && b.startDate) return a.startDate.getTime() - b.startDate.getTime()
+        if (a.startDate) return -1
+        if (b.startDate) return 1
         return 0
       }),
-    [pricePeriods]
+    [pricePeriods],
   )
+
   const isEditDialogOpen = editingPeriodIndex !== null && editingPeriod !== null
 
   const getPeriodValidationError = (period: PricePeriod | null): string | null => {
-    if (!period) {
-      return strings.PERIOD_REQUIRED_ERROR
-    }
-
-    const { startDate, endDate, dailyPrice } = period
-
-    if (!startDate || !endDate || dailyPrice === null || dailyPrice === undefined) {
-      return strings.PERIOD_REQUIRED_ERROR
-    }
+    if (!period) return strings.PERIOD_REQUIRED_ERROR
+    const { startDate, endDate, dailyPrice: p } = period
+    if (!startDate || !endDate || p === null || p === undefined) return strings.PERIOD_REQUIRED_ERROR
 
     const start = new Date(startDate)
     const end = new Date(endDate)
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return strings.PERIOD_REQUIRED_ERROR
+    if (start > end) return strings.PERIOD_DATE_ORDER_ERROR
 
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-      return strings.PERIOD_REQUIRED_ERROR
-    }
-
-    if (start > end) {
-      return strings.PERIOD_DATE_ORDER_ERROR
-    }
-
-    const numericPrice = typeof dailyPrice === 'string' ? Number.parseFloat(dailyPrice) : dailyPrice
-
-    if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
-      return strings.PERIOD_PRICE_ERROR
-    }
-
+    const numericPrice = typeof p === 'string' ? Number.parseFloat(p) : p
+    if (!Number.isFinite(numericPrice) || numericPrice <= 0) return strings.PERIOD_PRICE_ERROR
     return null
   }
 
   const isEditingPeriodValid = !getPeriodValidationError(editingPeriod)
 
-  const resolveDiscountForPayload = (): Discount | undefined => {
-    const dayValue = days ? Number.parseInt(days, 10) : null
-    const discountValue = discountPercentage ? Number.parseInt(discountPercentage, 10) : null
-
-    if (dayValue === null || discountValue === null) {
-      return undefined
-    }
-
-    if (Number.isNaN(dayValue) || Number.isNaN(discountValue)) {
-      return undefined
-    }
-
-    if (dayValue < 3 || dayValue > 30 || discountValue < 0 || discountValue >= 50) {
-      return undefined
-    }
-
-    return {
-      threshold: dayValue,
-      percentage: discountValue,
-    }
-  }
-
   const buildUpdatePayload = (periods: PricePeriod[]): bookcarsTypes.UpdateCarPayload | null => {
-    if (!car || !supplier || !supplier._id) {
-      return null
-    }
+    if (!car || !supplier || !supplier._id) return null
 
     const basePrice = Number(dailyPrice)
-
-    if (!Number.isFinite(basePrice) || basePrice <= 0) {
-      return null
-    }
+    if (!Number.isFinite(basePrice) || basePrice <= 0) return null
 
     return {
       _id: car._id,
@@ -421,24 +337,17 @@ const UpdateCar = () => {
 
   const persistPeriodicPrices = async (periods: PricePeriod[], notify = true) => {
     const payload = buildUpdatePayload(periods)
-
     if (!payload) {
       helper.error(undefined, strings.PERIOD_SAVE_ERROR)
       return false
     }
-
     try {
       setPeriodSaveLoading(true)
       const status = await CarService.update(payload)
-
       if (status === 200) {
-        if (notify) {
-          helper.info(strings.PERIOD_SAVE_SUCCESS)
-        }
-
+        if (notify) helper.info(strings.PERIOD_SAVE_SUCCESS)
         return true
       }
-
       helper.error(undefined, strings.PERIOD_SAVE_ERROR)
       return false
     } catch (err) {
@@ -449,6 +358,9 @@ const UpdateCar = () => {
     }
   }
 
+  // ---------------------------
+  // Unavailable periods
+  // ---------------------------
   const handleAddUnavailablePeriod = () => {
     if (newUnavailablePeriod.startDate && newUnavailablePeriod.endDate) {
       setUnavailablePeriods([...unavailablePeriods, newUnavailablePeriod])
@@ -472,9 +384,12 @@ const UpdateCar = () => {
     handleDeleteUnavailablePeriod(index)
     setPeriodUnvalableError(false)
   }
+
+  // ---------------------------
+  // Special price periods
+  // ---------------------------
   const handleAddPeriod = async () => {
     const validationError = getPeriodValidationError(newPeriod)
-
     if (validationError) {
       setNewPeriodError(validationError)
       return
@@ -513,7 +428,6 @@ const UpdateCar = () => {
   const handleDeletePeriod = async (index: number) => {
     const updatedPeriods = pricePeriods.filter((_, i) => i !== index)
     const persisted = await persistPeriodicPrices(updatedPeriods, false)
-
     if (persisted) {
       setPricePeriods(updatedPeriods)
       setPeriodPriceError(false)
@@ -545,12 +459,9 @@ const UpdateCar = () => {
   }
 
   const handleSaveEditedPeriod = async () => {
-    if (editingPeriodIndex === null || !editingPeriod) {
-      return
-    }
+    if (editingPeriodIndex === null || !editingPeriod) return
 
     const validationError = getPeriodValidationError(editingPeriod)
-
     if (validationError) {
       setEditPeriodError(validationError)
       return
@@ -587,77 +498,30 @@ const UpdateCar = () => {
 
     const year = new Date().getFullYear()
     const defaults: PricePeriod[] = [
-      {
-        startDate: new Date(year, 0, 2),
-        endDate: new Date(year, 2, 15),
-        dailyPrice: base,
-      },
-      {
-        startDate: new Date(year, 2, 16),
-        endDate: new Date(year, 2, 25),
-        dailyPrice: base + 50,
-        reason: strings.EID_AL_FITR,
-      },
-      {
-        startDate: new Date(year, 2, 26),
-        endDate: new Date(year, 4, 20),
-        dailyPrice: base,
-      },
-      {
-        startDate: new Date(year, 4, 21),
-        endDate: new Date(year, 4, 31),
-        dailyPrice: base + 50,
-        reason: strings.EID_AL_ADHA,
-      },
-      {
-        startDate: new Date(year, 5, 1),
-        endDate: new Date(year, 5, 30),
-        dailyPrice: base + 50,
-        reason: strings.SUMMER,
-      },
-      {
-        startDate: new Date(year, 6, 1),
-        endDate: new Date(year, 7, 31),
-        dailyPrice: base + 80,
-        reason: strings.SUMMER,
-      },
-      {
-        startDate: new Date(year, 8, 1),
-        endDate: new Date(year, 8, 30),
-        dailyPrice: base + 50,
-      },
-      {
-        startDate: new Date(year, 9, 1),
-        endDate: new Date(year, 11, 15),
-        dailyPrice: base,
-      },
-      {
-        startDate: new Date(year, 11, 15),
-        endDate: new Date(year + 1, 0, 1),
-        dailyPrice: base + 50,
-        reason: strings.YEAR_END,
-      },
+      { startDate: new Date(year, 0, 2), endDate: new Date(year, 2, 15), dailyPrice: base },
+      { startDate: new Date(year, 2, 16), endDate: new Date(year, 2, 25), dailyPrice: base + 50, reason: strings.EID_AL_FITR },
+      { startDate: new Date(year, 2, 26), endDate: new Date(year, 4, 20), dailyPrice: base },
+      { startDate: new Date(year, 4, 21), endDate: new Date(year, 4, 31), dailyPrice: base + 50, reason: strings.EID_AL_ADHA },
+      { startDate: new Date(year, 5, 1), endDate: new Date(year, 5, 30), dailyPrice: base + 50, reason: strings.SUMMER },
+      { startDate: new Date(year, 6, 1), endDate: new Date(year, 7, 31), dailyPrice: base + 80, reason: strings.SUMMER },
+      { startDate: new Date(year, 8, 1), endDate: new Date(year, 8, 30), dailyPrice: base + 50 },
+      { startDate: new Date(year, 9, 1), endDate: new Date(year, 11, 15), dailyPrice: base },
+      { startDate: new Date(year, 11, 15), endDate: new Date(year + 1, 0, 1), dailyPrice: base + 50, reason: strings.YEAR_END },
     ]
 
     const persisted = await persistPeriodicPrices(defaults)
-
-    if (persisted) {
-      setPricePeriods(defaults)
-      setPeriodPriceError(false)
-    }
+    if (persisted) setPricePeriods(defaults)
   }
 
-  const handleBeforeUpload = () => {
-    setLoading(true)
-  }
+  // ---------------------------
+  // Misc handlers
+  // ---------------------------
+  const handleBeforeUpload = () => setLoading(true)
 
   const handleImageChange = (_image: string) => {
     setLoading(false)
     setImage(_image as string)
-
-    if (_image !== null) {
-      setImageRequired(false)
-    }
+    if (_image !== null) setImageRequired(false)
   }
 
   const handleImageValidate = (valid: boolean) => {
@@ -672,24 +536,17 @@ const UpdateCar = () => {
       setError(false)
     }
   }
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setName(e.target.value)
-  }
 
-  const handleSupplierChange = (values: bookcarsTypes.Option[]) => {
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)
+  const handleSupplierChange = (values: bookcarsTypes.Option[]) =>
     setSupplier(values.length > 0 ? values[0] : undefined)
-  }
 
   const validateMinimumAge = (age: string, updateState = true) => {
     if (age) {
       const _age = Number.parseInt(age, 10)
       const _minimumAgeValid = _age >= env.MINIMUM_AGE && _age <= 99
-      if (updateState) {
-        setMinimumAgeValid(_minimumAgeValid)
-      }
-      if (_minimumAgeValid) {
-        setFormError(false)
-      }
+      if (updateState) setMinimumAgeValid(_minimumAgeValid)
+      if (_minimumAgeValid) setFormError(false)
       return _minimumAgeValid
     }
     setMinimumAgeValid(true)
@@ -699,7 +556,6 @@ const UpdateCar = () => {
 
   const handleMinimumAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMinimumAge(e.target.value)
-
     const _minimumAgeValid = validateMinimumAge(e.target.value, false)
     if (_minimumAgeValid) {
       setMinimumAgeValid(true)
@@ -708,83 +564,47 @@ const UpdateCar = () => {
   }
 
   const handleMinimumDrivingLicenseYears = (_event: Event, value: number | number[]) => {
-    if (typeof value === 'number') {
-      setMinimumDrivingLicenseYears(value)
-    }
+    if (typeof value === 'number') setMinimumDrivingLicenseYears(value)
   }
 
-  const handleLocationsChange = (_locations: bookcarsTypes.Option[]) => {
-    setLocations(_locations)
+  const handleLocationsChange = (_locations: bookcarsTypes.Option[]) => setLocations(_locations)
+  const handleCarRangeChange = (value: string) => setRange(value)
+  const handleMultimediaChange = (value: bookcarsTypes.CarMultimedia[]) => setMultimedia(value)
+  const handleRatingChange = (e: React.ChangeEvent<HTMLInputElement>) => setRating(e.target.value)
+  const handleCo2Change = (e: React.ChangeEvent<HTMLInputElement>) => setCo2(e.target.value)
+  const handleAvailableChange = (e: React.ChangeEvent<HTMLInputElement>) => setAvailable(e.target.checked)
+  const handleCarTypeChange = (value: string) => setType(value)
+  const handleGearboxChange = (value: string) => setGearbox(value)
+  const handleAirconChange = (e: React.ChangeEvent<HTMLInputElement>) => setAircon(e.target.checked)
+  const handleDepositChange = (e: React.ChangeEvent<HTMLInputElement>) => setDeposit(e.target.value)
+  const handleSeatsChange = (value: string) => setSeats(value)
+  const handleDoorsChange = (value: string) => setDoors(value)
+  const handleMileageChange = (e: React.ChangeEvent<HTMLInputElement>) => setMileage(e.target.value)
+  const handleFuelPolicyChange = (value: string) => setFuelPolicy(value)
+  const handleCancellationChange = (e: React.ChangeEvent<HTMLInputElement>) => setCancellation(e.target.value)
+  const handleAmendmentsChange = (e: React.ChangeEvent<HTMLInputElement>) => setAmendments(e.target.value)
+
+  const handleMinimumRentalDaysChange = (_event: Event, value: number | number[]) => {
+    if (typeof value === 'number') setMinimumRentalDays(value)
   }
 
-  const handleCarRangeChange = (value: string) => {
-    setRange(value)
+  const handleDaysChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = event.target
+    setDays(value)
+    const parsedValue = parseInt(value, 10)
+    setDaysValid(parsedValue >= 3 && parsedValue <= 30)
   }
 
-  const handleMultimediaChange = (value: bookcarsTypes.CarMultimedia[]) => {
-    setMultimedia(value)
+  const handleDiscountPercentageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = event.target
+    setDiscountPercentage(value)
+    const parsedValue = parseInt(value, 10)
+    setDiscountPercentageValid(parsedValue >= 0 && parsedValue < 50)
   }
 
-  const handleRatingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRating(e.target.value)
-  }
-
-  const handleCo2Change = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCo2(e.target.value)
-  }
-
-  const handleAvailableChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAvailable(e.target.checked)
-  }
-
-  const handleCarTypeChange = (value: string) => {
-    setType(value)
-  }
-
-  const handleGearboxChange = (value: string) => {
-    setGearbox(value)
-  }
-
-  const handleAirconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAircon(e.target.checked)
-  }
-
-  const handleDepositChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDeposit(e.target.value)
-  }
-
-  const handleSeatsChange = (value: string) => {
-    setSeats(value)
-  }
-
-  const handleDoorsChange = (value: string) => {
-    setDoors(value)
-  }
-
-  const handleMileageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMileage(e.target.value)
-  }
-
-  const handleFuelPolicyChange = (value: string) => {
-    setFuelPolicy(value)
-  }
-
-  const handleCancellationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCancellation(e.target.value)
-  }
-
-  const handleAmendmentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAmendments(e.target.value)
-  }
-
-  const extraToString = (extra: number) => (extra === -1 ? '' : String(extra))
-
-  const extraToNumber = (extra: string) => (extra === '' ? -1 : Number(extra))
-
-  const getPrice = (price: string) => (price && Number(price)) || null
-
-  const getPriceAsString = (price?: number | null) => (price && price.toString()) || ''
-
+  // ---------------------------
+  // Submit & load
+  // ---------------------------
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     try {
       e.preventDefault()
@@ -793,7 +613,6 @@ const UpdateCar = () => {
         setPeriodPriceError(true)
         return
       }
-
       if (newUnavailablePeriod.startDate && newUnavailablePeriod.endDate) {
         setPeriodUnvalableError(true)
         return
@@ -810,34 +629,25 @@ const UpdateCar = () => {
         return
       }
 
-// Vérification des champs discount : si l'un est renseigné, l'autre doit l'être aussi
-if ((days && !discountPercentage) || (!days && discountPercentage)) {
-  setFormError(true)
-  // setErrorMessage('Si vous remplissez un champ, l\'autre doit également être renseigné.')
-  return
-}
+      // vérification cohérence discount
+      if ((days && !discountPercentage) || (!days && discountPercentage)) {
+        setFormError(true)
+        return
+      }
 
-// Validation de la plage des jours et du pourcentage
-const dayValue = days ? parseInt(days, 10) : null
-const discountValue = discountPercentage ? parseInt(discountPercentage, 10) : null
+      const dayValue = days ? parseInt(days, 10) : null
+      const discountValue = discountPercentage ? parseInt(discountPercentage, 10) : null
 
-if (dayValue && (dayValue < 3 || dayValue > 30)) {
-  setFormError(true)
-  // setErrorMessage('Le nombre de jours doit être compris entre 3 et 30.')
-  return
-}
+      if (dayValue && (dayValue < 3 || dayValue > 30)) {
+        setFormError(true)
+        return
+      }
+      if (discountValue && (discountValue < 0 || discountValue >= 50)) {
+        setFormError(true)
+        return
+      }
 
-if (discountValue && (discountValue < 0 || discountValue >= 50)) {
-  setFormError(true)
-  // setErrorMessage('Le pourcentage de remise doit être inférieur à 50%.')
-  return
-}
-
-// Créer l'objet Discount si les deux champs sont remplis
-const discount: Discount | undefined = dayValue && discountValue ? {
-  threshold: dayValue,
-  percentage: discountValue,
-} : undefined
+      const discount: Discount | undefined = dayValue && discountValue ? { threshold: dayValue, percentage: discountValue } : undefined
 
       const data: bookcarsTypes.UpdateCarPayload = {
         _id: car._id,
@@ -877,11 +687,10 @@ const discount: Discount | undefined = dayValue && discountValue ? {
         minimumDrivingLicenseYears,
         unavailablePeriods,
         minimumRentalDays,
-        discounts: discount, // Ajouter le discount au payload
+        discounts: discount,
       }
 
       const status = await CarService.update(data)
-
       if (status === 200) {
         helper.info(commonStrings.UPDATED)
       } else {
@@ -902,7 +711,6 @@ const discount: Discount | undefined = dayValue && discountValue ? {
         if (id && id !== '') {
           try {
             const _car = await CarService.getCar(id)
-
             if (_car) {
               if (_user.type === bookcarsTypes.RecordType.Supplier && _user._id !== _car.supplier._id) {
                 setLoading(false)
@@ -920,7 +728,9 @@ const discount: Discount | undefined = dayValue && discountValue ? {
               setImageRequired(!_car.image)
               setName(_car.name)
               setSupplier(_supplier)
+
               setMinimumAge(_car.minimumAge.toString())
+
               const lcs: bookcarsTypes.Option[] = []
               for (const loc of _car.locations) {
                 const { _id, name: _name } = loc
@@ -928,6 +738,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                 lcs.push(lc)
               }
               setLocations(lcs)
+
               setDailyPrice(getPriceAsString(_car.dailyPrice))
               setDiscountedDailyPrice(getPriceAsString(_car.discountedDailyPrice))
               setBiWeeklyPrice(getPriceAsString(_car.biWeeklyPrice))
@@ -936,6 +747,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
               setDiscountedWeeklyPrice(getPriceAsString(_car.discountedWeeklyPrice))
               setMonthlyPrice(getPriceAsString(_car.monthlyPrice))
               setDiscountedMonthlyPrice(getPriceAsString(_car.discountedMonthlyPrice))
+
               setPricePeriods(
                 _car.periodicPrices
                   ? _car.periodicPrices.map((period) => ({
@@ -944,8 +756,9 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                       endDate: period.endDate ? new Date(period.endDate) : null,
                       reason: period.reason ?? undefined,
                     }))
-                  : []
+                  : [],
               )
+
               setUnavailablePeriods(
                 _car.unavailablePeriods
                   ? _car.unavailablePeriods.map((period) => ({
@@ -953,17 +766,14 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                       startDate: period.startDate ? new Date(period.startDate) : null,
                       endDate: period.endDate ? new Date(period.endDate) : null,
                     }))
-                  : []
+                  : [],
               )
+
               setDeposit(_car.deposit.toString())
               setRange(_car.range)
               setMultimedia(_car?.multimedia || [])
-              if (_car.rating) {
-                setRating(_car.rating.toString())
-              }
-              if (_car.co2) {
-                setCo2(_car.co2.toString())
-              }
+              if (_car.rating) setRating(_car.rating.toString())
+              if (_car.co2) setCo2(_car.co2.toString())
               if (_car.minimumDrivingLicenseYears !== undefined) {
                 setMinimumDrivingLicenseYears(_car.minimumDrivingLicenseYears)
               }
@@ -981,13 +791,12 @@ const discount: Discount | undefined = dayValue && discountValue ? {
               setCollisionDamageWaiver(extraToString(_car.collisionDamageWaiver))
               setFullInsurance(extraToString(_car.fullInsurance))
               setAdditionalDriver(extraToString(_car.additionalDriver))
-              if (_car.minimumRentalDays !== undefined) {
-                setMinimumRentalDays(_car.minimumRentalDays)
-              }
+              if (_car.minimumRentalDays !== undefined) setMinimumRentalDays(_car.minimumRentalDays)
               if (_car.discounts && _car.discounts.threshold && _car.discounts.percentage) {
                 setDays(extraToString(_car.discounts.threshold))
                 setDiscountPercentage(extraToString(_car.discounts.percentage))
               }
+
               setVisible(true)
               setLoading(false)
             } else {
@@ -1012,28 +821,10 @@ const discount: Discount | undefined = dayValue && discountValue ? {
   }
 
   const admin = user && user.type === bookcarsTypes.RecordType.Admin
-  const handleMinimumRentalDaysChange = (_event: Event, value: number | number[]) => {
-    if (typeof value === 'number') {
-      setMinimumRentalDays(value)
-      console.log(_event)
-    }
-  }
 
-  const handleDaysChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target
-    setDays(value)
-
-    const parsedValue = parseInt(value, 10)
-    setDaysValid(parsedValue >= 3 && parsedValue <= 30)
-  }
-
-  const handleDiscountPercentageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target
-    setDiscountPercentage(value)
-
-    const parsedValue = parseInt(value, 10)
-    setDiscountPercentageValid(parsedValue >= 0 && parsedValue < 50)
-  }
+  // ---------------------------
+  // Render
+  // ---------------------------
   return (
     <Layout onLoad={onLoad} strict>
       {!error && !noMatch && (
@@ -1087,19 +878,16 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                   onChange={handleMinimumAgeChange}
                   inputProps={{ inputMode: 'numeric', pattern: '^\\d{2}$' }}
                 />
-                <FormHelperText error={!minimumAgeValid}>{(!minimumAgeValid && strings.MINIMUM_AGE_NOT_VALID) || ''}</FormHelperText>
+                <FormHelperText error={!minimumAgeValid}>
+                  {(!minimumAgeValid && strings.MINIMUM_AGE_NOT_VALID) || ''}
+                </FormHelperText>
               </FormControl>
+
               <FormControl fullWidth margin="dense">
                 <InputLabel className="required" shrink>
                   {strings.DRVER_LICENSE_MINIMUM_AGE}
                 </InputLabel>
-                <Box
-                  sx={{
-                    borderRadius: '4px', // Coins arrondis
-                    padding: '16px', // Espacement interne
-                    marginTop: '8px', // Ajustement pour l'espace avec le label
-                  }}
-                >
+                <Box sx={{ borderRadius: '4px', padding: '16px', marginTop: '8px' }}>
                   <Slider
                     aria-label="Minimum Driving License Years"
                     defaultValue={minimumDrivingLicenseYears}
@@ -1119,15 +907,9 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                 <InputLabel className="required" shrink>
                   {strings.MINIMUM_RENTAL_DAYS}
                 </InputLabel>
-                <Box
-                  sx={{
-                    borderRadius: '4px', // Coins arrondis
-                    padding: '16px', // Espacement interne
-                    marginTop: '8px', // Ajustement pour l'espace avec le label
-                  }}
-                >
+                <Box sx={{ borderRadius: '4px', padding: '16px', marginTop: '8px' }}>
                   <Slider
-                    aria-label="Minimum Driving License Years"
+                    aria-label="Minimum Rental Days"
                     defaultValue={1}
                     value={minimumRentalDays}
                     onChange={handleMinimumRentalDaysChange}
@@ -1142,21 +924,23 @@ const discount: Discount | undefined = dayValue && discountValue ? {
               </FormControl>
 
               <FormControl fullWidth margin="dense">
-                <LocationSelectList label={strings.LOCATIONS} multiple required variant="standard" value={locations} onChange={handleLocationsChange} />
+                <LocationSelectList
+                  label={strings.LOCATIONS}
+                  multiple
+                  required
+                  variant="standard"
+                  value={locations}
+                  onChange={handleLocationsChange}
+                />
               </FormControl>
 
               <FormControl fullWidth margin="dense">
                 <TextField
                   label={`${strings.AGENCY_DEFAULT_PRICE_LABEL} (${commonStrings.CURRENCY}${commonStrings.DAILY})`}
                   slotProps={{
-                    htmlInput: {
-                      inputMode: 'numeric',
-                      pattern: '^\\d+(.\\d+)?$'
-                    }
+                    htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' },
                   }}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    setDailyPrice(e.target.value)
-                  }}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDailyPrice(e.target.value)}
                   required
                   variant="standard"
                   autoComplete="off"
@@ -1169,42 +953,35 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                 <Stack spacing={1} sx={{ mt: 1 }}>
                   <Typography variant="body2">
                     {strings.CLIENT_PRICE_INFO_INTRO.replace('{date}', commissionEffectiveDateLabel).replace(
-                    '{rate}',
-                    commissionRateLabel,
-                  )}
+                      '{rate}',
+                      commissionRateLabel,
+                    )}
                   </Typography>
                   <Typography variant="body2">{strings.CLIENT_PRICE_INFO_COLLECTION}</Typography>
                   <Typography variant="body2">
-                    {commissionLinkSegments[0] ?? ''}
+                    {strings.CLIENT_PRICE_INFO_LINK.split('{link}')[0] ?? ''}
                     <Link component={RouterLink} to={commissionManagementPath} underline="hover">
                       {strings.CLIENT_PRICE_INFO_LINK_LABEL}
                     </Link>
-                    {commissionLinkSegments[1] ?? ''}
+                    {strings.CLIENT_PRICE_INFO_LINK.split('{link}')[1] ?? ''}
                   </Typography>
                 </Stack>
                 {dailyCommissionInfo && (
-                <Box
-                  sx={{
-                      mt: 2,
-                      display: 'flex',
-                      flexDirection: isMobile ? 'column' : 'row',
-                      gap: isMobile ? 1 : 3,
-                    }}
-                >
-                  <Typography variant="body2">
-                    <strong>
-                      {strings.CLIENT_PRICE_LABEL}
-                      :
-                    </strong>
-                    {' '}
-                    {formatPriceWithCurrency(dailyCommissionInfo.clientPrice)}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: isMobile ? 0.5 : 0 }}>
-                    {strings.COMMISSION_DETAIL_WITH_AMOUNT
+                  <Box sx={{ mt: 2, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 1 : 3 }}>
+                    <Typography variant="body2">
+                      <strong>
+                        {strings.CLIENT_PRICE_LABEL}
+                        :
+                      </strong>
+                      {' '}
+                      {formatPriceWithCurrency(dailyCommissionInfo.clientPrice)}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: isMobile ? 0.5 : 0 }}>
+                      {strings.COMMISSION_DETAIL_WITH_AMOUNT
                         .replace('{rate}', commissionRateLabel)
                         .replace('{amount}', formatPriceWithCurrency(dailyCommissionInfo.commissionValue))}
-                  </Typography>
-                </Box>
+                    </Typography>
+                  </Box>
                 )}
               </Alert>
 
@@ -1213,11 +990,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                   title={strings.SPECIAL_PRICE_TITLE}
                   subheader={strings.SPECIAL_PRICE_SUBHEADER}
                   subheaderTypographyProps={{ sx: { whiteSpace: 'normal' } }}
-                  sx={{
-                    '& .MuiCardHeader-content': {
-                      minWidth: 0,
-                    },
-                  }}
+                  sx={{ '& .MuiCardHeader-content': { minWidth: 0 } }}
                   action={
                     !isMobile && (
                       <Stack direction="row" spacing={1} alignItems="center">
@@ -1311,7 +1084,10 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                             variant="standard"
                             autoComplete="off"
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                              setNewPeriod({ ...newPeriod, dailyPrice: e.target.value ? Number(e.target.value) : null })
+                              setNewPeriod({
+                                ...newPeriod,
+                                dailyPrice: e.target.value ? Number(e.target.value) : null,
+                              })
                               setNewPeriodError(null)
                             }}
                           />
@@ -1323,6 +1099,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                               </strong>
                               {' '}
                               {formatPriceWithCurrency(newPeriodCommissionInfo.clientPrice)}
+                              {' '}
                               {' • '}
                               {strings.COMMISSION_DETAIL_WITH_AMOUNT
                                 .replace('{rate}', commissionRateLabel)
@@ -1369,7 +1146,11 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                                 : '—'
 
                               return (
-                                <Paper key={`${period.startDate?.toString() ?? 'start'}-${index}`} variant="outlined" sx={{ p: 2 }}>
+                                <Paper
+                                  key={`${period.startDate?.getTime() ?? 's'}-${period.endDate?.getTime() ?? 'e'}-${period.dailyPrice ?? 'p'}-${period.reason ?? ''}`}
+                                  variant="outlined"
+                                  sx={{ p: 2 }}
+                                >
                                   <Stack spacing={1}>
                                     <Stack direction="row" justifyContent="space-between">
                                       <Typography variant="subtitle2">{strings.START_DATE}</Typography>
@@ -1442,8 +1223,12 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                                     ? formatPriceWithCurrency(commissionInfo.commissionValue)
                                     : '—'
 
+                                  const key = `${period.startDate?.toString() ?? 'period'}-${
+                                    period.endDate?.toString() ?? 'end'
+                                  }-${index}`
+
                                   return (
-                                    <TableRow key={`${period.startDate?.toString() ?? 'period'}-${index}`} hover>
+                                    <TableRow key={key} hover>
                                       <TableCell>{formatDateForDisplay(period.startDate)}</TableCell>
                                       <TableCell>{formatDateForDisplay(period.endDate)}</TableCell>
                                       <TableCell>{period.reason || '—'}</TableCell>
@@ -1490,24 +1275,18 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                     color="primary"
                     variant="outlined"
                     sx={{
-                        height: 'auto',
-                        margin: '0 0px 4px 10px',
-                        '& .MuiChip-label': {
-                          display: 'block',
-                          whiteSpace: 'normal',
-                          paddingBottom: '3px'
-                        },
-                      }}
+                      height: 'auto',
+                      margin: '0 0px 4px 10px',
+                      '& .MuiChip-label': { display: 'block', whiteSpace: 'normal', paddingBottom: '3px' },
+                    }}
                   />
                   <br />
                   <small>
-                    Offrez une réduction aux clients qui réservent pour une période prolongée.
-                    Par exemple, appliquez
+                    Offrez une réduction aux clients qui réservent pour une période prolongée. Par exemple, appliquez
                     {' '}
                     <strong>5% de remise</strong>
                     {' '}
                     pour toute réservation de
-                    {' '}
                     <strong>14 jours ou plus</strong>
                     .
                   </small>
@@ -1516,14 +1295,14 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                 <Box
                   component="form"
                   sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 2,
-                      mt: 2,
-                      p: 2,
-                      border: '1px solid #ccc',
-                      borderRadius: '8px'
-                    }}
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    mt: 2,
+                    p: 2,
+                    border: '1px solid #ccc',
+                    borderRadius: '8px',
+                  }}
                   noValidate
                   autoComplete="off"
                 >
@@ -1534,10 +1313,10 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                     value={days}
                     onChange={handleDaysChange}
                     error={!daysValid}
-                    helperText={!daysValid ? 'Doit être entre 3 et 30 jours.' : `À partir de ${days || 0} jours, une remise est appliquée.`}
-                    slotProps={{
-                    inputLabel: { shrink: true },
-                  }}
+                    helperText={
+                      !daysValid ? 'Doit être entre 3 et 30 jours.' : `À partir de ${days || 0} jours, une remise est appliquée.`
+                    }
+                    slotProps={{ inputLabel: { shrink: true } }}
                     sx={{ flex: 1 }}
                   />
 
@@ -1548,10 +1327,12 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                     value={discountPercentage}
                     onChange={handleDiscountPercentageChange}
                     error={!discountPercentageValid}
-                    helperText={!discountPercentageValid ? 'Doit être inférieur à 50%.' : `Une remise de ${discountPercentage || 0}% de réduction sur les ${days || 0} jours.`}
-                    slotProps={{
-                    inputLabel: { shrink: true },
-                  }}
+                    helperText={
+                      !discountPercentageValid
+                        ? 'Doit être inférieur à 50%.'
+                        : `Une remise de ${discountPercentage || 0}% de réduction sur les ${days || 0} jours.`
+                    }
+                    slotProps={{ inputLabel: { shrink: true } }}
                     sx={{ flex: 1 }}
                   />
                 </Box>
@@ -1560,12 +1341,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
               <FormControl fullWidth margin="dense">
                 <TextField
                   label={`${csStrings.DEPOSIT} (${commonStrings.CURRENCY})`}
-                  slotProps={{
-                    htmlInput: {
-                      inputMode: 'numeric',
-                      pattern: '^\\d+(.\\d+)?$'
-                    }
-                  }}
+                  slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' } }}
                   onChange={handleDepositChange}
                   required
                   variant="standard"
@@ -1585,14 +1361,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
               <FormControl fullWidth margin="dense">
                 <TextField
                   label={strings.RATING}
-                  slotProps={{
-                    htmlInput: {
-                      type: 'number',
-                      min: 1,
-                      max: 5,
-                      step: 0.01,
-                    }
-                  }}
+                  slotProps={{ htmlInput: { type: 'number', min: 1, max: 5, step: 0.01 } }}
                   onChange={handleRatingChange}
                   variant="standard"
                   autoComplete="off"
@@ -1612,7 +1381,11 @@ const discount: Discount | undefined = dayValue && discountValue ? {
               </FormControl>
 
               <FormControl fullWidth margin="dense" className="checkbox-fc">
-                <FormControlLabel control={<Switch checked={available} onChange={handleAvailableChange} color="primary" />} label={strings.AVAILABLE} className="checkbox-fcl" />
+                <FormControlLabel
+                  control={<Switch checked={available} onChange={handleAvailableChange} color="primary" />}
+                  label={strings.AVAILABLE}
+                  className="checkbox-fcl"
+                />
               </FormControl>
 
               <div className="add-border">
@@ -1624,19 +1397,13 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                     color="primary"
                     variant="outlined"
                     sx={{
-                    height: 'auto',
-                    margin: '0 0px 4px 10px',
-                    '& .MuiChip-label': {
-                      display: 'block',
-                      whiteSpace: 'normal',
-                      paddingBottom: '3px'
-                    },
-                  }}
+                      height: 'auto',
+                      margin: '0 0px 4px 10px',
+                      '& .MuiChip-label': { display: 'block', whiteSpace: 'normal', paddingBottom: '3px' },
+                    }}
                   />
                   <br />
-                  <small>
-                    (par exemple, si elle est louée en dehors de Plany, en maintenance, ou pour toute autre raison)
-                  </small>
+                  <small>(par exemple, si elle est louée en dehors de Plany, en maintenance, ou pour toute autre raison)</small>
                 </span>
 
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
@@ -1644,7 +1411,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                     <DateTimePicker
                       label={strings.START_DATE}
                       value={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined}
-                      maxDate={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined} // Limite la date max en fonction de la date de fin
+                      maxDate={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined}
                       onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, startDate: date })}
                       language={language}
                       showTime={false}
@@ -1654,7 +1421,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                     <DateTimePicker
                       label={strings.END_DATE}
                       value={newUnavailablePeriod.endDate ? new Date(newUnavailablePeriod.endDate) : undefined}
-                      minDate={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined} // Limite la date min en fonction de la date de début
+                      minDate={newUnavailablePeriod.startDate ? new Date(newUnavailablePeriod.startDate) : undefined}
                       onChange={(date) => setNewUnavailablePeriod({ ...newUnavailablePeriod, endDate: date })}
                       language={language}
                       showTime={false}
@@ -1670,35 +1437,38 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                     </Button>
                   </div>
                 </div>
+
                 {unavailablePeriods.length > 0 && (
-                <TableContainer component={Paper}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>{strings.START_DATE}</TableCell>
-                        <TableCell>{strings.END_DATE}</TableCell>
-                        <TableCell>{strings.ACTIONS_BUTTON}</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {unavailablePeriods.map((period, index) => (
-                        // eslint-disable-next-line react/no-array-index-key
-                        <TableRow key={index}>
-                          <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
-                          <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
-                          <TableCell>
-                            <IconButton onClick={() => handleEditUnavailablePeriod(index)}>
-                              <EditIcon />
-                            </IconButton>
-                            <IconButton onClick={() => handleDeleteUnavailablePeriod(index)}>
-                              <DeleteIcon />
-                            </IconButton>
-                          </TableCell>
+                  <TableContainer component={Paper}>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>{strings.START_DATE}</TableCell>
+                          <TableCell>{strings.END_DATE}</TableCell>
+                          <TableCell>{strings.ACTIONS_BUTTON}</TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                      </TableHead>
+                      <TableBody>
+                        {unavailablePeriods.map((period, index) => {
+                          const key = `${period.startDate?.toString() ?? 's'}-${period.endDate?.toString() ?? 'e'}-${index}`
+                          return (
+                            <TableRow key={key}>
+                              <TableCell>{period.startDate ? period.startDate.toLocaleDateString() : ''}</TableCell>
+                              <TableCell>{period.endDate ? period.endDate.toLocaleDateString() : ''}</TableCell>
+                              <TableCell>
+                                <IconButton onClick={() => handleEditUnavailablePeriod(index)}>
+                                  <EditIcon />
+                                </IconButton>
+                                <IconButton onClick={() => handleDeleteUnavailablePeriod(index)}>
+                                  <DeleteIcon />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 )}
               </div>
 
@@ -1730,7 +1500,11 @@ const discount: Discount | undefined = dayValue && discountValue ? {
               </FormControl>
 
               <FormControl fullWidth margin="dense" className="checkbox-fc">
-                <FormControlLabel control={<Switch checked={aircon} onChange={handleAirconChange} color="primary" />} label={strings.AIRCON} className="checkbox-fcl" />
+                <FormControlLabel
+                  control={<Switch checked={aircon} onChange={handleAirconChange} color="primary" />}
+                  label={strings.AIRCON}
+                  className="checkbox-fcl"
+                />
               </FormControl>
 
               <FormControl fullWidth margin="dense">
@@ -1765,51 +1539,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
                   value={amendments}
                 />
               </FormControl>
-              {/*
-              <FormControl fullWidth margin="dense">
-                <TextField
-                  label={`${csStrings.THEFT_PROTECTION} (${csStrings.CAR_CURRENCY})`}
-                  slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' } }}
-                  onChange={handleTheftProtectionChange}
-                  variant="standard"
-                  autoComplete="off"
-                  value={theftProtection}
-                />
-              </FormControl>
 
-              <FormControl fullWidth margin="dense">
-                <TextField
-                  label={`${csStrings.COLLISION_DAMAGE_WAVER} (${csStrings.CAR_CURRENCY})`}
-                  slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' } }}
-                  onChange={handleCollisionDamageWaiverChange}
-                  variant="standard"
-                  autoComplete="off"
-                  value={collisionDamageWaiver}
-                />
-              </FormControl>
-
-              <FormControl fullWidth margin="dense">
-                <TextField
-                  label={`${csStrings.FULL_INSURANCE} (${csStrings.CAR_CURRENCY})`}
-                  slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' } }}
-                  onChange={handleFullinsuranceChange}
-                  variant="standard"
-                  autoComplete="off"
-                  value={fullInsurance}
-                />
-              </FormControl>
-
-              <FormControl fullWidth margin="dense">
-                <TextField
-                  label={`${csStrings.ADDITIONAL_DRIVER} (${csStrings.CAR_CURRENCY})`}
-                  slotProps={{ htmlInput: { inputMode: 'numeric', pattern: '^\\d+(.\\d+)?$' } }}
-                  onChange={handleAdditionalDriverChange}
-                  variant="standard"
-                  autoComplete="off"
-                  value={additionalDriver}
-                />
-              </FormControl>
-                */}
               <div className="buttons">
                 <Button type="submit" variant="contained" className="btn-primary btn-margin-bottom" size="small">
                   {commonStrings.SAVE}
@@ -1830,6 +1560,7 @@ const discount: Discount | undefined = dayValue && discountValue ? {
           </Paper>
         </div>
       )}
+
       <Dialog open={isEditDialogOpen} onClose={handleCloseEditPeriod} fullWidth maxWidth="sm">
         <DialogTitle>{strings.EDIT_PERIOD_TITLE}</DialogTitle>
         <DialogContent dividers>
@@ -1910,15 +1641,12 @@ const discount: Discount | undefined = dayValue && discountValue ? {
           <Button onClick={handleCloseEditPeriod} color="inherit" disabled={periodSaveLoading}>
             {commonStrings.CANCEL}
           </Button>
-          <Button
-            onClick={handleSaveEditedPeriod}
-            variant="contained"
-            disabled={periodSaveLoading || !isEditingPeriodValid}
-          >
+          <Button onClick={handleSaveEditedPeriod} variant="contained" disabled={periodSaveLoading || !isEditingPeriodValid}>
             {strings.SAVE_CHANGES}
           </Button>
         </DialogActions>
       </Dialog>
+
       {(loading || periodSaveLoading) && <Backdrop text={commonStrings.PLEASE_WAIT} />}
       {error && <Error />}
       {noMatch && <NoMatch hideHeader />}

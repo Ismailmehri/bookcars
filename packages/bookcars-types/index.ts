@@ -356,6 +356,7 @@ export interface AgencyCommissionBookingInfo {
   commission: number
   status: BookingStatus
   paymentStatus: CommissionPaymentStatus
+  driverName?: string
 }
 
 export interface AgencyCommissionDetail {

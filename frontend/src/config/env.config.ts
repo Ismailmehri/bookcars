@@ -20,6 +20,8 @@ const LANGUAGES = [
   },
 ]
 
+const MAX_BOOKING_MONTHS = Number.parseInt(String(import.meta.env.VITE_BC_MAX_BOOKING_MONTHS), 10) || 6
+
 const env = {
   isMobile: () => window.innerWidth <= 960,
   isProduction: import.meta.env.VITE_NODE_ENV === 'production',
@@ -78,6 +80,7 @@ const env = {
    * Minimum number of locations required for country tabs in homepage.
    */
   MIN_LOCATIONS: Number.parseInt(String(import.meta.env.VITE_BC_MIN_LOCATIONS), 10) || 4,
+  MAX_BOOKING_MONTHS,
 }
 
 export default env

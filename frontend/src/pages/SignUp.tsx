@@ -9,6 +9,7 @@ import {
   Paper,
   Checkbox,
   Link,
+  Alert,
 } from '@mui/material'
 import validator from 'validator'
 import { intervalToDuration } from 'date-fns'
@@ -336,17 +337,21 @@ const SignUp = () => {
           <div className="signup">
             <Paper className="signup-form" elevation={10}>
               <h1 className="signup-form-title">{strings.SIGN_UP_HEADING}</h1>
-              <div className="signup-portal-info">
-                <p>{strings.AGENCY_SIGNUP_INFO}</p>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  size="small"
-                  href="https://admin.plany.tn/sign-up"
-                >
-                  {strings.AGENCY_SIGNUP_BUTTON}
-                </Button>
-              </div>
+              <Alert
+                severity="info"
+                className="signup-portal-alert"
+                action={(
+                  <Button
+                    color="inherit"
+                    size="small"
+                    href="https://admin.plany.tn/sign-up"
+                  >
+                    {strings.AGENCY_SIGNUP_BUTTON}
+                  </Button>
+                )}
+              >
+                {strings.AGENCY_SIGNUP_INFO}
+              </Alert>
               <form onSubmit={handleSubmit}>
                 <div>
                   <FormControl fullWidth margin="dense">

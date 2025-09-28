@@ -336,6 +336,17 @@ const SignUp = () => {
           <div className="signup">
             <Paper className="signup-form" elevation={10}>
               <h1 className="signup-form-title">{strings.SIGN_UP_HEADING}</h1>
+              <div className="signup-portal-info">
+                <p>{strings.AGENCY_SIGNUP_INFO}</p>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                  href="https://admin.plany.tn/sign-up"
+                >
+                  {strings.AGENCY_SIGNUP_BUTTON}
+                </Button>
+              </div>
               <form onSubmit={handleSubmit}>
                 <div>
                   <FormControl fullWidth margin="dense">

@@ -170,6 +170,17 @@ const SignUp = () => {
             {strings.SIGN_UP_HEADING}
             {' '}
           </h1>
+          <div className="signup-portal-info">
+            <p>{strings.CUSTOMER_SIGNUP_INFO}</p>
+            <Button
+              variant="outlined"
+              color="primary"
+              size="small"
+              href="https://plany.tn/sign-up"
+            >
+              {strings.CUSTOMER_SIGNUP_BUTTON}
+            </Button>
+          </div>
           <form onSubmit={handleSubmit}>
             <div>
               <FormControl fullWidth margin="dense">

@@ -19,6 +19,30 @@ div.signup .signup-form-title {
   color: #232323;
 }
 
+div.signup .signup-portal-info {
+  align-items: center;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  margin-top: 10px;
+  padding: 12px 16px;
+}
+
+div.signup .signup-portal-info p {
+  color: #232323;
+  flex: 1 1 auto;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+div.signup .signup-portal-info button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 div.signup div.signup-tos {
   margin-top: 10px;
 }

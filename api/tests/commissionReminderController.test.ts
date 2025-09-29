@@ -1,13 +1,13 @@
 import { jest } from '@jest/globals'
 import type { Request, Response } from 'express'
 import mongoose from 'mongoose'
+import nodemailer from 'nodemailer'
 import * as bookcarsTypes from ':bookcars-types'
 import AgencyCommissionEvent from '../src/models/AgencyCommissionEvent'
 import User from '../src/models/User'
 import * as env from '../src/config/env.config'
 import * as authHelper from '../src/common/authHelper'
 import { sendCommissionReminder } from '../src/controllers/commissionController'
-import nodemailer from 'nodemailer'
 
 const createMockResponse = () => {
   const res = {

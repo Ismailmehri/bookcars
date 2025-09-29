@@ -39,12 +39,17 @@ div.us-list span.bp {
 
 div.us-list a.us-user {
   display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
 }
 
 div.us-list span.us-avatar {
   margin-right: 5px;
   width: 60px;
   height: 30px;
+  flex-shrink: 0;
 }
 
 div.us-list span.us-avatar img {
@@ -67,14 +72,24 @@ div.us-list span.us-avatar img.supplier-avatar-placeholder {
 }
 
 div.us-list div.us-actions {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 4px;
+  justify-content: flex-end;
+  width: 100%;
 }
 
 div.us-list div.us-actions-header {
   width: 100%;
   justify-content: flex-end;
+}
+
+div.us-list span.us-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 600px) {

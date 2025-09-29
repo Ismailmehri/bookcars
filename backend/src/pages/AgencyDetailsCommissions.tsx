@@ -143,6 +143,8 @@ const Kpi = ({ title, value, icon, loading, helperText, sx }: KpiProps) => (
 const paymentColor = (status?: bookcarsTypes.CommissionStatus): 'success' | 'warning' =>
   (status === COMMISSION_STATUS_PAID ? 'success' : 'warning')
 
+const hasBillableCommission = (status: bookcarsTypes.BookingStatus) => BILLABLE_STATUSES.has(status)
+
 const AgencyDetailsCommissions = () => {
   const navigate = useNavigate()
   const theme = useTheme()
@@ -234,7 +236,7 @@ const AgencyDetailsCommissions = () => {
 
     return data.reduce<bookcarsTypes.AgencyCommissionMonthlySummary>(
       (acc, booking) => {
-        const isBillable = BILLABLE_STATUSES.has(booking.bookingStatus)
+        const isBillable = hasBillableCommission(booking.bookingStatus)
 
         acc.grossAll += booking.totalClient
 
@@ -321,7 +323,7 @@ const AgencyDetailsCommissions = () => {
     let overdue = false
 
     data.forEach((booking) => {
-      if (!BILLABLE_STATUSES.has(booking.bookingStatus)) return
+      if (!hasBillableCommission(booking.bookingStatus)) return
 
       const commissionValue = booking.commission || 0
 
@@ -442,6 +444,33 @@ const AgencyDetailsCommissions = () => {
     )
   }
 
+  const renderCommissionStatus = (booking: CommissionRow) => {
+    if (!hasBillableCommission(booking.bookingStatus)) {
+      return (
+        <Typography variant="body2" color="text.secondary" fontWeight={600}>
+          {strings.COMMISSION_STATUS_NOT_APPLICABLE}
+        </Typography>
+      )
+    }
+
+    return (
+      <Chip
+        size="small"
+        label={commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING]}
+        color={paymentColor(booking.commissionStatus)}
+        variant={booking.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
+      />
+    )
+  }
+
+  const getCommissionStatusLabel = (booking: CommissionRow) => {
+    if (!hasBillableCommission(booking.bookingStatus)) {
+      return strings.COMMISSION_STATUS_NOT_APPLICABLE
+    }
+
+    return commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING]
+  }
+
   const downloadBlob = (blob: Blob, filename: string) => {
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -479,7 +508,7 @@ const AgencyDetailsCommissions = () => {
       formatCurrency(booking.commission),
       formatCurrency(booking.netAgency),
       helper.getBookingStatus(booking.bookingStatus),
-      commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING],
+      getCommissionStatusLabel(booking),
     ])
 
     const csvContent = [header, ...rows]
@@ -1027,14 +1056,7 @@ const AgencyDetailsCommissions = () => {
                       <TableCell align="right">{formatCurrency(booking.commission)}</TableCell>
                       <TableCell align="right">{formatCurrency(booking.netAgency)}</TableCell>
                       <TableCell align="center">{renderBookingStatusChip(booking.bookingStatus)}</TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          size="small"
-                          label={commissionPaymentLabels[booking.commissionStatus || COMMISSION_STATUS_PENDING]}
-                          color={paymentColor(booking.commissionStatus)}
-                          variant={booking.commissionStatus === COMMISSION_STATUS_PAID ? 'filled' : 'outlined'}
-                        />
-                      </TableCell>
+                      <TableCell align="center">{renderCommissionStatus(booking)}</TableCell>
                       <TableCell align="center">
                         <Stack direction="row" spacing={0.5} justifyContent="center">
                           <Tooltip title={strings.VIEW_DETAILS}>

@@ -10,6 +10,7 @@ import * as helper from '../common/helper'
 import * as mailHelper from '../common/mailHelper'
 import * as invoiceHelper from '../common/invoiceHelper'
 import * as env from '../config/env.config'
+import type { User as EnvUser } from '../config/env.config'
 
 export const create = async (req: Request, res: Response) => {
   try {
@@ -37,7 +38,7 @@ export const create = async (req: Request, res: Response) => {
     if (supplier) {
       await invoiceHelper.generateInvoice(
         subscription.toObject() as bookcarsTypes.Subscription,
-        supplier.toObject() as bookcarsTypes.User,
+        { fullName: supplier.fullName, email: supplier.email },
       )
 
       const file = path.join(env.CDN_INVOICES, subscription.invoice)
@@ -121,7 +122,7 @@ export const create = async (req: Request, res: Response) => {
 export const getSubscriptions = async (req: Request, res: Response) => {
   try {
     const sessionData = await authHelper.getSessionData(req)
-    const connectedUser: bookcarsTypes.User|null = await User.findById(sessionData.id)
+    const connectedUser: EnvUser | null = await User.findById(sessionData.id)
     const isAdmin = connectedUser ? helper.admin(connectedUser) : false
     if (!isAdmin) {
       return res.sendStatus(403)
@@ -146,7 +147,7 @@ export const update = async (req: Request, res: Response) => {
   try {
     const { body } = req
     const sessionData = await authHelper.getSessionData(req)
-    const connectedUser: bookcarsTypes.User|null = await User.findById(sessionData.id)
+    const connectedUser: EnvUser | null = await User.findById(sessionData.id)
     const isAdmin = connectedUser ? helper.admin(connectedUser) : false
     if (!isAdmin) {
       return res.sendStatus(403)

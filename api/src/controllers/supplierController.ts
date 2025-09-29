@@ -7,6 +7,7 @@ import { nanoid } from 'nanoid'
 import * as bookcarsTypes from ':bookcars-types'
 import i18n from '../lang/i18n'
 import * as env from '../config/env.config'
+import type { User as EnvUser } from '../config/env.config'
 import User from '../models/User'
 import NotificationCounter from '../models/NotificationCounter'
 import Notification from '../models/Notification'
@@ -57,22 +58,22 @@ export const update = async (req: Request, res: Response) => {
   const { body }: { body: bookcarsTypes.UpdateSupplierPayload } = req
   const { _id } = body
   const sessionData = await authHelper.getSessionData(req)
-  let connectedUser: bookcarsTypes.User | null
+  let connectedUser: EnvUser | null
 
   if (!helper.isValidObjectId(_id)) {
     throw new Error('body._id is not valid')
   }
   const supplier = await User.findById(_id)
 
-  if (sessionData.id === _id && supplier) {
-    connectedUser = supplier as bookcarsTypes.User
+  if (supplier && supplier._id.toString() === sessionData.id) {
+    connectedUser = supplier
   } else {
     connectedUser = await User.findById(sessionData.id)
   }
 
   const isAdmin = connectedUser ? helper.admin(connectedUser) : false
 
-  if (!isAdmin && connectedUser?._id !== _id) {
+  if (!isAdmin && connectedUser?._id.toString() !== _id) {
     return res.status(400).send(i18n.t('DB_ERROR'))
   }
 
@@ -234,7 +235,7 @@ export const getAgencyScore = async (req: Request, res: Response) => {
 
   try {
     // Récupérer l'agence (utilisateur de type "supplier")
-    const agency = await User.findById(id) as bookcarsTypes.User
+    const agency = await User.findById(id)
 
     if (!agency) {
       logger.error('[agency.getAgencyScore] Agency not found:', id)

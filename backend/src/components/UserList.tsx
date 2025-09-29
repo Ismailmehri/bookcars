@@ -202,6 +202,8 @@ const UserList = ({
   }
 
   const getColumns = (_user: bookcarsTypes.User): GridColDef<bookcarsTypes.User>[] => {
+    const actionColumnMinWidth = env.isMobile() ? 140 : 180
+
     const _columns: GridColDef<bookcarsTypes.User>[] = [
       {
         field: 'fullName',
@@ -340,7 +342,7 @@ const UserList = ({
           return (
             <Link href={`/user?u=${row._id}`} className="us-user">
               <span className="us-avatar">{userAvatar}</span>
-              <span>{value}</span>
+              <span className="us-name">{value}</span>
             </Link>
           )
         },
@@ -370,7 +372,7 @@ const UserList = ({
         headerName: '',
         sortable: false,
         disableColumnMenu: true,
-        minWidth: 180,
+        minWidth: actionColumnMinWidth,
         flex: 0,
         renderCell: ({ row }: GridRenderCellParams<bookcarsTypes.User>) => {
           const handleDelete = (e: React.MouseEvent<HTMLElement>) => {
@@ -401,7 +403,7 @@ const UserList = ({
             : strings.CHANGE_TYPE_TO_USER
 
           return (
-            <div className="us-actions">
+            <Box className="us-actions">
               <Tooltip title={commonStrings.UPDATE}>
                 <IconButton href={`update-user?u=${row._id}`}>
                   <EditIcon />
@@ -422,7 +424,7 @@ const UserList = ({
                   <DeleteIcon />
                 </IconButton>
               </Tooltip>
-            </div>
+            </Box>
           )
         },
         renderHeader: () => (selectedIds.length > 0 ? (

@@ -914,9 +914,10 @@ const streamCommissionInvoice = async (
   doc.text(`Nombre de réservations : ${detail.summary.reservations}`, marginLeft, doc.y)
 
   const tableX = marginLeft
-  const colWidths = [100, 120, 70, 110, 95]
+  const colWidths = [130, 110, 60, 110, 90]
   const columnAlign: ('left' | 'center' | 'right')[] = ['left', 'left', 'center', 'right', 'right']
   const rowHeight = 28
+  const headerRowHeight = 36
   const tableWidth = colWidths.reduce((sum, width) => sum + width, 0)
   const headerLabels = [
     'Numéro de réservation',
@@ -931,24 +932,26 @@ const streamCommissionInvoice = async (
 
   const drawTableHeader = (y: number) => {
     doc.save()
-    doc.fillColor('#007BFF').rect(tableX, y, tableWidth, rowHeight).fill()
+    doc.fillColor('#007BFF').rect(tableX, y, tableWidth, headerRowHeight).fill()
     doc.restore()
 
     doc.save()
     doc.lineWidth(1)
-    doc.strokeColor('#007BFF').rect(tableX, y, tableWidth, rowHeight).stroke()
+    doc.strokeColor('#007BFF').rect(tableX, y, tableWidth, headerRowHeight).stroke()
     doc.font('Helvetica-Bold').fontSize(10).fillColor('#FFFFFF')
+    const headerTextHeight = doc.currentLineHeight()
+    const textOffsetY = y + (headerRowHeight - headerTextHeight) / 2
     let x = tableX
     headerLabels.forEach((label, index) => {
-      doc.text(label, x + 5, y + 8, {
+      doc.text(label, x + 5, textOffsetY, {
         width: colWidths[index] - 10,
         align: 'center',
       })
       x += colWidths[index]
     })
     doc.restore()
-    doc.y = y + rowHeight
-    return y + rowHeight
+    doc.y = y + headerRowHeight
+    return y + headerRowHeight
   }
 
   const drawRow = (
@@ -964,11 +967,14 @@ const streamCommissionInvoice = async (
     doc.lineWidth(0.5)
     doc.strokeColor('#D9E2EF').rect(tableX, y, tableWidth, rowHeight).stroke()
     doc.font('Helvetica').fontSize(10).fillColor('#000000')
+    const textHeight = doc.currentLineHeight()
+    const textOffsetY = y + (rowHeight - textHeight) / 2
     let x = tableX
     values.forEach((value, index) => {
-      doc.text(value, x + 5, y + 8, {
+      doc.text(value, x + 5, textOffsetY, {
         width: colWidths[index] - 10,
         align: columnAlign[index] || 'left',
+        lineBreak: false,
       })
       x += colWidths[index]
     })
@@ -1160,9 +1166,10 @@ const streamBookingCommissionInvoice = async (
   doc.moveDown(2)
 
   const tableX = marginLeft
-  const colWidths = [100, 120, 70, 110, 95]
+  const colWidths = [130, 110, 60, 110, 90]
   const columnAlign: ('left' | 'center' | 'right')[] = ['left', 'left', 'center', 'right', 'right']
   const rowHeight = 28
+  const headerRowHeight = 36
   const tableWidth = colWidths.reduce((sum, width) => sum + width, 0)
   const headerLabels = [
     'Numéro de réservation',
@@ -1177,16 +1184,16 @@ const streamBookingCommissionInvoice = async (
 
   const drawTableHeader = (y: number) => {
     doc.save()
-    doc.fillColor('#007BFF').rect(tableX, y, tableWidth, rowHeight).fill()
+    doc.fillColor('#007BFF').rect(tableX, y, tableWidth, headerRowHeight).fill()
     doc.restore()
 
     doc.save()
     doc.lineWidth(1)
-    doc.strokeColor('#007BFF').rect(tableX, y, tableWidth, rowHeight).stroke()
+    doc.strokeColor('#007BFF').rect(tableX, y, tableWidth, headerRowHeight).stroke()
     doc.font('Helvetica-Bold').fontSize(10).fillColor('#FFFFFF')
-    let x = tableX
     const textHeight = doc.currentLineHeight()
-    const textOffsetY = y + (rowHeight - textHeight) / 2
+    const textOffsetY = y + (headerRowHeight - textHeight) / 2
+    let x = tableX
 
     headerLabels.forEach((label, index) => {
       doc.text(label, x + 5, textOffsetY, {
@@ -1196,8 +1203,8 @@ const streamBookingCommissionInvoice = async (
       x += colWidths[index]
     })
     doc.restore()
-    doc.y = y + rowHeight
-    return y + rowHeight
+    doc.y = y + headerRowHeight
+    return y + headerRowHeight
   }
 
   const drawRow = (
@@ -1219,6 +1226,7 @@ const streamBookingCommissionInvoice = async (
       doc.text(value, x + 5, textOffsetY, {
         width: colWidths[index] - 10,
         align: columnAlign[index] || 'left',
+        lineBreak: false,
       })
       x += colWidths[index]
     })

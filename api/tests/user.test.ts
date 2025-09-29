@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { jest } from '@jest/globals'
 import request from 'supertest'
 import url from 'url'
 import path from 'path'
@@ -155,6 +156,78 @@ describe('POST /api/admin-sign-up', () => {
     const token = await Token.findOne({ user: ADMIN_ID })
     expect(token).not.toBeNull()
     expect(token?.token.length).toBeGreaterThan(0)
+  })
+})
+
+describe('User slug generation', () => {
+  const slugUserEmail = testHelper.GetRandomEmail()
+  let slugUserId: string
+
+  beforeAll(async () => {
+    const payload: bookcarsTypes.SignUpPayload = {
+      email: slugUserEmail,
+      password: testHelper.PASSWORD,
+      fullName: "Éléonore   D'Ártois!!!",
+      language: testHelper.LANGUAGE,
+      birthDate: new Date(1990, 0, 1),
+      phone: '01010101',
+    }
+
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.1234)
+    try {
+      const res = await request(app)
+        .post('/api/sign-up')
+        .send(payload)
+      expect(res.statusCode).toBe(200)
+    } finally {
+      randomSpy.mockRestore()
+    }
+
+    const user = await User.findOne({ email: slugUserEmail })
+    expect(user).not.toBeNull()
+    if (!user) {
+      throw new Error('User not created for slug tests')
+    }
+    slugUserId = user.id
+  })
+
+  afterAll(async () => {
+    if (slugUserId) {
+      await Token.deleteMany({ user: slugUserId })
+      await User.deleteOne({ _id: slugUserId })
+    }
+  })
+
+  it('should normalize the slug during signup', async () => {
+    const user = await User.findById(slugUserId)
+    expect(user).not.toBeNull()
+    expect(user?.slug).toBe('eleonore-dartois-1234')
+  })
+
+  it('should update the slug when the full name changes', async () => {
+    const token = await testHelper.signinAsAdmin()
+    const updatePayload: bookcarsTypes.UpdateUserPayload = {
+      _id: slugUserId,
+      fullName: '  Jean  Péters?!  ',
+      phone: '0102030405',
+      location: 'Paris',
+      bio: 'Bio updated',
+    }
+
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.9876)
+    try {
+      const res = await request(app)
+        .post('/api/update-user')
+        .set(env.X_ACCESS_TOKEN, token)
+        .send(updatePayload)
+      expect(res.statusCode).toBe(200)
+    } finally {
+      randomSpy.mockRestore()
+    }
+
+    const updatedUser = await User.findById(slugUserId)
+    expect(updatedUser).not.toBeNull()
+    expect(updatedUser?.slug).toBe('jean-peters-9876')
   })
 })
 

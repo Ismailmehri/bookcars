@@ -8,6 +8,8 @@ const strings = new LocalizedStrings({
     SIGN_UP: "S'inscrire",
     RECAPTCHA_ERROR: 'Veuillez remplir le captcha pour continuer.',
     SIGN_UP_ERROR: "Une erreur s'est produite lors de l'inscription.",
+    CUSTOMER_SIGNUP_INFO: 'Vous êtes un client ? Rejoignez la plateforme de réservation.',
+    CUSTOMER_SIGNUP_BUTTON: 'Inscription client',
   },
   en: {
     SIGN_UP_HEADING: 'Sign up',
@@ -15,6 +17,8 @@ const strings = new LocalizedStrings({
     SIGN_UP: 'Sign up',
     RECAPTCHA_ERROR: 'Fill out the captcha to continue.',
     SIGN_UP_ERROR: 'An error occurred during sign up.',
+    CUSTOMER_SIGNUP_INFO: 'Looking for the customer portal? Continue on the booking website.',
+    CUSTOMER_SIGNUP_BUTTON: 'Sign up as a customer',
   },
 })
 

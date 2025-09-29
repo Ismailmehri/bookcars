@@ -9,14 +9,26 @@ div.signup {
   justify-content: center;
   -webkit-justify-content: center;
   margin: 45px 0;
+  padding: 0 16px;
   transform: translate3d(0, 0, 0);
   -webkit-transform: translate3d(0, 0, 0);
+}
+
+div.signup .signup-form {
+  box-sizing: border-box;
+  padding: 30px;
+  width: 100%;
+  max-width: 560px;
 }
 
 div.signup .signup-form-title {
   text-align: center;
   text-transform: capitalize;
   color: #232323;
+}
+
+div.signup .signup-portal-alert {
+  margin: 16px 0 24px;
 }
 
 div.signup div.signup-tos {
@@ -26,14 +38,36 @@ div.signup div.signup-tos {
 /* Device width is less than or equal to 960px */
 
 @media only screen and (max-width: 960px) {
+  div.signup {
+    flex-direction: column;
+    -webkit-flex-direction: column;
+    margin: 32px 0;
+  }
+
   div.signup .signup-form {
-    width: 350px;
-    padding: 30px;
+    max-width: 420px;
+    padding: 24px;
   }
 
   div.signup .recaptcha {
     margin-top: 25px;
     margin-left: -10px;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  div.signup {
+    margin: 20px 0;
+    padding: 0 12px;
+  }
+
+  div.signup .signup-form {
+    max-width: none;
+    padding: 20px;
+  }
+
+  div.signup .recaptcha {
+    margin-left: 0;
   }
 }
 
@@ -62,8 +96,7 @@ div.signup div.signup-buttons button {
 
 @media only screen and (min-width: 960px) {
   div.signup .signup-form {
-    width: 550px;
-    padding: 30px;
+    max-width: 550px;
   }
 
   div.signup .recaptcha {

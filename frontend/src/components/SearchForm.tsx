@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   FormControl,
@@ -34,8 +34,28 @@ const SearchForm = ({
 }: SearchFormProps) => {
   const navigate = useNavigate()
 
-  const _minDate = new Date()
-  _minDate.setDate(_minDate.getDate() + 1)
+  const minPickupDate = useMemo(() => {
+    const date = new Date()
+    date.setDate(date.getDate() + 1)
+    date.setHours(10, 0, 0, 0)
+    return date
+  }, [])
+
+  const maxDropOffDate = useMemo(() => {
+    const date = new Date()
+    date.setMonth(date.getMonth() + env.MAX_BOOKING_MONTHS)
+    date.setHours(20, 30, 0, 0)
+    return date
+  }, [])
+
+  const maxPickupDate = useMemo(() => {
+    const date = new Date(maxDropOffDate)
+    date.setDate(date.getDate() - 1)
+    if (date < minPickupDate) {
+      return new Date(minPickupDate)
+    }
+    return date
+  }, [maxDropOffDate, minPickupDate])
 
   const [pickupLocation, setPickupLocation] = useState('')
   const [selectedPickupLocation, setSelectedPickupLocation] = useState<bookcarsTypes.Location | undefined>(undefined)
@@ -53,28 +73,51 @@ const SearchForm = ({
       const minEndDate = new Date(startDate)
       minEndDate.setDate(startDate.getDate() + 1)
 
-      if (!endDate || endDate < minEndDate) {
-        const newEndDate = new Date(startDate)
-        newEndDate.setDate(startDate.getDate() + 3)
-        setTo(newEndDate)
+      if (minEndDate > maxDropOffDate) {
+        setTo(undefined)
+        setToError(true)
+        return
       }
+
+      const suggestedEndDate = new Date(startDate)
+      suggestedEndDate.setDate(startDate.getDate() + 3)
+
+      let newEndDate = endDate && endDate >= minEndDate ? new Date(endDate) : suggestedEndDate
+
+      if (newEndDate < minEndDate) {
+        newEndDate = new Date(minEndDate)
+      }
+
+      if (newEndDate > maxDropOffDate) {
+        newEndDate = new Date(maxDropOffDate)
+      }
+
+      setTo(newEndDate)
+      setToError(false)
     }
   }
 
   useEffect(() => {
-    const _from = new Date()
-    _from.setDate(_from.getDate() + 1)
-    _from.setHours(10)
-    _from.setMinutes(0)
-    _from.setSeconds(0)
-    _from.setMilliseconds(0)
+    const defaultFrom = new Date(minPickupDate)
+    defaultFrom.setHours(10, 0, 0, 0)
 
-    const _to = new Date(_from)
-    _to.setDate(_to.getDate() + 3)
+    const minDefaultTo = new Date(defaultFrom)
+    minDefaultTo.setDate(minDefaultTo.getDate() + 1)
 
-    setFrom(_from)
-    setTo(_to)
-  }, [])
+    let defaultTo = new Date(defaultFrom)
+    defaultTo.setDate(defaultTo.getDate() + 3)
+
+    if (defaultTo < minDefaultTo) {
+      defaultTo = new Date(minDefaultTo)
+    }
+
+    if (defaultTo > maxDropOffDate) {
+      defaultTo = new Date(maxDropOffDate)
+    }
+
+    setFrom(defaultFrom)
+    setTo(defaultTo)
+  }, [maxDropOffDate, minPickupDate])
 
   useEffect(() => {
     const init = async () => {
@@ -148,9 +191,10 @@ const SearchForm = ({
 
   const handleFromDateChange = (date: Date | null) => {
     if (date) {
-      setFrom(date)
+      const pickupDate = date > maxPickupDate ? new Date(maxPickupDate) : date
+      setFrom(pickupDate)
       setFromError(false)
-      updateDateRange(date, to)
+      updateDateRange(pickupDate, to)
     } else {
       setFrom(undefined)
     }
@@ -158,8 +202,14 @@ const SearchForm = ({
 
   const handleToDateChange = (date: Date | null) => {
     if (date) {
-      const minEndDate = from ? new Date(from.getTime() + 24 * 60 * 60 * 1000) : _minDate
-      if (date >= minEndDate) {
+      const minEndDate = from ? new Date(from.getTime() + 24 * 60 * 60 * 1000) : minPickupDate
+
+      if (minEndDate > maxDropOffDate) {
+        setToError(true)
+        return
+      }
+
+      if (date >= minEndDate && date <= maxDropOffDate) {
         setTo(date)
         setToError(false)
       }
@@ -204,7 +254,8 @@ const SearchForm = ({
         <DateTimePicker
           label={strings.PICK_UP_DATE}
           value={from}
-          minDate={_minDate}
+          minDate={minPickupDate}
+          maxDate={maxPickupDate}
           variant="outlined"
           required
           onChange={handleFromDateChange}
@@ -218,7 +269,8 @@ const SearchForm = ({
         <DateTimePicker
           label={strings.DROP_OFF_DATE}
           value={to}
-          minDate={from ? new Date(from.getTime() + 24 * 60 * 60 * 1000) : _minDate}
+          minDate={from ? new Date(from.getTime() + 24 * 60 * 60 * 1000) : minPickupDate}
+          maxDate={maxDropOffDate}
           variant="outlined"
           required
           onChange={handleToDateChange}

@@ -5,7 +5,8 @@ import {
   FormControl,
   FormHelperText,
   Button,
-  Paper
+  Paper,
+  Alert,
 } from '@mui/material'
 import validator from 'validator'
 import { useNavigate } from 'react-router-dom'
@@ -170,6 +171,21 @@ const SignUp = () => {
             {strings.SIGN_UP_HEADING}
             {' '}
           </h1>
+          <Alert
+            severity="info"
+            className="signup-portal-alert"
+            action={(
+              <Button
+                color="inherit"
+                size="small"
+                href="https://plany.tn/sign-up"
+              >
+                {strings.CUSTOMER_SIGNUP_BUTTON}
+              </Button>
+            )}
+          >
+            {strings.CUSTOMER_SIGNUP_INFO}
+          </Alert>
           <form onSubmit={handleSubmit}>
             <div>
               <FormControl fullWidth margin="dense">

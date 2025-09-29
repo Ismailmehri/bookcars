@@ -25,7 +25,7 @@ export default [
     parser: '@typescript-eslint/parser',
     plugins: ['react-refresh'],
     rules: {
-      'semi': [
+      semi: [
         'error',
         'never',
       ],
@@ -41,7 +41,7 @@ export default [
       'react/jsx-filename-extension': [
         'warn',
         {
-          'extensions': [
+          extensions: [
             '.tsx',
             '.ts',
           ],
@@ -50,17 +50,17 @@ export default [
       'react/function-component-definition': [
         'warn',
         {
-          'namedComponents': 'arrow-function',
+          namedComponents: 'arrow-function',
         },
       ],
-      'curly': 'error',
+      curly: 'error',
       'linebreak-style': 'off',
       'no-underscore-dangle': 'off',
       'no-restricted-syntax': 'off',
       'import/no-unresolved': 'off',
       'import/extensions': 'off',
       'max-len': 'off',
-      'indent': 'off',
+      indent: 'off',
       'import/prefer-default-export': 'off',
       'no-await-in-loop': 'off',
       'comma-dangle': 'off',

@@ -13,6 +13,7 @@ import { templateAfterValidation } from '../lang/template/emailTemplateAfterVali
 import * as bookcarsTypes from ':bookcars-types'
 import i18n from '../lang/i18n'
 import * as env from '../config/env.config'
+import type { User as EnvUser } from '../config/env.config'
 import User from '../models/User'
 import Booking from '../models/Booking'
 import Token from '../models/Token'
@@ -428,7 +429,7 @@ export const activateSupplier = async (req: Request, res: Response) => {
   const { body }: { body: bookcarsTypes.ActivatePayload } = req
   const { userId } = body
   const sessionData = await authHelper.getSessionData(req)
-  let connectedUser: bookcarsTypes.User | null
+  let connectedUser: EnvUser | null
 
   try {
     if (!helper.isValidObjectId(userId)) {
@@ -437,13 +438,13 @@ export const activateSupplier = async (req: Request, res: Response) => {
 
     const user = await User.findById(userId)
 
-  if (sessionData.id === userId && user) {
-    connectedUser = user as bookcarsTypes.User
-  } else {
-    connectedUser = await User.findById(sessionData.id)
-  }
+    if (user && user._id.toString() === sessionData.id) {
+      connectedUser = user
+    } else {
+      connectedUser = await User.findById(sessionData.id)
+    }
 
-  const isAdmin = connectedUser ? helper.admin(connectedUser) : false
+    const isAdmin = connectedUser ? helper.admin(connectedUser) : false
 
     if (user && isAdmin) {
         user.active = true
@@ -1009,7 +1010,7 @@ export const update = async (req: Request, res: Response) => {
     const { body }: { body: bookcarsTypes.UpdateUserPayload } = req
     const { _id } = body
     const sessionData = await authHelper.getSessionData(req)
-    let connectedUser: bookcarsTypes.User | null
+    let connectedUser: EnvUser | null
 
     if (!helper.isValidObjectId(_id)) {
       throw new Error('User id is not valid')
@@ -1017,14 +1018,14 @@ export const update = async (req: Request, res: Response) => {
 
     const user = await User.findById(_id)
 
-    if (sessionData.id === _id && user) {
-      connectedUser = user as bookcarsTypes.User
+    if (user && user._id.toString() === sessionData.id) {
+      connectedUser = user
     } else {
       connectedUser = await User.findById(sessionData.id)
     }
 
     const isAdmin = connectedUser ? helper.admin(connectedUser) : false
-    if (!user || (!isAdmin && (user._id !== connectedUser?._id))) {
+    if (!user || (!isAdmin && (!connectedUser || user._id.toString() !== connectedUser._id.toString()))) {
       logger.error('[user.update] User not found:', body.email)
       return res.sendStatus(204)
     }
@@ -1113,9 +1114,9 @@ export const updateType = async (req: Request, res: Response) => {
     }
 
     const sessionData = await authHelper.getSessionData(req)
-    const connectedUser = await User.findById(sessionData.id) as bookcarsTypes.User | null
+    const connectedUser = await User.findById(sessionData.id)
 
-    if (!helper.admin(connectedUser || undefined)) {
+    if (!connectedUser || !helper.admin(connectedUser)) {
       return res.status(403).send(i18n.t('ADMIN_ONLY'))
     }
 
@@ -1166,7 +1167,7 @@ export const addReview = async (req: Request, res: Response) => {
 
     // Récupérer l'utilisateur connecté
     const sessionData = await authHelper.getSessionData(req)
-    const connectedUser = await User.findById(sessionData.id) as bookcarsTypes.User
+    const connectedUser = await User.findById(sessionData.id)
 
     // Vérifier si l'utilisateur connecté existe
     if (!connectedUser) {
@@ -1592,7 +1593,7 @@ export const getUsers2 = async (req: Request, res: Response) => {
     const { user: userId } = body
 
     const sessionData = await authHelper.getSessionData(req)
-    const connectedUser: bookcarsTypes.User | null = await User.findById(sessionData.id)
+    const connectedUser = await User.findById(sessionData.id)
 
     const isAdmin = connectedUser ? helper.admin(connectedUser) : false
     const isSupplier = connectedUser ? helper.supplier(connectedUser) : false
@@ -1679,7 +1680,7 @@ export const getUsers = async (req: Request, res: Response) => {
     const { user: userId } = body
 
     const sessionData = await authHelper.getSessionData(req)
-    const connectedUser: bookcarsTypes.User | null = await User.findById(sessionData.id)
+    const connectedUser = await User.findById(sessionData.id)
 
     const isAdmin = connectedUser ? helper.admin(connectedUser) : false
     const isSupplier = connectedUser ? helper.supplier(connectedUser) : false
@@ -1970,7 +1971,7 @@ export const getUsersReviews = async (req: Request, res: Response) => {
 
     // Récupérer les données de session et l'utilisateur connecté
     const sessionData = await authHelper.getSessionData(req)
-    const connectedUser: bookcarsTypes.User | null = await User.findById(sessionData.id)
+    const connectedUser = await User.findById(sessionData.id)
 
     const isAdmin = connectedUser ? helper.admin(connectedUser) : false
 

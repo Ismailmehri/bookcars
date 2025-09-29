@@ -1051,8 +1051,14 @@ const streamCommissionInvoice = async (
   doc.end()
 }
 
+type BookingInvoiceRecord = Omit<env.Booking, 'supplier' | 'driver' | 'car'> & {
+  supplier: env.User | mongoose.Types.ObjectId
+  driver: env.User | mongoose.Types.ObjectId
+  car: env.Car | mongoose.Types.ObjectId
+}
+
 const streamBookingCommissionInvoice = async (
-  booking: env.Booking,
+  booking: BookingInvoiceRecord,
   res: Response,
 ) => {
   const doc = new PDFDocument({ margin: 50 })
@@ -1763,7 +1769,7 @@ export const downloadAgencyBookingInvoice = async (req: Request, res: Response) 
       return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
     }
 
-    const bookingRecord = booking.toObject() as env.Booking
+    const bookingRecord = booking.toObject() as BookingInvoiceRecord
 
     await streamBookingCommissionInvoice(bookingRecord, res)
 

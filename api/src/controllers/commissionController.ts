@@ -1763,7 +1763,9 @@ export const downloadAgencyBookingInvoice = async (req: Request, res: Response) 
       return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
     }
 
-    await streamBookingCommissionInvoice(booking, res)
+    const bookingRecord = booking.toObject() as env.Booking
+
+    await streamBookingCommissionInvoice(bookingRecord, res)
 
     return undefined
   } catch (err) {

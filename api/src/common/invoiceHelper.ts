@@ -80,8 +80,9 @@ export const generateInvoice = async (
 
       const tableTop = doc.y
       const startX = 50
-      const colWidths = [80, 80, 120, 120, 80]
-      const rowHeight = 20
+      const colWidths = [130, 90, 70, 110, 80]
+      const headerRowHeight = 32
+      const bodyRowHeight = 24
       const tableWidth = colWidths.reduce((a, b) => a + b, 0)
 
       const drawRow = (
@@ -89,22 +90,32 @@ export const generateInvoice = async (
         values: string[],
         header = false,
       ) => {
+        const rowHeight = header ? headerRowHeight : bodyRowHeight
+        const paddingX = 8
         let x = startX
         if (header) {
           doc.font('Helvetica-Bold')
         } else {
           doc.font('Helvetica')
         }
+        const lineHeight = doc.currentLineHeight()
+        const textY = y + (rowHeight - lineHeight) / 2
         values.forEach((v, i) => {
-          doc.text(v, x + 5, y + 6, { width: colWidths[i] - 10, align: 'center' })
+          doc.text(v, x + paddingX, textY, {
+            width: colWidths[i] - paddingX * 2,
+            align: 'center',
+            lineBreak: false,
+            ellipsis: true,
+          })
           x += colWidths[i]
         })
         doc.rect(startX, y, tableWidth, rowHeight).stroke()
+        return rowHeight
       }
 
-      drawRow(tableTop, ['Plan', 'Période', 'Début', 'Fin', 'Montant'], true)
-      drawRow(
-        tableTop + rowHeight,
+      const headerHeight = drawRow(tableTop, ['Plan', 'Période', 'Début', 'Fin', 'Montant'], true)
+      const bodyHeight = drawRow(
+        tableTop + headerHeight,
         [
           subscription.plan,
           subscription.period,
@@ -114,7 +125,7 @@ export const generateInvoice = async (
         ],
       )
 
-      const summaryY = tableTop + rowHeight * 2 + 20
+      const summaryY = tableTop + headerHeight + bodyHeight + 20
       doc.font('Helvetica-Bold').text(`Total TTC : ${price.toFixed(2)} DT`, startX, summaryY, {
         align: 'right',
         width: tableWidth,

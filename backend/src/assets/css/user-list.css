@@ -39,12 +39,17 @@ div.us-list span.bp {
 
 div.us-list a.us-user {
   display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
 }
 
 div.us-list span.us-avatar {
   margin-right: 5px;
   width: 60px;
   height: 30px;
+  flex-shrink: 0;
 }
 
 div.us-list span.us-avatar img {
@@ -52,6 +57,49 @@ div.us-list span.us-avatar img {
   max-height: 100%;
   position: relative;
   vertical-align: middle;
+}
+
+div.us-list span.us-avatar img.supplier-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+
+div.us-list span.us-avatar img.supplier-avatar-placeholder {
+  box-shadow: inset 0 0 0 1px rgba(25, 118, 210, 0.2);
+}
+
+div.us-list div.us-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+div.us-list div.us-actions-header {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+div.us-list span.us-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  div.us-list div.us-actions {
+    gap: 2px;
+  }
+
+  div.us-list div.us-actions .MuiIconButton-root {
+    padding: 4px;
+  }
 }
 
 div.us-list .us-blacklisted,

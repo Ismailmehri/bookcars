@@ -27,7 +27,7 @@ const getPrice = (
 
 export const generateInvoice = async (
   subscription: bookcarsTypes.Subscription,
-  supplier: bookcarsTypes.User,
+  supplier: Pick<bookcarsTypes.User, 'fullName' | 'email'>,
 ) => {
   if (!subscription.invoice) {
     throw new Error('invoice filename missing')

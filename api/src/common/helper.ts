@@ -6,6 +6,7 @@ import Stripe from 'stripe'
 import { nanoid } from 'nanoid'
 import axios from 'axios'
 import * as bookcarsTypes from ':bookcars-types'
+import type { User as EnvUser } from '../config/env.config'
 import i18n from '../lang/i18n'
 
 /**
@@ -265,9 +266,9 @@ export const validateAccessToken = async (socialSignInType: bookcarsTypes.Social
   return false
 }
 
-export const admin = (user?: bookcarsTypes.User): boolean => (user && user.type === bookcarsTypes.RecordType.Admin) ?? false
+export const admin = (user?: (bookcarsTypes.User | EnvUser) | null): boolean => user?.type === bookcarsTypes.RecordType.Admin
 
-export const supplier = (user?: bookcarsTypes.User): boolean => (user && user.type === bookcarsTypes.RecordType.Supplier) ?? false
+export const supplier = (user?: (bookcarsTypes.User | EnvUser) | null): boolean => user?.type === bookcarsTypes.RecordType.Supplier
 
 const SCORE_CONFIG = {
   PHONE_MAX: 10, // Points maximum pour le téléphone
@@ -365,7 +366,11 @@ interface ScoreBreakdown {
    * @param {Car[]} cars
    * @returns {ScoreBreakdown}
    */
-  export function calculateAgencyScore(agency: bookcarsTypes.User, bookings: bookcarsTypes.Booking[], cars: bookcarsTypes.Car[]): ScoreBreakdown {
+  export function calculateAgencyScore(
+    agency: bookcarsTypes.User | EnvUser,
+    bookings: bookcarsTypes.Booking[],
+    cars: bookcarsTypes.Car[],
+  ): ScoreBreakdown {
     const breakdown: ScoreBreakdown = {
       total: 0,
       details: {

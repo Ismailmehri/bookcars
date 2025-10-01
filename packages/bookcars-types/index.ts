@@ -302,6 +302,11 @@ export interface UpdateUserPayload extends CreateUserPayload {
   reviews?: Review[];
 }
 
+export interface UpdateUserTypePayload {
+  _id: string
+  type: UserType
+}
+
 export interface AddReviewPayload {
   _id: string
   review?: Review;

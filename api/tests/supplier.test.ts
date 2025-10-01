@@ -15,6 +15,7 @@ import User from '../src/models/User'
 import Car from '../src/models/Car'
 import Booking from '../src/models/Booking'
 import AdditionalDriver from '../src/models/AdditionalDriver'
+import i18n from '../src/lang/i18n'
 
 const __filename = url.fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -224,6 +225,76 @@ describe('GET /api/supplier/:id', () => {
       .get('/api/supplier/0')
       .set(env.X_ACCESS_TOKEN, token)
     expect(res.statusCode).toBe(400)
+
+    await testHelper.signout(token)
+  })
+})
+
+describe('GET /api/supplier-score/:id', () => {
+  it('should return agency score details for a supplier', async () => {
+    const token = await testHelper.signinAsAdmin()
+
+    const mockScore: ReturnType<typeof helper.calculateAgencyScore> = {
+      total: 85,
+      details: {
+        phone: { score: 10, max: 10 },
+        carConfiguration: {
+          periodicPrices: { score: 12, max: 15, configuredCars: 2 },
+          unavailablePeriods: { score: 9, max: 15, configuredCars: 1 },
+        },
+        postRentalManagement: {
+          expiredPending: { score: 20, max: 20 },
+          expiredReservedDeposit: { score: 10, max: 10 },
+          cancelledVoidRatio: { score: 5, max: 10 },
+        },
+        carQuantity: { score: 10, max: 10 },
+        bookingStatusHealth: { score: 8, max: 10, ratio: 0.8 },
+      },
+      recommendations: ['Add more cars (+5 points)'],
+    }
+
+    const calculateSpy = jest.spyOn(helper, 'calculateAgencyScore').mockReturnValue(mockScore)
+
+    try {
+      const res = await request(app)
+        .get(`/api/supplier-score/${SUPPLIER1_ID}`)
+        .set(env.X_ACCESS_TOKEN, token)
+
+      expect(res.statusCode).toBe(200)
+      expect(res.body).toMatchObject({
+        success: true,
+        score: mockScore.total,
+        details: mockScore.details,
+        recommendations: mockScore.recommendations,
+      })
+      expect(calculateSpy).toHaveBeenCalled()
+    } finally {
+      calculateSpy.mockRestore()
+      await testHelper.signout(token)
+    }
+  })
+
+  it('should return 204 when supplier is not found', async () => {
+    const token = await testHelper.signinAsAdmin()
+
+    const res = await request(app)
+      .get(`/api/supplier-score/${testHelper.GetRandromObjectIdAsString()}`)
+      .set(env.X_ACCESS_TOKEN, token)
+
+    expect(res.statusCode).toBe(204)
+
+    await testHelper.signout(token)
+  })
+
+  it('should return 400 when user is not a supplier', async () => {
+    const token = await testHelper.signinAsAdmin()
+
+    const res = await request(app)
+      .get(`/api/supplier-score/${testHelper.getUserId()}`)
+      .set(env.X_ACCESS_TOKEN, token)
+
+    expect(res.statusCode).toBe(400)
+    expect(res.text).toBe(i18n.t('NOT_A_SUPPLIER'))
 
     await testHelper.signout(token)
   })

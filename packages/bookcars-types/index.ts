@@ -313,10 +313,13 @@ export interface CommissionNotePayload {
   note: string
 }
 
-export interface CommissionRibFile {
-  name: string
-  mimeType: string
-  data: string
+export interface CommissionRibDetails {
+  accountHolder: string
+  bankName: string
+  bankAddress?: string
+  iban: string
+  bic: string
+  accountNumber: string
 }
 
 export interface CommissionSettingsPayload {
@@ -327,12 +330,20 @@ export interface CommissionSettingsPayload {
   cardPaymentEnabled?: boolean
   d17PaymentEnabled?: boolean
   bankTransferRibInformation?: string
-  bankTransferRibFile?: CommissionRibFile | null
+  bankTransferRibDetails?: CommissionRibDetails | null
 }
 
 export interface CommissionSettings extends CommissionSettingsPayload {
   updatedAt?: Date
   updatedBy?: AgencyCommissionAgency
+}
+
+export interface CommissionPaymentOptions {
+  bankTransferEnabled: boolean
+  cardPaymentEnabled: boolean
+  d17PaymentEnabled: boolean
+  bankTransferRibInformation?: string
+  bankTransferRibDetails?: CommissionRibDetails | null
 }
 
 export interface AgencyCommissionDetailSummary {

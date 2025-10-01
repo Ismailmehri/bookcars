@@ -8,6 +8,8 @@ const routes = {
   addNote: '/api/commission/note',
   getSettings: '/api/commission/settings',
   updateSettings: '/api/commission/settings',
+  getPaymentOptions: '/api/commission/payment/options',
+  downloadRib: '/api/commission/payment/rib',
   generateInvoice: '/api/commission/invoice/:agencyId/:year/:month',
   getAgencyBookings: '/api/commission/agency/bookings',
   downloadAgencyInvoice: '/api/commission/agency/:agencyId/invoice/:year/:month',

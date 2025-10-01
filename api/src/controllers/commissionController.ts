@@ -3,6 +3,7 @@ import escapeStringRegexp from 'escape-string-regexp'
 import PDFDocument from 'pdfkit'
 import axios from 'axios'
 import mongoose from 'mongoose'
+import validator from 'validator'
 import * as bookcarsTypes from ':bookcars-types'
 import { getCommissionConfig } from ':bookcars-helper'
 import Booking from '../models/Booking'
@@ -97,6 +98,79 @@ const COMMISSION_ELIGIBLE_STATUSES: bookcarsTypes.BookingStatus[] = [
   bookcarsTypes.BookingStatus.Deposit,
   bookcarsTypes.BookingStatus.Paid,
 ]
+
+const BIC_REGEX = /^[A-Za-z]{4}[A-Za-z]{2}[0-9A-Za-z]{2}([0-9A-Za-z]{3})?$/
+
+type SanitizedRibDetails = {
+  accountHolder: string
+  bankName: string
+  bankAddress?: string
+  iban: string
+  bic: string
+  accountNumber: string
+}
+
+const sanitizeRibDetails = (details?: bookcarsTypes.CommissionRibDetails | null): SanitizedRibDetails | null => {
+  if (!details) {
+    return null
+  }
+
+  const sanitized: SanitizedRibDetails = {
+    accountHolder: (details.accountHolder || '').trim(),
+    bankName: (details.bankName || '').trim(),
+    iban: (details.iban || '').replace(/\s+/g, '').toUpperCase(),
+    bic: (details.bic || '').replace(/\s+/g, '').toUpperCase(),
+    accountNumber: (details.accountNumber || '').replace(/\s+/g, ''),
+  }
+
+  const bankAddress = (details.bankAddress || '').trim()
+  if (bankAddress) {
+    sanitized.bankAddress = bankAddress
+  }
+
+  return sanitized
+}
+
+const validateRibDetails = (details?: bookcarsTypes.CommissionRibDetails | null): SanitizedRibDetails | null => {
+  const sanitized = sanitizeRibDetails(details)
+  if (!sanitized) {
+    return null
+  }
+
+  if (
+    !sanitized.accountHolder
+    || !sanitized.bankName
+    || !sanitized.iban
+    || !sanitized.bic
+    || !sanitized.accountNumber
+  ) {
+    return null
+  }
+
+  if (!validator.isIBAN(sanitized.iban)) {
+    return null
+  }
+
+  if (!BIC_REGEX.test(sanitized.bic)) {
+    return null
+  }
+
+  if (sanitized.accountNumber.length < 6) {
+    return null
+  }
+
+  return sanitized
+}
+
+const buildPaymentOptions = (
+  settings: env.AgencyCommissionSettings,
+): bookcarsTypes.CommissionPaymentOptions => ({
+  bankTransferEnabled: settings.bankTransferEnabled !== false,
+  cardPaymentEnabled: settings.cardPaymentEnabled === true,
+  d17PaymentEnabled: settings.d17PaymentEnabled === true,
+  bankTransferRibInformation: settings.bankTransferRibInformation || '',
+  bankTransferRibDetails: sanitizeRibDetails(settings.bankTransferRibDetails),
+})
 
 const isCommissionEligibleStatus = (status?: bookcarsTypes.BookingStatus | null) => {
   if (!status) {
@@ -808,22 +882,13 @@ const serializeSettings = async (
   settings: env.AgencyCommissionSettings,
 ): Promise<bookcarsTypes.CommissionSettings> => {
   const updatedByUser = settings.updatedBy ? await User.findById(settings.updatedBy) : null
+  const paymentOptions = buildPaymentOptions(settings)
 
   return {
     reminderChannel: settings.reminderChannel || bookcarsTypes.CommissionReminderChannel.Email,
     emailTemplate: settings.emailTemplate,
     smsTemplate: settings.smsTemplate,
-    bankTransferEnabled: settings.bankTransferEnabled !== false,
-    cardPaymentEnabled: settings.cardPaymentEnabled === true,
-    d17PaymentEnabled: settings.d17PaymentEnabled === true,
-    bankTransferRibInformation: settings.bankTransferRibInformation || '',
-    bankTransferRibFile: settings.bankTransferRibFile
-      ? {
-        name: settings.bankTransferRibFile.name,
-        mimeType: settings.bankTransferRibFile.mimeType,
-        data: settings.bankTransferRibFile.data,
-      }
-      : null,
+    ...paymentOptions,
     updatedAt: settings.updatedAt || undefined,
     updatedBy: updatedByUser ? toAgency(updatedByUser) : undefined,
   }
@@ -1684,14 +1749,26 @@ export const updateCommissionSettings = async (req: Request, res: Response) => {
     } else if (typeof settings.bankTransferRibInformation === 'undefined') {
       settings.bankTransferRibInformation = ''
     }
-    if (body.bankTransferRibFile !== undefined) {
-      settings.bankTransferRibFile = body.bankTransferRibFile
-        ? {
-          name: body.bankTransferRibFile.name,
-          mimeType: body.bankTransferRibFile.mimeType,
-          data: body.bankTransferRibFile.data,
+    if (body.bankTransferRibDetails !== undefined) {
+      if (body.bankTransferRibDetails === null) {
+        settings.bankTransferRibDetails = null
+      } else {
+        const ribDetails = validateRibDetails(body.bankTransferRibDetails)
+        if (!ribDetails) {
+          return res.status(400).send(i18n.t('COMMISSION_RIB_INVALID'))
         }
-        : null
+        settings.bankTransferRibDetails = ribDetails
+      }
+    } else if (settings.bankTransferRibDetails) {
+      settings.bankTransferRibDetails = sanitizeRibDetails(settings.bankTransferRibDetails)
+    }
+
+    if (settings.bankTransferEnabled !== false) {
+      const currentRib = sanitizeRibDetails(settings.bankTransferRibDetails)
+      if (!currentRib) {
+        return res.status(400).send(i18n.t('COMMISSION_RIB_REQUIRED'))
+      }
+      settings.bankTransferRibDetails = currentRib
     }
     settings.updatedBy = ensureObjectId(admin._id)
     await settings.save()
@@ -1701,6 +1778,92 @@ export const updateCommissionSettings = async (req: Request, res: Response) => {
     return res.json(payload)
   } catch (err) {
     logger.error('[commission.updateCommissionSettings]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const getCommissionPaymentOptions = async (req: Request, res: Response) => {
+  try {
+    const user = await ensureCommissionUser(req)
+    if (!user) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const settings = await getSettingsDocument()
+    const payload = buildPaymentOptions(settings)
+
+    return res.json(payload)
+  } catch (err) {
+    logger.error('[commission.getCommissionPaymentOptions]', err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const downloadCommissionRib = async (req: Request, res: Response) => {
+  try {
+    const user = await ensureCommissionUser(req)
+    if (!user) {
+      return res.status(403).send(i18n.t('NOT_AUTHORIZED'))
+    }
+
+    const settings = await getSettingsDocument()
+    if (settings.bankTransferEnabled === false) {
+      return res.status(404).send(i18n.t('COMMISSION_RIB_DISABLED'))
+    }
+
+    const ribDetails = sanitizeRibDetails(settings.bankTransferRibDetails)
+    if (!ribDetails) {
+      return res.status(404).send(i18n.t('COMMISSION_RIB_UNAVAILABLE'))
+    }
+
+    const doc = new PDFDocument({ margin: 50 })
+    const filename = `rib_${Date.now()}.pdf`
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+
+    doc.pipe(res)
+
+    const logo = await fetchLogo()
+    const startX = doc.page.margins.left
+    if (logo) {
+      doc.image(logo, startX, doc.y, { height: 60 })
+      doc.moveDown(2)
+    } else {
+      doc.font('Helvetica-Bold').fontSize(18).text('Plany', startX, doc.y)
+      doc.moveDown()
+    }
+
+    doc.font('Helvetica-Bold').fontSize(16).fillColor('#000000').text(i18n.t('COMMISSION_RIB_TITLE'))
+    doc.moveDown()
+    doc.font('Helvetica').fontSize(12)
+
+    const entries: { label: string; value?: string }[] = [
+      { label: i18n.t('COMMISSION_RIB_ACCOUNT_HOLDER'), value: ribDetails.accountHolder },
+      { label: i18n.t('COMMISSION_RIB_BANK_NAME'), value: ribDetails.bankName },
+      { label: i18n.t('COMMISSION_RIB_BANK_ADDRESS'), value: ribDetails.bankAddress },
+      { label: i18n.t('COMMISSION_RIB_IBAN'), value: ribDetails.iban },
+      { label: i18n.t('COMMISSION_RIB_BIC'), value: ribDetails.bic },
+      { label: i18n.t('COMMISSION_RIB_ACCOUNT_NUMBER'), value: ribDetails.accountNumber },
+    ]
+
+    entries.forEach((entry) => {
+      if (!entry.value) {
+        return
+      }
+      doc.font('Helvetica-Bold').text(`${entry.label} :`, { continued: true })
+      doc.font('Helvetica').text(` ${entry.value}`)
+    })
+
+    if (settings.bankTransferRibInformation) {
+      doc.moveDown()
+      doc.font('Helvetica-Bold').text(i18n.t('COMMISSION_RIB_INSTRUCTIONS'))
+      doc.font('Helvetica').text(settings.bankTransferRibInformation, { align: 'left' })
+    }
+
+    doc.end()
+  } catch (err) {
+    logger.error('[commission.downloadCommissionRib]', err)
     return res.status(400).send(i18n.t('DB_ERROR') + err)
   }
 }

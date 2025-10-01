@@ -8,6 +8,10 @@ import {
   Chip,
   Divider,
   Drawer,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Grid,
   IconButton,
   InputAdornment,
@@ -29,6 +33,10 @@ import {
   useMediaQuery,
   SxProps,
   Theme,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import SearchIcon from '@mui/icons-material/Search'
@@ -44,6 +52,9 @@ import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
 import FilterListIcon from '@mui/icons-material/FilterList'
 import CloseIcon from '@mui/icons-material/Close'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
+import CreditCardIcon from '@mui/icons-material/CreditCard'
+import QrCode2Icon from '@mui/icons-material/QrCode2'
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
 import { strings } from '@/lang/agency-commissions-details'
@@ -145,6 +156,15 @@ const paymentColor = (status?: bookcarsTypes.CommissionStatus): 'success' | 'war
 
 const hasBillableCommission = (status: bookcarsTypes.BookingStatus) => BILLABLE_STATUSES.has(status)
 
+const hasPaymentRibDetails = (options?: bookcarsTypes.CommissionPaymentOptions | null) => {
+  if (!options || !options.bankTransferRibDetails) {
+    return false
+  }
+
+  const { accountHolder, bankName, iban, bic, accountNumber } = options.bankTransferRibDetails
+  return Boolean(accountHolder && bankName && iban && bic && accountNumber)
+}
+
 const AgencyDetailsCommissions = () => {
   const navigate = useNavigate()
   const theme = useTheme()
@@ -162,6 +182,12 @@ const AgencyDetailsCommissions = () => {
   const [monthInvoiceLoading, setMonthInvoiceLoading] = useState(false)
   const [bookingInvoiceLoading, setBookingInvoiceLoading] = useState<string | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [paymentOptions, setPaymentOptions] = useState<bookcarsTypes.CommissionPaymentOptions>()
+  const [paymentOptionsLoading, setPaymentOptionsLoading] = useState(false)
+  const [bankTransferDialogOpen, setBankTransferDialogOpen] = useState(false)
+  const [downloadingRib, setDownloadingRib] = useState(false)
+
+  const canPay = Boolean(paymentOptions?.bankTransferEnabled && hasPaymentRibDetails(paymentOptions))
 
   const locale = LOCALE_MAP[user?.language || 'fr'] || 'fr-FR'
   const months = strings.MONTHS as string[]
@@ -220,6 +246,40 @@ const AgencyDetailsCommissions = () => {
       window.clearTimeout(timeout)
     }
   }, [user?._id, month, year, query])
+
+  useEffect(() => {
+    let active = true
+
+    if (!user?._id) {
+      setPaymentOptions(undefined)
+      setPaymentOptionsLoading(false)
+      return () => {
+        active = false
+      }
+    }
+
+    setPaymentOptionsLoading(true)
+    CommissionService.getCommissionPaymentOptions()
+      .then((options) => {
+        if (active) {
+          setPaymentOptions(options)
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          helper.error(err)
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setPaymentOptionsLoading(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [user?._id])
 
   const filteredRows = useMemo(
     () => (status === 'all' ? data : data.filter((booking) => booking.bookingStatus === status)),
@@ -547,6 +607,68 @@ const AgencyDetailsCommissions = () => {
     }
   }
 
+  const refreshPaymentOptions = async () => {
+    setPaymentOptionsLoading(true)
+    try {
+      const response = await CommissionService.getCommissionPaymentOptions()
+      setPaymentOptions(response)
+      return response
+    } catch (err) {
+      helper.error(err)
+      throw err
+    } finally {
+      setPaymentOptionsLoading(false)
+    }
+  }
+
+  const handleOpenPayDialog = async () => {
+    try {
+      const options = paymentOptions || (await refreshPaymentOptions())
+      if (!options.bankTransferEnabled) {
+        helper.error(undefined, strings.PAY_BANK_TRANSFER_DISABLED)
+        return
+      }
+      if (!hasPaymentRibDetails(options)) {
+        helper.error(undefined, strings.PAY_BANK_TRANSFER_NO_DETAILS)
+        return
+      }
+      setBankTransferDialogOpen(true)
+    } catch {
+      // errors are handled in refreshPaymentOptions
+    }
+  }
+
+  const handleClosePayDialog = () => {
+    setBankTransferDialogOpen(false)
+  }
+
+  const handleDownloadRib = async () => {
+    try {
+      setDownloadingRib(true)
+      const blob = await CommissionService.downloadCommissionRib()
+      downloadBlob(blob, strings.PAY_BANK_TRANSFER_FILENAME)
+    } catch (err) {
+      helper.error(err, strings.PAY_BANK_TRANSFER_DOWNLOAD_ERROR)
+    } finally {
+      setDownloadingRib(false)
+    }
+  }
+
+  const handleCopyRibValue = async (value?: string) => {
+    if (!value) {
+      return
+    }
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value)
+      }
+      helper.info(strings.PAY_BANK_TRANSFER_COPY_SUCCESS)
+    } catch (err) {
+      helper.error(err)
+    }
+  }
+
   // Accepte maintenant string | undefined pour corriger "Type 'string | undefined'..."
   const handleCopyBookingNumber = async (bookingNumber?: string) => {
     try {
@@ -604,6 +726,19 @@ const AgencyDetailsCommissions = () => {
                   {strings.FILTER_BUTTON}
                 </Button>
                 <Stack direction="row" spacing={1}>
+                  <Tooltip title={strings.PAY_BUTTON}>
+                    <span>
+                      <IconButton
+                        color="primary"
+                        onClick={handleOpenPayDialog}
+                        disabled={paymentOptionsLoading}
+                        aria-label={strings.PAY_BUTTON}
+                        sx={{ width: 48, height: 48 }}
+                      >
+                        {paymentOptionsLoading ? <CircularProgress size={20} /> : <PaidOutlinedIcon />}
+                      </IconButton>
+                    </span>
+                  </Tooltip>
                   <Tooltip title={strings.EXPORT_CSV}>
                     <span>
                       <IconButton
@@ -642,6 +777,15 @@ const AgencyDetailsCommissions = () => {
                 <Chip size="small" variant="outlined" label={`${strings.PERIOD_LABEL} ${months[month]} ${year}`} />
               </Stack>
               <Stack direction="row" spacing={1}>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  startIcon={paymentOptionsLoading ? <CircularProgress size={18} /> : <PaidOutlinedIcon />}
+                  onClick={handleOpenPayDialog}
+                  disabled={paymentOptionsLoading}
+                >
+                  {strings.PAY_BUTTON}
+                </Button>
                 <Button
                   variant="outlined"
                   startIcon={<ReceiptLongIcon />}
@@ -732,6 +876,112 @@ const AgencyDetailsCommissions = () => {
                 </Grid>
               </Grid>
             </Paper>
+
+            <Dialog open={bankTransferDialogOpen} onClose={handleClosePayDialog} fullWidth maxWidth="sm">
+              <DialogTitle>{strings.PAY_BANK_TRANSFER_TITLE}</DialogTitle>
+              <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <List dense disablePadding>
+                  <ListItem disableGutters>
+                    <ListItemIcon>
+                      <AccountBalanceIcon color={paymentOptions?.bankTransferEnabled === false ? 'disabled' : 'primary'} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={strings.PAYMENT_METHOD_BANK_TRANSFER}
+                      secondary={strings.PAYMENT_METHOD_BANK_TRANSFER_DESCRIPTION}
+                    />
+                  </ListItem>
+                  <ListItem disableGutters>
+                    <ListItemIcon>
+                      <CreditCardIcon color={paymentOptions?.cardPaymentEnabled ? 'primary' : 'disabled'} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={strings.PAYMENT_METHOD_CARD}
+                      secondary={paymentOptions?.cardPaymentEnabled ? undefined : strings.PAYMENT_METHOD_UNAVAILABLE}
+                    />
+                  </ListItem>
+                  <ListItem disableGutters>
+                    <ListItemIcon>
+                      <QrCode2Icon color={paymentOptions?.d17PaymentEnabled ? 'primary' : 'disabled'} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={strings.PAYMENT_METHOD_D17}
+                      secondary={paymentOptions?.d17PaymentEnabled ? undefined : strings.PAYMENT_METHOD_UNAVAILABLE}
+                    />
+                  </ListItem>
+                </List>
+                {paymentOptions?.bankTransferRibInformation ? (
+                  <Typography component="pre" sx={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                    {paymentOptions.bankTransferRibInformation}
+                  </Typography>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    {strings.PAY_BANK_TRANSFER_NO_INFORMATION}
+                  </Typography>
+                )}
+                {hasPaymentRibDetails(paymentOptions) ? (
+                  <Stack spacing={1.5}>
+                    {[{
+                      label: strings.PAY_BANK_TRANSFER_ACCOUNT_HOLDER,
+                      value: paymentOptions?.bankTransferRibDetails?.accountHolder,
+                    }, {
+                      label: strings.PAY_BANK_TRANSFER_BANK_NAME,
+                      value: paymentOptions?.bankTransferRibDetails?.bankName,
+                    }, {
+                      label: strings.PAY_BANK_TRANSFER_BANK_ADDRESS,
+                      value: paymentOptions?.bankTransferRibDetails?.bankAddress,
+                    }, {
+                      label: strings.PAY_BANK_TRANSFER_IBAN,
+                      value: paymentOptions?.bankTransferRibDetails?.iban,
+                    }, {
+                      label: strings.PAY_BANK_TRANSFER_BIC,
+                      value: paymentOptions?.bankTransferRibDetails?.bic,
+                    }, {
+                      label: strings.PAY_BANK_TRANSFER_ACCOUNT_NUMBER,
+                      value: paymentOptions?.bankTransferRibDetails?.accountNumber,
+                    }]
+                      .filter((entry) => entry.value)
+                      .map((entry) => (
+                        <Stack key={entry.label} direction="row" alignItems="center" spacing={1}>
+                          <Box sx={{ flexGrow: 1 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                              {entry.label}
+                            </Typography>
+                            <Typography variant="body1" fontWeight={700} sx={{ wordBreak: 'break-all' }}>
+                              {entry.value}
+                            </Typography>
+                          </Box>
+                          <Tooltip title={strings.PAY_BANK_TRANSFER_COPY}>
+                            <span>
+                              <IconButton
+                                color="primary"
+                                onClick={() => handleCopyRibValue(entry.value)}
+                                size="small"
+                              >
+                                <ContentCopyIcon fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Stack>
+                      ))}
+                    <Button
+                      variant="contained"
+                      startIcon={downloadingRib ? <CircularProgress size={18} /> : <DownloadIcon />}
+                      onClick={handleDownloadRib}
+                      disabled={downloadingRib}
+                    >
+                      {strings.PAY_BANK_TRANSFER_DOWNLOAD}
+                    </Button>
+                  </Stack>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    {strings.PAY_BANK_TRANSFER_NO_DETAILS}
+                  </Typography>
+                )}
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleClosePayDialog}>{commonStrings.CLOSE}</Button>
+              </DialogActions>
+            </Dialog>
 
             <Drawer
               anchor="bottom"

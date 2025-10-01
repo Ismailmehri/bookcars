@@ -68,6 +68,20 @@ export const updateCommissionSettings = async (
   return response.data
 }
 
+export const getCommissionPaymentOptions = async (): Promise<bookcarsTypes.CommissionPaymentOptions> => {
+  const response = await axiosInstance.get('/api/commission/payment/options', { withCredentials: true })
+  return response.data
+}
+
+export const downloadCommissionRib = async (): Promise<Blob> => {
+  const response = await axiosInstance.get('/api/commission/payment/rib', {
+    responseType: 'blob',
+    withCredentials: true,
+  })
+
+  return response.data as Blob
+}
+
 export const generateInvoice = async (
   agencyId: string,
   year: number,

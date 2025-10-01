@@ -614,7 +614,7 @@ export interface AgencyCommissionSettings extends Document {
   cardPaymentEnabled?: boolean
   d17PaymentEnabled?: boolean
   bankTransferRibInformation?: string
-  bankTransferRibFile?: bookcarsTypes.CommissionRibFile | null
+  bankTransferRibDetails?: bookcarsTypes.CommissionRibDetails | null
   updatedBy?: Types.ObjectId
   createdAt?: Date
   updatedAt?: Date

@@ -14,6 +14,8 @@ routes.route(routeNames.toggleBlock).post(authJwt.verifyToken, commissionControl
 routes.route(routeNames.addNote).post(authJwt.verifyToken, commissionController.addCommissionNote)
 routes.route(routeNames.getSettings).get(authJwt.verifyToken, commissionController.getCommissionSettings)
 routes.route(routeNames.updateSettings).put(authJwt.verifyToken, commissionController.updateCommissionSettings)
+routes.route(routeNames.getPaymentOptions).get(authJwt.verifyToken, commissionController.getCommissionPaymentOptions)
+routes.route(routeNames.downloadRib).get(authJwt.verifyToken, commissionController.downloadCommissionRib)
 routes.route(routeNames.generateInvoice).get(authJwt.verifyToken, commissionController.generateCommissionInvoice)
 routes.route(routeNames.getAgencyBookings).post(authJwt.verifyToken, commissionController.getAgencyCommissionBookings)
 routes.route(routeNames.downloadAgencyInvoice).get(authJwt.verifyToken, commissionController.downloadAgencyCommissionInvoice)

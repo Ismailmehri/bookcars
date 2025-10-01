@@ -34,11 +34,14 @@ const agencyCommissionSettingsSchema = new Schema<env.AgencyCommissionSettings>(
       type: String,
       default: '',
     },
-    bankTransferRibFile: {
+    bankTransferRibDetails: {
       type: {
-        name: { type: String },
-        mimeType: { type: String },
-        data: { type: String },
+        accountHolder: { type: String, trim: true },
+        bankName: { type: String, trim: true },
+        bankAddress: { type: String, trim: true },
+        iban: { type: String, trim: true },
+        bic: { type: String, trim: true },
+        accountNumber: { type: String, trim: true },
       },
       default: null,
     },

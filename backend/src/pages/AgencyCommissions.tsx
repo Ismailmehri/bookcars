@@ -64,9 +64,9 @@ import {
   CreditCard as CreditCardIcon,
   QrCode2 as QrCode2Icon,
   Download as DownloadIcon,
-  UploadFile as UploadFileIcon,
-  DeleteOutline as DeleteOutlineIcon,
+  ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material'
+import validator from 'validator'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import Layout from '@/components/Layout'
@@ -118,6 +118,28 @@ const ContactInfoRow: React.FC<ContactInfoRowProps> = ({
   </Box>
 )
 /** ----------------------------------------------------------- */
+
+type RibField = 'accountHolder' | 'bankName' | 'bankAddress' | 'iban' | 'bic' | 'accountNumber'
+
+const EMPTY_RIB_DETAILS: Record<RibField, string> = {
+  accountHolder: '',
+  bankName: '',
+  bankAddress: '',
+  iban: '',
+  bic: '',
+  accountNumber: '',
+}
+
+const RIB_BIC_REGEX = /^[A-Za-z]{4}[A-Za-z]{2}[0-9A-Za-z]{2}([0-9A-Za-z]{3})?$/
+
+const EMPTY_RIB_ERRORS: Record<RibField, boolean> = {
+  accountHolder: false,
+  bankName: false,
+  bankAddress: false,
+  iban: false,
+  bic: false,
+  accountNumber: false,
+}
 
 const buildMonthLabel = (month: number, year: number, language: string) => {
   const date = new Date(Date.UTC(year, month - 1, 1))
@@ -204,6 +226,8 @@ const AgencyCommissions = () => {
   const [detailError, setDetailError] = useState(false)
   const [settings, setSettings] = useState<bookcarsTypes.CommissionSettings>()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [ribErrors, setRibErrors] = useState<Record<RibField, boolean>>({ ...EMPTY_RIB_ERRORS })
+  const ribHasDetails = hasRibDetails(settings?.bankTransferRibDetails)
   const [loadingSettings, setLoadingSettings] = useState(false)
   const [reminderDialogOpen, setReminderDialogOpen] = useState(false)
   const [reminderChannel, setReminderChannel] = useState<bookcarsTypes.CommissionReminderChannel>(
@@ -225,7 +249,6 @@ const AgencyCommissions = () => {
   const [invoiceLoading, setInvoiceLoading] = useState(false)
 
   const detailRequestRef = useRef(0)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const language = user?.language || env.DEFAULT_LANGUAGE
 
@@ -454,14 +477,59 @@ const AgencyCommissions = () => {
     }
   }, [fetchDetail, selectedAgency])
 
-  const normalizeSettings = useCallback((value: bookcarsTypes.CommissionSettings): bookcarsTypes.CommissionSettings => ({
-    ...value,
-    bankTransferEnabled: value.bankTransferEnabled !== false,
-    cardPaymentEnabled: value.cardPaymentEnabled === true,
-    d17PaymentEnabled: value.d17PaymentEnabled === true,
-    bankTransferRibInformation: value.bankTransferRibInformation || '',
-    bankTransferRibFile: value.bankTransferRibFile || null,
-  }), [])
+  const normalizeSettings = useCallback((value: bookcarsTypes.CommissionSettings): bookcarsTypes.CommissionSettings => {
+    const ribDetails = value.bankTransferRibDetails
+    return {
+      ...value,
+      bankTransferEnabled: value.bankTransferEnabled !== false,
+      cardPaymentEnabled: value.cardPaymentEnabled === true,
+      d17PaymentEnabled: value.d17PaymentEnabled === true,
+      bankTransferRibInformation: value.bankTransferRibInformation || '',
+      bankTransferRibDetails: {
+        ...EMPTY_RIB_DETAILS,
+        ...(ribDetails
+          ? {
+            accountHolder: ribDetails.accountHolder || '',
+            bankName: ribDetails.bankName || '',
+            bankAddress: ribDetails.bankAddress || '',
+            iban: ribDetails.iban || '',
+            bic: ribDetails.bic || '',
+            accountNumber: ribDetails.accountNumber || '',
+          }
+          : undefined),
+      },
+    }
+  }, [])
+
+  const hasRibDetails = useCallback((details?: bookcarsTypes.CommissionRibDetails | null) => {
+    if (!details) {
+      return false
+    }
+
+    return Boolean(
+      details.accountHolder
+      || details.bankName
+      || details.iban
+      || details.bic
+      || details.accountNumber
+    )
+  }, [])
+
+  const sanitizeRibDetails = useCallback((details?: bookcarsTypes.CommissionRibDetails | null): Record<RibField, string> => {
+    const merged: Record<RibField, string> = {
+      ...EMPTY_RIB_DETAILS,
+      ...(details || {}),
+    }
+
+    return {
+      accountHolder: (merged.accountHolder || '').trim(),
+      bankName: (merged.bankName || '').trim(),
+      bankAddress: (merged.bankAddress || '').trim(),
+      iban: (merged.iban || '').replace(/\s+/g, '').toUpperCase(),
+      bic: (merged.bic || '').replace(/\s+/g, '').toUpperCase(),
+      accountNumber: (merged.accountNumber || '').replace(/\s+/g, ''),
+    }
+  }, [])
 
   useEffect(() => {
     if (!drawerOpen || !selectedAgency) {
@@ -559,35 +627,37 @@ const AgencyCommissions = () => {
         helper.error(undefined, strings.PAYMENT_BANK_TRANSFER_DISABLED)
         return
       }
+      if (!hasRibDetails(currentSettings.bankTransferRibDetails)) {
+        helper.error(undefined, strings.PAYMENT_BANK_TRANSFER_NO_DETAILS)
+        return
+      }
       setBankTransferDialogOpen(true)
     } catch {
       // already handled in ensureSettings
     }
   }
 
+  const handleSelectCardPayment = () => {
+    handleClosePaymentMenu()
+    helper.info(strings.PAYMENT_METHOD_UNAVAILABLE)
+  }
+
+  const handleSelectD17Payment = () => {
+    handleClosePaymentMenu()
+    helper.info(strings.PAYMENT_METHOD_UNAVAILABLE)
+  }
+
   const handleCloseBankTransferDialog = () => {
     setBankTransferDialogOpen(false)
   }
 
-  const handleDownloadRib = () => {
-    const ribFile = settings?.bankTransferRibFile
-    if (!ribFile || !ribFile.data) {
-      helper.error(undefined, strings.PAYMENT_BANK_TRANSFER_NO_FILE)
-      return
-    }
-
+  const handleDownloadRib = async () => {
     try {
-      const byteCharacters = window.atob(ribFile.data)
-      const byteNumbers = new Array(byteCharacters.length)
-      for (let i = 0; i < byteCharacters.length; i += 1) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i)
-      }
-      const byteArray = new Uint8Array(byteNumbers)
-      const blob = new Blob([byteArray], { type: ribFile.mimeType || 'application/octet-stream' })
+      const blob = await CommissionService.downloadCommissionRib()
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = ribFile.name || 'rib'
+      link.download = strings.BANK_TRANSFER_DIALOG_FILENAME
       document.body.appendChild(link)
       link.click()
       link.remove()
@@ -597,32 +667,29 @@ const AgencyCommissions = () => {
     }
   }
 
-  const handleRibFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { files } = event.target
-    const file = files && files[0]
-    if (!file) {
+  const handleCopyRibValue = async (value?: string) => {
+    if (!value) {
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result
-      if (typeof result === 'string') {
-        const base64 = result.includes(',') ? result.split(',')[1] : result
-        updateSettingsField('bankTransferRibFile', {
-          name: file.name,
-          mimeType: file.type || 'application/octet-stream',
-          data: base64,
-        })
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value)
+      } else {
+        const textarea = document.createElement('textarea')
+        textarea.value = value
+        textarea.setAttribute('readonly', '')
+        textarea.style.position = 'absolute'
+        textarea.style.left = '-9999px'
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
       }
+      helper.info(strings.BANK_TRANSFER_DIALOG_COPY_SUCCESS)
+    } catch (err) {
+      helper.error(err)
     }
-    reader.readAsDataURL(file)
-
-    event.target.value = ''
-  }
-
-  const handleRemoveRibFile = () => {
-    updateSettingsField('bankTransferRibFile', null)
   }
 
   const handleSendReminder = async () => {
@@ -797,6 +864,54 @@ const AgencyCommissions = () => {
       return
     }
 
+    const sanitizedRib = sanitizeRibDetails(settings.bankTransferRibDetails)
+    const hasDetails = hasRibDetails(sanitizedRib as bookcarsTypes.CommissionRibDetails)
+    const requireRib = settings.bankTransferEnabled || hasDetails
+    const nextErrors: Record<RibField, boolean> = { ...EMPTY_RIB_ERRORS }
+    let valid = true
+
+    if (requireRib) {
+      if (!sanitizedRib.accountHolder) {
+        nextErrors.accountHolder = true
+        valid = false
+      }
+      if (!sanitizedRib.bankName) {
+        nextErrors.bankName = true
+        valid = false
+      }
+      if (!sanitizedRib.iban || !validator.isIBAN(sanitizedRib.iban)) {
+        nextErrors.iban = true
+        valid = false
+      }
+      if (!sanitizedRib.bic || !RIB_BIC_REGEX.test(sanitizedRib.bic)) {
+        nextErrors.bic = true
+        valid = false
+      }
+      if (!sanitizedRib.accountNumber || sanitizedRib.accountNumber.length < 6) {
+        nextErrors.accountNumber = true
+        valid = false
+      }
+    }
+
+    if (!valid) {
+      setRibErrors(nextErrors)
+      helper.error(undefined, commonStrings.FIX_ERRORS)
+      return
+    }
+
+    setRibErrors({ ...EMPTY_RIB_ERRORS })
+
+    const ribPayload = requireRib
+      ? {
+        accountHolder: sanitizedRib.accountHolder,
+        bankName: sanitizedRib.bankName,
+        iban: sanitizedRib.iban,
+        bic: sanitizedRib.bic,
+        accountNumber: sanitizedRib.accountNumber,
+        ...(sanitizedRib.bankAddress ? { bankAddress: sanitizedRib.bankAddress } : {}),
+      }
+      : null
+
     try {
       const payload: bookcarsTypes.CommissionSettingsPayload = {
         reminderChannel: settings.reminderChannel,
@@ -806,7 +921,7 @@ const AgencyCommissions = () => {
         cardPaymentEnabled: settings.cardPaymentEnabled,
         d17PaymentEnabled: settings.d17PaymentEnabled,
         bankTransferRibInformation: settings.bankTransferRibInformation,
-        bankTransferRibFile: settings.bankTransferRibFile || null,
+        bankTransferRibDetails: ribPayload,
       }
       const updated = await CommissionService.updateCommissionSettings(payload)
       const normalized = normalizeSettings(updated)
@@ -827,6 +942,21 @@ const AgencyCommissions = () => {
         return prev
       }
       return { ...prev, [field]: value }
+    })
+  }
+
+  const updateRibDetailsField = (field: RibField, value: string) => {
+    setSettings((prev) => {
+      if (!prev) {
+        return prev
+      }
+      return {
+        ...prev,
+        bankTransferRibDetails: {
+          ...prev.bankTransferRibDetails,
+          [field]: value,
+        },
+      }
     })
   }
 
@@ -1281,25 +1411,34 @@ const AgencyCommissions = () => {
                     <Menu anchorEl={paymentMenuAnchorEl} open={paymentMenuOpen} onClose={handleClosePaymentMenu}>
                       <MenuItem onClick={handleSelectBankTransfer}>
                         <ListItemIcon>
-                          <AccountBalanceIcon fontSize="small" />
+                          <AccountBalanceIcon
+                            fontSize="small"
+                            color={settings?.bankTransferEnabled === false ? 'disabled' : 'primary'}
+                          />
                         </ListItemIcon>
                         <ListItemText
                           primary={strings.PAYMENT_METHOD_BANK_TRANSFER}
                           secondary={strings.PAYMENT_METHOD_BANK_TRANSFER_DESCRIPTION}
                         />
                       </MenuItem>
-                      <MenuItem disabled>
+                      <MenuItem onClick={handleSelectCardPayment} disabled={!settings?.cardPaymentEnabled}>
                         <ListItemIcon>
-                          <CreditCardIcon fontSize="small" />
+                          <CreditCardIcon
+                            fontSize="small"
+                            color={settings?.cardPaymentEnabled ? 'primary' : 'disabled'}
+                          />
                         </ListItemIcon>
                         <ListItemText
                           primary={strings.PAYMENT_METHOD_CARD}
                           secondary={strings.PAYMENT_METHOD_UNAVAILABLE}
                         />
                       </MenuItem>
-                      <MenuItem disabled>
+                      <MenuItem onClick={handleSelectD17Payment} disabled={!settings?.d17PaymentEnabled}>
                         <ListItemIcon>
-                          <QrCode2Icon fontSize="small" />
+                          <QrCode2Icon
+                            fontSize="small"
+                            color={settings?.d17PaymentEnabled ? 'primary' : 'disabled'}
+                          />
                         </ListItemIcon>
                         <ListItemText
                           primary={strings.PAYMENT_METHOD_D17}
@@ -1470,13 +1609,59 @@ const AgencyCommissions = () => {
                   {strings.BANK_TRANSFER_DIALOG_NO_INFORMATION}
                 </Typography>
               )}
-              {settings?.bankTransferRibFile ? (
-                <Button variant="contained" startIcon={<DownloadIcon />} onClick={handleDownloadRib}>
-                  {strings.BANK_TRANSFER_DIALOG_DOWNLOAD}
-                </Button>
+              {ribHasDetails ? (
+                <Stack spacing={1.5}>
+                  {[{
+                    label: strings.SETTINGS_RIB_ACCOUNT_HOLDER,
+                    value: settings?.bankTransferRibDetails?.accountHolder,
+                  }, {
+                    label: strings.SETTINGS_RIB_BANK_NAME,
+                    value: settings?.bankTransferRibDetails?.bankName,
+                  }, {
+                    label: strings.SETTINGS_RIB_BANK_ADDRESS,
+                    value: settings?.bankTransferRibDetails?.bankAddress,
+                  }, {
+                    label: strings.SETTINGS_RIB_IBAN,
+                    value: settings?.bankTransferRibDetails?.iban,
+                  }, {
+                    label: strings.SETTINGS_RIB_BIC,
+                    value: settings?.bankTransferRibDetails?.bic,
+                  }, {
+                    label: strings.SETTINGS_RIB_ACCOUNT_NUMBER,
+                    value: settings?.bankTransferRibDetails?.accountNumber,
+                  }]
+                    .filter((entry) => entry.value)
+                    .map((entry) => (
+                      <Stack key={entry.label} direction="row" alignItems="center" spacing={1}>
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                            {entry.label}
+                          </Typography>
+                          <Typography variant="body1" fontWeight={700} sx={{ wordBreak: 'break-all' }}>
+                            {entry.value}
+                          </Typography>
+                        </Box>
+                        <Tooltip title={strings.BANK_TRANSFER_DIALOG_COPY}>
+                          <span>
+                            <IconButton
+                              color="primary"
+                              onClick={() => handleCopyRibValue(entry.value)}
+                              disabled={!entry.value}
+                              size="small"
+                            >
+                              <ContentCopyIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </Stack>
+                    ))}
+                  <Button variant="contained" startIcon={<DownloadIcon />} onClick={handleDownloadRib}>
+                    {strings.BANK_TRANSFER_DIALOG_DOWNLOAD}
+                  </Button>
+                </Stack>
               ) : (
                 <Typography variant="body2" color="text.secondary">
-                  {strings.BANK_TRANSFER_DIALOG_NO_FILE}
+                  {strings.BANK_TRANSFER_DIALOG_NO_DETAILS}
                 </Typography>
               )}
             </DialogContent>
@@ -1613,37 +1798,53 @@ const AgencyCommissions = () => {
                 onChange={(event) => updateSettingsField('bankTransferRibInformation', event.target.value)}
                 fullWidth
               />
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="application/pdf,image/*"
-                hidden
-                onChange={handleRibFileUpload}
+              <TextField
+                label={strings.SETTINGS_RIB_ACCOUNT_HOLDER}
+                value={settings?.bankTransferRibDetails?.accountHolder || ''}
+                onChange={(event) => updateRibDetailsField('accountHolder', event.target.value)}
+                error={ribErrors.accountHolder}
+                helperText={ribErrors.accountHolder ? strings.SETTINGS_RIB_ACCOUNT_HOLDER_ERROR : ' '}
+                fullWidth
               />
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'stretch', sm: 'center' }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<UploadFileIcon />}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {strings.SETTINGS_RIB_UPLOAD}
-                </Button>
-                {settings?.bankTransferRibFile && (
-                  <Button
-                    variant="text"
-                    color="error"
-                    startIcon={<DeleteOutlineIcon />}
-                    onClick={handleRemoveRibFile}
-                  >
-                    {strings.SETTINGS_RIB_REMOVE}
-                  </Button>
-                )}
-              </Stack>
-              {settings?.bankTransferRibFile && (
-                <Typography variant="body2" color="text.secondary">
-                  {strings.formatString(strings.SETTINGS_RIB_CURRENT_FILE, settings.bankTransferRibFile.name)}
-                </Typography>
-              )}
+              <TextField
+                label={strings.SETTINGS_RIB_BANK_NAME}
+                value={settings?.bankTransferRibDetails?.bankName || ''}
+                onChange={(event) => updateRibDetailsField('bankName', event.target.value)}
+                error={ribErrors.bankName}
+                helperText={ribErrors.bankName ? strings.SETTINGS_RIB_BANK_NAME_ERROR : ' '}
+                fullWidth
+              />
+              <TextField
+                label={strings.SETTINGS_RIB_BANK_ADDRESS}
+                value={settings?.bankTransferRibDetails?.bankAddress || ''}
+                onChange={(event) => updateRibDetailsField('bankAddress', event.target.value)}
+                helperText=" "
+                fullWidth
+              />
+              <TextField
+                label={strings.SETTINGS_RIB_IBAN}
+                value={settings?.bankTransferRibDetails?.iban || ''}
+                onChange={(event) => updateRibDetailsField('iban', event.target.value)}
+                error={ribErrors.iban}
+                helperText={ribErrors.iban ? strings.SETTINGS_RIB_IBAN_ERROR : ' '}
+                fullWidth
+              />
+              <TextField
+                label={strings.SETTINGS_RIB_BIC}
+                value={settings?.bankTransferRibDetails?.bic || ''}
+                onChange={(event) => updateRibDetailsField('bic', event.target.value)}
+                error={ribErrors.bic}
+                helperText={ribErrors.bic ? strings.SETTINGS_RIB_BIC_ERROR : ' '}
+                fullWidth
+              />
+              <TextField
+                label={strings.SETTINGS_RIB_ACCOUNT_NUMBER}
+                value={settings?.bankTransferRibDetails?.accountNumber || ''}
+                onChange={(event) => updateRibDetailsField('accountNumber', event.target.value)}
+                error={ribErrors.accountNumber}
+                helperText={ribErrors.accountNumber ? strings.SETTINGS_RIB_ACCOUNT_NUMBER_ERROR : ' '}
+                fullWidth
+              />
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setSettingsOpen(false)}>{strings.CANCEL}</Button>

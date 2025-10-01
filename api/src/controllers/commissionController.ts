@@ -1827,8 +1827,11 @@ export const downloadCommissionRib = async (req: Request, res: Response) => {
     const logo = await fetchLogo()
     const startX = doc.page.margins.left
     if (logo) {
-      doc.image(logo, startX, doc.y, { height: 56 })
-      doc.moveDown(3)
+      const top = doc.y
+      const logoHeight = 56
+      const spacingAfterLogo = 24
+      doc.image(logo, startX, top, { height: logoHeight })
+      doc.y = top + logoHeight + spacingAfterLogo
     } else {
       doc
         .font('Helvetica-Bold')

@@ -18,6 +18,9 @@ const strings = new LocalizedStrings({
     MIDI: 'Voiture moyenne',
     MAXI: 'Grande voiture',
     SEARCH_FOR_CAR: 'Rechercher une voiture',
+    AGENCY_VERIFICATION_REMINDER_MESSAGE:
+      "Votre agence n'a pas encore envoyé ses documents de vérification. Déposez-les dès maintenant pour renforcer votre crédibilité, améliorer votre visibilité sur Plany.tn et accélérer la validation de vos réservations.",
+    AGENCY_VERIFICATION_REMINDER_BUTTON: 'Envoyer mes documents',
   },
   en: {
     PICK_UP_DATE: 'Pick-up Date',
@@ -35,6 +38,9 @@ const strings = new LocalizedStrings({
     MIDI: 'MIDI',
     MAXI: 'MAXI',
     SEARCH_FOR_CAR: 'Search for a car',
+    AGENCY_VERIFICATION_REMINDER_MESSAGE:
+      'Your agency has not submitted its verification documents yet. Upload them now to build trust, boost your visibility on Plany.tn, and speed up the approval of your bookings.',
+    AGENCY_VERIFICATION_REMINDER_BUTTON: 'Upload my documents',
   },
   es: {
     PICK_UP_DATE: 'Fecha de recogida',
@@ -52,6 +58,9 @@ const strings = new LocalizedStrings({
     MIDI: 'MIDI',
     MAXI: 'MAXI',
     SEARCH_FOR_CAR: 'Buscar un coche',
+    AGENCY_VERIFICATION_REMINDER_MESSAGE:
+      'Tu agencia aún no ha enviado sus documentos de verificación. Súbelos ahora para reforzar tu credibilidad, aumentar tu visibilidad en Plany.tn y acelerar la aprobación de tus reservas.',
+    AGENCY_VERIFICATION_REMINDER_BUTTON: 'Enviar mis documentos',
   },
 })
 

@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { Button, Checkbox, Dialog, DialogContent, FormControlLabel, Tab, Tabs } from '@mui/material'
+import { Alert, Button, Checkbox, Dialog, DialogContent, FormControlLabel, Tab, Tabs } from '@mui/material'
 import L from 'leaflet'
 import { Helmet } from 'react-helmet'
+import { Link } from 'react-router-dom'
 import Seo from '@/components/Seo'
 import { buildDescription } from '@/common/seo'
 import * as bookcarsTypes from ':bookcars-types'
@@ -13,6 +14,7 @@ import * as UserService from '@/services/UserService'
 import * as SupplierService from '@/services/SupplierService'
 import * as CountryService from '@/services/CountryService'
 import * as LocationService from '@/services/LocationService'
+import * as AgencyVerificationService from '@/services/AgencyVerificationService'
 import Layout from '@/components/Layout'
 import SupplierCarrousel from '@/components/SupplierCarrousel'
 import TabPanel, { a11yProps } from '@/components/TabPanel'
@@ -40,12 +42,13 @@ const Home = () => {
   const [locations, setLocations] = useState<bookcarsTypes.Location[]>([])
   const [ranges, setRanges] = useState([bookcarsTypes.CarRange.Mini, bookcarsTypes.CarRange.Midi])
   const [openRangeSearchFormDialog, setOpenRangeSearchFormDialog] = useState(false)
+  const [showAgencyVerificationReminder, setShowAgencyVerificationReminder] = useState(false)
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue)
   }
 
-  const onLoad = async () => {
+  const onLoad = async (loadedUser?: bookcarsTypes.User) => {
     let _suppliers = await SupplierService.getAllSuppliers()
     _suppliers = _suppliers.filter((supplier) => supplier.avatar && !/no-image/i.test(supplier.avatar))
     bookcarsHelper.shuffle(_suppliers)
@@ -54,6 +57,27 @@ const Home = () => {
     setCountries(_countries)
     const _locations = await LocationService.getLocationsWithPosition()
     setLocations(_locations)
+
+    if (loadedUser && loadedUser.type === bookcarsTypes.UserType.Supplier) {
+      if (loadedUser.agencyVerified) {
+        setShowAgencyVerificationReminder(false)
+        return
+      }
+
+      try {
+        const documents = await AgencyVerificationService.getMyDocuments()
+        const hasAllApprovedDocuments = bookcarsTypes.REQUIRED_AGENCY_DOCUMENTS.every((requiredDocType) => {
+          const document = documents.find((doc) => doc.docType === requiredDocType)
+          return document?.latest?.status === bookcarsTypes.AgencyDocumentStatus.ACCEPTE
+        })
+        setShowAgencyVerificationReminder(!hasAllApprovedDocuments)
+      } catch (err) {
+        console.error(err)
+        setShowAgencyVerificationReminder(false)
+      }
+    } else {
+      setShowAgencyVerificationReminder(false)
+    }
   }
 
   const language = UserService.getLanguage()
@@ -209,6 +233,24 @@ const Home = () => {
           {JSON.stringify(structuredData)}
         </script>
       </Helmet>
+      {showAgencyVerificationReminder && (
+        <Alert
+          severity="warning"
+          sx={{ mt: 2, mb: 3 }}
+          action={(
+            <Button
+              color="warning"
+              component={Link}
+              to="/agency-verification"
+              variant="contained"
+            >
+              {strings.AGENCY_VERIFICATION_REMINDER_BUTTON}
+            </Button>
+          )}
+        >
+          {strings.AGENCY_VERIFICATION_REMINDER_MESSAGE}
+        </Alert>
+      )}
       <div className="home">
         <div className="home-content">
 

@@ -37,6 +37,9 @@ import {
   TableRow,
   InputAdornment,
   Link,
+  Menu,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material'
 import { SelectChangeEvent } from '@mui/material/Select'
 import {
@@ -45,6 +48,7 @@ import {
   Search as SearchIcon,
   Send as SendIcon,
   Paid as PaidIcon,
+  Payment as PaymentIcon,
   Block as BlockIcon,
   LockOpen as LockOpenIcon,
   Visibility as VisibilityIcon,
@@ -56,7 +60,13 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   Fingerprint as FingerprintIcon,
+  AccountBalance as AccountBalanceIcon,
+  CreditCard as CreditCardIcon,
+  QrCode2 as QrCode2Icon,
+  Download as DownloadIcon,
+  ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material'
+import validator from 'validator'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import Layout from '@/components/Layout'
@@ -108,6 +118,43 @@ const ContactInfoRow: React.FC<ContactInfoRowProps> = ({
   </Box>
 )
 /** ----------------------------------------------------------- */
+
+type RibField = 'accountHolder' | 'bankName' | 'bankAddress' | 'iban' | 'bic' | 'accountNumber'
+
+const EMPTY_RIB_DETAILS: Record<RibField, string> = {
+  accountHolder: '',
+  bankName: '',
+  bankAddress: '',
+  iban: '',
+  bic: '',
+  accountNumber: '',
+}
+
+const RIB_BIC_REGEX = /^[A-Za-z]{4}[A-Za-z]{2}[0-9A-Za-z]{2}([0-9A-Za-z]{3})?$/
+
+const EMPTY_RIB_ERRORS: Record<RibField, boolean> = {
+  accountHolder: false,
+  bankName: false,
+  bankAddress: false,
+  iban: false,
+  bic: false,
+  accountNumber: false,
+}
+
+const hasRibDetails = (details?: bookcarsTypes.CommissionRibDetails | null) => {
+  if (!details) {
+    return false
+  }
+
+  return Boolean(
+    details.accountHolder
+    || details.bankName
+    || details.bankAddress
+    || details.iban
+    || details.bic
+    || details.accountNumber,
+  )
+}
 
 const buildMonthLabel = (month: number, year: number, language: string) => {
   const date = new Date(Date.UTC(year, month - 1, 1))
@@ -194,6 +241,11 @@ const AgencyCommissions = () => {
   const [detailError, setDetailError] = useState(false)
   const [settings, setSettings] = useState<bookcarsTypes.CommissionSettings>()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [ribErrors, setRibErrors] = useState<Record<RibField, boolean>>({ ...EMPTY_RIB_ERRORS })
+  const ribHasDetails = useMemo(
+    () => hasRibDetails(settings?.bankTransferRibDetails),
+    [settings],
+  )
   const [loadingSettings, setLoadingSettings] = useState(false)
   const [reminderDialogOpen, setReminderDialogOpen] = useState(false)
   const [reminderChannel, setReminderChannel] = useState<bookcarsTypes.CommissionReminderChannel>(
@@ -205,6 +257,9 @@ const AgencyCommissions = () => {
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentDate, setPaymentDate] = useState('')
   const [paymentReference, setPaymentReference] = useState('')
+  const [paymentMenuAnchorEl, setPaymentMenuAnchorEl] = useState<null | HTMLElement>(null)
+  const paymentMenuOpen = Boolean(paymentMenuAnchorEl)
+  const [bankTransferDialogOpen, setBankTransferDialogOpen] = useState(false)
   const [noteDialogOpen, setNoteDialogOpen] = useState(false)
   const [note, setNote] = useState('')
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false)
@@ -440,6 +495,46 @@ const AgencyCommissions = () => {
     }
   }, [fetchDetail, selectedAgency])
 
+  const normalizeSettings = useCallback((value: bookcarsTypes.CommissionSettings): bookcarsTypes.CommissionSettings => {
+    const ribDetails = value.bankTransferRibDetails
+    return {
+      ...value,
+      bankTransferEnabled: value.bankTransferEnabled !== false,
+      cardPaymentEnabled: value.cardPaymentEnabled === true,
+      d17PaymentEnabled: value.d17PaymentEnabled === true,
+      bankTransferRibInformation: value.bankTransferRibInformation || '',
+      bankTransferRibDetails: {
+        ...EMPTY_RIB_DETAILS,
+        ...(ribDetails
+          ? {
+            accountHolder: ribDetails.accountHolder || '',
+            bankName: ribDetails.bankName || '',
+            bankAddress: ribDetails.bankAddress || '',
+            iban: ribDetails.iban || '',
+            bic: ribDetails.bic || '',
+            accountNumber: ribDetails.accountNumber || '',
+          }
+          : undefined),
+      },
+    }
+  }, [])
+
+  const sanitizeRibDetails = useCallback((details?: bookcarsTypes.CommissionRibDetails | null): Record<RibField, string> => {
+    const merged: Record<RibField, string> = {
+      ...EMPTY_RIB_DETAILS,
+      ...(details || {}),
+    }
+
+    return {
+      accountHolder: (merged.accountHolder || '').trim(),
+      bankName: (merged.bankName || '').trim(),
+      bankAddress: (merged.bankAddress || '').trim(),
+      iban: (merged.iban || '').replace(/\s+/g, '').toUpperCase(),
+      bic: (merged.bic || '').replace(/\s+/g, '').toUpperCase(),
+      accountNumber: (merged.accountNumber || '').replace(/\s+/g, ''),
+    }
+  }, [])
+
   useEffect(() => {
     if (!drawerOpen || !selectedAgency) {
       return
@@ -456,15 +551,16 @@ const AgencyCommissions = () => {
     setLoadingSettings(true)
     try {
       const response = await CommissionService.getCommissionSettings()
-      setSettings(response)
-      return response
+      const normalized = normalizeSettings(response)
+      setSettings(normalized)
+      return normalized
     } catch (err) {
       helper.error(err)
       throw err
     } finally {
       setLoadingSettings(false)
     }
-  }, [settings])
+  }, [normalizeSettings, settings])
 
   const buildTemplateMessage = useCallback((
     template: string,
@@ -516,6 +612,87 @@ const AgencyCommissions = () => {
       const summaryAgency = detail && detail.agency.id === selectedAgency.agency.id ? detail.summary : undefined
       const message = buildTemplateMessage(template, selectedAgency, summaryAgency)
       setReminderMessage(message)
+    }
+  }
+
+  const handleOpenPaymentMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setPaymentMenuAnchorEl(event.currentTarget)
+  }
+
+  const handleClosePaymentMenu = () => {
+    setPaymentMenuAnchorEl(null)
+  }
+
+  const handleSelectBankTransfer = async () => {
+    handleClosePaymentMenu()
+    try {
+      const currentSettings = await ensureSettings()
+      if (!currentSettings.bankTransferEnabled) {
+        helper.error(undefined, strings.PAYMENT_BANK_TRANSFER_DISABLED)
+        return
+      }
+      if (!hasRibDetails(currentSettings.bankTransferRibDetails)) {
+        helper.error(undefined, strings.PAYMENT_BANK_TRANSFER_NO_DETAILS)
+        return
+      }
+      setBankTransferDialogOpen(true)
+    } catch {
+      // already handled in ensureSettings
+    }
+  }
+
+  const handleSelectCardPayment = () => {
+    handleClosePaymentMenu()
+    helper.info(strings.PAYMENT_METHOD_UNAVAILABLE)
+  }
+
+  const handleSelectD17Payment = () => {
+    handleClosePaymentMenu()
+    helper.info(strings.PAYMENT_METHOD_UNAVAILABLE)
+  }
+
+  const handleCloseBankTransferDialog = () => {
+    setBankTransferDialogOpen(false)
+  }
+
+  const handleDownloadRib = async () => {
+    try {
+      const blob = await CommissionService.downloadCommissionRib()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = strings.BANK_TRANSFER_DIALOG_FILENAME
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      helper.error(err, strings.PAYMENT_BANK_TRANSFER_DOWNLOAD_ERROR)
+    }
+  }
+
+  const handleCopyRibValue = async (value?: string) => {
+    if (!value) {
+      return
+    }
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value)
+      } else {
+        const textarea = document.createElement('textarea')
+        textarea.value = value
+        textarea.setAttribute('readonly', '')
+        textarea.style.position = 'absolute'
+        textarea.style.left = '-9999px'
+        document.body.appendChild(textarea)
+        textarea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textarea)
+      }
+      helper.info(strings.BANK_TRANSFER_DIALOG_COPY_SUCCESS)
+    } catch (err) {
+      helper.error(err)
     }
   }
 
@@ -691,13 +868,68 @@ const AgencyCommissions = () => {
       return
     }
 
+    const sanitizedRib = sanitizeRibDetails(settings.bankTransferRibDetails)
+    const hasDetails = hasRibDetails(sanitizedRib as bookcarsTypes.CommissionRibDetails)
+    const requireRib = settings.bankTransferEnabled || hasDetails
+    const nextErrors: Record<RibField, boolean> = { ...EMPTY_RIB_ERRORS }
+    let valid = true
+
+    if (requireRib) {
+      if (!sanitizedRib.accountHolder) {
+        nextErrors.accountHolder = true
+        valid = false
+      }
+      if (!sanitizedRib.bankName) {
+        nextErrors.bankName = true
+        valid = false
+      }
+      if (!sanitizedRib.iban || !validator.isIBAN(sanitizedRib.iban)) {
+        nextErrors.iban = true
+        valid = false
+      }
+      if (!sanitizedRib.bic || !RIB_BIC_REGEX.test(sanitizedRib.bic)) {
+        nextErrors.bic = true
+        valid = false
+      }
+      if (!sanitizedRib.accountNumber || sanitizedRib.accountNumber.length < 6) {
+        nextErrors.accountNumber = true
+        valid = false
+      }
+    }
+
+    if (!valid) {
+      setRibErrors(nextErrors)
+      helper.error(undefined, commonStrings.FIX_ERRORS)
+      return
+    }
+
+    setRibErrors({ ...EMPTY_RIB_ERRORS })
+
+    const ribPayload = requireRib
+      ? {
+        accountHolder: sanitizedRib.accountHolder,
+        bankName: sanitizedRib.bankName,
+        iban: sanitizedRib.iban,
+        bic: sanitizedRib.bic,
+        accountNumber: sanitizedRib.accountNumber,
+        ...(sanitizedRib.bankAddress ? { bankAddress: sanitizedRib.bankAddress } : {}),
+      }
+      : null
+
     try {
-      const updated = await CommissionService.updateCommissionSettings({
+      const payload: bookcarsTypes.CommissionSettingsPayload = {
         reminderChannel: settings.reminderChannel,
         emailTemplate: settings.emailTemplate,
         smsTemplate: settings.smsTemplate,
-      })
-      setSettings(updated)
+        bankTransferEnabled: settings.bankTransferEnabled,
+        cardPaymentEnabled: settings.cardPaymentEnabled,
+        d17PaymentEnabled: settings.d17PaymentEnabled,
+        bankTransferRibInformation: settings.bankTransferRibInformation,
+        bankTransferRibDetails: ribPayload,
+      }
+      const updated = await CommissionService.updateCommissionSettings(payload)
+      const normalized = normalizeSettings(updated)
+      setSettings(normalized)
       helper.info(strings.SETTINGS_SUCCESS)
       setSettingsOpen(false)
     } catch (err) {
@@ -705,15 +937,30 @@ const AgencyCommissions = () => {
     }
   }
 
-  const updateSettingsField = (
-    field: keyof bookcarsTypes.CommissionSettingsPayload,
-    value: string | bookcarsTypes.CommissionReminderChannel,
+  const updateSettingsField = <K extends keyof bookcarsTypes.CommissionSettingsPayload>(
+    field: K,
+    value: bookcarsTypes.CommissionSettingsPayload[K],
   ) => {
     setSettings((prev) => {
       if (!prev) {
         return prev
       }
       return { ...prev, [field]: value }
+    })
+  }
+
+  const updateRibDetailsField = (field: RibField, value: string) => {
+    setSettings((prev) => {
+      if (!prev) {
+        return prev
+      }
+      return {
+        ...prev,
+        bankTransferRibDetails: {
+          ...prev.bankTransferRibDetails,
+          [field]: value,
+        },
+      }
     })
   }
 
@@ -1140,6 +1387,14 @@ const AgencyCommissions = () => {
                   <Box className="ac-section">
                     <Typography variant="subtitle1">{strings.DRAWER_ACTIONS}</Typography>
                     <Box className="ac-actions">
+                      <Button
+                        variant="contained"
+                        color="warning"
+                        startIcon={<PaymentIcon />}
+                        onClick={handleOpenPaymentMenu}
+                      >
+                        {strings.DRAWER_ACTION_PAY}
+                      </Button>
                       <Button variant="contained" startIcon={<SendIcon />} onClick={() => selectedAgency && handleOpenReminder(selectedAgency)}>
                         {strings.DRAWER_ACTION_REMIND}
                       </Button>
@@ -1158,6 +1413,44 @@ const AgencyCommissions = () => {
                         {strings.DRAWER_ACTION_INVOICE}
                       </Button>
                     </Box>
+                    <Menu anchorEl={paymentMenuAnchorEl} open={paymentMenuOpen} onClose={handleClosePaymentMenu}>
+                      <MenuItem onClick={handleSelectBankTransfer}>
+                        <ListItemIcon>
+                          <AccountBalanceIcon
+                            fontSize="small"
+                            color={settings?.bankTransferEnabled === false ? 'disabled' : 'primary'}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={strings.PAYMENT_METHOD_BANK_TRANSFER}
+                          secondary={strings.PAYMENT_METHOD_BANK_TRANSFER_DESCRIPTION}
+                        />
+                      </MenuItem>
+                      <MenuItem onClick={handleSelectCardPayment} disabled={!settings?.cardPaymentEnabled}>
+                        <ListItemIcon>
+                          <CreditCardIcon
+                            fontSize="small"
+                            color={settings?.cardPaymentEnabled ? 'primary' : 'disabled'}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={strings.PAYMENT_METHOD_CARD}
+                          secondary={strings.PAYMENT_METHOD_UNAVAILABLE}
+                        />
+                      </MenuItem>
+                      <MenuItem onClick={handleSelectD17Payment} disabled={!settings?.d17PaymentEnabled}>
+                        <ListItemIcon>
+                          <QrCode2Icon
+                            fontSize="small"
+                            color={settings?.d17PaymentEnabled ? 'primary' : 'disabled'}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={strings.PAYMENT_METHOD_D17}
+                          secondary={strings.PAYMENT_METHOD_UNAVAILABLE}
+                        />
+                      </MenuItem>
+                    </Menu>
                   </Box>
 
                   <Divider />
@@ -1309,6 +1602,79 @@ const AgencyCommissions = () => {
             </DialogActions>
           </Dialog>
 
+          <Dialog open={bankTransferDialogOpen} onClose={handleCloseBankTransferDialog} fullWidth maxWidth="sm">
+            <DialogTitle>{strings.BANK_TRANSFER_DIALOG_TITLE}</DialogTitle>
+            <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {settings?.bankTransferRibInformation ? (
+                <Typography component="pre" sx={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                  {settings.bankTransferRibInformation}
+                </Typography>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  {strings.BANK_TRANSFER_DIALOG_NO_INFORMATION}
+                </Typography>
+              )}
+              {ribHasDetails ? (
+                <Stack spacing={1.5}>
+                  {[{
+                    label: strings.SETTINGS_RIB_ACCOUNT_HOLDER,
+                    value: settings?.bankTransferRibDetails?.accountHolder,
+                  }, {
+                    label: strings.SETTINGS_RIB_BANK_NAME,
+                    value: settings?.bankTransferRibDetails?.bankName,
+                  }, {
+                    label: strings.SETTINGS_RIB_BANK_ADDRESS,
+                    value: settings?.bankTransferRibDetails?.bankAddress,
+                  }, {
+                    label: strings.SETTINGS_RIB_IBAN,
+                    value: settings?.bankTransferRibDetails?.iban,
+                  }, {
+                    label: strings.SETTINGS_RIB_BIC,
+                    value: settings?.bankTransferRibDetails?.bic,
+                  }, {
+                    label: strings.SETTINGS_RIB_ACCOUNT_NUMBER,
+                    value: settings?.bankTransferRibDetails?.accountNumber,
+                  }]
+                    .filter((entry) => entry.value)
+                    .map((entry) => (
+                      <Stack key={entry.label} direction="row" alignItems="center" spacing={1}>
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block' }}>
+                            {entry.label}
+                          </Typography>
+                          <Typography variant="body1" fontWeight={700} sx={{ wordBreak: 'break-all' }}>
+                            {entry.value}
+                          </Typography>
+                        </Box>
+                        <Tooltip title={strings.BANK_TRANSFER_DIALOG_COPY}>
+                          <span>
+                            <IconButton
+                              color="primary"
+                              onClick={() => handleCopyRibValue(entry.value)}
+                              disabled={!entry.value}
+                              size="small"
+                            >
+                              <ContentCopyIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </Stack>
+                    ))}
+                  <Button variant="contained" startIcon={<DownloadIcon />} onClick={handleDownloadRib}>
+                    {strings.BANK_TRANSFER_DIALOG_DOWNLOAD}
+                  </Button>
+                </Stack>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  {strings.BANK_TRANSFER_DIALOG_NO_DETAILS}
+                </Typography>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseBankTransferDialog}>{strings.CLOSE}</Button>
+            </DialogActions>
+          </Dialog>
+
           <Dialog open={paymentDialogOpen} onClose={() => setPaymentDialogOpen(false)} fullWidth maxWidth="xs">
             <DialogTitle>{strings.PAYMENT_DIALOG_TITLE}</DialogTitle>
             <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1400,6 +1766,88 @@ const AgencyCommissions = () => {
                 minRows={3}
                 value={settings?.smsTemplate || ''}
                 onChange={(event) => updateSettingsField('smsTemplate', event.target.value)}
+                fullWidth
+              />
+              <FormControlLabel
+                control={(
+                  <Switch
+                    checked={Boolean(settings?.bankTransferEnabled)}
+                    onChange={(_, checked) => updateSettingsField('bankTransferEnabled', checked)}
+                  />
+                )}
+                label={strings.SETTINGS_BANK_TRANSFER_ENABLED}
+              />
+              <FormControlLabel
+                control={(
+                  <Switch
+                    checked={Boolean(settings?.cardPaymentEnabled)}
+                    onChange={(_, checked) => updateSettingsField('cardPaymentEnabled', checked)}
+                  />
+                )}
+                label={strings.SETTINGS_CARD_ENABLED}
+              />
+              <FormControlLabel
+                control={(
+                  <Switch
+                    checked={Boolean(settings?.d17PaymentEnabled)}
+                    onChange={(_, checked) => updateSettingsField('d17PaymentEnabled', checked)}
+                  />
+                )}
+                label={strings.SETTINGS_D17_ENABLED}
+              />
+              <TextField
+                label={strings.SETTINGS_RIB_INFORMATION}
+                multiline
+                minRows={3}
+                value={settings?.bankTransferRibInformation || ''}
+                onChange={(event) => updateSettingsField('bankTransferRibInformation', event.target.value)}
+                fullWidth
+              />
+              <TextField
+                label={strings.SETTINGS_RIB_ACCOUNT_HOLDER}
+                value={settings?.bankTransferRibDetails?.accountHolder || ''}
+                onChange={(event) => updateRibDetailsField('accountHolder', event.target.value)}
+                error={ribErrors.accountHolder}
+                helperText={ribErrors.accountHolder ? strings.SETTINGS_RIB_ACCOUNT_HOLDER_ERROR : ' '}
+                fullWidth
+              />
+              <TextField
+                label={strings.SETTINGS_RIB_BANK_NAME}
+                value={settings?.bankTransferRibDetails?.bankName || ''}
+                onChange={(event) => updateRibDetailsField('bankName', event.target.value)}
+                error={ribErrors.bankName}
+                helperText={ribErrors.bankName ? strings.SETTINGS_RIB_BANK_NAME_ERROR : ' '}
+                fullWidth
+              />
+              <TextField
+                label={strings.SETTINGS_RIB_BANK_ADDRESS}
+                value={settings?.bankTransferRibDetails?.bankAddress || ''}
+                onChange={(event) => updateRibDetailsField('bankAddress', event.target.value)}
+                helperText=" "
+                fullWidth
+              />
+              <TextField
+                label={strings.SETTINGS_RIB_IBAN}
+                value={settings?.bankTransferRibDetails?.iban || ''}
+                onChange={(event) => updateRibDetailsField('iban', event.target.value)}
+                error={ribErrors.iban}
+                helperText={ribErrors.iban ? strings.SETTINGS_RIB_IBAN_ERROR : ' '}
+                fullWidth
+              />
+              <TextField
+                label={strings.SETTINGS_RIB_BIC}
+                value={settings?.bankTransferRibDetails?.bic || ''}
+                onChange={(event) => updateRibDetailsField('bic', event.target.value)}
+                error={ribErrors.bic}
+                helperText={ribErrors.bic ? strings.SETTINGS_RIB_BIC_ERROR : ' '}
+                fullWidth
+              />
+              <TextField
+                label={strings.SETTINGS_RIB_ACCOUNT_NUMBER}
+                value={settings?.bankTransferRibDetails?.accountNumber || ''}
+                onChange={(event) => updateRibDetailsField('accountNumber', event.target.value)}
+                error={ribErrors.accountNumber}
+                helperText={ribErrors.accountNumber ? strings.SETTINGS_RIB_ACCOUNT_NUMBER_ERROR : ' '}
                 fullWidth
               />
             </DialogContent>

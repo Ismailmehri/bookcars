@@ -1827,16 +1827,24 @@ export const downloadCommissionRib = async (req: Request, res: Response) => {
     const logo = await fetchLogo()
     const startX = doc.page.margins.left
     if (logo) {
-      doc.image(logo, startX, doc.y, { height: 60 })
-      doc.moveDown(2.5)
+      doc.image(logo, startX, doc.y, { height: 56 })
+      doc.moveDown(3)
     } else {
-      doc.font('Helvetica-Bold').fontSize(18).text('Plany', startX, doc.y)
-      doc.moveDown(1.5)
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(20)
+        .fillColor('#0A66FF')
+        .text('Plany', startX, doc.y)
+      doc.moveDown(2)
     }
 
-    doc.font('Helvetica-Bold').fontSize(16).fillColor('#000000').text(i18n.t('COMMISSION_RIB_TITLE'))
-    doc.moveDown(1.5)
-    doc.font('Helvetica').fontSize(12).fillColor('#000000')
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(16)
+      .fillColor('#0A66FF')
+      .text(i18n.t('COMMISSION_RIB_TITLE'), { align: 'left' })
+    doc.moveDown(1.25)
+    doc.font('Helvetica').fontSize(12).fillColor('#1F2937')
 
     const entries: { label: string; value?: string }[] = [
       { label: i18n.t('COMMISSION_RIB_ACCOUNT_HOLDER'), value: ribDetails.accountHolder },
@@ -1852,18 +1860,32 @@ export const downloadCommissionRib = async (req: Request, res: Response) => {
         return
       }
 
-      doc.font('Helvetica-Bold').fillColor('#333333').text(entry.label)
-      doc.font('Helvetica').fillColor('#000000').text(entry.value, { indent: 10 })
-      doc.moveDown(0.75)
+      doc
+        .font('Helvetica-Bold')
+        .fillColor('#1F2937')
+        .text(`${entry.label} :`, { continued: true })
+      doc
+        .font('Helvetica')
+        .fillColor('#111827')
+        .text(entry.value)
+      doc.moveDown(0.5)
     })
 
     if (settings.bankTransferRibInformation) {
-      doc.moveDown(0.5)
-      doc.font('Helvetica-Bold').text(i18n.t('COMMISSION_RIB_INSTRUCTIONS'))
-      doc.font('Helvetica').text(settings.bankTransferRibInformation, { align: 'left' })
+      doc.moveDown(0.75)
+      doc
+        .font('Helvetica-Bold')
+        .fillColor('#0A66FF')
+        .text(i18n.t('COMMISSION_RIB_INSTRUCTIONS'))
+      doc
+        .font('Helvetica')
+        .fillColor('#1F2937')
+        .text(settings.bankTransferRibInformation, { align: 'left' })
     }
 
     doc.end()
+
+    return undefined
   } catch (err) {
     logger.error('[commission.downloadCommissionRib]', err)
     return res.status(400).send(i18n.t('DB_ERROR') + err)

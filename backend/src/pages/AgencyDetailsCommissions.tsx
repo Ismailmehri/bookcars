@@ -729,11 +729,22 @@ const AgencyDetailsCommissions = () => {
                   <Tooltip title={strings.PAY_BUTTON}>
                     <span>
                       <IconButton
-                        color="primary"
                         onClick={handleOpenPayDialog}
                         disabled={paymentOptionsLoading}
                         aria-label={strings.PAY_BUTTON}
-                        sx={{ width: 48, height: 48 }}
+                        sx={{
+                          width: 48,
+                          height: 48,
+                          backgroundColor: '#F79009',
+                          color: '#fff',
+                          '&:hover': {
+                            backgroundColor: '#DC6803',
+                          },
+                          '&.Mui-disabled': {
+                            backgroundColor: '#FBC67B',
+                            color: '#fff',
+                          },
+                        }}
                       >
                         {paymentOptionsLoading ? <CircularProgress size={20} /> : <PaidOutlinedIcon />}
                       </IconButton>
@@ -779,10 +790,20 @@ const AgencyDetailsCommissions = () => {
               <Stack direction="row" spacing={1}>
                 <Button
                   variant="contained"
-                  color="secondary"
+                  color="warning"
                   startIcon={paymentOptionsLoading ? <CircularProgress size={18} /> : <PaidOutlinedIcon />}
                   onClick={handleOpenPayDialog}
                   disabled={paymentOptionsLoading}
+                  sx={{
+                    backgroundColor: '#F79009',
+                    '&:hover': {
+                      backgroundColor: '#DC6803',
+                    },
+                    '&.Mui-disabled': {
+                      backgroundColor: '#FBC67B',
+                      color: '#fff',
+                    },
+                  }}
                 >
                   {strings.PAY_BUTTON}
                 </Button>

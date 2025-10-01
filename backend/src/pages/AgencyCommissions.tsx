@@ -141,6 +141,21 @@ const EMPTY_RIB_ERRORS: Record<RibField, boolean> = {
   accountNumber: false,
 }
 
+const hasRibDetails = (details?: bookcarsTypes.CommissionRibDetails | null) => {
+  if (!details) {
+    return false
+  }
+
+  return Boolean(
+    details.accountHolder
+    || details.bankName
+    || details.bankAddress
+    || details.iban
+    || details.bic
+    || details.accountNumber,
+  )
+}
+
 const buildMonthLabel = (month: number, year: number, language: string) => {
   const date = new Date(Date.UTC(year, month - 1, 1))
   const label = date.toLocaleString(language, { month: 'long' })
@@ -227,7 +242,10 @@ const AgencyCommissions = () => {
   const [settings, setSettings] = useState<bookcarsTypes.CommissionSettings>()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [ribErrors, setRibErrors] = useState<Record<RibField, boolean>>({ ...EMPTY_RIB_ERRORS })
-  const ribHasDetails = hasRibDetails(settings?.bankTransferRibDetails)
+  const ribHasDetails = useMemo(
+    () => hasRibDetails(settings?.bankTransferRibDetails),
+    [settings],
+  )
   const [loadingSettings, setLoadingSettings] = useState(false)
   const [reminderDialogOpen, setReminderDialogOpen] = useState(false)
   const [reminderChannel, setReminderChannel] = useState<bookcarsTypes.CommissionReminderChannel>(
@@ -499,20 +517,6 @@ const AgencyCommissions = () => {
           : undefined),
       },
     }
-  }, [])
-
-  const hasRibDetails = useCallback((details?: bookcarsTypes.CommissionRibDetails | null) => {
-    if (!details) {
-      return false
-    }
-
-    return Boolean(
-      details.accountHolder
-      || details.bankName
-      || details.iban
-      || details.bic
-      || details.accountNumber
-    )
   }, [])
 
   const sanitizeRibDetails = useCallback((details?: bookcarsTypes.CommissionRibDetails | null): Record<RibField, string> => {
@@ -1385,6 +1389,7 @@ const AgencyCommissions = () => {
                     <Box className="ac-actions">
                       <Button
                         variant="contained"
+                        color="warning"
                         startIcon={<PaymentIcon />}
                         onClick={handleOpenPaymentMenu}
                       >

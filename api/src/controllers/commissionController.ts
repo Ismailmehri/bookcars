@@ -1828,15 +1828,15 @@ export const downloadCommissionRib = async (req: Request, res: Response) => {
     const startX = doc.page.margins.left
     if (logo) {
       doc.image(logo, startX, doc.y, { height: 60 })
-      doc.moveDown(2)
+      doc.moveDown(2.5)
     } else {
       doc.font('Helvetica-Bold').fontSize(18).text('Plany', startX, doc.y)
-      doc.moveDown()
+      doc.moveDown(1.5)
     }
 
     doc.font('Helvetica-Bold').fontSize(16).fillColor('#000000').text(i18n.t('COMMISSION_RIB_TITLE'))
-    doc.moveDown()
-    doc.font('Helvetica').fontSize(12)
+    doc.moveDown(1.5)
+    doc.font('Helvetica').fontSize(12).fillColor('#000000')
 
     const entries: { label: string; value?: string }[] = [
       { label: i18n.t('COMMISSION_RIB_ACCOUNT_HOLDER'), value: ribDetails.accountHolder },
@@ -1851,12 +1851,14 @@ export const downloadCommissionRib = async (req: Request, res: Response) => {
       if (!entry.value) {
         return
       }
-      doc.font('Helvetica-Bold').text(`${entry.label} :`, { continued: true })
-      doc.font('Helvetica').text(` ${entry.value}`)
+
+      doc.font('Helvetica-Bold').fillColor('#333333').text(entry.label)
+      doc.font('Helvetica').fillColor('#000000').text(entry.value, { indent: 10 })
+      doc.moveDown(0.75)
     })
 
     if (settings.bankTransferRibInformation) {
-      doc.moveDown()
+      doc.moveDown(0.5)
       doc.font('Helvetica-Bold').text(i18n.t('COMMISSION_RIB_INSTRUCTIONS'))
       doc.font('Helvetica').text(settings.bankTransferRibInformation, { align: 'left' })
     }

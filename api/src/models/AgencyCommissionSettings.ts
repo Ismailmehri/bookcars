@@ -18,6 +18,30 @@ const agencyCommissionSettingsSchema = new Schema<env.AgencyCommissionSettings>(
       type: String,
       default: 'Plany: Commission de {{amount}} TND pour {{month}}/{{year}} toujours en attente. Merci de régulariser.',
     },
+    bankTransferEnabled: {
+      type: Boolean,
+      default: true,
+    },
+    cardPaymentEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    d17PaymentEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    bankTransferRibInformation: {
+      type: String,
+      default: '',
+    },
+    bankTransferRibFile: {
+      type: {
+        name: { type: String },
+        mimeType: { type: String },
+        data: { type: String },
+      },
+      default: null,
+    },
     updatedBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',

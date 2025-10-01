@@ -313,10 +313,21 @@ export interface CommissionNotePayload {
   note: string
 }
 
+export interface CommissionRibFile {
+  name: string
+  mimeType: string
+  data: string
+}
+
 export interface CommissionSettingsPayload {
   reminderChannel: CommissionReminderChannel
   emailTemplate: string
   smsTemplate: string
+  bankTransferEnabled?: boolean
+  cardPaymentEnabled?: boolean
+  d17PaymentEnabled?: boolean
+  bankTransferRibInformation?: string
+  bankTransferRibFile?: CommissionRibFile | null
 }
 
 export interface CommissionSettings extends CommissionSettingsPayload {

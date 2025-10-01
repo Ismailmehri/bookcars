@@ -37,6 +37,9 @@ import {
   TableRow,
   InputAdornment,
   Link,
+  Menu,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material'
 import { SelectChangeEvent } from '@mui/material/Select'
 import {
@@ -45,6 +48,7 @@ import {
   Search as SearchIcon,
   Send as SendIcon,
   Paid as PaidIcon,
+  Payment as PaymentIcon,
   Block as BlockIcon,
   LockOpen as LockOpenIcon,
   Visibility as VisibilityIcon,
@@ -56,6 +60,12 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   Fingerprint as FingerprintIcon,
+  AccountBalance as AccountBalanceIcon,
+  CreditCard as CreditCardIcon,
+  QrCode2 as QrCode2Icon,
+  Download as DownloadIcon,
+  UploadFile as UploadFileIcon,
+  DeleteOutline as DeleteOutlineIcon,
 } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -205,6 +215,9 @@ const AgencyCommissions = () => {
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentDate, setPaymentDate] = useState('')
   const [paymentReference, setPaymentReference] = useState('')
+  const [paymentMenuAnchorEl, setPaymentMenuAnchorEl] = useState<null | HTMLElement>(null)
+  const paymentMenuOpen = Boolean(paymentMenuAnchorEl)
+  const [bankTransferDialogOpen, setBankTransferDialogOpen] = useState(false)
   const [noteDialogOpen, setNoteDialogOpen] = useState(false)
   const [note, setNote] = useState('')
   const [blockConfirmOpen, setBlockConfirmOpen] = useState(false)
@@ -212,6 +225,7 @@ const AgencyCommissions = () => {
   const [invoiceLoading, setInvoiceLoading] = useState(false)
 
   const detailRequestRef = useRef(0)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const language = user?.language || env.DEFAULT_LANGUAGE
 
@@ -440,6 +454,15 @@ const AgencyCommissions = () => {
     }
   }, [fetchDetail, selectedAgency])
 
+  const normalizeSettings = useCallback((value: bookcarsTypes.CommissionSettings): bookcarsTypes.CommissionSettings => ({
+    ...value,
+    bankTransferEnabled: value.bankTransferEnabled !== false,
+    cardPaymentEnabled: value.cardPaymentEnabled === true,
+    d17PaymentEnabled: value.d17PaymentEnabled === true,
+    bankTransferRibInformation: value.bankTransferRibInformation || '',
+    bankTransferRibFile: value.bankTransferRibFile || null,
+  }), [])
+
   useEffect(() => {
     if (!drawerOpen || !selectedAgency) {
       return
@@ -456,15 +479,16 @@ const AgencyCommissions = () => {
     setLoadingSettings(true)
     try {
       const response = await CommissionService.getCommissionSettings()
-      setSettings(response)
-      return response
+      const normalized = normalizeSettings(response)
+      setSettings(normalized)
+      return normalized
     } catch (err) {
       helper.error(err)
       throw err
     } finally {
       setLoadingSettings(false)
     }
-  }, [settings])
+  }, [normalizeSettings, settings])
 
   const buildTemplateMessage = useCallback((
     template: string,
@@ -517,6 +541,88 @@ const AgencyCommissions = () => {
       const message = buildTemplateMessage(template, selectedAgency, summaryAgency)
       setReminderMessage(message)
     }
+  }
+
+  const handleOpenPaymentMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setPaymentMenuAnchorEl(event.currentTarget)
+  }
+
+  const handleClosePaymentMenu = () => {
+    setPaymentMenuAnchorEl(null)
+  }
+
+  const handleSelectBankTransfer = async () => {
+    handleClosePaymentMenu()
+    try {
+      const currentSettings = await ensureSettings()
+      if (!currentSettings.bankTransferEnabled) {
+        helper.error(undefined, strings.PAYMENT_BANK_TRANSFER_DISABLED)
+        return
+      }
+      setBankTransferDialogOpen(true)
+    } catch {
+      // already handled in ensureSettings
+    }
+  }
+
+  const handleCloseBankTransferDialog = () => {
+    setBankTransferDialogOpen(false)
+  }
+
+  const handleDownloadRib = () => {
+    const ribFile = settings?.bankTransferRibFile
+    if (!ribFile || !ribFile.data) {
+      helper.error(undefined, strings.PAYMENT_BANK_TRANSFER_NO_FILE)
+      return
+    }
+
+    try {
+      const byteCharacters = window.atob(ribFile.data)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i += 1) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      const blob = new Blob([byteArray], { type: ribFile.mimeType || 'application/octet-stream' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = ribFile.name || 'rib'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      helper.error(err, strings.PAYMENT_BANK_TRANSFER_DOWNLOAD_ERROR)
+    }
+  }
+
+  const handleRibFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { files } = event.target
+    const file = files && files[0]
+    if (!file) {
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result
+      if (typeof result === 'string') {
+        const base64 = result.includes(',') ? result.split(',')[1] : result
+        updateSettingsField('bankTransferRibFile', {
+          name: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          data: base64,
+        })
+      }
+    }
+    reader.readAsDataURL(file)
+
+    event.target.value = ''
+  }
+
+  const handleRemoveRibFile = () => {
+    updateSettingsField('bankTransferRibFile', null)
   }
 
   const handleSendReminder = async () => {
@@ -692,12 +798,19 @@ const AgencyCommissions = () => {
     }
 
     try {
-      const updated = await CommissionService.updateCommissionSettings({
+      const payload: bookcarsTypes.CommissionSettingsPayload = {
         reminderChannel: settings.reminderChannel,
         emailTemplate: settings.emailTemplate,
         smsTemplate: settings.smsTemplate,
-      })
-      setSettings(updated)
+        bankTransferEnabled: settings.bankTransferEnabled,
+        cardPaymentEnabled: settings.cardPaymentEnabled,
+        d17PaymentEnabled: settings.d17PaymentEnabled,
+        bankTransferRibInformation: settings.bankTransferRibInformation,
+        bankTransferRibFile: settings.bankTransferRibFile || null,
+      }
+      const updated = await CommissionService.updateCommissionSettings(payload)
+      const normalized = normalizeSettings(updated)
+      setSettings(normalized)
       helper.info(strings.SETTINGS_SUCCESS)
       setSettingsOpen(false)
     } catch (err) {
@@ -705,9 +818,9 @@ const AgencyCommissions = () => {
     }
   }
 
-  const updateSettingsField = (
-    field: keyof bookcarsTypes.CommissionSettingsPayload,
-    value: string | bookcarsTypes.CommissionReminderChannel,
+  const updateSettingsField = <K extends keyof bookcarsTypes.CommissionSettingsPayload>(
+    field: K,
+    value: bookcarsTypes.CommissionSettingsPayload[K],
   ) => {
     setSettings((prev) => {
       if (!prev) {
@@ -1140,6 +1253,13 @@ const AgencyCommissions = () => {
                   <Box className="ac-section">
                     <Typography variant="subtitle1">{strings.DRAWER_ACTIONS}</Typography>
                     <Box className="ac-actions">
+                      <Button
+                        variant="contained"
+                        startIcon={<PaymentIcon />}
+                        onClick={handleOpenPaymentMenu}
+                      >
+                        {strings.DRAWER_ACTION_PAY}
+                      </Button>
                       <Button variant="contained" startIcon={<SendIcon />} onClick={() => selectedAgency && handleOpenReminder(selectedAgency)}>
                         {strings.DRAWER_ACTION_REMIND}
                       </Button>
@@ -1158,6 +1278,35 @@ const AgencyCommissions = () => {
                         {strings.DRAWER_ACTION_INVOICE}
                       </Button>
                     </Box>
+                    <Menu anchorEl={paymentMenuAnchorEl} open={paymentMenuOpen} onClose={handleClosePaymentMenu}>
+                      <MenuItem onClick={handleSelectBankTransfer}>
+                        <ListItemIcon>
+                          <AccountBalanceIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={strings.PAYMENT_METHOD_BANK_TRANSFER}
+                          secondary={strings.PAYMENT_METHOD_BANK_TRANSFER_DESCRIPTION}
+                        />
+                      </MenuItem>
+                      <MenuItem disabled>
+                        <ListItemIcon>
+                          <CreditCardIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={strings.PAYMENT_METHOD_CARD}
+                          secondary={strings.PAYMENT_METHOD_UNAVAILABLE}
+                        />
+                      </MenuItem>
+                      <MenuItem disabled>
+                        <ListItemIcon>
+                          <QrCode2Icon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={strings.PAYMENT_METHOD_D17}
+                          secondary={strings.PAYMENT_METHOD_UNAVAILABLE}
+                        />
+                      </MenuItem>
+                    </Menu>
                   </Box>
 
                   <Divider />
@@ -1309,6 +1458,33 @@ const AgencyCommissions = () => {
             </DialogActions>
           </Dialog>
 
+          <Dialog open={bankTransferDialogOpen} onClose={handleCloseBankTransferDialog} fullWidth maxWidth="sm">
+            <DialogTitle>{strings.BANK_TRANSFER_DIALOG_TITLE}</DialogTitle>
+            <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {settings?.bankTransferRibInformation ? (
+                <Typography component="pre" sx={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                  {settings.bankTransferRibInformation}
+                </Typography>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  {strings.BANK_TRANSFER_DIALOG_NO_INFORMATION}
+                </Typography>
+              )}
+              {settings?.bankTransferRibFile ? (
+                <Button variant="contained" startIcon={<DownloadIcon />} onClick={handleDownloadRib}>
+                  {strings.BANK_TRANSFER_DIALOG_DOWNLOAD}
+                </Button>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  {strings.BANK_TRANSFER_DIALOG_NO_FILE}
+                </Typography>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseBankTransferDialog}>{strings.CLOSE}</Button>
+            </DialogActions>
+          </Dialog>
+
           <Dialog open={paymentDialogOpen} onClose={() => setPaymentDialogOpen(false)} fullWidth maxWidth="xs">
             <DialogTitle>{strings.PAYMENT_DIALOG_TITLE}</DialogTitle>
             <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1402,6 +1578,72 @@ const AgencyCommissions = () => {
                 onChange={(event) => updateSettingsField('smsTemplate', event.target.value)}
                 fullWidth
               />
+              <FormControlLabel
+                control={(
+                  <Switch
+                    checked={Boolean(settings?.bankTransferEnabled)}
+                    onChange={(_, checked) => updateSettingsField('bankTransferEnabled', checked)}
+                  />
+                )}
+                label={strings.SETTINGS_BANK_TRANSFER_ENABLED}
+              />
+              <FormControlLabel
+                control={(
+                  <Switch
+                    checked={Boolean(settings?.cardPaymentEnabled)}
+                    onChange={(_, checked) => updateSettingsField('cardPaymentEnabled', checked)}
+                  />
+                )}
+                label={strings.SETTINGS_CARD_ENABLED}
+              />
+              <FormControlLabel
+                control={(
+                  <Switch
+                    checked={Boolean(settings?.d17PaymentEnabled)}
+                    onChange={(_, checked) => updateSettingsField('d17PaymentEnabled', checked)}
+                  />
+                )}
+                label={strings.SETTINGS_D17_ENABLED}
+              />
+              <TextField
+                label={strings.SETTINGS_RIB_INFORMATION}
+                multiline
+                minRows={3}
+                value={settings?.bankTransferRibInformation || ''}
+                onChange={(event) => updateSettingsField('bankTransferRibInformation', event.target.value)}
+                fullWidth
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf,image/*"
+                hidden
+                onChange={handleRibFileUpload}
+              />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'stretch', sm: 'center' }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<UploadFileIcon />}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {strings.SETTINGS_RIB_UPLOAD}
+                </Button>
+                {settings?.bankTransferRibFile && (
+                  <Button
+                    variant="text"
+                    color="error"
+                    startIcon={<DeleteOutlineIcon />}
+                    onClick={handleRemoveRibFile}
+                  >
+                    {strings.SETTINGS_RIB_REMOVE}
+                  </Button>
+                )}
+              </Stack>
+              {settings?.bankTransferRibFile && (
+                <Typography variant="body2" color="text.secondary">
+                  {strings.formatString(strings.SETTINGS_RIB_CURRENT_FILE, settings.bankTransferRibFile.name)}
+                </Typography>
+              )}
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setSettingsOpen(false)}>{strings.CANCEL}</Button>

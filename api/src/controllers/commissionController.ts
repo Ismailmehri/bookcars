@@ -813,6 +813,17 @@ const serializeSettings = async (
     reminderChannel: settings.reminderChannel || bookcarsTypes.CommissionReminderChannel.Email,
     emailTemplate: settings.emailTemplate,
     smsTemplate: settings.smsTemplate,
+    bankTransferEnabled: settings.bankTransferEnabled !== false,
+    cardPaymentEnabled: settings.cardPaymentEnabled === true,
+    d17PaymentEnabled: settings.d17PaymentEnabled === true,
+    bankTransferRibInformation: settings.bankTransferRibInformation || '',
+    bankTransferRibFile: settings.bankTransferRibFile
+      ? {
+        name: settings.bankTransferRibFile.name,
+        mimeType: settings.bankTransferRibFile.mimeType,
+        data: settings.bankTransferRibFile.data,
+      }
+      : null,
     updatedAt: settings.updatedAt || undefined,
     updatedBy: updatedByUser ? toAgency(updatedByUser) : undefined,
   }
@@ -1653,6 +1664,35 @@ export const updateCommissionSettings = async (req: Request, res: Response) => {
     settings.reminderChannel = body.reminderChannel
     settings.emailTemplate = body.emailTemplate
     settings.smsTemplate = body.smsTemplate
+    if (typeof body.bankTransferEnabled === 'boolean') {
+      settings.bankTransferEnabled = body.bankTransferEnabled
+    } else if (typeof settings.bankTransferEnabled === 'undefined') {
+      settings.bankTransferEnabled = true
+    }
+    if (typeof body.cardPaymentEnabled === 'boolean') {
+      settings.cardPaymentEnabled = body.cardPaymentEnabled
+    } else if (typeof settings.cardPaymentEnabled === 'undefined') {
+      settings.cardPaymentEnabled = false
+    }
+    if (typeof body.d17PaymentEnabled === 'boolean') {
+      settings.d17PaymentEnabled = body.d17PaymentEnabled
+    } else if (typeof settings.d17PaymentEnabled === 'undefined') {
+      settings.d17PaymentEnabled = false
+    }
+    if (typeof body.bankTransferRibInformation === 'string') {
+      settings.bankTransferRibInformation = body.bankTransferRibInformation
+    } else if (typeof settings.bankTransferRibInformation === 'undefined') {
+      settings.bankTransferRibInformation = ''
+    }
+    if (body.bankTransferRibFile !== undefined) {
+      settings.bankTransferRibFile = body.bankTransferRibFile
+        ? {
+          name: body.bankTransferRibFile.name,
+          mimeType: body.bankTransferRibFile.mimeType,
+          data: body.bankTransferRibFile.data,
+        }
+        : null
+    }
     settings.updatedBy = ensureObjectId(admin._id)
     await settings.save()
 

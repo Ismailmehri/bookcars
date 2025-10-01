@@ -610,6 +610,11 @@ export interface AgencyCommissionSettings extends Document {
   reminderChannel: bookcarsTypes.CommissionReminderChannel
   emailTemplate: string
   smsTemplate: string
+  bankTransferEnabled?: boolean
+  cardPaymentEnabled?: boolean
+  d17PaymentEnabled?: boolean
+  bankTransferRibInformation?: string
+  bankTransferRibFile?: bookcarsTypes.CommissionRibFile | null
   updatedBy?: Types.ObjectId
   createdAt?: Date
   updatedAt?: Date

@@ -187,8 +187,6 @@ const AgencyDetailsCommissions = () => {
   const [bankTransferDialogOpen, setBankTransferDialogOpen] = useState(false)
   const [downloadingRib, setDownloadingRib] = useState(false)
 
-  const canPay = Boolean(paymentOptions?.bankTransferEnabled && hasPaymentRibDetails(paymentOptions))
-
   const locale = LOCALE_MAP[user?.language || 'fr'] || 'fr-FR'
   const months = strings.MONTHS as string[]
   const commissionPaymentLabels = strings.COMMISSION_PAYMENT_LABELS as Record<bookcarsTypes.CommissionStatus, string>
@@ -898,7 +896,17 @@ const AgencyDetailsCommissions = () => {
               </Grid>
             </Paper>
 
-            <Dialog open={bankTransferDialogOpen} onClose={handleClosePayDialog} fullWidth maxWidth="sm">
+            <Dialog
+              open={bankTransferDialogOpen}
+              onClose={handleClosePayDialog}
+              fullWidth
+              maxWidth="sm"
+              PaperProps={{
+                sx: {
+                  paddingTop: 5,
+                },
+              }}
+            >
               <DialogTitle>{strings.PAY_BANK_TRANSFER_TITLE}</DialogTitle>
               <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <List dense disablePadding>
@@ -1368,6 +1376,7 @@ const AgencyDetailsCommissions = () => {
                   maxHeight: isDesktop ? '100vh' : '90vh',
                   borderTopLeftRadius: isDesktop ? 0 : 24,
                   borderTopRightRadius: isDesktop ? 0 : 24,
+                  paddingTop: isDesktop ? 5 : 0,
                 },
               }}
             >

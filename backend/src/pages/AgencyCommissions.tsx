@@ -951,15 +951,21 @@ const AgencyCommissions = () => {
 
   const updateRibDetailsField = (field: RibField, value: string) => {
     setSettings((prev) => {
-      if (!prev) {
-        return prev
+      if (!prev) return prev
+
+      // On normalise pour forcer des strings (pas de string | undefined)
+      const safePrev = sanitizeRibDetails(prev.bankTransferRibDetails)
+
+      // On recompose l'objet RIB avec des valeurs sûres,
+      // puis on applique la mise à jour du champ ciblé.
+      const nextDetails: bookcarsTypes.CommissionRibDetails = {
+        ...safePrev,
+        [field]: value,
       }
+
       return {
         ...prev,
-        bankTransferRibDetails: {
-          ...prev.bankTransferRibDetails,
-          [field]: value,
-        },
+        bankTransferRibDetails: nextDetails,
       }
     })
   }

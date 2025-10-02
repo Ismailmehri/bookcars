@@ -438,7 +438,7 @@ describe('commissionController monthly commission endpoints', () => {
     }
 
     const filters: Array<Record<string, unknown>> = []
-    const bookingsByCall = [[januaryBooking], []]
+    const bookingsByCall = [[januaryBooking], [januaryBooking]]
 
     const createQueryResponse = (bookings: unknown[]) => {
       const chain: Record<string, unknown> = {}

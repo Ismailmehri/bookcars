@@ -283,8 +283,7 @@ const computeCommissionData = async (
     {
       $match: {
         expireAt: null,
-        from: { $lt: end },
-        to: { $gte: effectiveStart },
+        from: { $gte: effectiveStart, $lt: end },
       },
     },
     {
@@ -632,8 +631,7 @@ const loadAgencyCommissionDetail = async (
     ? await Booking.find({
       supplier: supplierObjectId,
       expireAt: null,
-      from: { $lt: end },
-      to: { $gte: effectiveStart },
+      from: { $gte: effectiveStart, $lt: end },
     })
       .populate<{ driver: env.User }>('driver')
       .sort({ from: 1 })
@@ -757,15 +755,18 @@ export const getAgencyCommissionBookings = async (req: Request, res: Response) =
     const config = getCommissionConfig()
     const effectiveStart = start.getTime() < config.effectiveDate.getTime() ? config.effectiveDate : start
 
-    const bookings = await Booking.find({
-      supplier: supplierObjectId,
-      expireAt: null,
-      from: { $lt: end },
-      to: { $gte: effectiveStart },
-    })
-      .sort({ from: 1 })
-      .populate<{ driver: env.User }>('driver')
-      .lean()
+    const shouldLoadBookings = effectiveStart.getTime() < end.getTime()
+
+    const bookings = shouldLoadBookings
+      ? await Booking.find({
+        supplier: supplierObjectId,
+        expireAt: null,
+        from: { $gte: effectiveStart, $lt: end },
+      })
+        .sort({ from: 1 })
+        .populate<{ driver: env.User }>('driver')
+        .lean()
+      : []
 
     const events = await AgencyCommissionEvent.find({
       agency: supplierObjectId,

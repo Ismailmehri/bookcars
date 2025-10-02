@@ -329,6 +329,22 @@ export const DEFAULT_LANGUAGE = __env__('BC_DEFAULT_LANGUAGE', false, 'fr')
  */
 export const MINIMUM_AGE = Number.parseInt(__env__('BC_MINIMUM_AGE', false, '21'), 10)
 
+const parseCommissionDate = (value?: string) => {
+  if (!value) {
+    return new Date('2025-01-01T00:00:00Z')
+  }
+
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? new Date('2025-01-01T00:00:00Z') : date
+}
+
+export const COMMISSION_ENABLED = helper.StringToBoolean(__env__('BC_COMMISSION_ENABLED', false, 'true'))
+const parsedCommissionRate = Number.parseFloat(__env__('BC_COMMISSION_RATE', false, '5'))
+export const COMMISSION_RATE = Number.isNaN(parsedCommissionRate) ? 5 : parsedCommissionRate
+export const COMMISSION_EFFECTIVE_DATE = parseCommissionDate(__env__('BC_COMMISSION_EFFECTIVE_DATE', false, '2025-01-01'))
+const parsedCommissionThreshold = Number.parseInt(__env__('BC_COMMISSION_MONTHLY_THRESHOLD', false, '50'), 10)
+export const COMMISSION_MONTHLY_THRESHOLD = Number.isNaN(parsedCommissionThreshold) ? 50 : parsedCommissionThreshold
+
 /**
  * Expo push access token.
  *
@@ -447,6 +463,7 @@ export interface Review {
  * @extends {Document}
  */
 export interface User extends Document {
+  _id: Types.ObjectId | string
   supplier?: Types.ObjectId
   fullName: string
   email: string
@@ -546,6 +563,8 @@ export interface Booking extends Document {
   _additionalDriver?: Types.ObjectId
   cancelRequest?: boolean
   price: number
+  commissionRate?: number
+  commissionTotal?: number
   sessionId?: string
   paymentIntentId?: string
   customerId?: string
@@ -554,6 +573,51 @@ export interface Booking extends Document {
     supplier?: { count: number; lastSent: Date | null };
     client?: { count: number; lastSent: Date | null };
   };
+}
+
+export interface AgencyCommissionEvent extends Document {
+  _id: Types.ObjectId
+  agency: Types.ObjectId
+  month: number
+  year: number
+  type: bookcarsTypes.AgencyCommissionEventType
+  admin: Types.ObjectId
+  amount?: number
+  paymentDate?: Date
+  reference?: string
+  channel?: bookcarsTypes.CommissionReminderChannel
+  success?: boolean
+  message?: string
+  note?: string
+  metadata?: Record<string, unknown>
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface AgencyCommissionState extends Document {
+  _id: Types.ObjectId
+  agency: Types.ObjectId
+  blocked: boolean
+  blockedAt?: Date
+  blockedBy?: Types.ObjectId
+  disabledCars: Types.ObjectId[]
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export interface AgencyCommissionSettings extends Document {
+  _id: Types.ObjectId
+  reminderChannel: bookcarsTypes.CommissionReminderChannel
+  emailTemplate: string
+  smsTemplate: string
+  bankTransferEnabled?: boolean
+  cardPaymentEnabled?: boolean
+  d17PaymentEnabled?: boolean
+  bankTransferRibInformation?: string
+  bankTransferRibDetails?: bookcarsTypes.CommissionRibDetails | null
+  updatedBy?: Types.ObjectId
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 interface PricePeriod {
@@ -592,6 +656,7 @@ export interface CarBoost {
 }
 
 export interface Car extends Document {
+  _id: Types.ObjectId
   name: string
   supplier: Types.ObjectId
   minimumAge: number

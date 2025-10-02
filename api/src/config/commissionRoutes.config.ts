@@ -1,0 +1,19 @@
+const routes = {
+  getList: '/api/commission/list/:page/:size',
+  exportList: '/api/commission/export/:page/:size',
+  getDetails: '/api/commission/details/:agencyId/:year/:month',
+  sendReminder: '/api/commission/reminder',
+  recordPayment: '/api/commission/payment',
+  toggleBlock: '/api/commission/block',
+  addNote: '/api/commission/note',
+  getSettings: '/api/commission/settings',
+  updateSettings: '/api/commission/settings',
+  getPaymentOptions: '/api/commission/payment/options',
+  downloadRib: '/api/commission/payment/rib',
+  generateInvoice: '/api/commission/invoice/:agencyId/:year/:month',
+  getAgencyBookings: '/api/commission/agency/bookings',
+  downloadAgencyInvoice: '/api/commission/agency/:agencyId/invoice/:year/:month',
+  downloadAgencyBookingInvoice: '/api/commission/agency/invoice/booking/:bookingId',
+}
+
+export default routes

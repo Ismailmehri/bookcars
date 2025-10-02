@@ -11,6 +11,7 @@ div.create-car {
 
 .car-form-wrapper {
   margin: 32px 0;
+  width: 100%;
 }
 
 .car-form-title {
@@ -57,20 +58,18 @@ div.create-car {
   line-height: 1em;
 }
 
-/* Device width is less than or equal to 960px */
-
-@media only screen and (max-width: 960px) {
-  .car-form {
-    width: 360px;
-    padding: 30px;
-  }
+.car-form {
+  width: 100%;
+  max-width: 420px;
+  padding: 24px;
+  box-sizing: border-box;
 }
 
 /* Device width is greater than or equal to 960px */
 
 @media only screen and (min-width: 960px) {
   .car-form {
-    width: 550px;
-    padding: 30px;
+    max-width: 960px;
+    padding: 48px;
   }
 }

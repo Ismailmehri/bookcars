@@ -51,6 +51,44 @@ export enum BookingStatus {
   Cancelled = 'cancelled'
 }
 
+export enum AgencyCommissionStatus {
+  Active = 'active',
+  Blocked = 'blocked',
+  NeedsFollowUp = 'needs_follow_up'
+}
+
+export enum CommissionReminderChannel {
+  Email = 'email',
+  Sms = 'sms',
+  EmailAndSms = 'email+sms'
+}
+
+export enum AgencyCommissionEventType {
+  Reminder = 'reminder',
+  Payment = 'payment',
+  Block = 'block',
+  Unblock = 'unblock',
+  Note = 'note'
+}
+
+export enum CommissionPaymentStatus {
+  Paid = 'paid',
+  Partial = 'partial',
+  Unpaid = 'unpaid'
+}
+
+export enum CommissionStatus {
+  Pending = 'pending',
+  Paid = 'paid'
+}
+
+export enum AgencyCommissionPaymentStatus {
+  Unpaid = 'unpaid',
+  FollowUp = 'follow_up',
+  Partial = 'partial',
+  Paid = 'paid'
+}
+
 export enum Mileage {
   Limited = 'limited',
   Unlimited = 'unlimited'
@@ -110,6 +148,8 @@ export interface Booking {
   _additionalDriver?: string | AdditionalDriver
   cancelRequest?: boolean
   price?: number
+  commissionRate?: number
+  commissionTotal?: number
   sessionId?: string
   paymentIntentId?: string
   customerId?: string
@@ -140,6 +180,214 @@ export interface GetBookingsPayload {
   user?: string
   car?: string
   filter?: Filter
+}
+
+export interface AgencyCommissionAgency {
+  id: string
+  name: string
+  city?: string
+  email?: string
+  phone?: string
+  slug?: string
+}
+
+export interface AgencyCommissionReminderInfo {
+  date: Date
+  channel: CommissionReminderChannel
+  success: boolean
+}
+
+export interface AgencyCommissionRow {
+  agency: AgencyCommissionAgency
+  reservations: number
+  grossTurnover: number
+  commissionDue: number
+  commissionCollected: number
+  balance: number
+  lastPayment?: Date
+  lastReminder?: AgencyCommissionReminderInfo
+  status: AgencyCommissionStatus
+  aboveThreshold: boolean
+}
+
+export interface AgencyCommissionSummary {
+  grossTurnover: number
+  commissionDue: number
+  commissionCollected: number
+  agenciesAboveThreshold: number
+  threshold: number
+  gross?: number
+  grossAll?: number
+  commission?: number
+  net?: number
+  reservations?: number
+  commissionPercentage?: number
+}
+
+export interface AgencyCommissionListResponse {
+  summary: AgencyCommissionSummary
+  agencies: AgencyCommissionRow[]
+  total: number
+  page: number
+  size: number
+}
+
+export interface CommissionListPayload {
+  month: number
+  year: number
+  search?: string
+  status?: AgencyCommissionStatus | 'all'
+  aboveThreshold?: boolean
+}
+
+export interface AgencyCommissionBookingDriver {
+  _id: string
+  fullName: string
+}
+
+export interface AgencyCommissionBooking {
+  bookingId: string
+  bookingNumber: string
+  driver: AgencyCommissionBookingDriver
+  from: Date
+  to: Date
+  days: number
+  pricePerDay: number
+  totalClient: number
+  commission: number
+  netAgency: number
+  bookingStatus: BookingStatus
+  commissionStatus?: CommissionStatus
+}
+
+export interface AgencyCommissionMonthlySummary {
+  gross: number
+  grossAll: number
+  commission: number
+  net: number
+  reservations: number
+  commissionPercentage: number
+}
+
+export interface AgencyCommissionBookingsResponse {
+  bookings: AgencyCommissionBooking[]
+  summary?: AgencyCommissionMonthlySummary
+}
+
+export interface AgencyCommissionBookingsPayload {
+  suppliers?: string[]
+  month: number
+  year: number
+  query?: string
+}
+
+export interface CommissionReminderPayload {
+  agencyId: string
+  month: number
+  year: number
+  channel?: CommissionReminderChannel
+  subject?: string
+  message: string
+}
+
+export interface CommissionPaymentPayload {
+  agencyId: string
+  month: number
+  year: number
+  amount: number
+  paymentDate: Date
+  reference?: string
+}
+
+export interface CommissionBlockPayload {
+  agencyId: string
+  month: number
+  year: number
+  block: boolean
+}
+
+export interface CommissionNotePayload {
+  agencyId: string
+  month: number
+  year: number
+  note: string
+}
+
+export interface CommissionRibDetails {
+  accountHolder: string
+  bankName: string
+  bankAddress?: string
+  iban: string
+  bic: string
+  accountNumber: string
+}
+
+export interface CommissionSettingsPayload {
+  reminderChannel: CommissionReminderChannel
+  emailTemplate: string
+  smsTemplate: string
+  bankTransferEnabled?: boolean
+  cardPaymentEnabled?: boolean
+  d17PaymentEnabled?: boolean
+  bankTransferRibInformation?: string
+  bankTransferRibDetails?: CommissionRibDetails | null
+}
+
+export interface CommissionSettings extends CommissionSettingsPayload {
+  updatedAt?: Date
+  updatedBy?: AgencyCommissionAgency
+}
+
+export interface CommissionPaymentOptions {
+  bankTransferEnabled: boolean
+  cardPaymentEnabled: boolean
+  d17PaymentEnabled: boolean
+  bankTransferRibInformation?: string
+  bankTransferRibDetails?: CommissionRibDetails | null
+}
+
+export interface AgencyCommissionDetailSummary {
+  reservations: number
+  grossTurnover: number
+  commissionDue: number
+  commissionCollected: number
+  balance: number
+  threshold: number
+  aboveThreshold: boolean
+}
+
+export interface AgencyCommissionLogEntry {
+  id: string
+  type: AgencyCommissionEventType
+  date: Date
+  admin?: AgencyCommissionAgency
+  channel?: CommissionReminderChannel
+  success?: boolean
+  amount?: number
+  paymentDate?: Date
+  reference?: string
+  note?: string
+  metadata?: Record<string, unknown>
+}
+
+export interface AgencyCommissionBookingInfo {
+  id: string
+  from: Date
+  to: Date
+  totalPrice: number
+  commission: number
+  status: BookingStatus
+  paymentStatus: CommissionPaymentStatus
+  driverName?: string
+}
+
+export interface AgencyCommissionDetail {
+  agency: AgencyCommissionAgency & { status: AgencyCommissionStatus; blocked: boolean }
+  summary: AgencyCommissionDetailSummary
+  logs: AgencyCommissionLogEntry[]
+  bookings: AgencyCommissionBookingInfo[]
+  month: number
+  year: number
 }
 
 export interface AdditionalDriver {

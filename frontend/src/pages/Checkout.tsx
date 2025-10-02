@@ -255,6 +255,25 @@ const Checkout = () => {
       let driver: bookcarsTypes.User | undefined
       let _additionalDriver: bookcarsTypes.AdditionalDriver | undefined
 
+      const options: bookcarsTypes.CarOptions = {
+        cancellation,
+        amendments,
+        theftProtection,
+        collisionDamageWaiver,
+        fullInsurance,
+        additionalDriver,
+      }
+
+      const breakdown = car && from && to
+        ? bookcarsHelper.calculatePriceBreakdown(car, from, to, options)
+        : undefined
+
+      const finalPrice = breakdown?.totalPrice ?? price
+
+      if (breakdown) {
+        setPrice(breakdown.totalPrice)
+      }
+
       const booking: bookcarsTypes.Booking = {
         supplier: car?.supplier._id as string,
         car: car ? car._id : '',
@@ -270,7 +289,9 @@ const Checkout = () => {
         collisionDamageWaiver,
         fullInsurance,
         additionalDriver,
-        price,
+        price: finalPrice,
+        commissionRate: breakdown?.commissionRate,
+        commissionTotal: breakdown?.commissionTotal,
       }
 
       if (adRequired && additionalDriver && addiontalDriverBirthDate) {
@@ -289,7 +310,7 @@ const Checkout = () => {
       let _sessionId: string | undefined
       if (!payLater) {
         const payload: bookcarsTypes.CreatePaymentPayload = {
-          amount: price,
+          amount: finalPrice,
           currency: env.STRIPE_CURRENCY_CODE,
           locale: language,
           receiptEmail: (!authenticated ? driver?.email : user?.email) as string,

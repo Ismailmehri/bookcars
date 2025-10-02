@@ -9,7 +9,13 @@ import Booking from '../src/models/Booking'
 import * as authHelper from '../src/common/authHelper'
 import User from '../src/models/User'
 import * as env from '../src/config/env.config'
-import { getCommissionSettings, updateCommissionSettings, getMonthlyCommissions, exportMonthlyCommissions } from '../src/controllers/commissionController'
+import {
+  getCommissionSettings,
+  updateCommissionSettings,
+  getMonthlyCommissions,
+  exportMonthlyCommissions,
+  getAgencyCommissionBookings,
+} from '../src/controllers/commissionController'
 import * as helper from ':bookcars-helper'
 import i18n from '../src/lang/i18n'
 
@@ -174,8 +180,9 @@ describe('commissionController settings endpoints', () => {
       smsTemplate: 'Initial sms',
       updatedBy: new mongoose.Types.ObjectId(updatedById),
     })
-    settingsDocument.updatedAt = new Date();
-(settingsDocument as any).save = jest.fn(async () => settingsDocument)
+    settingsDocument.updatedAt = new Date()
+    settingsDocument.bankTransferEnabled = false
+    ;(settingsDocument as any).save = jest.fn(async () => settingsDocument)
     jest.spyOn(AgencyCommissionSettings, 'findOne').mockResolvedValue(settingsDocument)
 
     const req = await createRequestWithToken(adminId, {
@@ -411,5 +418,113 @@ describe('commissionController monthly commission endpoints', () => {
     expect(csvContent).toContain('"Agence";"Ville";"Identifiant"')
     expect(csvContent).toContain(`"${supplierUser.fullName}"`)
     expect(csvContent).toContain('"Totaux"')
+  })
+
+  it('should not duplicate bookings across adjacent months', async () => {
+    helper.setCommissionConfig({
+      enabled: true,
+      rate: 10,
+      effectiveDate: new Date('2020-01-01T00:00:00.000Z'),
+      monthlyThreshold: 100,
+    })
+
+    const januaryBooking = {
+      _id: new mongoose.Types.ObjectId(),
+      supplier: supplierObjectId,
+      status: bookcarsTypes.BookingStatus.Paid,
+      price: 300,
+      commissionTotal: 30,
+      from: new Date('2024-01-31T10:00:00.000Z'),
+      to: new Date('2024-02-02T10:00:00.000Z'),
+    }
+
+    const filters: Array<Record<string, unknown>> = []
+    const bookingsByCall = [[januaryBooking], [januaryBooking]]
+
+    const createQueryResponse = (bookings: unknown[]) => {
+      const chain: Record<string, unknown> = {}
+      chain.sort = jest.fn().mockReturnValue(chain)
+      chain.populate = jest.fn().mockReturnValue(chain)
+      chain.lean = jest.fn(async () => bookings)
+      return chain as unknown as ReturnType<typeof Booking.find>
+    }
+
+    const bookingFindMock = jest.spyOn(Booking, 'find') as unknown as jest.Mock
+    bookingFindMock.mockImplementation((filter: unknown) => {
+      filters.push(filter as Record<string, unknown>)
+      const bookings = bookingsByCall.shift() || []
+      return createQueryResponse(bookings)
+    })
+
+    const eventFindMock = jest.spyOn(AgencyCommissionEvent, 'find') as unknown as jest.Mock
+    eventFindMock.mockImplementation(() => ({
+      lean: jest.fn(async () => []),
+    } as unknown as ReturnType<typeof AgencyCommissionEvent.find>))
+
+    const findByIdMock = jest.spyOn(User, 'findById') as unknown as jest.Mock
+    findByIdMock.mockImplementation((...args: unknown[]) => {
+      const [rawId] = args as [mongoose.Types.ObjectId | string]
+      const id = typeof rawId === 'string' ? rawId : rawId.toString()
+      if (id === supplierId) {
+        return Promise.resolve(supplierUser)
+      }
+      return Promise.resolve(null)
+    })
+
+    const januaryReq = await createRequestWithToken(supplierId, {
+      body: { month: 0, year: 2024 },
+    })
+    const januaryRes = createMockResponse()
+
+    await getAgencyCommissionBookings(januaryReq, januaryRes)
+
+    expect(januaryRes.json).toHaveBeenCalledTimes(1)
+    const januaryPayload = januaryRes.json.mock.calls[0][0] as {
+      bookings: bookcarsTypes.AgencyCommissionBooking[]
+      summary: bookcarsTypes.AgencyCommissionMonthlySummary
+    }
+
+    expect(januaryPayload.bookings).toHaveLength(1)
+    expect(januaryPayload.summary).toEqual({
+      gross: 300,
+      grossAll: 300,
+      commission: 30,
+      net: 270,
+      reservations: 1,
+      commissionPercentage: 10,
+    })
+
+    const februaryReq = await createRequestWithToken(supplierId, {
+      body: { month: 1, year: 2024 },
+    })
+    const februaryRes = createMockResponse()
+
+    await getAgencyCommissionBookings(februaryReq, februaryRes)
+
+    expect(februaryRes.json).toHaveBeenCalledTimes(1)
+    const februaryPayload = februaryRes.json.mock.calls[0][0] as {
+      bookings: bookcarsTypes.AgencyCommissionBooking[]
+      summary: bookcarsTypes.AgencyCommissionMonthlySummary
+    }
+
+    expect(februaryPayload.bookings).toHaveLength(0)
+    expect(februaryPayload.summary).toEqual({
+      gross: 0,
+      grossAll: 0,
+      commission: 0,
+      net: 0,
+      reservations: 0,
+      commissionPercentage: 10,
+    })
+
+    expect(filters).toHaveLength(2)
+    const [januaryFilter, februaryFilter] = filters as Array<{
+      from: { $gte: Date; $lt: Date }
+    }>
+
+    expect(januaryFilter.from.$gte).toEqual(new Date('2024-01-01T00:00:00.000Z'))
+    expect(januaryFilter.from.$lt).toEqual(new Date('2024-02-01T00:00:00.000Z'))
+    expect(februaryFilter.from.$gte).toEqual(new Date('2024-02-01T00:00:00.000Z'))
+    expect(februaryFilter.from.$lt).toEqual(new Date('2024-03-01T00:00:00.000Z'))
   })
 })

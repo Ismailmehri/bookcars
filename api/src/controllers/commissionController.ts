@@ -283,8 +283,7 @@ const computeCommissionData = async (
     {
       $match: {
         expireAt: null,
-        from: { $lt: end },
-        to: { $gte: effectiveStart },
+        from: { $gte: effectiveStart, $lt: end },
       },
     },
     {
@@ -632,18 +631,26 @@ const loadAgencyCommissionDetail = async (
     ? await Booking.find({
       supplier: supplierObjectId,
       expireAt: null,
-      from: { $lt: end },
-      to: { $gte: effectiveStart },
+      from: { $gte: effectiveStart, $lt: end },
     })
       .populate<{ driver: env.User }>('driver')
       .sort({ from: 1 })
       .lean()
     : []
 
+  const effectiveStartTime = effectiveStart.getTime()
+  const endTime = end.getTime()
+
+  const periodBookings = bookings.filter((booking) => {
+    const fromDate = booking.from instanceof Date ? booking.from : new Date(booking.from)
+    const fromTime = fromDate.getTime()
+    return fromTime >= effectiveStartTime && fromTime < endTime
+  })
+
   let grossTurnover = 0
   let commissionDue = 0
 
-  bookings.forEach((booking) => {
+  periodBookings.forEach((booking) => {
     const bookingStatus = booking.status as bookcarsTypes.BookingStatus | undefined
     if (isCommissionEligibleStatus(bookingStatus)) {
       grossTurnover += booking.price || 0
@@ -667,7 +674,7 @@ const loadAgencyCommissionDetail = async (
   const bookingInfos: bookcarsTypes.AgencyCommissionBookingInfo[] = []
   let remainingCommission = commissionCollected
 
-  bookings.forEach((booking) => {
+  periodBookings.forEach((booking) => {
     const bookingStatus = booking.status as bookcarsTypes.BookingStatus | undefined
     const eligible = isCommissionEligibleStatus(bookingStatus)
     const commission = eligible ? normalizeNumber(booking.commissionTotal || 0) : 0
@@ -704,7 +711,7 @@ const loadAgencyCommissionDetail = async (
   return {
     agency: { ...toAgency(supplier), status, blocked },
     summary: {
-      reservations: bookings.length,
+      reservations: periodBookings.length,
       grossTurnover: normalizeNumber(grossTurnover),
       commissionDue: normalizeNumber(commissionDue),
       commissionCollected: normalizeNumber(commissionCollected),
@@ -757,15 +764,27 @@ export const getAgencyCommissionBookings = async (req: Request, res: Response) =
     const config = getCommissionConfig()
     const effectiveStart = start.getTime() < config.effectiveDate.getTime() ? config.effectiveDate : start
 
-    const bookings = await Booking.find({
-      supplier: supplierObjectId,
-      expireAt: null,
-      from: { $lt: end },
-      to: { $gte: effectiveStart },
+    const shouldLoadBookings = effectiveStart.getTime() < end.getTime()
+
+    const bookings = shouldLoadBookings
+      ? await Booking.find({
+        supplier: supplierObjectId,
+        expireAt: null,
+        from: { $gte: effectiveStart, $lt: end },
+      })
+        .sort({ from: 1 })
+        .populate<{ driver: env.User }>('driver')
+        .lean()
+      : []
+
+    const effectiveStartTime = effectiveStart.getTime()
+    const endTime = end.getTime()
+
+    const periodBookings = bookings.filter((booking) => {
+      const fromDate = booking.from instanceof Date ? booking.from : new Date(booking.from)
+      const fromTime = fromDate.getTime()
+      return fromTime >= effectiveStartTime && fromTime < endTime
     })
-      .sort({ from: 1 })
-      .populate<{ driver: env.User }>('driver')
-      .lean()
 
     const events = await AgencyCommissionEvent.find({
       agency: supplierObjectId,
@@ -784,7 +803,7 @@ export const getAgencyCommissionBookings = async (req: Request, res: Response) =
     const msPerDay = 24 * 60 * 60 * 1000
     const rows: bookcarsTypes.AgencyCommissionBooking[] = []
 
-    bookings.forEach((booking) => {
+    periodBookings.forEach((booking) => {
       const bookingStatus = booking.status as bookcarsTypes.BookingStatus | undefined
       const status = bookingStatus || bookcarsTypes.BookingStatus.Pending
       const eligible = isCommissionEligibleStatus(status)

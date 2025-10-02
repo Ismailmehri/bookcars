@@ -898,7 +898,17 @@ const AgencyDetailsCommissions = () => {
               </Grid>
             </Paper>
 
-            <Dialog open={bankTransferDialogOpen} onClose={handleClosePayDialog} fullWidth maxWidth="sm">
+            <Dialog
+              open={bankTransferDialogOpen}
+              onClose={handleClosePayDialog}
+              fullWidth
+              maxWidth="sm"
+              PaperProps={{
+                sx: {
+                  paddingTop: 5,
+                },
+              }}
+            >
               <DialogTitle>{strings.PAY_BANK_TRANSFER_TITLE}</DialogTitle>
               <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <List dense disablePadding>
@@ -1368,6 +1378,7 @@ const AgencyDetailsCommissions = () => {
                   maxHeight: isDesktop ? '100vh' : '90vh',
                   borderTopLeftRadius: isDesktop ? 0 : 24,
                   borderTopRightRadius: isDesktop ? 0 : 24,
+                  paddingTop: isDesktop ? 5 : 0,
                 },
               }}
             >

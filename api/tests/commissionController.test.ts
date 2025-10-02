@@ -183,6 +183,7 @@ describe('commissionController settings endpoints', () => {
         reminderChannel: bookcarsTypes.CommissionReminderChannel.Email,
         emailTemplate: 'Updated email body',
         smsTemplate: 'Updated sms body',
+        bankTransferEnabled: false,
       },
     })
     const res = createMockResponse()

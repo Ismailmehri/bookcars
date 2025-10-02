@@ -187,8 +187,6 @@ const AgencyDetailsCommissions = () => {
   const [bankTransferDialogOpen, setBankTransferDialogOpen] = useState(false)
   const [downloadingRib, setDownloadingRib] = useState(false)
 
-  const canPay = Boolean(paymentOptions?.bankTransferEnabled && hasPaymentRibDetails(paymentOptions))
-
   const locale = LOCALE_MAP[user?.language || 'fr'] || 'fr-FR'
   const months = strings.MONTHS as string[]
   const commissionPaymentLabels = strings.COMMISSION_PAYMENT_LABELS as Record<bookcarsTypes.CommissionStatus, string>

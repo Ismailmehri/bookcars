@@ -305,6 +305,8 @@ const AgencyCommissions = () => {
         balance: selectedAgency.balance,
         threshold: data.summary.threshold,
         aboveThreshold: selectedAgency.aboveThreshold,
+        periodClosed: selectedAgency.periodClosed,
+        payable: selectedAgency.payable,
       }
     }
 
@@ -319,6 +321,8 @@ const AgencyCommissions = () => {
   const isAwaitingDetail = detailLoading && !detail
   const showDetailError = detailError && !detail
   const isBlocked = currentStatus === bookcarsTypes.AgencyCommissionStatus.Blocked
+  const isPeriodClosed = summary?.periodClosed ?? data?.summary?.periodClosed ?? false
+  const isPayable = summary?.payable ?? selectedAgency?.payable ?? false
 
   const getStatusChipColor = (status: bookcarsTypes.AgencyCommissionStatus) => {
     if (status === bookcarsTypes.AgencyCommissionStatus.Blocked) {
@@ -616,6 +620,9 @@ const AgencyCommissions = () => {
   }
 
   const handleOpenPaymentMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (!isPayable) {
+      return
+    }
     setPaymentMenuAnchorEl(event.currentTarget)
   }
 
@@ -697,7 +704,7 @@ const AgencyCommissions = () => {
   }
 
   const handleSendReminder = async () => {
-    if (!selectedAgency) {
+    if (!selectedAgency || !selectedAgency.payable) {
       return
     }
 
@@ -720,6 +727,9 @@ const AgencyCommissions = () => {
 
   const handleOpenPaymentDialog = (agency: bookcarsTypes.AgencyCommissionRow) => {
     setSelectedAgency(agency)
+    if (!agency.payable) {
+      return
+    }
     setPaymentAmount('')
     setPaymentDate('')
     setPaymentReference('')
@@ -1024,6 +1034,9 @@ const AgencyCommissions = () => {
                   variant="outlined"
                   label={`${strings.THRESHOLD_LABEL}: ${summaryData ? formatCurrency(summaryData.threshold) : '—'}`}
                 />
+                {summaryData && !summaryData.periodClosed && (
+                  <Chip size="small" color="warning" variant="outlined" label={strings.PERIOD_OPEN_BADGE} />
+                )}
               </Stack>
               <Stack direction="row" spacing={1} className="ac-header-actions">
                 <Button
@@ -1230,10 +1243,16 @@ const AgencyCommissions = () => {
                                   <SendIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title={strings.ACTION_MARK_PAID}>
-                                <IconButton size="small" onClick={() => handleOpenPaymentDialog(row)}>
-                                  <PaidIcon fontSize="small" />
-                                </IconButton>
+                              <Tooltip title={row.periodClosed ? strings.ACTION_MARK_PAID : strings.PERIOD_OPEN_TOOLTIP}>
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleOpenPaymentDialog(row)}
+                                    disabled={!row.payable}
+                                  >
+                                    <PaidIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
                               </Tooltip>
                               <Tooltip title={row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}>
                                 <IconButton size="small" onClick={() => handleToggleBlock(row)}>
@@ -1304,6 +1323,9 @@ const AgencyCommissions = () => {
                         </Typography>
                         <Box className="ac-drawer-meta">
                           <Chip size="small" color={getStatusChipColor(currentStatus)} label={mapStatusToLabel(currentStatus)} />
+                          {!isPeriodClosed && (
+                            <Chip size="small" color="warning" variant="outlined" label={strings.PERIOD_OPEN_BADGE} />
+                          )}
                           {summary?.aboveThreshold && (
                             <Chip size="small" color="warning" variant="outlined" label={strings.DRAWER_SUMMARY_ABOVE_THRESHOLD} />
                           )}
@@ -1382,6 +1404,9 @@ const AgencyCommissions = () => {
                             {summary.aboveThreshold && (
                               <Chip size="small" color="warning" className="ac-summary-chip" label={strings.DRAWER_SUMMARY_ABOVE_THRESHOLD} />
                             )}
+                            {!summary.periodClosed && (
+                              <Chip size="small" color="warning" className="ac-summary-chip" label={strings.PERIOD_OPEN_BADGE} />
+                            )}
                           </Paper>
                         </Box>
                       </Box>
@@ -1392,21 +1417,35 @@ const AgencyCommissions = () => {
 
                   <Box className="ac-section">
                     <Typography variant="subtitle1">{strings.DRAWER_ACTIONS}</Typography>
-                    <Box className="ac-actions">
-                      <Button
-                        variant="contained"
-                        color="warning"
-                        startIcon={<PaymentIcon />}
-                        onClick={handleOpenPaymentMenu}
-                      >
-                        {strings.DRAWER_ACTION_PAY}
-                      </Button>
-                      <Button variant="contained" startIcon={<SendIcon />} onClick={() => selectedAgency && handleOpenReminder(selectedAgency)}>
-                        {strings.DRAWER_ACTION_REMIND}
-                      </Button>
-                      <Button variant="outlined" startIcon={<PaidIcon />} onClick={() => selectedAgency && handleOpenPaymentDialog(selectedAgency)}>
-                        {strings.DRAWER_ACTION_PAYMENT}
-                      </Button>
+                  <Box className="ac-actions">
+                    <Tooltip title={isPayable ? strings.DRAWER_ACTION_PAY : strings.PERIOD_OPEN_TOOLTIP}>
+                      <span>
+                        <Button
+                          variant="contained"
+                          color="warning"
+                          startIcon={<PaymentIcon />}
+                          onClick={handleOpenPaymentMenu}
+                          disabled={!isPayable}
+                        >
+                          {strings.DRAWER_ACTION_PAY}
+                        </Button>
+                      </span>
+                    </Tooltip>
+                    <Button variant="contained" startIcon={<SendIcon />} onClick={() => selectedAgency && handleOpenReminder(selectedAgency)}>
+                      {strings.DRAWER_ACTION_REMIND}
+                    </Button>
+                    <Tooltip title={isPayable ? strings.DRAWER_ACTION_PAYMENT : strings.PERIOD_OPEN_TOOLTIP}>
+                      <span>
+                        <Button
+                          variant="outlined"
+                          startIcon={<PaidIcon />}
+                          onClick={() => selectedAgency && handleOpenPaymentDialog(selectedAgency)}
+                          disabled={!isPayable}
+                        >
+                          {strings.DRAWER_ACTION_PAYMENT}
+                        </Button>
+                      </span>
+                    </Tooltip>
                       <Button variant="outlined" startIcon={<NoteAddIcon />} onClick={() => selectedAgency && handleOpenNoteDialog(selectedAgency)}>
                         {strings.DRAWER_ACTION_NOTE}
                       </Button>

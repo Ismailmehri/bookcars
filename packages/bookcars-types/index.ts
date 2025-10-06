@@ -208,6 +208,8 @@ export interface AgencyCommissionRow {
   lastReminder?: AgencyCommissionReminderInfo
   status: AgencyCommissionStatus
   aboveThreshold: boolean
+  periodClosed: boolean
+  payable: boolean
 }
 
 export interface AgencyCommissionSummary {
@@ -222,6 +224,7 @@ export interface AgencyCommissionSummary {
   net?: number
   reservations?: number
   commissionPercentage?: number
+  periodClosed: boolean
 }
 
 export interface AgencyCommissionListResponse {
@@ -267,6 +270,8 @@ export interface AgencyCommissionMonthlySummary {
   net: number
   reservations: number
   commissionPercentage: number
+  periodClosed: boolean
+  payable: boolean
 }
 
 export interface AgencyCommissionBookingsResponse {
@@ -354,6 +359,8 @@ export interface AgencyCommissionDetailSummary {
   balance: number
   threshold: number
   aboveThreshold: boolean
+  periodClosed: boolean
+  payable: boolean
 }
 
 export interface AgencyCommissionLogEntry {

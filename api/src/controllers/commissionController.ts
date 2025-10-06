@@ -264,6 +264,7 @@ const computeCommissionData = async (
   const { start, end } = getPeriodBoundaries(year, month)
   const config = getCommissionConfig()
   const effectiveStart = start.getTime() < config.effectiveDate.getTime() ? config.effectiveDate : start
+  const periodClosed = end.getTime() <= Date.now()
 
   if (effectiveStart.getTime() >= end.getTime()) {
     return {
@@ -273,6 +274,7 @@ const computeCommissionData = async (
         commissionCollected: 0,
         agenciesAboveThreshold: 0,
         threshold: config.monthlyThreshold,
+        periodClosed,
       },
       rows: [],
       total: 0,
@@ -380,6 +382,7 @@ const computeCommissionData = async (
     const aboveThreshold = commissionDue >= config.monthlyThreshold
     const state = stateMap.get(supplierId)
     const blocked = (state && state.blocked) || supplier.blacklisted || false
+    const payable = periodClosed && balance > 0
 
     totalGross += grossTurnover
     totalDue += commissionDue
@@ -402,6 +405,8 @@ const computeCommissionData = async (
       lastReminder: buildReminderInfo(lastReminder.get(supplierId)),
       status,
       aboveThreshold,
+      periodClosed,
+      payable,
     })
   })
 
@@ -439,6 +444,7 @@ const computeCommissionData = async (
       commissionCollected: normalizeNumber(totalCollected),
       agenciesAboveThreshold,
       threshold: config.monthlyThreshold,
+      periodClosed,
     },
     rows: paginatedRows,
     total,
@@ -615,6 +621,7 @@ const loadAgencyCommissionDetail = async (
   const config = getCommissionConfig()
   const { start, end } = getPeriodBoundaries(year, month)
   const effectiveStart = start.getTime() < config.effectiveDate.getTime() ? config.effectiveDate : start
+  const periodClosed = end.getTime() <= Date.now()
 
   const state = await AgencyCommissionState.findOne({ agency: supplierObjectId })
 
@@ -670,6 +677,7 @@ const loadAgencyCommissionDetail = async (
   const aboveThreshold = commissionDue >= config.monthlyThreshold
   const blocked = (state && state.blocked) || supplier.blacklisted || false
   const status = computeStatus(blocked, balance)
+  const payable = periodClosed && balance > 0
 
   const bookingInfos: bookcarsTypes.AgencyCommissionBookingInfo[] = []
   let remainingCommission = commissionCollected
@@ -718,6 +726,8 @@ const loadAgencyCommissionDetail = async (
       balance: normalizeNumber(balance),
       threshold: config.monthlyThreshold,
       aboveThreshold,
+      periodClosed,
+      payable,
     },
     logs,
     bookings: bookingInfos,
@@ -763,6 +773,7 @@ export const getAgencyCommissionBookings = async (req: Request, res: Response) =
     const { start, end } = getPeriodBoundaries(parsedYear, month)
     const config = getCommissionConfig()
     const effectiveStart = start.getTime() < config.effectiveDate.getTime() ? config.effectiveDate : start
+    const periodClosed = end.getTime() <= Date.now()
 
     const shouldLoadBookings = effectiveStart.getTime() < end.getTime()
 
@@ -870,6 +881,8 @@ export const getAgencyCommissionBookings = async (req: Request, res: Response) =
       net: 0,
       reservations: 0,
       commissionPercentage: config.rate,
+      periodClosed,
+      payable: false,
     }
 
     filteredRows.forEach((row) => {
@@ -886,6 +899,7 @@ export const getAgencyCommissionBookings = async (req: Request, res: Response) =
     summary.grossAll = normalizeNumber(summary.grossAll)
     summary.commission = normalizeNumber(summary.commission)
     summary.net = normalizeNumber(summary.net)
+    summary.payable = periodClosed && summary.commission > 0
 
     return res.json({
       bookings: filteredRows,

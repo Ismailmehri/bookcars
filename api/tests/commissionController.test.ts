@@ -340,6 +340,7 @@ describe('commissionController monthly commission endpoints', () => {
     const paymentDate = new Date('2024-06-20T10:00:00.000Z')
     const reminderDate = new Date('2024-06-10T08:00:00.000Z')
     setupCommissionDataMocks(paymentDate, reminderDate)
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(new Date('2024-07-05T00:00:00.000Z').getTime())
 
     const req = await createRequestWithToken(adminId, {
       params: { page: '1', size: '10' },
@@ -364,6 +365,7 @@ describe('commissionController monthly commission endpoints', () => {
       commissionCollected: 150,
       agenciesAboveThreshold: 1,
       threshold: 100,
+      periodClosed: true,
     })
     expect(payload.total).toBe(1)
     expect(payload.page).toBe(1)
@@ -385,12 +387,42 @@ describe('commissionController monthly commission endpoints', () => {
     expect(firstAgency.balance).toBe(50)
     expect(firstAgency.status).toBe(bookcarsTypes.AgencyCommissionStatus.NeedsFollowUp)
     expect(firstAgency.aboveThreshold).toBe(true)
+    expect(firstAgency.periodClosed).toBe(true)
+    expect(firstAgency.payable).toBe(true)
     expect(firstAgency.lastPayment).toEqual(paymentDate)
     expect(firstAgency.lastReminder).toEqual({
       date: reminderDate,
       channel: bookcarsTypes.CommissionReminderChannel.Sms,
       success: true,
     })
+    nowSpy.mockRestore()
+  })
+
+  it('should report commissions as not payable when the month is still open', async () => {
+    setupAdminLookup()
+    const paymentDate = new Date('2024-06-20T10:00:00.000Z')
+    const reminderDate = new Date('2024-06-10T08:00:00.000Z')
+    setupCommissionDataMocks(paymentDate, reminderDate)
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(new Date('2024-06-25T00:00:00.000Z').getTime())
+
+    const req = await createRequestWithToken(adminId, {
+      params: { page: '1', size: '10' },
+      body: { month: 6, year: 2024, search: '', status: 'all' },
+    })
+    const res = createMockResponse()
+
+    await getMonthlyCommissions(req, res)
+
+    expect(res.json).toHaveBeenCalledTimes(1)
+    const payload = res.json.mock.calls[0][0] as {
+      summary: bookcarsTypes.AgencyCommissionSummary
+      agencies: bookcarsTypes.AgencyCommissionRow[]
+    }
+
+    expect(payload.summary.periodClosed).toBe(false)
+    expect(payload.agencies[0].periodClosed).toBe(false)
+    expect(payload.agencies[0].payable).toBe(false)
+    nowSpy.mockRestore()
   })
 
   it('should export commission data as CSV', async () => {
@@ -471,6 +503,8 @@ describe('commissionController monthly commission endpoints', () => {
       return Promise.resolve(null)
     })
 
+    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(new Date('2024-03-05T00:00:00.000Z').getTime())
+
     const januaryReq = await createRequestWithToken(supplierId, {
       body: { month: 0, year: 2024 },
     })
@@ -492,6 +526,8 @@ describe('commissionController monthly commission endpoints', () => {
       net: 270,
       reservations: 1,
       commissionPercentage: 10,
+      periodClosed: true,
+      payable: true,
     })
 
     const februaryReq = await createRequestWithToken(supplierId, {
@@ -515,6 +551,8 @@ describe('commissionController monthly commission endpoints', () => {
       net: 0,
       reservations: 0,
       commissionPercentage: 10,
+      periodClosed: true,
+      payable: false,
     })
 
     expect(filters).toHaveLength(2)
@@ -526,5 +564,6 @@ describe('commissionController monthly commission endpoints', () => {
     expect(januaryFilter.from.$lt).toEqual(new Date('2024-02-01T00:00:00.000Z'))
     expect(februaryFilter.from.$gte).toEqual(new Date('2024-02-01T00:00:00.000Z'))
     expect(februaryFilter.from.$lt).toEqual(new Date('2024-03-01T00:00:00.000Z'))
+    nowSpy.mockRestore()
   })
 })

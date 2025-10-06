@@ -190,6 +190,8 @@ const AgencyDetailsCommissions = () => {
   const locale = LOCALE_MAP[user?.language || 'fr'] || 'fr-FR'
   const months = strings.MONTHS as string[]
   const commissionPaymentLabels = strings.COMMISSION_PAYMENT_LABELS as Record<bookcarsTypes.CommissionStatus, string>
+  const periodClosed = summary?.periodClosed ?? false
+  const payable = summary?.payable ?? false
 
   // Pas besoin de dépendance "language" ici -> évite l'avertissement react-hooks/exhaustive-deps
   const bookingStatusOptions = useMemo(() => helper.getBookingStatuses(), [])
@@ -292,7 +294,7 @@ const AgencyDetailsCommissions = () => {
   const computedSummary = useMemo(() => {
     if (summary) return summary
 
-    return data.reduce<bookcarsTypes.AgencyCommissionMonthlySummary>(
+    const aggregated = data.reduce<bookcarsTypes.AgencyCommissionMonthlySummary>(
       (acc, booking) => {
         const isBillable = hasBillableCommission(booking.bookingStatus)
 
@@ -314,9 +316,15 @@ const AgencyDetailsCommissions = () => {
         net: 0,
         reservations: 0,
         commissionPercentage: env.COMMISSION_RATE,
+        periodClosed,
+        payable: false,
       }
     )
-  }, [data, summary])
+
+    aggregated.payable = aggregated.periodClosed && aggregated.commission > 0
+
+    return aggregated
+  }, [data, summary, periodClosed])
 
   const metrics = useMemo(
     () => ({
@@ -620,6 +628,9 @@ const AgencyDetailsCommissions = () => {
   }
 
   const handleOpenPayDialog = async () => {
+    if (!payable) {
+      return
+    }
     try {
       const options = paymentOptions || (await refreshPaymentOptions())
       if (!options.bankTransferEnabled) {
@@ -697,12 +708,15 @@ const AgencyDetailsCommissions = () => {
                   <Typography variant="h5" fontWeight={800} noWrap sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {strings.HEADER}
                   </Typography>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={0.5}>
-                    <Chip size="small" variant="outlined" label={`${months[month]} ${year}`} />
-                    {monthlyCommissionStatus && (
-                      <Chip
-                        size="small"
-                        color={monthlyCommissionStatus.color}
+                <Stack direction="row" spacing={1} flexWrap="wrap" rowGap={0.5}>
+                  <Chip size="small" variant="outlined" label={`${months[month]} ${year}`} />
+                  {!periodClosed && (
+                    <Chip size="small" color="warning" variant="outlined" label={strings.MONTH_OPEN_BADGE} />
+                  )}
+                  {monthlyCommissionStatus && (
+                    <Chip
+                      size="small"
+                      color={monthlyCommissionStatus.color}
                         variant={monthlyCommissionStatus.variant}
                         label={strings.COMMISSION_STATUS_HEADER.replace('{value}', monthlyCommissionStatus.label)}
                         sx={{ fontWeight: 600, '& .MuiChip-label': { fontWeight: 600 } }}
@@ -724,11 +738,11 @@ const AgencyDetailsCommissions = () => {
                   {strings.FILTER_BUTTON}
                 </Button>
                 <Stack direction="row" spacing={1}>
-                  <Tooltip title={strings.PAY_BUTTON}>
+                  <Tooltip title={payable ? strings.PAY_BUTTON : strings.PAY_DISABLED_PERIOD_OPEN}>
                     <span>
                       <IconButton
                         onClick={handleOpenPayDialog}
-                        disabled={paymentOptionsLoading}
+                        disabled={paymentOptionsLoading || !payable}
                         aria-label={strings.PAY_BUTTON}
                         sx={{
                           width: 48,
@@ -784,27 +798,34 @@ const AgencyDetailsCommissions = () => {
                   {strings.HEADER}
                 </Typography>
                 <Chip size="small" variant="outlined" label={`${strings.PERIOD_LABEL} ${months[month]} ${year}`} />
+                {!periodClosed && (
+                  <Chip size="small" color="warning" variant="outlined" label={strings.MONTH_OPEN_BADGE} />
+                )}
               </Stack>
               <Stack direction="row" spacing={1}>
-                <Button
-                  variant="contained"
-                  color="warning"
-                  startIcon={paymentOptionsLoading ? <CircularProgress size={18} /> : <PaidOutlinedIcon />}
-                  onClick={handleOpenPayDialog}
-                  disabled={paymentOptionsLoading}
-                  sx={{
-                    backgroundColor: '#F79009',
-                    '&:hover': {
-                      backgroundColor: '#DC6803',
-                    },
-                    '&.Mui-disabled': {
-                      backgroundColor: '#FBC67B',
-                      color: '#fff',
-                    },
-                  }}
-                >
-                  {strings.PAY_BUTTON}
-                </Button>
+                <Tooltip title={payable ? strings.PAY_BUTTON : strings.PAY_DISABLED_PERIOD_OPEN}>
+                  <span>
+                    <Button
+                      variant="contained"
+                      color="warning"
+                      startIcon={paymentOptionsLoading ? <CircularProgress size={18} /> : <PaidOutlinedIcon />}
+                      onClick={handleOpenPayDialog}
+                      disabled={paymentOptionsLoading || !payable}
+                      sx={{
+                        backgroundColor: '#F79009',
+                        '&:hover': {
+                          backgroundColor: '#DC6803',
+                        },
+                        '&.Mui-disabled': {
+                          backgroundColor: '#FBC67B',
+                          color: '#fff',
+                        },
+                      }}
+                    >
+                      {strings.PAY_BUTTON}
+                    </Button>
+                  </span>
+                </Tooltip>
                 <Button
                   variant="outlined"
                   startIcon={<ReceiptLongIcon />}

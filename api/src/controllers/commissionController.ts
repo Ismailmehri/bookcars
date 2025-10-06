@@ -131,6 +131,179 @@ const sanitizeRibDetails = (details?: bookcarsTypes.CommissionRibDetails | null)
   return sanitized
 }
 
+const buildMonthKey = (year: number, month: number) => `${year}-${String(month).padStart(2, '0')}`
+
+type MonthlyEntry = {
+  year: number
+  month: number
+  reservations: number
+  grossTurnover: number
+  commissionDue: number
+}
+
+type LedgerComputation = {
+  carryOver: number
+  totalToPay: number
+  payable: boolean
+  carryOverItems: bookcarsTypes.AgencyCommissionCarryOverItem[]
+  currentEntry: MonthlyEntry
+  currentCollected: number
+  currentOutstanding: number
+}
+
+type MonthlyAggregationRecord = {
+  _id: { supplier: mongoose.Types.ObjectId; year: number; month: number }
+  reservations: number
+  grossTurnover: number
+  commissionDue: number
+}
+
+const computeLedgerContext = (
+  entries: MonthlyEntry[] | undefined,
+  payments: Map<string, number>,
+  year: number,
+  month: number,
+  threshold: number,
+): LedgerComputation => {
+  const normalizedEntries = entries ? [...entries] : []
+  let currentEntry = normalizedEntries.find((entry) => entry.year === year && entry.month === month)
+
+  if (!currentEntry) {
+    currentEntry = {
+      year,
+      month,
+      reservations: 0,
+      grossTurnover: 0,
+      commissionDue: 0,
+    }
+    normalizedEntries.push(currentEntry)
+  }
+
+  normalizedEntries.sort((a, b) => (a.year - b.year) || (a.month - b.month))
+
+  const carryOverItems: bookcarsTypes.AgencyCommissionCarryOverItem[] = []
+  let carryOver = 0
+  let credit = 0
+  let currentCollected = 0
+  let netCurrent = 0
+
+  normalizedEntries.forEach((entry) => {
+    const key = buildMonthKey(entry.year, entry.month)
+    const collected = normalizeNumber(payments.get(key) || 0)
+    const net = normalizeNumber(entry.commissionDue - collected)
+
+    const isCurrent = entry.year === year && entry.month === month
+    const isBeforeCurrent = entry.year < year || (entry.year === year && entry.month < month)
+
+    if (isBeforeCurrent) {
+      const adjusted = net - credit
+      if (adjusted > 0) {
+        const normalizedAdjusted = normalizeNumber(adjusted)
+        carryOver += normalizedAdjusted
+        carryOverItems.push({ year: entry.year, month: entry.month, amount: normalizedAdjusted })
+        credit = 0
+      } else {
+        credit = normalizeNumber(-adjusted)
+      }
+    } else if (isCurrent) {
+      currentCollected = collected
+      netCurrent = net
+    }
+  })
+
+  const adjustedCurrent = netCurrent - credit
+  const currentOutstanding = Math.max(adjustedCurrent, 0)
+  const totalToPay = carryOver + currentOutstanding
+  const payable = totalToPay >= threshold
+
+  return {
+    carryOver: normalizeNumber(carryOver),
+    totalToPay: normalizeNumber(totalToPay),
+    payable,
+    carryOverItems,
+    currentEntry,
+    currentCollected: normalizeNumber(currentCollected),
+    currentOutstanding: normalizeNumber(currentOutstanding),
+  }
+}
+
+const loadAgencyLedger = async (
+  supplierObjectId: mongoose.Types.ObjectId,
+  year: number,
+  month: number,
+  config: ReturnType<typeof getCommissionConfig>,
+): Promise<LedgerComputation> => {
+  const { end } = getPeriodBoundaries(year, month)
+
+  if (config.effectiveDate.getTime() >= end.getTime()) {
+    return computeLedgerContext([], new Map(), year, month, config.monthlyThreshold)
+  }
+
+  const aggregation = await Booking.aggregate<MonthlyAggregationRecord>([
+    {
+      $match: {
+        supplier: supplierObjectId,
+        expireAt: null,
+        from: { $gte: config.effectiveDate, $lt: end },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          supplier: '$supplier',
+          year: { $year: { date: '$from', timezone: 'UTC' } },
+          month: { $month: { date: '$from', timezone: 'UTC' } },
+        },
+        reservations: { $sum: 1 },
+        grossTurnover: {
+          $sum: {
+            $cond: [
+              { $in: ['$status', COMMISSION_ELIGIBLE_STATUSES] },
+              { $ifNull: ['$price', 0] },
+              0,
+            ],
+          },
+        },
+        commissionDue: {
+          $sum: {
+            $cond: [
+              { $in: ['$status', COMMISSION_ELIGIBLE_STATUSES] },
+              { $ifNull: ['$commissionTotal', 0] },
+              0,
+            ],
+          },
+        },
+      },
+    },
+  ])
+
+  const entries = aggregation.map<MonthlyEntry>((item) => ({
+    year: item._id.year,
+    month: item._id.month,
+    reservations: item.reservations || 0,
+    grossTurnover: normalizeNumber(item.grossTurnover),
+    commissionDue: normalizeNumber(item.commissionDue),
+  }))
+
+  const events = await AgencyCommissionEvent.find({
+    agency: supplierObjectId,
+    $or: [
+      { year: { $lt: year } },
+      { year, month: { $lte: month } },
+    ],
+  }).lean<CommissionEventRecord[]>()
+
+  const payments = new Map<string, number>()
+  events.forEach((event) => {
+    if (event.type === bookcarsTypes.AgencyCommissionEventType.Payment) {
+      const key = buildMonthKey(event.year, event.month)
+      payments.set(key, (payments.get(key) || 0) + (event.amount || 0))
+    }
+  })
+
+  return computeLedgerContext(entries, payments, year, month, config.monthlyThreshold)
+}
+
 const validateRibDetails = (details?: bookcarsTypes.CommissionRibDetails | null): SanitizedRibDetails | null => {
   const sanitized = sanitizeRibDetails(details)
   if (!sanitized) {
@@ -261,11 +434,10 @@ const computeCommissionData = async (
   page: number,
   size: number,
 ): Promise<CommissionComputationResult> => {
-  const { start, end } = getPeriodBoundaries(year, month)
+  const { end } = getPeriodBoundaries(year, month)
   const config = getCommissionConfig()
-  const effectiveStart = start.getTime() < config.effectiveDate.getTime() ? config.effectiveDate : start
 
-  if (effectiveStart.getTime() >= end.getTime()) {
+  if (config.effectiveDate.getTime() >= end.getTime()) {
     return {
       summary: {
         grossTurnover: 0,
@@ -273,22 +445,29 @@ const computeCommissionData = async (
         commissionCollected: 0,
         agenciesAboveThreshold: 0,
         threshold: config.monthlyThreshold,
+        carryOverTotal: 0,
+        payableTotal: 0,
+        agenciesUnderThreshold: 0,
       },
       rows: [],
       total: 0,
     }
   }
 
-  const bookingsAggregation = await Booking.aggregate([
+  const monthlyAggregation = await Booking.aggregate<MonthlyAggregationRecord>([
     {
       $match: {
         expireAt: null,
-        from: { $gte: effectiveStart, $lt: end },
+        from: { $gte: config.effectiveDate, $lt: end },
       },
     },
     {
       $group: {
-        _id: '$supplier',
+        _id: {
+          supplier: '$supplier',
+          year: { $year: { date: '$from', timezone: 'UTC' } },
+          month: { $month: { date: '$from', timezone: 'UTC' } },
+        },
         reservations: { $sum: 1 },
         grossTurnover: {
           $sum: {
@@ -312,13 +491,53 @@ const computeCommissionData = async (
     },
   ])
 
-  const supplierIds = bookingsAggregation.map((item) => item._id as mongoose.Types.ObjectId)
+  const entryMap = new Map<string, MonthlyEntry[]>()
+
+  monthlyAggregation.forEach((item) => {
+    const supplierId = item._id.supplier.toString()
+    const entries = entryMap.get(supplierId)
+    const entry: MonthlyEntry = {
+      year: item._id.year,
+      month: item._id.month,
+      reservations: item.reservations || 0,
+      grossTurnover: normalizeNumber(item.grossTurnover),
+      commissionDue: normalizeNumber(item.commissionDue),
+    }
+
+    if (entries) {
+      entries.push(entry)
+    } else {
+      entryMap.set(supplierId, [entry])
+    }
+  })
+
+  const supplierIds = Array.from(entryMap.keys()).map((id) => new mongoose.Types.ObjectId(id))
+
+  if (supplierIds.length === 0) {
+    return {
+      summary: {
+        grossTurnover: 0,
+        commissionDue: 0,
+        commissionCollected: 0,
+        agenciesAboveThreshold: 0,
+        threshold: config.monthlyThreshold,
+        carryOverTotal: 0,
+        payableTotal: 0,
+        agenciesUnderThreshold: 0,
+      },
+      rows: [],
+      total: 0,
+    }
+  }
+
   const suppliers = await User.find({ _id: { $in: supplierIds } })
   const states = await AgencyCommissionState.find({ agency: { $in: supplierIds } })
   const events = await AgencyCommissionEvent.find({
     agency: { $in: supplierIds },
-    month,
-    year,
+    $or: [
+      { year: { $lt: year } },
+      { year, month: { $lte: month } },
+    ],
   })
     .sort({ createdAt: 1 })
     .lean<CommissionEventRecord[]>()
@@ -336,7 +555,7 @@ const computeCommissionData = async (
     stateMap.set(state.agency.toString(), state)
   })
 
-  const paymentTotals = new Map<string, number>()
+  const paymentsByAgency = new Map<string, Map<string, number>>()
   const lastPayment = new Map<string, Date>()
   const lastReminder = new Map<string, CommissionEventRecord>()
 
@@ -344,8 +563,13 @@ const computeCommissionData = async (
     const agencyId = event.agency.toString()
     if (event.type === bookcarsTypes.AgencyCommissionEventType.Payment) {
       const amount = event.amount || 0
-      const total = paymentTotals.get(agencyId) || 0
-      paymentTotals.set(agencyId, total + amount)
+      let agencyPayments = paymentsByAgency.get(agencyId)
+      if (!agencyPayments) {
+        agencyPayments = new Map<string, number>()
+        paymentsByAgency.set(agencyId, agencyPayments)
+      }
+      const monthKey = buildMonthKey(event.year, event.month)
+      agencyPayments.set(monthKey, (agencyPayments.get(monthKey) || 0) + amount)
       const paymentDate = event.paymentDate || event.createdAt
       const currentLastPayment = lastPayment.get(agencyId)
       if (!currentLastPayment || (paymentDate && paymentDate > currentLastPayment)) {
@@ -364,36 +588,42 @@ const computeCommissionData = async (
   let totalGross = 0
   let totalDue = 0
   let totalCollected = 0
+  let totalCarryOver = 0
+  let payableTotal = 0
   let agenciesAboveThreshold = 0
 
-  bookingsAggregation.forEach((item) => {
-    const supplierId = (item._id as mongoose.Types.ObjectId).toString()
+  entryMap.forEach((entries, supplierId) => {
     const supplier = supplierMap.get(supplierId)
     if (!supplier) {
       return
     }
 
-    const grossTurnover = normalizeNumber(item.grossTurnover)
-    const commissionDue = normalizeNumber(item.commissionDue)
-    const collected = normalizeNumber(paymentTotals.get(supplierId) || 0)
-    const balance = commissionDue - collected
-    const aboveThreshold = commissionDue >= config.monthlyThreshold
+    const agencyPayments = paymentsByAgency.get(supplierId) || new Map<string, number>()
+    const ledger = computeLedgerContext(entries, agencyPayments, year, month, config.monthlyThreshold)
     const state = stateMap.get(supplierId)
     const blocked = (state && state.blocked) || supplier.blacklisted || false
+
+    const grossTurnover = normalizeNumber(ledger.currentEntry.grossTurnover)
+    const commissionDue = normalizeNumber(ledger.currentEntry.commissionDue)
+    const collected = normalizeNumber(ledger.currentCollected)
+    const balance = ledger.totalToPay
+    const aboveThreshold = ledger.payable
 
     totalGross += grossTurnover
     totalDue += commissionDue
     totalCollected += collected
+    totalCarryOver += ledger.carryOver
 
     if (aboveThreshold) {
       agenciesAboveThreshold += 1
+      payableTotal += ledger.totalToPay
     }
 
     const status = computeStatus(blocked, balance)
 
     rows.push({
       agency: toAgency(supplier),
-      reservations: item.reservations as number,
+      reservations: ledger.currentEntry.reservations,
       grossTurnover,
       commissionDue,
       commissionCollected: collected,
@@ -402,6 +632,9 @@ const computeCommissionData = async (
       lastReminder: buildReminderInfo(lastReminder.get(supplierId)),
       status,
       aboveThreshold,
+      carryOver: normalizeNumber(ledger.carryOver),
+      totalToPay: normalizeNumber(ledger.totalToPay),
+      payable: ledger.payable,
     })
   })
 
@@ -423,14 +656,20 @@ const computeCommissionData = async (
   }
 
   if (filters.aboveThreshold) {
-    filteredRows = filteredRows.filter((row) => row.aboveThreshold)
+    filteredRows = filteredRows.filter((row) => row.payable)
   }
 
-  filteredRows.sort((a, b) => b.commissionDue - a.commissionDue || a.agency.name.localeCompare(b.agency.name))
+  if (filters.withCarryOver) {
+    filteredRows = filteredRows.filter((row) => row.carryOver > 0)
+  }
+
+  filteredRows.sort((a, b) => b.totalToPay - a.totalToPay || a.agency.name.localeCompare(b.agency.name))
 
   const total = filteredRows.length
   const offset = (page - 1) * size
   const paginatedRows = size > 0 ? filteredRows.slice(offset, offset + size) : filteredRows
+
+  const agenciesUnderThreshold = Math.max(rows.length - agenciesAboveThreshold, 0)
 
   return {
     summary: {
@@ -439,6 +678,9 @@ const computeCommissionData = async (
       commissionCollected: normalizeNumber(totalCollected),
       agenciesAboveThreshold,
       threshold: config.monthlyThreshold,
+      carryOverTotal: normalizeNumber(totalCarryOver),
+      payableTotal: normalizeNumber(payableTotal),
+      agenciesUnderThreshold,
     },
     rows: paginatedRows,
     total,
@@ -548,7 +790,18 @@ export const exportMonthlyCommissions = async (req: Request, res: Response) => {
       'Statut',
       'Dernière relance',
       'Dernier paiement',
+      'Reliquat (TND)',
+      'Total à payer (TND)',
+      'Payable',
+      'agencyName',
+      'month',
+      'commissionMonth',
+      'carryOver',
+      'totalDue',
+      'payableFlag',
     ]
+
+    const monthLabel = `${body.year}-${String(body.month).padStart(2, '0')}`
 
     const rowsData = rows.map((row) => {
       const reminder = row.lastReminder
@@ -556,6 +809,8 @@ export const exportMonthlyCommissions = async (req: Request, res: Response) => {
         : ''
 
       const lastPayment = row.lastPayment ? formatDate(row.lastPayment) : ''
+
+      const commissionMonthNet = Math.max(row.totalToPay - row.carryOver, 0)
 
       let statusLabel = 'Active'
       if (row.status === bookcarsTypes.AgencyCommissionStatus.Blocked) {
@@ -576,13 +831,49 @@ export const exportMonthlyCommissions = async (req: Request, res: Response) => {
         statusLabel,
         reminder,
         lastPayment,
+        row.carryOver,
+        row.totalToPay,
+        row.payable ? 'Oui' : 'Non',
+        row.agency.name,
+        monthLabel,
+        commissionMonthNet,
+        row.carryOver,
+        row.totalToPay,
+        row.payable ? 'true' : 'false',
       ]
     })
+
+    const totalCarryOver = rows.reduce((acc, row) => acc + row.carryOver, 0)
+    const totalToPay = rows.reduce((acc, row) => acc + row.totalToPay, 0)
+    const totalCommissionMonth = rows.reduce((acc, row) => acc + Math.max(row.totalToPay - row.carryOver, 0), 0)
+    const payableCount = rows.reduce((acc, row) => acc + (row.payable ? 1 : 0), 0)
+    const payableRatio = rows.length === 0 ? '0/0' : `${payableCount}/${rows.length}`
 
     const csvContent = [
       headers.map(formatCsvCell).join(CSV_SEPARATOR),
       ...rowsData.map((line) => line.map(formatCsvCell).join(CSV_SEPARATOR)),
-      ['Totaux', '', '', '', summary.grossTurnover, summary.commissionDue, summary.commissionCollected, summary.commissionDue - summary.commissionCollected, '', '', ''].map(formatCsvCell).join(CSV_SEPARATOR),
+      [
+        'Totaux',
+        '',
+        '',
+        '',
+        summary.grossTurnover,
+        summary.commissionDue,
+        summary.commissionCollected,
+        summary.commissionDue - summary.commissionCollected,
+        '',
+        '',
+        '',
+        totalCarryOver,
+        totalToPay,
+        payableRatio,
+        'TOTAL',
+        monthLabel,
+        totalCommissionMonth,
+        totalCarryOver,
+        totalToPay,
+        '',
+      ].map(formatCsvCell).join(CSV_SEPARATOR),
     ].join('\n')
 
     const filename = `commissions_${body.year}_${String(body.month).padStart(2, '0')}.csv`
@@ -647,32 +938,24 @@ const loadAgencyCommissionDetail = async (
     return fromTime >= effectiveStartTime && fromTime < endTime
   })
 
-  let grossTurnover = 0
-  let commissionDue = 0
+  const ledger = await loadAgencyLedger(supplierObjectId, year, month, config)
 
-  periodBookings.forEach((booking) => {
-    const bookingStatus = booking.status as bookcarsTypes.BookingStatus | undefined
-    if (isCommissionEligibleStatus(bookingStatus)) {
-      grossTurnover += booking.price || 0
-      commissionDue += booking.commissionTotal || 0
-    }
-  })
-
-  let commissionCollected = 0
-
-  events.forEach((event) => {
-    if (event.type === bookcarsTypes.AgencyCommissionEventType.Payment) {
-      commissionCollected += event.amount || 0
-    }
-  })
-
-  const balance = commissionDue - commissionCollected
-  const aboveThreshold = commissionDue >= config.monthlyThreshold
+  const grossTurnover = normalizeNumber(ledger.currentEntry.grossTurnover)
+  const commissionDue = normalizeNumber(ledger.currentEntry.commissionDue)
+  const commissionCollected = normalizeNumber(ledger.currentCollected)
+  const balance = ledger.totalToPay
+  const aboveThreshold = ledger.payable
   const blocked = (state && state.blocked) || supplier.blacklisted || false
   const status = computeStatus(blocked, balance)
 
+  const appliedCredit = Math.max(
+    ledger.currentEntry.commissionDue - ledger.currentCollected - ledger.currentOutstanding,
+    0,
+  )
+
+  let remainingCommission = normalizeNumber(ledger.currentCollected + appliedCredit)
+
   const bookingInfos: bookcarsTypes.AgencyCommissionBookingInfo[] = []
-  let remainingCommission = commissionCollected
 
   periodBookings.forEach((booking) => {
     const bookingStatus = booking.status as bookcarsTypes.BookingStatus | undefined
@@ -711,18 +994,22 @@ const loadAgencyCommissionDetail = async (
   return {
     agency: { ...toAgency(supplier), status, blocked },
     summary: {
-      reservations: periodBookings.length,
+      reservations: ledger.currentEntry.reservations,
       grossTurnover: normalizeNumber(grossTurnover),
       commissionDue: normalizeNumber(commissionDue),
       commissionCollected: normalizeNumber(commissionCollected),
       balance: normalizeNumber(balance),
       threshold: config.monthlyThreshold,
       aboveThreshold,
+      carryOver: normalizeNumber(ledger.carryOver),
+      totalToPay: normalizeNumber(ledger.totalToPay),
+      payable: ledger.payable,
     },
     logs,
     bookings: bookingInfos,
     month,
     year,
+    carryOverItems: ledger.carryOverItems,
   }
 }
 
@@ -786,20 +1073,14 @@ export const getAgencyCommissionBookings = async (req: Request, res: Response) =
       return fromTime >= effectiveStartTime && fromTime < endTime
     })
 
-    const events = await AgencyCommissionEvent.find({
-      agency: supplierObjectId,
-      month,
-      year: parsedYear,
-    }).lean()
+    const ledger = await loadAgencyLedger(supplierObjectId, parsedYear, month, config)
 
-    let collected = 0
-    events.forEach((event) => {
-      if (event.type === bookcarsTypes.AgencyCommissionEventType.Payment) {
-        collected += event.amount || 0
-      }
-    })
+    const appliedCredit = Math.max(
+      ledger.currentEntry.commissionDue - ledger.currentCollected - ledger.currentOutstanding,
+      0,
+    )
 
-    let remainingCommission = normalizeNumber(collected)
+    let remainingCommission = normalizeNumber(ledger.currentCollected + appliedCredit)
     const msPerDay = 24 * 60 * 60 * 1000
     const rows: bookcarsTypes.AgencyCommissionBooking[] = []
 
@@ -886,6 +1167,11 @@ export const getAgencyCommissionBookings = async (req: Request, res: Response) =
     summary.grossAll = normalizeNumber(summary.grossAll)
     summary.commission = normalizeNumber(summary.commission)
     summary.net = normalizeNumber(summary.net)
+    summary.carryOver = normalizeNumber(ledger.carryOver)
+    summary.totalToPay = normalizeNumber(ledger.totalToPay)
+    summary.payable = ledger.payable
+    summary.threshold = config.monthlyThreshold
+    summary.carryOverItems = ledger.carryOverItems
 
     return res.json({
       bookings: filteredRows,
@@ -1113,28 +1399,44 @@ const streamCommissionInvoice = async (
     })
   }
 
-  const totalBoxHeight = 55
+  const carryOverAmount = Math.max(detail.summary.carryOver || 0, 0)
+  const totalToPayAmount = Math.max(detail.summary.totalToPay || detail.summary.balance || 0, 0)
+  const commissionMonthAmount = Math.max(totalToPayAmount - carryOverAmount, 0)
+
+  const formattedCarryOver = formatCurrency(carryOverAmount)
+  const formattedMonthDue = formatCurrency(commissionMonthAmount)
+  const formattedTotal = formatCurrency(totalToPayAmount)
+
+  const totalBoxHeight = 80
   doc.y = tableY + 20
   if (doc.y + totalBoxHeight > getPageBottom()) {
     doc.addPage()
     doc.y = doc.page.margins.top
   }
-  const totalCommissionDue = Math.max(detail.summary.balance, 0)
-  const formattedTotal = formatCurrency(totalCommissionDue)
 
   doc.save()
   doc.fillColor('#E6F0FF').rect(tableX, doc.y, tableWidth, totalBoxHeight).fill()
   doc.restore()
 
-  doc.font('Helvetica-Bold').fontSize(12).fillColor('#000000').text(
-    `TOTAL COMMISSION À PAYER : ${formattedTotal} TND`,
+  doc.font('Helvetica').fontSize(11).fillColor('#000000').text(
+    `Reliquat antérieur : ${formattedCarryOver} TND`,
     tableX + 15,
-    doc.y + 15,
+    doc.y + 12,
+  )
+  doc.text(
+    `Commission du mois : ${formattedMonthDue} TND`,
+    tableX + 15,
+    doc.y + 28,
+  )
+  doc.font('Helvetica-Bold').fontSize(13).fillColor('#000000').text(
+    `Total à payer : ${formattedTotal} TND`,
+    tableX + 15,
+    doc.y + 46,
   )
   doc.font('Helvetica').fontSize(10).fillColor('#D9534F').text(
     'Ce montant doit être réglé au plus tard le 15 du mois prochain.',
     tableX + 15,
-    doc.y + 32,
+    doc.y + 62,
   )
 
   doc.y += totalBoxHeight + 30

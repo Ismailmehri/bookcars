@@ -1212,27 +1212,6 @@ const AgencyCommissions = () => {
                       const { agency } = row
                       const meetsThreshold = row.totalToPay >= thresholdValue
                       const isPeriodOpen = !row.periodClosed
-                      const carryOverChip = row.carryOver > 0
-                        ? (
-                          <Chip
-                            size="small"
-                            color="warning"
-                            variant="outlined"
-                            label={strings.BADGE_CARRY_OVER}
-                          />
-                        )
-                        : null
-                      const payableChip = row.payable
-                        ? (
-                          <Chip size="small" color="success" variant="filled" label={strings.BADGE_PAYABLE} />
-                        )
-                        : isPeriodOpen && meetsThreshold
-                          ? (
-                            <Chip size="small" color="info" variant="outlined" label={strings.BADGE_PERIOD_OPEN} />
-                          )
-                          : (
-                            <Chip size="small" color="warning" variant="outlined" label={strings.BADGE_BELOW_THRESHOLD} />
-                          )
                       const statusChip = (
                         <Chip size="small" color={getStatusChipColor(row.status)} label={mapStatusToLabel(row.status)} />
                       )
@@ -1268,22 +1247,39 @@ const AgencyCommissions = () => {
                           </TableCell>
                           <TableCell align="right">{formatNumber(row.reservations, language)}</TableCell>
                           <TableCell align="right">{formatCurrency(row.commissionDue)}</TableCell>
-                          <TableCell align="right">{formatCurrency(row.carryOver)}</TableCell>
                           <TableCell align="right">
-                            <Typography
-                              variant="body2"
-                              fontWeight={700}
-                              color={totalColor}
-                            >
-                              {formatCurrency(row.totalToPay)}
-                            </Typography>
+                            <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+                              <Typography variant="body2">{formatCurrency(row.carryOver)}</Typography>
+                              {row.carryOver > 0 && (
+                                <Chip
+                                  size="small"
+                                  color="warning"
+                                  variant="outlined"
+                                  label={strings.BADGE_CARRY_OVER}
+                                />
+                              )}
+                            </Stack>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+                              <Typography
+                                variant="body2"
+                                fontWeight={700}
+                                color={totalColor}
+                              >
+                                {formatCurrency(row.totalToPay)}
+                              </Typography>
+                              {row.payable ? (
+                                <Chip size="small" color="success" variant="filled" label={strings.BADGE_PAYABLE} />
+                              ) : isPeriodOpen && meetsThreshold ? (
+                                <Chip size="small" color="info" variant="outlined" label={strings.BADGE_PERIOD_OPEN} />
+                              ) : (
+                                <Chip size="small" color="warning" variant="outlined" label={strings.BADGE_BELOW_THRESHOLD} />
+                              )}
+                            </Stack>
                           </TableCell>
                           <TableCell align="center">
-                            <Stack direction="row" spacing={0.5} justifyContent="center" flexWrap="wrap" rowGap={0.5}>
-                              {statusChip}
-                              {carryOverChip}
-                              {payableChip}
-                            </Stack>
+                            {statusChip}
                           </TableCell>
                           <TableCell align="center">
                             <Stack direction="row" spacing={0.5} justifyContent="center">

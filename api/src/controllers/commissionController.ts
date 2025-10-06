@@ -149,6 +149,7 @@ type LedgerComputation = {
   currentEntry: MonthlyEntry
   currentCollected: number
   currentOutstanding: number
+  periodClosed: boolean
 }
 
 type MonthlyAggregationRecord = {
@@ -164,6 +165,7 @@ const computeLedgerContext = (
   year: number,
   month: number,
   threshold: number,
+  periodClosed: boolean,
 ): LedgerComputation => {
   const normalizedEntries = entries ? [...entries] : []
   let currentEntry = normalizedEntries.find((entry) => entry.year === year && entry.month === month)
@@ -214,7 +216,8 @@ const computeLedgerContext = (
   const adjustedCurrent = netCurrent - credit
   const currentOutstanding = Math.max(adjustedCurrent, 0)
   const totalToPay = carryOver + currentOutstanding
-  const payable = totalToPay >= threshold
+  const meetsThreshold = totalToPay >= threshold
+  const payable = periodClosed && meetsThreshold
 
   return {
     carryOver: normalizeNumber(carryOver),
@@ -224,6 +227,7 @@ const computeLedgerContext = (
     currentEntry,
     currentCollected: normalizeNumber(currentCollected),
     currentOutstanding: normalizeNumber(currentOutstanding),
+    periodClosed,
   }
 }
 
@@ -234,9 +238,10 @@ const loadAgencyLedger = async (
   config: ReturnType<typeof getCommissionConfig>,
 ): Promise<LedgerComputation> => {
   const { end } = getPeriodBoundaries(year, month)
+  const periodClosed = end.getTime() <= Date.now()
 
   if (config.effectiveDate.getTime() >= end.getTime()) {
-    return computeLedgerContext([], new Map(), year, month, config.monthlyThreshold)
+    return computeLedgerContext([], new Map(), year, month, config.monthlyThreshold, periodClosed)
   }
 
   const aggregation = await Booking.aggregate<MonthlyAggregationRecord>([
@@ -301,7 +306,7 @@ const loadAgencyLedger = async (
     }
   })
 
-  return computeLedgerContext(entries, payments, year, month, config.monthlyThreshold)
+  return computeLedgerContext(entries, payments, year, month, config.monthlyThreshold, periodClosed)
 }
 
 const validateRibDetails = (details?: bookcarsTypes.CommissionRibDetails | null): SanitizedRibDetails | null => {
@@ -436,6 +441,7 @@ const computeCommissionData = async (
 ): Promise<CommissionComputationResult> => {
   const { end } = getPeriodBoundaries(year, month)
   const config = getCommissionConfig()
+  const periodClosed = end.getTime() <= Date.now()
 
   if (config.effectiveDate.getTime() >= end.getTime()) {
     return {
@@ -599,7 +605,14 @@ const computeCommissionData = async (
     }
 
     const agencyPayments = paymentsByAgency.get(supplierId) || new Map<string, number>()
-    const ledger = computeLedgerContext(entries, agencyPayments, year, month, config.monthlyThreshold)
+    const ledger = computeLedgerContext(
+      entries,
+      agencyPayments,
+      year,
+      month,
+      config.monthlyThreshold,
+      periodClosed,
+    )
     const state = stateMap.get(supplierId)
     const blocked = (state && state.blocked) || supplier.blacklisted || false
 
@@ -635,6 +648,7 @@ const computeCommissionData = async (
       carryOver: normalizeNumber(ledger.carryOver),
       totalToPay: normalizeNumber(ledger.totalToPay),
       payable: ledger.payable,
+      periodClosed: ledger.periodClosed,
     })
   })
 
@@ -944,7 +958,8 @@ const loadAgencyCommissionDetail = async (
   const commissionDue = normalizeNumber(ledger.currentEntry.commissionDue)
   const commissionCollected = normalizeNumber(ledger.currentCollected)
   const balance = ledger.totalToPay
-  const aboveThreshold = ledger.payable
+  const thresholdReached = ledger.totalToPay >= config.monthlyThreshold
+  const aboveThreshold = thresholdReached
   const blocked = (state && state.blocked) || supplier.blacklisted || false
   const status = computeStatus(blocked, balance)
 
@@ -1004,6 +1019,7 @@ const loadAgencyCommissionDetail = async (
       carryOver: normalizeNumber(ledger.carryOver),
       totalToPay: normalizeNumber(ledger.totalToPay),
       payable: ledger.payable,
+      periodClosed: ledger.periodClosed,
     },
     logs,
     bookings: bookingInfos,
@@ -1172,6 +1188,7 @@ export const getAgencyCommissionBookings = async (req: Request, res: Response) =
     summary.payable = ledger.payable
     summary.threshold = config.monthlyThreshold
     summary.carryOverItems = ledger.carryOverItems
+    summary.periodClosed = ledger.periodClosed
 
     return res.json({
       bookings: filteredRows,

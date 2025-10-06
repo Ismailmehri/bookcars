@@ -211,6 +211,7 @@ export interface AgencyCommissionRow {
   carryOver: number
   totalToPay: number
   payable: boolean
+  periodClosed: boolean
 }
 
 export interface AgencyCommissionSummary {
@@ -279,6 +280,7 @@ export interface AgencyCommissionMonthlySummary {
   payable?: boolean
   threshold?: number
   carryOverItems?: AgencyCommissionCarryOverItem[]
+  periodClosed?: boolean
 }
 
 export interface AgencyCommissionBookingsResponse {
@@ -369,6 +371,7 @@ export interface AgencyCommissionDetailSummary {
   carryOver: number
   totalToPay: number
   payable: boolean
+  periodClosed: boolean
 }
 
 export interface AgencyCommissionCarryOverItem {

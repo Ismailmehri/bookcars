@@ -338,14 +338,29 @@ const AgencyDetailsCommissions = () => {
 
   const totalToPayAmount = computedSummary.totalToPay || 0
   const formattedTotalToPay = formatCurrency(totalToPayAmount)
-  const isPayable = computedSummary.payable || false
+  const thresholdValue = computedSummary.threshold ?? 50
+  const isPeriodClosed = computedSummary.periodClosed !== false
+  const meetsThreshold = totalToPayAmount >= thresholdValue
+  const isPayable = Boolean(isPeriodClosed && computedSummary.payable)
   const carryOverItems = useMemo(() => {
     const items = computedSummary.carryOverItems || []
     return items.slice(-6).reverse()
   }, [computedSummary.carryOverItems])
-  const paymentMessage = isPayable
-    ? strings.PAYMENT_READY_MESSAGE.replace('{amount}', formattedTotalToPay)
-    : strings.PAYMENT_WAITING_MESSAGE
+  const paymentMessage = !isPeriodClosed
+    ? strings.PAYMENT_PERIOD_OPEN_MESSAGE
+    : isPayable
+      ? strings.PAYMENT_READY_MESSAGE.replace('{amount}', formattedTotalToPay)
+      : strings.PAYMENT_WAITING_MESSAGE
+  const paymentTooltip = isPayable
+    ? strings.PAY_BUTTON
+    : !isPeriodClosed
+      ? strings.PAYMENT_PERIOD_OPEN_TOOLTIP
+      : strings.PAYMENT_WAITING_MESSAGE
+  const alertSeverity: 'success' | 'info' | 'warning' = isPayable
+    ? 'success'
+    : !isPeriodClosed && meetsThreshold
+      ? 'warning'
+      : 'info'
 
   const kpiItems = useMemo(
     () => [
@@ -637,6 +652,10 @@ const AgencyDetailsCommissions = () => {
   }
 
   const handleOpenPayDialog = async () => {
+    if (!isPeriodClosed) {
+      helper.info(strings.PAYMENT_PERIOD_OPEN_MESSAGE)
+      return
+    }
     if (!computedSummary.payable) {
       helper.info(strings.PAYMENT_WAITING_MESSAGE)
       return
@@ -745,7 +764,7 @@ const AgencyDetailsCommissions = () => {
                   {strings.FILTER_BUTTON}
                 </Button>
                 <Stack direction="row" spacing={1}>
-                  <Tooltip title={isPayable ? strings.PAY_BUTTON : strings.PAYMENT_WAITING_MESSAGE}>
+                  <Tooltip title={paymentTooltip}>
                     <span>
                       <IconButton
                         onClick={handleOpenPayDialog}
@@ -1137,7 +1156,7 @@ const AgencyDetailsCommissions = () => {
             </Box>
 
             <Alert
-              severity={isPayable ? 'success' : 'info'}
+              severity={alertSeverity}
               iconMapping={{
                 success: <PaidOutlinedIcon fontSize="inherit" />,
                 info: <InfoOutlinedIcon fontSize="inherit" />,

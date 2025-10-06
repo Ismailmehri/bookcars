@@ -308,7 +308,12 @@ describe('commissionController monthly commission endpoints', () => {
     } as unknown as ReturnType<typeof AgencyCommissionEvent.find>)
   }
 
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2024-07-15T00:00:00.000Z'))
+  })
+
   afterEach(() => {
+    jest.useRealTimers()
     jest.restoreAllMocks()
     jest.clearAllMocks()
     helper.setCommissionConfig({
@@ -401,12 +406,47 @@ describe('commissionController monthly commission endpoints', () => {
     expect(firstAgency.carryOver).toBe(80)
     expect(firstAgency.totalToPay).toBe(150)
     expect(firstAgency.payable).toBe(true)
+    expect(firstAgency.periodClosed).toBe(true)
     expect(firstAgency.lastPayment).toEqual(paymentDate)
     expect(firstAgency.lastReminder).toEqual({
       date: reminderDate,
       channel: bookcarsTypes.CommissionReminderChannel.Sms,
       success: true,
     })
+  })
+
+  it('should keep payable false while the period is still open', async () => {
+    setupAdminLookup()
+    const paymentDate = new Date('2024-06-20T10:00:00.000Z')
+    const reminderDate = new Date('2024-06-10T08:00:00.000Z')
+    setupCommissionDataMocks(paymentDate, reminderDate)
+
+    jest.setSystemTime(new Date('2024-06-15T12:00:00.000Z'))
+
+    const req = await createRequestWithToken(adminId, {
+      params: { page: '1', size: '10' },
+      body: { month: 6, year: 2024, search: '', status: 'all' },
+    })
+    const res = createMockResponse()
+
+    await getMonthlyCommissions(req, res)
+
+    expect(res.json).toHaveBeenCalledTimes(1)
+    const payload = res.json.mock.calls[0][0] as {
+      summary: bookcarsTypes.AgencyCommissionSummary
+      agencies: bookcarsTypes.AgencyCommissionRow[]
+      total: number
+      page: number
+      size: number
+    }
+
+    expect(payload.summary.payableTotal).toBe(0)
+    expect(payload.summary.agenciesAboveThreshold).toBe(0)
+    expect(payload.agencies).toHaveLength(1)
+    const [row] = payload.agencies
+    expect(row.totalToPay).toBe(150)
+    expect(row.payable).toBe(false)
+    expect(row.periodClosed).toBe(false)
   })
 
   it('should export commission data as CSV', async () => {
@@ -530,6 +570,7 @@ describe('commissionController monthly commission endpoints', () => {
       payable: false,
       threshold: 100,
       carryOverItems: [],
+      periodClosed: true,
     })
 
     const februaryReq = await createRequestWithToken(supplierId, {
@@ -564,6 +605,7 @@ describe('commissionController monthly commission endpoints', () => {
           amount: 30,
         },
       ],
+      periodClosed: true,
     })
 
     expect(filters).toHaveLength(2)

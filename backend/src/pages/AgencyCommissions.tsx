@@ -981,6 +981,7 @@ const AgencyCommissions = () => {
 
   const rowCount = data?.total || 0
   const summaryData = data?.summary
+  const thresholdValue = summaryData?.threshold ?? 50
   const emptyStateMessage = withCarryOver
     ? strings.EMPTY_CARRY_OVER_STATE
     : aboveThreshold
@@ -1209,6 +1210,8 @@ const AgencyCommissions = () => {
                   ) : (
                     rows.map((row) => {
                       const { agency } = row
+                      const meetsThreshold = row.totalToPay >= thresholdValue
+                      const isPeriodOpen = !row.periodClosed
                       const carryOverChip = row.carryOver > 0
                         ? (
                           <Chip
@@ -1219,17 +1222,30 @@ const AgencyCommissions = () => {
                           />
                         )
                         : null
-                      const payableChip = (
-                        <Chip
-                          size="small"
-                          color={row.payable ? 'success' : 'warning'}
-                          variant={row.payable ? 'filled' : 'outlined'}
-                          label={row.payable ? strings.BADGE_PAYABLE : strings.BADGE_BELOW_THRESHOLD}
-                        />
-                      )
+                      const payableChip = row.payable
+                        ? (
+                          <Chip size="small" color="success" variant="filled" label={strings.BADGE_PAYABLE} />
+                        )
+                        : isPeriodOpen && meetsThreshold
+                          ? (
+                            <Chip size="small" color="info" variant="outlined" label={strings.BADGE_PERIOD_OPEN} />
+                          )
+                          : (
+                            <Chip size="small" color="warning" variant="outlined" label={strings.BADGE_BELOW_THRESHOLD} />
+                          )
                       const statusChip = (
                         <Chip size="small" color={getStatusChipColor(row.status)} label={mapStatusToLabel(row.status)} />
                       )
+                      const totalColor = row.payable
+                        ? 'success.main'
+                        : isPeriodOpen && meetsThreshold
+                          ? 'info.main'
+                          : 'warning.main'
+                      const paymentTooltip = row.payable
+                        ? strings.ACTION_MARK_PAID
+                        : isPeriodOpen && meetsThreshold
+                          ? strings.TOOLTIP_PERIOD_OPEN
+                          : strings.BADGE_BELOW_THRESHOLD
 
                       return (
                         <TableRow key={agency.id} hover>
@@ -1257,7 +1273,7 @@ const AgencyCommissions = () => {
                             <Typography
                               variant="body2"
                               fontWeight={700}
-                              color={row.payable ? 'success.main' : 'warning.main'}
+                              color={totalColor}
                             >
                               {formatCurrency(row.totalToPay)}
                             </Typography>
@@ -1276,7 +1292,7 @@ const AgencyCommissions = () => {
                                   <SendIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
-                              <Tooltip title={row.payable ? strings.ACTION_MARK_PAID : strings.BADGE_BELOW_THRESHOLD}>
+                              <Tooltip title={paymentTooltip}>
                                 <span>
                                   <IconButton
                                     size="small"

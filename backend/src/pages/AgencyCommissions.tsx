@@ -982,6 +982,11 @@ const AgencyCommissions = () => {
   const rowCount = data?.total || 0
   const summaryData = data?.summary
   const thresholdValue = summaryData?.threshold ?? 50
+  const summaryThreshold = summary?.threshold ?? thresholdValue
+  const summaryTotal = summary?.totalToPay ?? summary?.balance ?? 0
+  const summaryPeriodClosed = summary?.periodClosed !== false
+  const summaryMeetsThreshold = summaryTotal >= summaryThreshold
+  const summaryCanRecordPayment = summaryMeetsThreshold
   const emptyStateMessage = withCarryOver
     ? strings.EMPTY_CARRY_OVER_STATE
     : aboveThreshold
@@ -1220,11 +1225,10 @@ const AgencyCommissions = () => {
                         : isPeriodOpen && meetsThreshold
                           ? 'info.main'
                           : 'warning.main'
-                      const paymentTooltip = row.payable
+                      const paymentTooltip = meetsThreshold
                         ? strings.ACTION_MARK_PAID
-                        : isPeriodOpen && meetsThreshold
-                          ? strings.TOOLTIP_PERIOD_OPEN
-                          : strings.BADGE_BELOW_THRESHOLD
+                        : strings.BADGE_BELOW_THRESHOLD
+                      const canRecordPayment = meetsThreshold
 
                       return (
                         <TableRow key={agency.id} hover>
@@ -1292,8 +1296,8 @@ const AgencyCommissions = () => {
                                 <span>
                                   <IconButton
                                     size="small"
-                                    onClick={() => row.payable && handleOpenPaymentDialog(row)}
-                                    disabled={!row.payable}
+                                    onClick={() => canRecordPayment && handleOpenPaymentDialog(row)}
+                                    disabled={!canRecordPayment}
                                   >
                                     <PaidIcon fontSize="small" />
                                   </IconButton>
@@ -1374,9 +1378,17 @@ const AgencyCommissions = () => {
                           {summary && (
                             <Chip
                               size="small"
-                              color={summary.payable ? 'success' : 'warning'}
+                              color={summary.payable
+                                ? 'success'
+                                : !summaryPeriodClosed && summaryMeetsThreshold
+                                  ? 'info'
+                                  : 'warning'}
                               variant={summary.payable ? 'filled' : 'outlined'}
-                              label={summary.payable ? strings.BADGE_PAYABLE : strings.BADGE_BELOW_THRESHOLD}
+                              label={summary.payable
+                                ? strings.BADGE_PAYABLE
+                                : !summaryPeriodClosed && summaryMeetsThreshold
+                                  ? strings.BADGE_PERIOD_OPEN
+                                  : strings.BADGE_BELOW_THRESHOLD}
                             />
                           )}
                         </Box>
@@ -1448,7 +1460,14 @@ const AgencyCommissions = () => {
                             <Typography variant="caption" color="text.secondary">
                               {strings.DRAWER_SUMMARY_TOTAL_TO_PAY}
                             </Typography>
-                            <Typography variant="h6" color={summary.payable ? 'success.main' : 'warning.main'}>
+                            <Typography
+                              variant="h6"
+                              color={summary.payable
+                                ? 'success.main'
+                                : !summaryPeriodClosed && summaryMeetsThreshold
+                                  ? 'info.main'
+                                  : 'warning.main'}
+                            >
                               {formatCurrency(summary.totalToPay || summary.balance)}
                             </Typography>
                           </Paper>
@@ -1459,10 +1478,18 @@ const AgencyCommissions = () => {
                             <Typography variant="h6">{formatCurrency(summary.threshold)}</Typography>
                             <Chip
                               size="small"
-                              color={summary.payable ? 'success' : 'warning'}
+                              color={summary.payable
+                                ? 'success'
+                                : !summaryPeriodClosed && summaryMeetsThreshold
+                                  ? 'info'
+                                  : 'warning'}
                               className="ac-summary-chip"
                               variant={summary.payable ? 'filled' : 'outlined'}
-                              label={summary.payable ? strings.BADGE_PAYABLE : strings.BADGE_BELOW_THRESHOLD}
+                              label={summary.payable
+                                ? strings.BADGE_PAYABLE
+                                : !summaryPeriodClosed && summaryMeetsThreshold
+                                  ? strings.BADGE_PERIOD_OPEN
+                                  : strings.BADGE_BELOW_THRESHOLD}
                             />
                           </Paper>
                         </Box>
@@ -1480,7 +1507,7 @@ const AgencyCommissions = () => {
                         color="warning"
                         startIcon={<PaymentIcon />}
                         onClick={handleOpenPaymentMenu}
-                        disabled={!summary.payable}
+                        disabled={!summaryCanRecordPayment}
                       >
                         {strings.DRAWER_ACTION_PAY}
                       </Button>
@@ -1490,8 +1517,8 @@ const AgencyCommissions = () => {
                       <Button
                         variant="outlined"
                         startIcon={<PaidIcon />}
-                        onClick={() => summary.payable && selectedAgency && handleOpenPaymentDialog(selectedAgency)}
-                        disabled={!summary.payable}
+                        onClick={() => summaryCanRecordPayment && selectedAgency && handleOpenPaymentDialog(selectedAgency)}
+                        disabled={!summaryCanRecordPayment}
                       >
                         {strings.DRAWER_ACTION_PAYMENT}
                       </Button>

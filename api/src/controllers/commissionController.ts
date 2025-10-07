@@ -149,6 +149,7 @@ type LedgerComputation = {
   currentEntry: MonthlyEntry
   currentCollected: number
   currentOutstanding: number
+  advance: number
   periodClosed: boolean
 }
 
@@ -215,7 +216,8 @@ const computeLedgerContext = (
 
   const adjustedCurrent = netCurrent - credit
   const currentOutstanding = Math.max(adjustedCurrent, 0)
-  const totalToPay = carryOver + currentOutstanding
+  const advance = adjustedCurrent < 0 ? -adjustedCurrent : 0
+  const totalToPay = carryOver + adjustedCurrent
   const meetsThreshold = totalToPay >= threshold
   const payable = periodClosed && meetsThreshold
 
@@ -227,6 +229,7 @@ const computeLedgerContext = (
     currentEntry,
     currentCollected: normalizeNumber(currentCollected),
     currentOutstanding: normalizeNumber(currentOutstanding),
+    advance: normalizeNumber(advance),
     periodClosed,
   }
 }
@@ -620,7 +623,8 @@ const computeCommissionData = async (
     const commissionDue = normalizeNumber(ledger.currentEntry.commissionDue)
     const collected = normalizeNumber(ledger.currentCollected)
     const balance = ledger.totalToPay
-    const aboveThreshold = ledger.payable
+    const meetsThreshold = balance >= config.monthlyThreshold
+    const aboveThreshold = meetsThreshold
 
     totalGross += grossTurnover
     totalDue += commissionDue
@@ -629,6 +633,9 @@ const computeCommissionData = async (
 
     if (aboveThreshold) {
       agenciesAboveThreshold += 1
+    }
+
+    if (ledger.payable) {
       payableTotal += ledger.totalToPay
     }
 
@@ -670,7 +677,7 @@ const computeCommissionData = async (
   }
 
   if (filters.aboveThreshold) {
-    filteredRows = filteredRows.filter((row) => row.payable)
+    filteredRows = filteredRows.filter((row) => row.aboveThreshold)
   }
 
   if (filters.withCarryOver) {

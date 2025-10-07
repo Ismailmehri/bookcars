@@ -441,12 +441,93 @@ describe('commissionController monthly commission endpoints', () => {
     }
 
     expect(payload.summary.payableTotal).toBe(0)
-    expect(payload.summary.agenciesAboveThreshold).toBe(0)
+    expect(payload.summary.agenciesAboveThreshold).toBe(1)
     expect(payload.agencies).toHaveLength(1)
     const [row] = payload.agencies
     expect(row.totalToPay).toBe(150)
     expect(row.payable).toBe(false)
     expect(row.periodClosed).toBe(false)
+    expect(row.aboveThreshold).toBe(true)
+  })
+
+  it('should expose overpayments as negative balances', async () => {
+    setupAdminLookup()
+
+    helper.setCommissionConfig({
+      enabled: true,
+      rate: 5,
+      effectiveDate: new Date('2020-01-01T00:00:00.000Z'),
+      monthlyThreshold: 50,
+    })
+
+    jest.spyOn(Booking, 'aggregate').mockResolvedValue([
+      {
+        _id: { supplier: supplierObjectId, year: 2024, month: 6 },
+        reservations: 1,
+        grossTurnover: 540,
+        commissionDue: 54,
+      },
+    ])
+
+    jest.spyOn(User, 'find').mockResolvedValue([supplierUser])
+    jest.spyOn(AgencyCommissionState, 'find').mockResolvedValue([
+      {
+        agency: supplierObjectId,
+        blocked: false,
+      } as unknown as env.AgencyCommissionState,
+    ])
+
+    const paymentEventDate = new Date('2024-06-30T10:00:00.000Z')
+    const events = [
+      {
+        _id: new mongoose.Types.ObjectId(),
+        agency: supplierObjectId,
+        type: bookcarsTypes.AgencyCommissionEventType.Payment,
+        createdAt: paymentEventDate,
+        paymentDate: paymentEventDate,
+        year: 2024,
+        month: 6,
+        amount: 60,
+      },
+    ]
+
+    const leanMock = jest.fn().mockResolvedValue(events as never)
+    const sortMock = jest.fn().mockReturnValue({ lean: leanMock })
+    jest.spyOn(AgencyCommissionEvent, 'find').mockReturnValue({
+      sort: sortMock,
+      lean: leanMock,
+    } as unknown as ReturnType<typeof AgencyCommissionEvent.find>)
+
+    jest.setSystemTime(new Date('2024-07-10T12:00:00.000Z'))
+
+    const req = await createRequestWithToken(adminId, {
+      params: { page: '1', size: '10' },
+      body: { month: 6, year: 2024, search: '', status: 'all' },
+    })
+    const res = createMockResponse()
+
+    await getMonthlyCommissions(req, res)
+
+    expect(res.json).toHaveBeenCalledTimes(1)
+    const payload = res.json.mock.calls[0][0] as {
+      summary: bookcarsTypes.AgencyCommissionSummary
+      agencies: bookcarsTypes.AgencyCommissionRow[]
+      total: number
+      page: number
+      size: number
+    }
+
+    expect(payload.summary.carryOverTotal).toBe(0)
+    expect(payload.summary.agenciesAboveThreshold).toBe(0)
+    expect(payload.summary.payableTotal).toBe(0)
+    expect(payload.agencies).toHaveLength(1)
+
+    const [row] = payload.agencies
+    expect(row.totalToPay).toBe(-6)
+    expect(row.balance).toBe(-6)
+    expect(row.carryOver).toBe(0)
+    expect(row.payable).toBe(false)
+    expect(row.aboveThreshold).toBe(false)
   })
 
   it('should export commission data as CSV', async () => {

@@ -1287,17 +1287,18 @@ const AgencyCommissions = () => {
                           </TableCell>
                           <TableCell align="center">
                             <Stack direction="row" spacing={0.5} justifyContent="center">
-                              <Tooltip title={reminderTooltip}>
-                                <span>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => canSendReminder && handleOpenReminder(row)}
-                                    disabled={!canSendReminder}
-                                  >
-                                    <SendIcon fontSize="small" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
+                              {canSendReminder && (
+                                <Tooltip title={reminderTooltip}>
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleOpenReminder(row)}
+                                    >
+                                      <SendIcon fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                              )}
                               <Tooltip title={paymentTooltip}>
                                 <span>
                                   <IconButton

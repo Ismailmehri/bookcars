@@ -1229,6 +1229,10 @@ const AgencyCommissions = () => {
                         ? strings.ACTION_MARK_PAID
                         : strings.BADGE_BELOW_THRESHOLD
                       const canRecordPayment = meetsThreshold
+                      const canSendReminder = meetsThreshold
+                      const reminderTooltip = canSendReminder
+                        ? strings.ACTION_REMIND
+                        : strings.REMINDER_DISABLED_THRESHOLD
 
                       return (
                         <TableRow key={agency.id} hover>
@@ -1287,10 +1291,16 @@ const AgencyCommissions = () => {
                           </TableCell>
                           <TableCell align="center">
                             <Stack direction="row" spacing={0.5} justifyContent="center">
-                              <Tooltip title={strings.ACTION_REMIND}>
-                                <IconButton size="small" onClick={() => handleOpenReminder(row)}>
-                                  <SendIcon fontSize="small" />
-                                </IconButton>
+                              <Tooltip title={reminderTooltip}>
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => canSendReminder && handleOpenReminder(row)}
+                                    disabled={!canSendReminder}
+                                  >
+                                    <SendIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
                               </Tooltip>
                               <Tooltip title={paymentTooltip}>
                                 <span>

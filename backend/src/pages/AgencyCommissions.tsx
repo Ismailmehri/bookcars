@@ -986,7 +986,6 @@ const AgencyCommissions = () => {
   const summaryTotal = summary?.totalToPay ?? summary?.balance ?? 0
   const summaryPeriodClosed = summary?.periodClosed !== false
   const summaryMeetsThreshold = summaryTotal >= summaryThreshold
-  const summaryCanRecordPayment = summaryMeetsThreshold
   const emptyStateMessage = withCarryOver
     ? strings.EMPTY_CARRY_OVER_STATE
     : aboveThreshold
@@ -1225,10 +1224,7 @@ const AgencyCommissions = () => {
                         : isPeriodOpen && meetsThreshold
                           ? 'info.main'
                           : 'warning.main'
-                      const paymentTooltip = meetsThreshold
-                        ? strings.ACTION_MARK_PAID
-                        : strings.BADGE_BELOW_THRESHOLD
-                      const canRecordPayment = meetsThreshold
+                      const paymentTooltip = strings.ACTION_MARK_PAID
                       const canSendReminder = meetsThreshold
                       const reminderTooltip = canSendReminder
                         ? strings.ACTION_REMIND
@@ -1306,8 +1302,7 @@ const AgencyCommissions = () => {
                                 <span>
                                   <IconButton
                                     size="small"
-                                    onClick={() => canRecordPayment && handleOpenPaymentDialog(row)}
-                                    disabled={!canRecordPayment}
+                                    onClick={() => handleOpenPaymentDialog(row)}
                                   >
                                     <PaidIcon fontSize="small" />
                                   </IconButton>
@@ -1517,7 +1512,7 @@ const AgencyCommissions = () => {
                         color="warning"
                         startIcon={<PaymentIcon />}
                         onClick={handleOpenPaymentMenu}
-                        disabled={!summaryCanRecordPayment}
+                        disabled={!summaryMeetsThreshold}
                       >
                         {strings.DRAWER_ACTION_PAY}
                       </Button>
@@ -1527,8 +1522,8 @@ const AgencyCommissions = () => {
                       <Button
                         variant="outlined"
                         startIcon={<PaidIcon />}
-                        onClick={() => summaryCanRecordPayment && selectedAgency && handleOpenPaymentDialog(selectedAgency)}
-                        disabled={!summaryCanRecordPayment}
+                        onClick={() => selectedAgency && handleOpenPaymentDialog(selectedAgency)}
+                        disabled={!selectedAgency}
                       >
                         {strings.DRAWER_ACTION_PAYMENT}
                       </Button>

@@ -41,17 +41,6 @@
   flex-wrap: nowrap;
   gap: 16px;
   width: 100%;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-.agency-commissions .ac-kpis::-webkit-scrollbar {
-  height: 6px;
-}
-
-.agency-commissions .ac-kpis::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.16);
-  border-radius: 999px;
 }
 
 .agency-commissions .ac-kpi-card {
@@ -62,8 +51,8 @@
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
-  min-width: 200px;
-  flex: 0 0 auto;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .agency-commissions .ac-search-field {

@@ -37,8 +37,8 @@
 }
 
 .agency-commissions .ac-kpis {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 16px;
   width: 100%;
 }
@@ -51,6 +51,8 @@
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .agency-commissions .ac-search-field {

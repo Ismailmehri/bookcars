@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Box,
+  Alert,
   Button,
   Card,
   CardContent,
@@ -314,6 +315,11 @@ const AgencyDetailsCommissions = () => {
         net: 0,
         reservations: 0,
         commissionPercentage: env.COMMISSION_RATE,
+        carryOver: 0,
+        totalToPay: 0,
+        payable: false,
+        threshold: 50,
+        carryOverItems: [],
       }
     )
   }, [data, summary])
@@ -329,6 +335,32 @@ const AgencyDetailsCommissions = () => {
     }),
     [computedSummary]
   )
+
+  const totalToPayAmount = computedSummary.totalToPay || 0
+  const formattedTotalToPay = formatCurrency(totalToPayAmount)
+  const thresholdValue = computedSummary.threshold ?? 50
+  const isPeriodClosed = computedSummary.periodClosed !== false
+  const meetsThreshold = totalToPayAmount >= thresholdValue
+  const isPayable = Boolean(isPeriodClosed && computedSummary.payable)
+  const carryOverItems = useMemo(() => {
+    const items = computedSummary.carryOverItems || []
+    return items.slice(-6).reverse()
+  }, [computedSummary.carryOverItems])
+  const paymentMessage = !isPeriodClosed
+    ? strings.PAYMENT_PERIOD_OPEN_MESSAGE
+    : isPayable
+      ? strings.PAYMENT_READY_MESSAGE.replace('{amount}', formattedTotalToPay)
+      : strings.PAYMENT_WAITING_MESSAGE
+  const paymentTooltip = isPayable
+    ? strings.PAY_BUTTON
+    : !isPeriodClosed
+      ? strings.PAYMENT_PERIOD_OPEN_TOOLTIP
+      : strings.PAYMENT_WAITING_MESSAGE
+  const alertSeverity: 'success' | 'info' | 'warning' = isPayable
+    ? 'success'
+    : !isPeriodClosed && meetsThreshold
+      ? 'warning'
+      : 'info'
 
   const kpiItems = useMemo(
     () => [
@@ -620,6 +652,14 @@ const AgencyDetailsCommissions = () => {
   }
 
   const handleOpenPayDialog = async () => {
+    if (!isPeriodClosed) {
+      helper.info(strings.PAYMENT_PERIOD_OPEN_MESSAGE)
+      return
+    }
+    if (!computedSummary.payable) {
+      helper.info(strings.PAYMENT_WAITING_MESSAGE)
+      return
+    }
     try {
       const options = paymentOptions || (await refreshPaymentOptions())
       if (!options.bankTransferEnabled) {
@@ -724,11 +764,11 @@ const AgencyDetailsCommissions = () => {
                   {strings.FILTER_BUTTON}
                 </Button>
                 <Stack direction="row" spacing={1}>
-                  <Tooltip title={strings.PAY_BUTTON}>
+                  <Tooltip title={paymentTooltip}>
                     <span>
                       <IconButton
                         onClick={handleOpenPayDialog}
-                        disabled={paymentOptionsLoading}
+                        disabled={paymentOptionsLoading || !isPayable}
                         aria-label={strings.PAY_BUTTON}
                         sx={{
                           width: 48,
@@ -791,7 +831,7 @@ const AgencyDetailsCommissions = () => {
                   color="warning"
                   startIcon={paymentOptionsLoading ? <CircularProgress size={18} /> : <PaidOutlinedIcon />}
                   onClick={handleOpenPayDialog}
-                  disabled={paymentOptionsLoading}
+                  disabled={paymentOptionsLoading || !isPayable}
                   sx={{
                     backgroundColor: '#F79009',
                     '&:hover': {
@@ -1114,6 +1154,99 @@ const AgencyDetailsCommissions = () => {
                 />
               ))}
             </Box>
+
+            <Alert
+              severity={alertSeverity}
+              iconMapping={{
+                success: <PaidOutlinedIcon fontSize="inherit" />,
+                info: <InfoOutlinedIcon fontSize="inherit" />,
+              }}
+              sx={{
+                borderRadius: 2,
+                px: { xs: 2, md: 3 },
+                py: { xs: 1.5, md: 2 },
+                boxShadow: '0 6px 24px rgba(10,102,255,0.06)',
+                display: 'flex',
+                alignItems: { xs: 'flex-start', sm: 'center' },
+              }}
+            >
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={{ xs: 1.5, sm: 2.5 }}
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+                justifyContent="space-between"
+                width="100%"
+              >
+                <Typography variant="body2" fontWeight={600} color="text.primary">
+                  {paymentMessage}
+                </Typography>
+                {isPayable && (
+                  <Button
+                    variant="contained"
+                    color="warning"
+                    startIcon={paymentOptionsLoading ? <CircularProgress size={18} /> : <PaidOutlinedIcon />}
+                    onClick={handleOpenPayDialog}
+                    disabled={paymentOptionsLoading}
+                    sx={{
+                      backgroundColor: '#F79009',
+                      '&:hover': {
+                        backgroundColor: '#DC6803',
+                      },
+                      '&.Mui-disabled': {
+                        backgroundColor: '#FBC67B',
+                        color: '#fff',
+                      },
+                    }}
+                  >
+                    {strings.PAY_BUTTON}
+                  </Button>
+                )}
+              </Stack>
+            </Alert>
+
+            <Paper
+              elevation={0}
+              sx={{
+                p: { xs: 2, md: 3 },
+                borderRadius: 3,
+                boxShadow: '0 6px 24px rgba(10,102,255,0.06)',
+                bgcolor: 'background.paper',
+              }}
+            >
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle1" fontWeight={800} color="text.primary">
+                  {strings.CARRY_OVER_SECTION_TITLE}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {strings.CARRY_OVER_INFO}
+                </Typography>
+                {loading ? (
+                  <Stack spacing={1}>
+                    {[0, 1].map((index) => (
+                      <Skeleton key={index} variant="rounded" height={20} />
+                    ))}
+                  </Stack>
+                ) : carryOverItems.length > 0 ? (
+                  <List disablePadding dense>
+                    {carryOverItems.map((item) => (
+                      <ListItem key={`${item.year}-${item.month}`} disableGutters sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 32, color: 'primary.main' }}>
+                          <ReceiptLongIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={`${item.year}-${String(item.month).padStart(2, '0')} — ${formatCurrency(item.amount)}`}
+                          primaryTypographyProps={{ fontSize: 14, fontWeight: 600 }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    {strings.CARRY_OVER_EMPTY}
+                  </Typography>
+                )}
+              </Stack>
+            </Paper>
 
             <Typography variant="subtitle2" color="text.secondary">
               {strings.MONTHLY_BOOKINGS}

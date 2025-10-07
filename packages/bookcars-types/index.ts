@@ -208,6 +208,10 @@ export interface AgencyCommissionRow {
   lastReminder?: AgencyCommissionReminderInfo
   status: AgencyCommissionStatus
   aboveThreshold: boolean
+  carryOver: number
+  totalToPay: number
+  payable: boolean
+  periodClosed: boolean
 }
 
 export interface AgencyCommissionSummary {
@@ -222,6 +226,9 @@ export interface AgencyCommissionSummary {
   net?: number
   reservations?: number
   commissionPercentage?: number
+  carryOverTotal?: number
+  payableTotal?: number
+  agenciesUnderThreshold?: number
 }
 
 export interface AgencyCommissionListResponse {
@@ -238,6 +245,7 @@ export interface CommissionListPayload {
   search?: string
   status?: AgencyCommissionStatus | 'all'
   aboveThreshold?: boolean
+  withCarryOver?: boolean
 }
 
 export interface AgencyCommissionBookingDriver {
@@ -267,6 +275,12 @@ export interface AgencyCommissionMonthlySummary {
   net: number
   reservations: number
   commissionPercentage: number
+  carryOver?: number
+  totalToPay?: number
+  payable?: boolean
+  threshold?: number
+  carryOverItems?: AgencyCommissionCarryOverItem[]
+  periodClosed?: boolean
 }
 
 export interface AgencyCommissionBookingsResponse {
@@ -354,6 +368,16 @@ export interface AgencyCommissionDetailSummary {
   balance: number
   threshold: number
   aboveThreshold: boolean
+  carryOver: number
+  totalToPay: number
+  payable: boolean
+  periodClosed: boolean
+}
+
+export interface AgencyCommissionCarryOverItem {
+  year: number
+  month: number
+  amount: number
 }
 
 export interface AgencyCommissionLogEntry {
@@ -388,6 +412,7 @@ export interface AgencyCommissionDetail {
   bookings: AgencyCommissionBookingInfo[]
   month: number
   year: number
+  carryOverItems?: AgencyCommissionCarryOverItem[]
 }
 
 export interface AdditionalDriver {

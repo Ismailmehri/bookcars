@@ -255,10 +255,16 @@ describe('commissionController monthly commission endpoints', () => {
 
     jest.spyOn(Booking, 'aggregate').mockResolvedValue([
       {
-        _id: supplierObjectId,
-        reservations: 3,
-        grossTurnover: 1000,
-        commissionDue: 200,
+        _id: { supplier: supplierObjectId, year: 2024, month: 5 },
+        reservations: 1,
+        grossTurnover: 400,
+        commissionDue: 80,
+      },
+      {
+        _id: { supplier: supplierObjectId, year: 2024, month: 6 },
+        reservations: 2,
+        grossTurnover: 600,
+        commissionDue: 120,
       },
     ])
 
@@ -277,6 +283,8 @@ describe('commissionController monthly commission endpoints', () => {
         agency: supplierObjectId,
         type: bookcarsTypes.AgencyCommissionEventType.Reminder,
         createdAt: reminderDate,
+        year: 2024,
+        month: 6,
         channel: bookcarsTypes.CommissionReminderChannel.Sms,
         success: true,
       },
@@ -286,7 +294,9 @@ describe('commissionController monthly commission endpoints', () => {
         type: bookcarsTypes.AgencyCommissionEventType.Payment,
         createdAt: paymentDate,
         paymentDate,
-        amount: 150,
+        year: 2024,
+        month: 6,
+        amount: 50,
       },
     ]
 
@@ -298,7 +308,12 @@ describe('commissionController monthly commission endpoints', () => {
     } as unknown as ReturnType<typeof AgencyCommissionEvent.find>)
   }
 
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2024-07-15T00:00:00.000Z'))
+  })
+
   afterEach(() => {
+    jest.useRealTimers()
     jest.restoreAllMocks()
     jest.clearAllMocks()
     helper.setCommissionConfig({
@@ -359,11 +374,14 @@ describe('commissionController monthly commission endpoints', () => {
     }
 
     expect(payload.summary).toEqual({
-      grossTurnover: 1000,
-      commissionDue: 200,
-      commissionCollected: 150,
+      grossTurnover: 600,
+      commissionDue: 120,
+      commissionCollected: 50,
       agenciesAboveThreshold: 1,
       threshold: 100,
+      carryOverTotal: 80,
+      payableTotal: 150,
+      agenciesUnderThreshold: 0,
     })
     expect(payload.total).toBe(1)
     expect(payload.page).toBe(1)
@@ -378,19 +396,138 @@ describe('commissionController monthly commission endpoints', () => {
       phone: supplierUser.phone,
       slug: supplierUser.slug,
     })
-    expect(firstAgency.reservations).toBe(3)
-    expect(firstAgency.grossTurnover).toBe(1000)
-    expect(firstAgency.commissionDue).toBe(200)
-    expect(firstAgency.commissionCollected).toBe(150)
-    expect(firstAgency.balance).toBe(50)
+    expect(firstAgency.reservations).toBe(2)
+    expect(firstAgency.grossTurnover).toBe(600)
+    expect(firstAgency.commissionDue).toBe(120)
+    expect(firstAgency.commissionCollected).toBe(50)
+    expect(firstAgency.balance).toBe(150)
     expect(firstAgency.status).toBe(bookcarsTypes.AgencyCommissionStatus.NeedsFollowUp)
     expect(firstAgency.aboveThreshold).toBe(true)
+    expect(firstAgency.carryOver).toBe(80)
+    expect(firstAgency.totalToPay).toBe(150)
+    expect(firstAgency.payable).toBe(true)
+    expect(firstAgency.periodClosed).toBe(true)
     expect(firstAgency.lastPayment).toEqual(paymentDate)
     expect(firstAgency.lastReminder).toEqual({
       date: reminderDate,
       channel: bookcarsTypes.CommissionReminderChannel.Sms,
       success: true,
     })
+  })
+
+  it('should keep payable false while the period is still open', async () => {
+    setupAdminLookup()
+    const paymentDate = new Date('2024-06-20T10:00:00.000Z')
+    const reminderDate = new Date('2024-06-10T08:00:00.000Z')
+    setupCommissionDataMocks(paymentDate, reminderDate)
+
+    jest.setSystemTime(new Date('2024-06-15T12:00:00.000Z'))
+
+    const req = await createRequestWithToken(adminId, {
+      params: { page: '1', size: '10' },
+      body: { month: 6, year: 2024, search: '', status: 'all' },
+    })
+    const res = createMockResponse()
+
+    await getMonthlyCommissions(req, res)
+
+    expect(res.json).toHaveBeenCalledTimes(1)
+    const payload = res.json.mock.calls[0][0] as {
+      summary: bookcarsTypes.AgencyCommissionSummary
+      agencies: bookcarsTypes.AgencyCommissionRow[]
+      total: number
+      page: number
+      size: number
+    }
+
+    expect(payload.summary.payableTotal).toBe(0)
+    expect(payload.summary.agenciesAboveThreshold).toBe(1)
+    expect(payload.agencies).toHaveLength(1)
+    const [row] = payload.agencies
+    expect(row.totalToPay).toBe(150)
+    expect(row.payable).toBe(false)
+    expect(row.periodClosed).toBe(false)
+    expect(row.aboveThreshold).toBe(true)
+  })
+
+  it('should expose overpayments as negative balances', async () => {
+    setupAdminLookup()
+
+    helper.setCommissionConfig({
+      enabled: true,
+      rate: 5,
+      effectiveDate: new Date('2020-01-01T00:00:00.000Z'),
+      monthlyThreshold: 50,
+    })
+
+    jest.spyOn(Booking, 'aggregate').mockResolvedValue([
+      {
+        _id: { supplier: supplierObjectId, year: 2024, month: 6 },
+        reservations: 1,
+        grossTurnover: 540,
+        commissionDue: 54,
+      },
+    ])
+
+    jest.spyOn(User, 'find').mockResolvedValue([supplierUser])
+    jest.spyOn(AgencyCommissionState, 'find').mockResolvedValue([
+      {
+        agency: supplierObjectId,
+        blocked: false,
+      } as unknown as env.AgencyCommissionState,
+    ])
+
+    const paymentEventDate = new Date('2024-06-30T10:00:00.000Z')
+    const events = [
+      {
+        _id: new mongoose.Types.ObjectId(),
+        agency: supplierObjectId,
+        type: bookcarsTypes.AgencyCommissionEventType.Payment,
+        createdAt: paymentEventDate,
+        paymentDate: paymentEventDate,
+        year: 2024,
+        month: 6,
+        amount: 60,
+      },
+    ]
+
+    const leanMock = jest.fn().mockResolvedValue(events as never)
+    const sortMock = jest.fn().mockReturnValue({ lean: leanMock })
+    jest.spyOn(AgencyCommissionEvent, 'find').mockReturnValue({
+      sort: sortMock,
+      lean: leanMock,
+    } as unknown as ReturnType<typeof AgencyCommissionEvent.find>)
+
+    jest.setSystemTime(new Date('2024-07-10T12:00:00.000Z'))
+
+    const req = await createRequestWithToken(adminId, {
+      params: { page: '1', size: '10' },
+      body: { month: 6, year: 2024, search: '', status: 'all' },
+    })
+    const res = createMockResponse()
+
+    await getMonthlyCommissions(req, res)
+
+    expect(res.json).toHaveBeenCalledTimes(1)
+    const payload = res.json.mock.calls[0][0] as {
+      summary: bookcarsTypes.AgencyCommissionSummary
+      agencies: bookcarsTypes.AgencyCommissionRow[]
+      total: number
+      page: number
+      size: number
+    }
+
+    expect(payload.summary.carryOverTotal).toBe(0)
+    expect(payload.summary.agenciesAboveThreshold).toBe(0)
+    expect(payload.summary.payableTotal).toBe(0)
+    expect(payload.agencies).toHaveLength(1)
+
+    const [row] = payload.agencies
+    expect(row.totalToPay).toBe(-6)
+    expect(row.balance).toBe(-6)
+    expect(row.carryOver).toBe(0)
+    expect(row.payable).toBe(false)
+    expect(row.aboveThreshold).toBe(false)
   })
 
   it('should export commission data as CSV', async () => {
@@ -418,6 +555,10 @@ describe('commissionController monthly commission endpoints', () => {
     expect(csvContent).toContain('"Agence";"Ville";"Identifiant"')
     expect(csvContent).toContain(`"${supplierUser.fullName}"`)
     expect(csvContent).toContain('"Totaux"')
+    expect(csvContent).toContain('"Reliquat (TND)"')
+    expect(csvContent).toContain('"Total à payer (TND)"')
+    expect(csvContent).toContain('"Payable"')
+    expect(csvContent).toContain('"agencyName";"month";"commissionMonth";"carryOver";"totalDue";"payableFlag"')
   })
 
   it('should not duplicate bookings across adjacent months', async () => {
@@ -449,6 +590,15 @@ describe('commissionController monthly commission endpoints', () => {
       return chain as unknown as ReturnType<typeof Booking.find>
     }
 
+    jest.spyOn(Booking, 'aggregate').mockResolvedValue([
+      {
+        _id: { supplier: supplierObjectId, year: 2024, month: 1 },
+        reservations: 1,
+        grossTurnover: 300,
+        commissionDue: 30,
+      },
+    ])
+
     const bookingFindMock = jest.spyOn(Booking, 'find') as unknown as jest.Mock
     bookingFindMock.mockImplementation((filter: unknown) => {
       filters.push(filter as Record<string, unknown>)
@@ -457,9 +607,13 @@ describe('commissionController monthly commission endpoints', () => {
     })
 
     const eventFindMock = jest.spyOn(AgencyCommissionEvent, 'find') as unknown as jest.Mock
-    eventFindMock.mockImplementation(() => ({
-      lean: jest.fn(async () => []),
-    } as unknown as ReturnType<typeof AgencyCommissionEvent.find>))
+    eventFindMock.mockImplementation(() => {
+      const lean = jest.fn(async () => [])
+      return {
+        sort: jest.fn().mockReturnValue({ lean }),
+        lean,
+      } as unknown as ReturnType<typeof AgencyCommissionEvent.find>
+    })
 
     const findByIdMock = jest.spyOn(User, 'findById') as unknown as jest.Mock
     findByIdMock.mockImplementation((...args: unknown[]) => {
@@ -492,6 +646,12 @@ describe('commissionController monthly commission endpoints', () => {
       net: 270,
       reservations: 1,
       commissionPercentage: 10,
+      carryOver: 0,
+      totalToPay: 30,
+      payable: false,
+      threshold: 100,
+      carryOverItems: [],
+      periodClosed: true,
     })
 
     const februaryReq = await createRequestWithToken(supplierId, {
@@ -515,6 +675,18 @@ describe('commissionController monthly commission endpoints', () => {
       net: 0,
       reservations: 0,
       commissionPercentage: 10,
+      carryOver: 30,
+      totalToPay: 30,
+      payable: false,
+      threshold: 100,
+      carryOverItems: [
+        {
+          year: 2024,
+          month: 1,
+          amount: 30,
+        },
+      ],
+      periodClosed: true,
     })
 
     expect(filters).toHaveLength(2)

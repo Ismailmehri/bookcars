@@ -230,6 +230,7 @@ const AgencyCommissions = () => {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | bookcarsTypes.AgencyCommissionStatus>('all')
   const [aboveThreshold, setAboveThreshold] = useState(false)
+  const [withCarryOver, setWithCarryOver] = useState(false)
   const [pageSize, setPageSize] = useState(10)
   const [page, setPage] = useState(0)
   const [data, setData] = useState<bookcarsTypes.AgencyCommissionListResponse>()
@@ -353,7 +354,8 @@ const AgencyCommissions = () => {
     search: search || undefined,
     status: statusFilter === 'all' ? 'all' : statusFilter,
     aboveThreshold,
-  }), [month, year, search, statusFilter, aboveThreshold])
+    withCarryOver,
+  }), [month, year, search, statusFilter, aboveThreshold, withCarryOver])
 
   const loadData = useCallback(async () => {
     if (!admin) {
@@ -443,6 +445,11 @@ const AgencyCommissions = () => {
 
   const handleAboveThresholdChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setAboveThreshold(event.target.checked)
+    resetPagination()
+  }
+
+  const handleWithCarryOverChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setWithCarryOver(event.target.checked)
     resetPagination()
   }
 
@@ -974,6 +981,16 @@ const AgencyCommissions = () => {
 
   const rowCount = data?.total || 0
   const summaryData = data?.summary
+  const thresholdValue = summaryData?.threshold ?? 50
+  const summaryThreshold = summary?.threshold ?? thresholdValue
+  const summaryTotal = summary?.totalToPay ?? summary?.balance ?? 0
+  const summaryPeriodClosed = summary?.periodClosed !== false
+  const summaryMeetsThreshold = summaryTotal >= summaryThreshold
+  const emptyStateMessage = withCarryOver
+    ? strings.EMPTY_CARRY_OVER_STATE
+    : aboveThreshold
+      ? strings.EMPTY_THRESHOLD_STATE
+      : strings.EMPTY_STATE
 
   const paginationFrom = rows.length === 0 ? 0 : page * pageSize + 1
   const paginationTo = rows.length === 0
@@ -1087,6 +1104,10 @@ const AgencyCommissions = () => {
                   control={<Switch checked={aboveThreshold} onChange={handleAboveThresholdChange} />}
                   label={strings.FILTER_ABOVE_THRESHOLD}
                 />
+                <FormControlLabel
+                  control={<Switch checked={withCarryOver} onChange={handleWithCarryOverChange} />}
+                  label={strings.FILTER_WITH_CARRY_OVER}
+                />
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { lg: 'auto' } }}>
                   <Tooltip title={strings.PREVIOUS_MONTH}>
                     <span>
@@ -1133,11 +1154,14 @@ const AgencyCommissions = () => {
                 title: strings.COMMISSION_DUE,
                 value: summaryData ? formatCurrency(summaryData.commissionDue) : '—',
               }, {
-                title: strings.COMMISSION_COLLECTED,
-                value: summaryData ? formatCurrency(summaryData.commissionCollected) : '—',
+                title: strings.CARRY_OVER_TOTAL,
+                value: summaryData ? formatCurrency(summaryData.carryOverTotal || 0) : '—',
               }, {
-                title: strings.ABOVE_THRESHOLD_COUNT,
-                value: summaryData ? formatNumber(summaryData.agenciesAboveThreshold, language) : '—',
+                title: strings.PAYABLE_TOTAL,
+                value: summaryData ? formatCurrency(summaryData.payableTotal || 0) : '—',
+              }, {
+                title: strings.UNDER_THRESHOLD_COUNT,
+                value: summaryData ? formatNumber(summaryData.agenciesUnderThreshold || 0, language) : '—',
               }].map((item) => (
                 <Paper key={item.title} elevation={0} className="ac-kpi-card">
                   <Typography variant="caption" color="text.secondary">{item.title}</Typography>
@@ -1157,9 +1181,17 @@ const AgencyCommissions = () => {
                   <TableRow>
                     <TableCell>{strings.COLUMN_AGENCY}</TableCell>
                     <TableCell align="right">{strings.COLUMN_RESERVATIONS}</TableCell>
-                    <TableCell align="right">{strings.COLUMN_GROSS}</TableCell>
                     <TableCell align="right">{strings.COLUMN_DUE}</TableCell>
-                    <TableCell align="center">{strings.BOOKING_COLUMN_PAYMENT_STATUS}</TableCell>
+                    <TableCell align="right">
+                      <Tooltip title={strings.TOOLTIP_CARRY_OVER} placement="top">
+                        <span>{strings.COLUMN_CARRY_OVER}</span>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Tooltip title={strings.TOOLTIP_PAYABLE} placement="top">
+                        <span>{strings.COLUMN_TOTAL_TO_PAY}</span>
+                      </Tooltip>
+                    </TableCell>
                     <TableCell align="center">{strings.COLUMN_STATUS}</TableCell>
                     <TableCell align="center">{strings.COLUMN_ACTIONS}</TableCell>
                   </TableRow>
@@ -1175,25 +1207,28 @@ const AgencyCommissions = () => {
                     <TableRow>
                       <TableCell colSpan={7} align="center">
                         <Typography variant="body2" color="text.secondary">
-                          {aboveThreshold ? strings.EMPTY_THRESHOLD_STATE : strings.EMPTY_STATE}
+                          {emptyStateMessage}
                         </Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
                     rows.map((row) => {
                       const { agency } = row
-                      let paymentStatusLabel = strings.PAYMENT_STATUS_UNPAID
-                      let paymentStatusColor: 'success' | 'warning' | 'error' = 'error'
-                      let paymentStatusVariant: 'filled' | 'outlined' = 'outlined'
-
-                      if (row.balance <= 0) {
-                        paymentStatusLabel = strings.PAYMENT_STATUS_PAID
-                        paymentStatusColor = 'success'
-                        paymentStatusVariant = 'filled'
-                      } else if (row.commissionCollected > 0) {
-                        paymentStatusLabel = strings.PAYMENT_STATUS_PARTIAL
-                        paymentStatusColor = 'warning'
-                      }
+                      const meetsThreshold = row.totalToPay >= thresholdValue
+                      const isPeriodOpen = !row.periodClosed
+                      const statusChip = (
+                        <Chip size="small" color={getStatusChipColor(row.status)} label={mapStatusToLabel(row.status)} />
+                      )
+                      const totalColor = row.payable
+                        ? 'success.main'
+                        : isPeriodOpen && meetsThreshold
+                          ? 'info.main'
+                          : 'warning.main'
+                      const paymentTooltip = strings.ACTION_MARK_PAID
+                      const canSendReminder = meetsThreshold
+                      const reminderTooltip = canSendReminder
+                        ? strings.ACTION_REMIND
+                        : strings.REMINDER_DISABLED_THRESHOLD
 
                       return (
                         <TableRow key={agency.id} hover>
@@ -1215,25 +1250,64 @@ const AgencyCommissions = () => {
                             </Typography>
                           </TableCell>
                           <TableCell align="right">{formatNumber(row.reservations, language)}</TableCell>
-                          <TableCell align="right">{formatCurrency(row.grossTurnover)}</TableCell>
                           <TableCell align="right">{formatCurrency(row.commissionDue)}</TableCell>
-                          <TableCell align="center">
-                            <Chip size="small" color={paymentStatusColor} variant={paymentStatusVariant} label={paymentStatusLabel} />
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+                              <Typography variant="body2">{formatCurrency(row.carryOver)}</Typography>
+                              {row.carryOver > 0 && (
+                                <Chip
+                                  size="small"
+                                  color="warning"
+                                  variant="outlined"
+                                  label={strings.BADGE_CARRY_OVER}
+                                />
+                              )}
+                            </Stack>
+                          </TableCell>
+                          <TableCell align="right">
+                            <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+                              <Typography
+                                variant="body2"
+                                fontWeight={700}
+                                color={totalColor}
+                              >
+                                {formatCurrency(row.totalToPay)}
+                              </Typography>
+                              {row.payable ? (
+                                <Chip size="small" color="success" variant="filled" label={strings.BADGE_PAYABLE} />
+                              ) : isPeriodOpen && meetsThreshold ? (
+                                <Chip size="small" color="info" variant="outlined" label={strings.BADGE_PERIOD_OPEN} />
+                              ) : (
+                                <Chip size="small" color="warning" variant="outlined" label={strings.BADGE_BELOW_THRESHOLD} />
+                              )}
+                            </Stack>
                           </TableCell>
                           <TableCell align="center">
-                            <Chip size="small" color={getStatusChipColor(row.status)} label={mapStatusToLabel(row.status)} />
+                            {statusChip}
                           </TableCell>
                           <TableCell align="center">
                             <Stack direction="row" spacing={0.5} justifyContent="center">
-                              <Tooltip title={strings.ACTION_REMIND}>
-                                <IconButton size="small" onClick={() => handleOpenReminder(row)}>
-                                  <SendIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title={strings.ACTION_MARK_PAID}>
-                                <IconButton size="small" onClick={() => handleOpenPaymentDialog(row)}>
-                                  <PaidIcon fontSize="small" />
-                                </IconButton>
+                              {canSendReminder && (
+                                <Tooltip title={reminderTooltip}>
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleOpenReminder(row)}
+                                    >
+                                      <SendIcon fontSize="small" />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                              )}
+                              <Tooltip title={paymentTooltip}>
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleOpenPaymentDialog(row)}
+                                  >
+                                    <PaidIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
                               </Tooltip>
                               <Tooltip title={row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}>
                                 <IconButton size="small" onClick={() => handleToggleBlock(row)}>
@@ -1304,8 +1378,24 @@ const AgencyCommissions = () => {
                         </Typography>
                         <Box className="ac-drawer-meta">
                           <Chip size="small" color={getStatusChipColor(currentStatus)} label={mapStatusToLabel(currentStatus)} />
-                          {summary?.aboveThreshold && (
-                            <Chip size="small" color="warning" variant="outlined" label={strings.DRAWER_SUMMARY_ABOVE_THRESHOLD} />
+                          {summary?.carryOver ? (
+                            <Chip size="small" color="warning" variant="outlined" label={strings.BADGE_CARRY_OVER} />
+                          ) : null}
+                          {summary && (
+                            <Chip
+                              size="small"
+                              color={summary.payable
+                                ? 'success'
+                                : !summaryPeriodClosed && summaryMeetsThreshold
+                                  ? 'info'
+                                  : 'warning'}
+                              variant={summary.payable ? 'filled' : 'outlined'}
+                              label={summary.payable
+                                ? strings.BADGE_PAYABLE
+                                : !summaryPeriodClosed && summaryMeetsThreshold
+                                  ? strings.BADGE_PERIOD_OPEN
+                                  : strings.BADGE_BELOW_THRESHOLD}
+                            />
                           )}
                         </Box>
                       </Box>
@@ -1368,10 +1458,23 @@ const AgencyCommissions = () => {
                           </Paper>
                           <Paper elevation={0} className="ac-summary-card">
                             <Typography variant="caption" color="text.secondary">
-                              {strings.DRAWER_SUMMARY_BALANCE}
+                              {strings.DRAWER_SUMMARY_CARRY_OVER}
                             </Typography>
-                            <Typography variant="h6" color={summary.balance > 0 ? 'error' : 'success'}>
-                              {formatCurrency(summary.balance)}
+                            <Typography variant="h6">{formatCurrency(summary.carryOver || 0)}</Typography>
+                          </Paper>
+                          <Paper elevation={0} className="ac-summary-card">
+                            <Typography variant="caption" color="text.secondary">
+                              {strings.DRAWER_SUMMARY_TOTAL_TO_PAY}
+                            </Typography>
+                            <Typography
+                              variant="h6"
+                              color={summary.payable
+                                ? 'success.main'
+                                : !summaryPeriodClosed && summaryMeetsThreshold
+                                  ? 'info.main'
+                                  : 'warning.main'}
+                            >
+                              {formatCurrency(summary.totalToPay || summary.balance)}
                             </Typography>
                           </Paper>
                           <Paper elevation={0} className="ac-summary-card">
@@ -1379,9 +1482,21 @@ const AgencyCommissions = () => {
                               {strings.DRAWER_SUMMARY_THRESHOLD}
                             </Typography>
                             <Typography variant="h6">{formatCurrency(summary.threshold)}</Typography>
-                            {summary.aboveThreshold && (
-                              <Chip size="small" color="warning" className="ac-summary-chip" label={strings.DRAWER_SUMMARY_ABOVE_THRESHOLD} />
-                            )}
+                            <Chip
+                              size="small"
+                              color={summary.payable
+                                ? 'success'
+                                : !summaryPeriodClosed && summaryMeetsThreshold
+                                  ? 'info'
+                                  : 'warning'}
+                              className="ac-summary-chip"
+                              variant={summary.payable ? 'filled' : 'outlined'}
+                              label={summary.payable
+                                ? strings.BADGE_PAYABLE
+                                : !summaryPeriodClosed && summaryMeetsThreshold
+                                  ? strings.BADGE_PERIOD_OPEN
+                                  : strings.BADGE_BELOW_THRESHOLD}
+                            />
                           </Paper>
                         </Box>
                       </Box>
@@ -1398,13 +1513,19 @@ const AgencyCommissions = () => {
                         color="warning"
                         startIcon={<PaymentIcon />}
                         onClick={handleOpenPaymentMenu}
+                        disabled={!summaryMeetsThreshold}
                       >
                         {strings.DRAWER_ACTION_PAY}
                       </Button>
                       <Button variant="contained" startIcon={<SendIcon />} onClick={() => selectedAgency && handleOpenReminder(selectedAgency)}>
                         {strings.DRAWER_ACTION_REMIND}
                       </Button>
-                      <Button variant="outlined" startIcon={<PaidIcon />} onClick={() => selectedAgency && handleOpenPaymentDialog(selectedAgency)}>
+                      <Button
+                        variant="outlined"
+                        startIcon={<PaidIcon />}
+                        onClick={() => selectedAgency && handleOpenPaymentDialog(selectedAgency)}
+                        disabled={!selectedAgency}
+                      >
                         {strings.DRAWER_ACTION_PAYMENT}
                       </Button>
                       <Button variant="outlined" startIcon={<NoteAddIcon />} onClick={() => selectedAgency && handleOpenNoteDialog(selectedAgency)}>

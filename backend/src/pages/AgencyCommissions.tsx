@@ -33,6 +33,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   InputAdornment,
@@ -40,7 +41,9 @@ import {
   Menu,
   ListItemIcon,
   ListItemText,
+  useMediaQuery,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import { SelectChangeEvent } from '@mui/material/Select'
 import {
   ChevronLeft as ChevronLeftIcon,
@@ -999,6 +1002,9 @@ const AgencyCommissions = () => {
       ? strings.EMPTY_THRESHOLD_STATE
       : strings.EMPTY_STATE
 
+  const theme = useTheme()
+  const isMobileView = useMediaQuery(theme.breakpoints.down('md'))
+
   const paginationFrom = rows.length === 0 ? 0 : page * pageSize + 1
   const paginationTo = rows.length === 0
     ? 0
@@ -1081,6 +1087,8 @@ const AgencyCommissions = () => {
                   placeholder={strings.SEARCH_PLACEHOLDER}
                   size="small"
                   value={searchTerm}
+                  fullWidth
+                  sx={{ width: { xs: '100%', lg: 320 } }}
                   onChange={(event) => setSearchTerm(event.target.value)}
                   onKeyDown={handleSearchKeyDown}
                   InputProps={{
@@ -1098,7 +1106,11 @@ const AgencyCommissions = () => {
                     ),
                   }}
                 />
-                <FormControl size="small" sx={{ minWidth: 180 }}>
+                <FormControl
+                  size="small"
+                  fullWidth
+                  sx={{ width: { xs: '100%', lg: 180 } }}
+                >
                   <InputLabel>{strings.STATUS_FILTER_LABEL}</InputLabel>
                   <Select value={statusFilter} label={strings.STATUS_FILTER_LABEL} onChange={handleStatusChange}>
                     <MenuItem value="all">{strings.STATUS_ALL}</MenuItem>
@@ -1108,22 +1120,37 @@ const AgencyCommissions = () => {
                   </Select>
                 </FormControl>
                 <FormControlLabel
+                  sx={{ m: 0, width: { xs: '100%', lg: 'auto' } }}
                   control={<Switch checked={aboveThreshold} onChange={handleAboveThresholdChange} />}
                   label={strings.FILTER_ABOVE_THRESHOLD}
                 />
                 <FormControlLabel
+                  sx={{ m: 0, width: { xs: '100%', lg: 'auto' } }}
                   control={<Switch checked={withCarryOver} onChange={handleWithCarryOverChange} />}
                   label={strings.FILTER_WITH_CARRY_OVER}
                 />
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { lg: 'auto' } }}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1}
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                  sx={{ ml: { lg: 'auto' }, width: { xs: '100%', lg: 'auto' } }}
+                >
                   <Tooltip title={strings.PREVIOUS_MONTH}>
                     <span>
-                      <IconButton onClick={handlePreviousMonth} disabled={loading}>
+                      <IconButton
+                        onClick={handlePreviousMonth}
+                        disabled={loading}
+                        sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                      >
                         <ChevronLeftIcon />
                       </IconButton>
                     </span>
                   </Tooltip>
-                  <FormControl size="small" sx={{ minWidth: 160 }}>
+                  <FormControl
+                    size="small"
+                    fullWidth
+                    sx={{ width: { xs: '100%', sm: 200, lg: 160 } }}
+                  >
                     <InputLabel>{strings.MONTH_LABEL}</InputLabel>
                     <Select value={month} label={strings.MONTH_LABEL} onChange={handleMonthChange}>
                       {monthOptions.map((option) => (
@@ -1133,7 +1160,11 @@ const AgencyCommissions = () => {
                       ))}
                     </Select>
                   </FormControl>
-                  <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <FormControl
+                    size="small"
+                    fullWidth
+                    sx={{ width: { xs: '100%', sm: 160, lg: 120 } }}
+                  >
                     <InputLabel>{strings.YEAR_LABEL}</InputLabel>
                     <Select value={year} label={strings.YEAR_LABEL} onChange={handleYearChange}>
                       {Array.from({ length: 5 }).map((_, index) => {
@@ -1144,7 +1175,11 @@ const AgencyCommissions = () => {
                   </FormControl>
                   <Tooltip title={strings.NEXT_MONTH}>
                     <span>
-                      <IconButton onClick={handleNextMonth} disabled={loading}>
+                      <IconButton
+                        onClick={handleNextMonth}
+                        disabled={loading}
+                        sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                      >
                         <ChevronRightIcon />
                       </IconButton>
                     </span>
@@ -1181,43 +1216,23 @@ const AgencyCommissions = () => {
               {strings.AGENCIES_SECTION_TITLE}
             </Typography>
 
-            <Paper elevation={0} className="ac-table">
+            <Paper
+              elevation={0}
+              className={`ac-table${isMobileView ? ' ac-table-mobile' : ''}`}
+            >
               {loading && <LinearProgress color="primary" />}
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>{strings.COLUMN_AGENCY}</TableCell>
-                    <TableCell align="right">{strings.COLUMN_RESERVATIONS}</TableCell>
-                    <TableCell align="right">{strings.COLUMN_DUE}</TableCell>
-                    <TableCell align="right">
-                      <Tooltip title={strings.TOOLTIP_CARRY_OVER} placement="top">
-                        <span>{strings.COLUMN_CARRY_OVER}</span>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip title={strings.TOOLTIP_PAYABLE} placement="top">
-                        <span>{strings.COLUMN_TOTAL_TO_PAY}</span>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell align="center">{strings.COLUMN_STATUS}</TableCell>
-                    <TableCell align="center">{strings.COLUMN_ACTIONS}</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
+              {isMobileView ? (
+                <Stack spacing={2} className="ac-mobile-list">
                   {loading && rows.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">
-                        <CircularProgress size={24} />
-                      </TableCell>
-                    </TableRow>
+                    <Box className="ac-mobile-placeholder">
+                      <CircularProgress size={24} />
+                    </Box>
                   ) : rows.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">
-                        <Typography variant="body2" color="text.secondary">
-                          {emptyStateMessage}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
+                    <Box className="ac-mobile-placeholder">
+                      <Typography variant="body2" color="text.secondary">
+                        {emptyStateMessage}
+                      </Typography>
+                    </Box>
                   ) : (
                     rows.map((row) => {
                       const { agency } = row
@@ -1236,104 +1251,313 @@ const AgencyCommissions = () => {
                       const reminderTooltip = canSendReminder
                         ? strings.ACTION_REMIND
                         : strings.REMINDER_DISABLED_THRESHOLD
+                      const carryOverChip = row.carryOver > 0
+                        ? (
+                          <Chip size="small" color="warning" variant="outlined" label={strings.BADGE_CARRY_OVER} />
+                        )
+                        : undefined
+                      const totalChip = row.payable
+                        ? <Chip size="small" color="success" variant="filled" label={strings.BADGE_PAYABLE} />
+                        : isPeriodOpen && meetsThreshold
+                          ? <Chip size="small" color="info" variant="outlined" label={strings.BADGE_PERIOD_OPEN} />
+                          : <Chip size="small" color="warning" variant="outlined" label={strings.BADGE_BELOW_THRESHOLD} />
+                      const blockLabel = row.status === bookcarsTypes.AgencyCommissionStatus.Blocked
+                        ? strings.ACTION_UNBLOCK
+                        : strings.ACTION_BLOCK
+                      const blockIcon = row.status === bookcarsTypes.AgencyCommissionStatus.Blocked
+                        ? <LockOpenIcon fontSize="small" />
+                        : <BlockIcon fontSize="small" />
+
+                      const mobileStats: {
+                        label: string
+                        value: string
+                        chip?: React.ReactNode
+                        color?: string
+                      }[] = [
+                        {
+                          label: strings.COLUMN_RESERVATIONS,
+                          value: formatNumber(row.reservations, language),
+                        },
+                        {
+                          label: strings.COLUMN_DUE,
+                          value: formatCurrency(row.commissionDue),
+                        },
+                        {
+                          label: strings.COLUMN_CARRY_OVER,
+                          value: formatCurrency(row.carryOver),
+                          chip: carryOverChip,
+                        },
+                        {
+                          label: strings.COLUMN_TOTAL_TO_PAY,
+                          value: formatCurrency(row.totalToPay),
+                          chip: totalChip,
+                          color: totalColor,
+                        },
+                      ]
 
                       return (
-                        <TableRow key={agency.id} hover>
-                          <TableCell>
-                            <Typography
-                              component={Link}
-                              href={`/supplier?c=${agency.id}`}
-                              variant="body2"
-                              fontWeight={600}
-                              color="primary"
-                              sx={{
-                                textDecoration: 'none',
-                                '&:hover': {
-                                  textDecoration: 'underline',
-                                },
-                              }}
-                            >
-                              {agency.name}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="right">{formatNumber(row.reservations, language)}</TableCell>
-                          <TableCell align="right">{formatCurrency(row.commissionDue)}</TableCell>
-                          <TableCell align="right">
-                            <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
-                              <Typography variant="body2">{formatCurrency(row.carryOver)}</Typography>
-                              {row.carryOver > 0 && (
-                                <Chip
-                                  size="small"
-                                  color="warning"
-                                  variant="outlined"
-                                  label={strings.BADGE_CARRY_OVER}
-                                />
-                              )}
-                            </Stack>
-                          </TableCell>
-                          <TableCell align="right">
-                            <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
-                              <Typography
-                                variant="body2"
-                                fontWeight={700}
-                                color={totalColor}
-                              >
-                                {formatCurrency(row.totalToPay)}
-                              </Typography>
-                              {row.payable ? (
-                                <Chip size="small" color="success" variant="filled" label={strings.BADGE_PAYABLE} />
-                              ) : isPeriodOpen && meetsThreshold ? (
-                                <Chip size="small" color="info" variant="outlined" label={strings.BADGE_PERIOD_OPEN} />
-                              ) : (
-                                <Chip size="small" color="warning" variant="outlined" label={strings.BADGE_BELOW_THRESHOLD} />
-                              )}
-                            </Stack>
-                          </TableCell>
-                          <TableCell align="center">
-                            {statusChip}
-                          </TableCell>
-                          <TableCell align="center">
-                            <Stack direction="row" spacing={0.5} justifyContent="center">
-                              {canSendReminder && (
-                                <Tooltip title={reminderTooltip}>
-                                  <span>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleOpenReminder(row)}
-                                    >
-                                      <SendIcon fontSize="small" />
-                                    </IconButton>
-                                  </span>
-                                </Tooltip>
-                              )}
-                              <Tooltip title={paymentTooltip}>
-                                <span>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleOpenPaymentDialog(row)}
+                        <Box key={agency.id} className="ac-mobile-card">
+                          <Stack spacing={1.5}>
+                            <Box className="ac-mobile-card-header">
+                              <Box className="ac-mobile-card-identity">
+                                <Typography
+                                  component={Link}
+                                  href={`/supplier?c=${agency.id}`}
+                                  variant="subtitle1"
+                                  fontWeight={600}
+                                  color="primary"
+                                  sx={{
+                                    textDecoration: 'none',
+                                    '&:hover': {
+                                      textDecoration: 'underline',
+                                    },
+                                  }}
+                                >
+                                  {agency.name}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {[agency.city, agency.email, agency.phone].filter(Boolean).join(' • ')}
+                                </Typography>
+                              </Box>
+                              {statusChip}
+                            </Box>
+                            <Divider />
+                            <Box className="ac-mobile-card-metrics">
+                              {mobileStats.map((item) => (
+                                <Box key={item.label} className="ac-mobile-card-metric">
+                                  <Typography variant="caption" color="text.secondary">
+                                    {item.label}
+                                  </Typography>
+                                  <Typography
+                                    variant="body1"
+                                    className="ac-mobile-meta-value"
+                                    color={item.color}
                                   >
-                                    <PaidIcon fontSize="small" />
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                              <Tooltip title={row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}>
-                                <IconButton size="small" onClick={() => handleToggleBlock(row)}>
-                                  {row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? <LockOpenIcon fontSize="small" /> : <BlockIcon fontSize="small" />}
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title={strings.ACTION_DETAILS}>
-                                <IconButton size="small" onClick={() => openDrawer(row)}>
-                                  <VisibilityIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </Stack>
-                          </TableCell>
-                        </TableRow>
+                                    {item.value}
+                                  </Typography>
+                                  {item.chip}
+                                </Box>
+                              ))}
+                            </Box>
+                            <Box className="ac-mobile-actions">
+                              {canSendReminder ? (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  fullWidth
+                                  startIcon={<SendIcon fontSize="small" />}
+                                  onClick={() => handleOpenReminder(row)}
+                                >
+                                  {strings.ACTION_REMIND}
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  fullWidth
+                                  startIcon={<SendIcon fontSize="small" />}
+                                  disabled
+                                  title={reminderTooltip}
+                                >
+                                  {strings.ACTION_REMIND}
+                                </Button>
+                              )}
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                fullWidth
+                                startIcon={<PaidIcon fontSize="small" />}
+                                onClick={() => handleOpenPaymentDialog(row)}
+                                title={paymentTooltip}
+                              >
+                                {strings.ACTION_MARK_PAID}
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                fullWidth
+                                color={row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? 'success' : 'error'}
+                                startIcon={blockIcon}
+                                onClick={() => handleToggleBlock(row)}
+                              >
+                                {blockLabel}
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                fullWidth
+                                startIcon={<VisibilityIcon fontSize="small" />}
+                                onClick={() => openDrawer(row)}
+                              >
+                                {strings.ACTION_DETAILS}
+                              </Button>
+                            </Box>
+                            {!canSendReminder && (
+                              <Typography variant="caption" color="text.secondary">
+                                {strings.REMINDER_DISABLED_THRESHOLD}
+                              </Typography>
+                            )}
+                          </Stack>
+                        </Box>
                       )
                     })
                   )}
-                </TableBody>
-              </Table>
+                </Stack>
+              ) : (
+                <TableContainer className="ac-table-container">
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>{strings.COLUMN_AGENCY}</TableCell>
+                        <TableCell align="right">{strings.COLUMN_RESERVATIONS}</TableCell>
+                        <TableCell align="right">{strings.COLUMN_DUE}</TableCell>
+                        <TableCell align="right">
+                          <Tooltip title={strings.TOOLTIP_CARRY_OVER} placement="top">
+                            <span>{strings.COLUMN_CARRY_OVER}</span>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Tooltip title={strings.TOOLTIP_PAYABLE} placement="top">
+                            <span>{strings.COLUMN_TOTAL_TO_PAY}</span>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell align="center">{strings.COLUMN_STATUS}</TableCell>
+                        <TableCell align="center">{strings.COLUMN_ACTIONS}</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {loading && rows.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} align="center">
+                            <CircularProgress size={24} />
+                          </TableCell>
+                        </TableRow>
+                      ) : rows.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} align="center">
+                            <Typography variant="body2" color="text.secondary">
+                              {emptyStateMessage}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        rows.map((row) => {
+                          const { agency } = row
+                          const meetsThreshold = row.totalToPay >= thresholdValue
+                          const isPeriodOpen = !row.periodClosed
+                          const statusChip = (
+                            <Chip size="small" color={getStatusChipColor(row.status)} label={mapStatusToLabel(row.status)} />
+                          )
+                          const totalColor = row.payable
+                            ? 'success.main'
+                            : isPeriodOpen && meetsThreshold
+                              ? 'info.main'
+                              : 'warning.main'
+                          const paymentTooltip = strings.ACTION_MARK_PAID
+                          const canSendReminder = meetsThreshold
+                          const reminderTooltip = canSendReminder
+                            ? strings.ACTION_REMIND
+                            : strings.REMINDER_DISABLED_THRESHOLD
+
+                          return (
+                            <TableRow key={agency.id} hover>
+                              <TableCell>
+                                <Typography
+                                  component={Link}
+                                  href={`/supplier?c=${agency.id}`}
+                                  variant="body2"
+                                  fontWeight={600}
+                                  color="primary"
+                                  sx={{
+                                    textDecoration: 'none',
+                                    '&:hover': {
+                                      textDecoration: 'underline',
+                                    },
+                                  }}
+                                >
+                                  {agency.name}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="right">{formatNumber(row.reservations, language)}</TableCell>
+                              <TableCell align="right">{formatCurrency(row.commissionDue)}</TableCell>
+                              <TableCell align="right">
+                                <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+                                  <Typography variant="body2">{formatCurrency(row.carryOver)}</Typography>
+                                  {row.carryOver > 0 && (
+                                    <Chip
+                                      size="small"
+                                      color="warning"
+                                      variant="outlined"
+                                      label={strings.BADGE_CARRY_OVER}
+                                    />
+                                  )}
+                                </Stack>
+                              </TableCell>
+                              <TableCell align="right">
+                                <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight={700}
+                                    color={totalColor}
+                                  >
+                                    {formatCurrency(row.totalToPay)}
+                                  </Typography>
+                                  {row.payable ? (
+                                    <Chip size="small" color="success" variant="filled" label={strings.BADGE_PAYABLE} />
+                                  ) : isPeriodOpen && meetsThreshold ? (
+                                    <Chip size="small" color="info" variant="outlined" label={strings.BADGE_PERIOD_OPEN} />
+                                  ) : (
+                                    <Chip size="small" color="warning" variant="outlined" label={strings.BADGE_BELOW_THRESHOLD} />
+                                  )}
+                                </Stack>
+                              </TableCell>
+                              <TableCell align="center">
+                                {statusChip}
+                              </TableCell>
+                              <TableCell align="center">
+                                <Stack direction="row" spacing={0.5} justifyContent="center">
+                                  {canSendReminder && (
+                                    <Tooltip title={reminderTooltip}>
+                                      <span>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleOpenReminder(row)}
+                                        >
+                                          <SendIcon fontSize="small" />
+                                        </IconButton>
+                                      </span>
+                                    </Tooltip>
+                                  )}
+                                  <Tooltip title={paymentTooltip}>
+                                    <span>
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => handleOpenPaymentDialog(row)}
+                                      >
+                                        <PaidIcon fontSize="small" />
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
+                                  <Tooltip title={row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}>
+                                    <IconButton size="small" onClick={() => handleToggleBlock(row)}>
+                                      {row.status === bookcarsTypes.AgencyCommissionStatus.Blocked ? <LockOpenIcon fontSize="small" /> : <BlockIcon fontSize="small" />}
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title={strings.ACTION_DETAILS}>
+                                    <IconButton size="small" onClick={() => openDrawer(row)}>
+                                      <VisibilityIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </Stack>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
             </Paper>
 
             <Box className="ac-table-footer">

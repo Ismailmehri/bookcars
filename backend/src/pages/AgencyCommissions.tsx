@@ -298,14 +298,21 @@ const AgencyCommissions = () => {
     }
 
     if (selectedAgency && data?.summary) {
+      const { threshold } = data.summary
+
       return {
+        // champs provenant de selectedAgency
         reservations: selectedAgency.reservations,
         grossTurnover: selectedAgency.grossTurnover,
         commissionDue: selectedAgency.commissionDue,
         commissionCollected: selectedAgency.commissionCollected,
         balance: selectedAgency.balance,
-        threshold: data.summary.threshold,
         aboveThreshold: selectedAgency.aboveThreshold,
+        carryOver: selectedAgency.carryOver,
+        totalToPay: selectedAgency.totalToPay,
+        payable: selectedAgency.payable,
+        periodClosed: selectedAgency.periodClosed,
+        threshold
       }
     }
 

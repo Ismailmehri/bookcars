@@ -61,6 +61,24 @@ const env = {
       ? Const.PAGINATION_MODE.INFINITE_SCROLL
       : Const.PAGINATION_MODE.CLASSIC,
   CURRENCY: import.meta.env.VITE_BC_CURRENCY || '$',
+  COMMISSION_ENABLED:
+    (import.meta.env.VITE_BC_COMMISSION_ENABLED && import.meta.env.VITE_BC_COMMISSION_ENABLED.toLowerCase()) === 'true',
+  COMMISSION_RATE:
+    (() => {
+      const value = Number.parseFloat(String(import.meta.env.VITE_BC_COMMISSION_RATE ?? '5'))
+      return Number.isNaN(value) ? 5 : value
+    })(),
+  COMMISSION_EFFECTIVE_DATE:
+    (() => {
+      const value = String(import.meta.env.VITE_BC_COMMISSION_EFFECTIVE_DATE || '2025-01-01')
+      const date = new Date(value)
+      return Number.isNaN(date.getTime()) ? new Date('2025-01-01T00:00:00Z') : date
+    })(),
+  COMMISSION_MONTHLY_THRESHOLD:
+    (() => {
+      const value = Number.parseInt(String(import.meta.env.VITE_BC_COMMISSION_MONTHLY_THRESHOLD || '50'), 10)
+      return Number.isNaN(value) ? 50 : value
+    })(),
   DEPOSIT_FILTER_VALUE_1: Number.parseInt(String(import.meta.env.VITE_BC_DEPOSIT_FILTER_VALUE_1), 10),
   DEPOSIT_FILTER_VALUE_2: Number.parseInt(String(import.meta.env.VITE_BC_DEPOSIT_FILTER_VALUE_2), 10),
   DEPOSIT_FILTER_VALUE_3: Number.parseInt(String(import.meta.env.VITE_BC_DEPOSIT_FILTER_VALUE_3), 10),

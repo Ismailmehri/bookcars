@@ -66,6 +66,24 @@ const env = {
    * */
   STRIPE_CURRENCY_CODE: String(import.meta.env.VITE_BC_STRIPE_CURRENCY_CODE || 'USD'),
   CURRENCY: import.meta.env.VITE_BC_CURRENCY || '$',
+  COMMISSION_ENABLED:
+    (import.meta.env.VITE_BC_COMMISSION_ENABLED && import.meta.env.VITE_BC_COMMISSION_ENABLED.toLowerCase()) === 'true',
+  COMMISSION_RATE:
+    (() => {
+      const value = Number.parseFloat(String(import.meta.env.VITE_BC_COMMISSION_RATE ?? '5'))
+      return Number.isNaN(value) ? 5 : value
+    })(),
+  COMMISSION_EFFECTIVE_DATE:
+    (() => {
+      const value = String(import.meta.env.VITE_BC_COMMISSION_EFFECTIVE_DATE || '2025-01-01')
+      const date = new Date(value)
+      return Number.isNaN(date.getTime()) ? new Date('2025-01-01T00:00:00Z') : date
+    })(),
+  COMMISSION_MONTHLY_THRESHOLD:
+    (() => {
+      const value = Number.parseInt(String(import.meta.env.VITE_BC_COMMISSION_MONTHLY_THRESHOLD || '50'), 10)
+      return Number.isNaN(value) ? 50 : value
+    })(),
   SET_LANGUAGE_FROM_IP: (import.meta.env.VITE_BC_SET_LANGUAGE_FROM_IP && import.meta.env.VITE_BC_SET_LANGUAGE_FROM_IP.toLowerCase()) === 'true',
   GOOGLE_ANALYTICS_ENABLED: (import.meta.env.VITE_BC_GOOGLE_ANALYTICS_ENABLED && import.meta.env.VITE_BC_GOOGLE_ANALYTICS_ENABLED.toLowerCase()) === 'true',
   GOOGLE_ANALYTICS_ID: String(import.meta.env.VITE_BC_GOOGLE_ANALYTICS_ID),

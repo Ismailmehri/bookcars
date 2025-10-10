@@ -1,6 +1,7 @@
 import LocalizedStrings from 'react-localization'
 import env from '@/config/env.config'
 import * as langHelper from '@/common/langHelper'
+import { strings as commonStrings } from '@/lang/common'
 
 const strings = new LocalizedStrings({
   fr: {
@@ -12,6 +13,38 @@ const strings = new LocalizedStrings({
     LOCATIONS: 'Lieux de prise en charge',
     AVAILABLE: 'Disponible à la location',
     CAR_TYPE: 'Moteur',
+    AGENCY_DEFAULT_PRICE_LABEL: 'Prix agence par défaut',
+    AGENCY_PRICE_LABEL: 'Prix agence',
+    CLIENT_PRICE_LABEL: 'Prix client',
+    COMMISSION_LABEL: 'Commission Plany',
+    AGENCY_PRICE_COLUMN_LABEL: `Prix agence (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
+    CLIENT_PRICE_COLUMN_LABEL: `Prix client (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
+    COMMISSION_COLUMN_LABEL: `Commission (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
+    CLIENT_PRICE_INFO_TITLE: 'Information sur la commission Plany',
+    CLIENT_PRICE_INFO_INTRO:
+      'À partir du {date}, chaque réservation inclura une commission de {rate} ajoutée automatiquement par Plany au prix agence que vous saisissez.',
+    CLIENT_PRICE_INFO_EXAMPLE:
+      '',
+    CLIENT_PRICE_INFO_COLLECTION:
+      'La commission est collectée par votre agence au moment de la réservation puis reversée à Plany chaque mois.',
+    CLIENT_PRICE_INFO_LINK: 'Consultez la page {link} pour plus de détails.',
+    CLIENT_PRICE_INFO_LINK_LABEL: 'Gestion des commissions',
+    COMMISSION_DETAIL_WITH_AMOUNT: 'Inclut commission Plany, {rate} ({amount})',
+    SPECIAL_PRICE_TITLE: 'Tarifs spéciaux par période',
+    SPECIAL_PRICE_SUBHEADER: 'Utilisez des plages de dates pour ajuster automatiquement le prix client pendant les temps forts.',
+    OPTIONAL_BADGE: 'Optionnel',
+    ADD_PERIOD: 'Ajouter la période',
+    PERIOD_REQUIRED_ERROR: 'Veuillez renseigner la date de début, la date de fin et le prix agence pour ajouter un tarif.',
+    PERIOD_DATE_ORDER_ERROR: 'La date de fin doit être postérieure ou égale à la date de début.',
+    PERIOD_PRICE_ERROR: 'Le prix agence doit être supérieur à 0.',
+    PERIOD_SAVE_SUCCESS: 'Tarif spécial enregistré.',
+    PERIOD_SAVE_ERROR: 'Impossible d\'enregistrer le tarif spécial. Veuillez réessayer.',
+    PERIOD_PENDING_WARNING: "Veuillez cliquer sur 'Ajouter' pour enregistrer la période avant de soumettre le formulaire.",
+    UNAVAILABLE_PERIOD_PENDING_WARNING:
+      "Veuillez cliquer sur 'Ajouter' pour enregistrer la période d'indisponibilité avant de soumettre le formulaire.",
+    EDIT_PERIOD_TITLE: 'Modifier le tarif spécial',
+    EDIT_PERIOD_DESCRIPTION: 'Ajustez les dates et les montants. Le prix client sera mis à jour automatiquement avec la commission Plany.',
+    SAVE_CHANGES: 'Enregistrer',
     START_DATE: 'Date de début',
     ACTIONS_BUTTON: 'Actions',
     END_DATE: 'Date de fin',
@@ -52,6 +85,39 @@ const strings = new LocalizedStrings({
     LOCATIONS: 'Pickup locations',
     AVAILABLE: 'Available for rental',
     CAR_TYPE: 'Engine',
+    AGENCY_DEFAULT_PRICE_LABEL: 'Default agency price',
+    AGENCY_PRICE_LABEL: 'Agency price',
+    CLIENT_PRICE_LABEL: 'Client price',
+    COMMISSION_LABEL: 'Plany commission',
+    AGENCY_PRICE_COLUMN_LABEL: `Agency price (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
+    CLIENT_PRICE_COLUMN_LABEL: `Client price (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
+    COMMISSION_COLUMN_LABEL: `Commission (${commonStrings.CURRENCY}${commonStrings.DAILY})`,
+    CLIENT_PRICE_INFO_TITLE: 'Plany commission information',
+    CLIENT_PRICE_INFO_INTRO:
+      'Starting {date} (configurable in the .env file), every booking will include a {rate} commission automatically added by Plany to the agency price you enter.',
+    CLIENT_PRICE_INFO_FORMULA: '👉 Client price displayed = Agency price + Plany commission.',
+    CLIENT_PRICE_INFO_EXAMPLE:
+      'Example: Agency price = {agencyPrice}, commission = {rate} ({commissionAmount}) → Client price = {clientPrice}.',
+    CLIENT_PRICE_INFO_COLLECTION:
+      'The commission is collected by your agency at booking time and then paid back to Plany every month.',
+    CLIENT_PRICE_INFO_LINK: 'ℹ️ See the {link} page for more details.',
+    CLIENT_PRICE_INFO_LINK_LABEL: 'Commission management',
+    COMMISSION_DETAIL_WITH_AMOUNT: 'Includes Plany commission, {rate} ({amount})',
+    SPECIAL_PRICE_TITLE: 'Special pricing by period',
+    SPECIAL_PRICE_SUBHEADER: 'Use date windows to automatically adapt the client price for peak demand.',
+    OPTIONAL_BADGE: 'Optional',
+    ADD_PERIOD: 'Add period',
+    PERIOD_REQUIRED_ERROR: 'Please provide a start date, end date, and agency price to add the period.',
+    PERIOD_DATE_ORDER_ERROR: 'The end date must be on or after the start date.',
+    PERIOD_PRICE_ERROR: 'The agency price must be greater than 0.',
+    PERIOD_SAVE_SUCCESS: 'Special pricing period saved.',
+    PERIOD_SAVE_ERROR: 'Unable to save the special period. Please try again.',
+    PERIOD_PENDING_WARNING: "Please click 'Add' to save the period before submitting the form.",
+    UNAVAILABLE_PERIOD_PENDING_WARNING:
+      "Please click 'Add' to save the unavailable period before submitting the form.",
+    EDIT_PERIOD_TITLE: 'Edit special price',
+    EDIT_PERIOD_DESCRIPTION: 'Update the date range and agency price. The client price automatically reflects the Plany commission.',
+    SAVE_CHANGES: 'Save changes',
     DAILY_PRICE: 'Daily Price',
     START_DATE: 'Date de début',
     ACTIONS_BUTTON: 'Actions',

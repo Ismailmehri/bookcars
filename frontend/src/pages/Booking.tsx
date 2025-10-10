@@ -79,10 +79,14 @@ const Booking = () => {
         if (_car && from && to) {
           const _booking = bookcarsHelper.clone(booking)
           _booking.car = _car
-          const _price = bookcarsHelper.calculateTotalPrice(_car, from, to, _booking)
+          const breakdown = bookcarsHelper.calculatePriceBreakdown(_car, from, to, _booking)
+
+          _booking.price = breakdown.totalPrice
+          _booking.commissionRate = breakdown.commissionRate
+          _booking.commissionTotal = breakdown.commissionTotal
 
           setBooking(_booking)
-          setPrice(_price)
+          setPrice(breakdown.totalPrice)
           setCar(newCar)
         } else {
           helper.error()
@@ -106,14 +110,19 @@ const Booking = () => {
     if (booking && booking.car) {
       booking.cancellation = e.target.checked
 
-      const _price = bookcarsHelper.calculateTotalPrice(
+      const breakdown = bookcarsHelper.calculatePriceBreakdown(
         booking.car as bookcarsTypes.Car,
         new Date(booking.from),
         new Date(booking.to),
         booking as bookcarsTypes.CarOptions
       )
+
+      booking.price = breakdown.totalPrice
+      booking.commissionRate = breakdown.commissionRate
+      booking.commissionTotal = breakdown.commissionTotal
+
       setBooking(booking)
-      setPrice(_price)
+      setPrice(breakdown.totalPrice)
       setCancellation(booking.cancellation)
     }
   }
@@ -122,14 +131,19 @@ const Booking = () => {
     if (booking && booking.car) {
       booking.amendments = e.target.checked
 
-      const _price = bookcarsHelper.calculateTotalPrice(
+      const breakdown = bookcarsHelper.calculatePriceBreakdown(
         booking.car as bookcarsTypes.Car,
         new Date(booking.from),
         new Date(booking.to),
         booking as bookcarsTypes.CarOptions
       )
+
+      booking.price = breakdown.totalPrice
+      booking.commissionRate = breakdown.commissionRate
+      booking.commissionTotal = breakdown.commissionTotal
+
       setBooking(booking)
-      setPrice(_price)
+      setPrice(breakdown.totalPrice)
       setAmendments(booking.amendments)
     }
   }
@@ -138,14 +152,19 @@ const Booking = () => {
     if (booking && booking.car) {
       booking.collisionDamageWaiver = e.target.checked
 
-      const _price = bookcarsHelper.calculateTotalPrice(
+      const breakdown = bookcarsHelper.calculatePriceBreakdown(
         booking.car as bookcarsTypes.Car,
         new Date(booking.from),
         new Date(booking.to),
         booking as bookcarsTypes.CarOptions
       )
+
+      booking.price = breakdown.totalPrice
+      booking.commissionRate = breakdown.commissionRate
+      booking.commissionTotal = breakdown.commissionTotal
+
       setBooking(booking)
-      setPrice(_price)
+      setPrice(breakdown.totalPrice)
       setCollisionDamageWaiver(booking.collisionDamageWaiver)
     }
   }
@@ -154,14 +173,19 @@ const Booking = () => {
     if (booking && booking.car) {
       booking.theftProtection = e.target.checked
 
-      const _price = bookcarsHelper.calculateTotalPrice(
+      const breakdown = bookcarsHelper.calculatePriceBreakdown(
         booking.car as bookcarsTypes.Car,
         new Date(booking.from),
         new Date(booking.to),
         booking as bookcarsTypes.CarOptions
       )
+
+      booking.price = breakdown.totalPrice
+      booking.commissionRate = breakdown.commissionRate
+      booking.commissionTotal = breakdown.commissionTotal
+
       setBooking(booking)
-      setPrice(_price)
+      setPrice(breakdown.totalPrice)
       setTheftProtection(booking.theftProtection)
     }
   }
@@ -170,14 +194,19 @@ const Booking = () => {
     if (booking && booking.car) {
       booking.fullInsurance = e.target.checked
 
-      const _price = bookcarsHelper.calculateTotalPrice(
+      const breakdown = bookcarsHelper.calculatePriceBreakdown(
         booking.car as bookcarsTypes.Car,
         new Date(booking.from),
         new Date(booking.to),
         booking as bookcarsTypes.CarOptions
       )
+
+      booking.price = breakdown.totalPrice
+      booking.commissionRate = breakdown.commissionRate
+      booking.commissionTotal = breakdown.commissionTotal
+
       setBooking(booking)
-      setPrice(_price)
+      setPrice(breakdown.totalPrice)
       setFullInsurance(booking.fullInsurance)
     }
   }
@@ -186,14 +215,19 @@ const Booking = () => {
     if (booking && booking.car) {
       booking.additionalDriver = e.target.checked
 
-      const _price = bookcarsHelper.calculateTotalPrice(
+      const breakdown = bookcarsHelper.calculatePriceBreakdown(
         booking.car as bookcarsTypes.Car,
         new Date(booking.from),
         new Date(booking.to),
         booking as bookcarsTypes.CarOptions
       )
+
+      booking.price = breakdown.totalPrice
+      booking.commissionRate = breakdown.commissionRate
+      booking.commissionTotal = breakdown.commissionTotal
+
       setBooking(booking)
-      setPrice(_price)
+      setPrice(breakdown.totalPrice)
       setAdditionalDriver(booking.additionalDriver)
     }
   }
@@ -222,7 +256,9 @@ const Booking = () => {
         theftProtection,
         collisionDamageWaiver,
         fullInsurance,
-        price
+        price,
+        commissionRate: booking.commissionRate,
+        commissionTotal: booking.commissionTotal,
       }
 
       const payload = { booking: _booking }
@@ -369,15 +405,19 @@ const Booking = () => {
                     if (_from) {
                       booking.from = _from
 
-                      const _price = bookcarsHelper.calculateTotalPrice(
+                      const breakdown = bookcarsHelper.calculatePriceBreakdown(
                         booking.car as bookcarsTypes.Car,
                         new Date(booking.from),
                         new Date(booking.to),
                         booking as bookcarsTypes.CarOptions
                       )
-                      booking.price = _price
+
+                      booking.price = breakdown.totalPrice
+                      booking.commissionRate = breakdown.commissionRate
+                      booking.commissionTotal = breakdown.commissionTotal
+
                       setBooking(booking)
-                      setPrice(_price)
+                      setPrice(breakdown.totalPrice)
                       setFrom(_from)
                       setMinDate(_from)
                     }
@@ -396,15 +436,19 @@ const Booking = () => {
                     if (_to) {
                       booking.to = _to
 
-                      const _price = bookcarsHelper.calculateTotalPrice(
+                      const breakdown = bookcarsHelper.calculatePriceBreakdown(
                         booking.car as bookcarsTypes.Car,
                         new Date(booking.from),
                         new Date(booking.to),
                         booking as bookcarsTypes.CarOptions
                       )
-                      booking.price = _price
+
+                      booking.price = breakdown.totalPrice
+                      booking.commissionRate = breakdown.commissionRate
+                      booking.commissionTotal = breakdown.commissionTotal
+
                       setBooking(booking)
-                      setPrice(_price)
+                      setPrice(breakdown.totalPrice)
                       setTo(_to)
                     }
                   }}

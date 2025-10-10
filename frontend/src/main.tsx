@@ -10,6 +10,7 @@ import { frFR as corefrFR, enUS as coreenUS, elGR as coreelGR } from '@mui/mater
 import { frFR, enUS, elGR } from '@mui/x-date-pickers/locales'
 import { frFR as dataGridfrFR, enUS as dataGridenUS, elGR as dataGridelGR } from '@mui/x-data-grid/locales'
 import { disableDevTools } from ':disable-react-devtools'
+import { setCommissionConfig } from ':bookcars-helper'
 import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
 import env from '@/config/env.config'
@@ -56,6 +57,13 @@ import '@/assets/css/index.css'
 if (env.isProduction) {
   disableDevTools()
 }
+
+setCommissionConfig({
+  enabled: env.COMMISSION_ENABLED,
+  rate: env.COMMISSION_RATE,
+  effectiveDate: env.COMMISSION_EFFECTIVE_DATE,
+  monthlyThreshold: env.COMMISSION_MONTHLY_THRESHOLD,
+})
 
 let language = env.DEFAULT_LANGUAGE
 const user = JSON.parse(localStorage.getItem('bc-user') ?? 'null')

@@ -188,7 +188,7 @@ const computeLedgerContext = (
   let carryOver = 0
   let credit = 0
   let currentCollected = 0
-  let netCurrent = 0
+  let currentOutstanding = 0
 
   normalizedEntries.forEach((entry) => {
     const key = buildMonthKey(entry.year, entry.month)
@@ -209,15 +209,46 @@ const computeLedgerContext = (
         credit = normalizeNumber(-adjusted)
       }
     } else if (isCurrent) {
-      currentCollected = collected
-      netCurrent = net
+      currentCollected = normalizeNumber(collected)
+      const adjusted = net - credit
+      if (adjusted > 0) {
+        currentOutstanding = normalizeNumber(adjusted)
+        credit = 0
+      } else {
+        currentOutstanding = 0
+        credit = normalizeNumber(-adjusted)
+      }
     }
   })
 
-  const adjustedCurrent = netCurrent - credit
-  const currentOutstanding = Math.max(adjustedCurrent, 0)
-  const advance = adjustedCurrent < 0 ? -adjustedCurrent : 0
-  const totalToPay = carryOver + adjustedCurrent
+  if (credit > 0 && carryOverItems.length > 0) {
+    for (let index = 0; index < carryOverItems.length && credit > 0; index += 1) {
+      const item = carryOverItems[index]
+      const applied = Math.min(item.amount, credit)
+      if (applied > 0) {
+        item.amount -= applied
+        credit -= applied
+      }
+    }
+  }
+
+  let normalizedCarryOver = 0
+  const filteredCarryOverItems = carryOverItems
+    .filter((item) => item.amount > 0)
+    .map((item) => {
+      const normalizedAmount = normalizeNumber(item.amount)
+      normalizedCarryOver += normalizedAmount
+      return {
+        year: item.year,
+        month: item.month,
+        amount: normalizedAmount,
+      }
+    })
+
+  carryOver = normalizedCarryOver
+
+  const advance = credit > 0 ? normalizeNumber(credit) : 0
+  const totalToPay = carryOver + currentOutstanding - advance
   const meetsThreshold = totalToPay >= threshold
   const payable = periodClosed && meetsThreshold
 
@@ -225,7 +256,7 @@ const computeLedgerContext = (
     carryOver: normalizeNumber(carryOver),
     totalToPay: normalizeNumber(totalToPay),
     payable,
-    carryOverItems,
+    carryOverItems: filteredCarryOverItems,
     currentEntry,
     currentCollected: normalizeNumber(currentCollected),
     currentOutstanding: normalizeNumber(currentOutstanding),

@@ -96,7 +96,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 68px 28px;
+  padding: 68px 28px 40px;
   background: linear-gradient(180deg, #f9fbff 0%, #f1f3f9 100%);
   min-height: 100%;
 }
@@ -106,6 +106,18 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 20px;
+  flex-wrap: wrap;
+}
+
+.ac-drawer-close {
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #fff;
+  color: #0f172a;
+}
+
+.ac-drawer-close:hover {
+  background: #fff;
 }
 
 .agency-commissions .ac-table {
@@ -314,7 +326,7 @@
   }
 
   .ac-drawer-content {
-    padding: 32px 20px;
+    padding: 32px 20px 36px;
   }
 }
 
@@ -389,7 +401,7 @@
   }
 
   .ac-drawer-content {
-    padding: 24px 20px;
+    padding: 24px 20px 32px;
   }
 }
 

@@ -79,6 +79,8 @@ import { strings } from '@/lang/agency-commissions'
 import { strings as commonStrings } from '@/lang/common'
 import * as CommissionService from '@/services/CommissionService'
 
+import getDrawerSafePaddingTop from './agency-commissions.helpers'
+
 import '@/assets/css/agency-commissions.css'
 
 /** ---------- FIX ESLint: move nested component out ---------- */
@@ -1004,6 +1006,10 @@ const AgencyCommissions = () => {
 
   const theme = useTheme()
   const isMobileView = useMediaQuery(theme.breakpoints.down('md'))
+  const drawerPaddingTop = useMemo(
+    () => getDrawerSafePaddingTop(isMobileView ? 88 : 96),
+    [isMobileView],
+  )
 
   const paginationFrom = rows.length === 0 ? 0 : page * pageSize + 1
   const paginationTo = rows.length === 0
@@ -1595,12 +1601,22 @@ const AgencyCommissions = () => {
               },
             }}
           >
-            <Box className="ac-drawer-content">
+            <Box className="ac-drawer-content" sx={{ pt: drawerPaddingTop }}>
               {detailLoading && <LinearProgress className="ac-drawer-progress" />}
               {selectedAgency && activeAgency ? (
                 <>
                   <Box className="ac-drawer-header">
-                    <Stack direction="row" spacing={2} alignItems="center">
+                    <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+                      {isMobileView && (
+                        <IconButton
+                          size="small"
+                          onClick={handleDrawerClose}
+                          aria-label={strings.DRAWER_CLOSE}
+                          className="ac-drawer-close"
+                        >
+                          <ChevronLeftIcon fontSize="small" />
+                        </IconButton>
+                      )}
                       <Avatar>{agencyInitials}</Avatar>
                       <Box className="ac-drawer-identity">
                         <Typography variant="h6" fontWeight={700}>{activeAgency.name}</Typography>
@@ -1631,18 +1647,26 @@ const AgencyCommissions = () => {
                         </Box>
                       </Box>
                     </Stack>
-                    <Tooltip title={isBlocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}>
-                      <span>
-                        <Button
-                          variant="outlined"
-                          color={isBlocked ? 'success' : 'error'}
-                          startIcon={isBlocked ? <LockOpenIcon /> : <BlockIcon />}
-                          onClick={() => selectedAgency && handleToggleBlock(selectedAgency)}
-                        >
-                          {isBlocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}
-                        </Button>
-                      </span>
-                    </Tooltip>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: { xs: 'flex-start', md: 'flex-end' },
+                        width: { xs: '100%', md: 'auto' },
+                      }}
+                    >
+                      <Tooltip title={isBlocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}>
+                        <span>
+                          <Button
+                            variant="outlined"
+                            color={isBlocked ? 'success' : 'error'}
+                            startIcon={isBlocked ? <LockOpenIcon /> : <BlockIcon />}
+                            onClick={() => selectedAgency && handleToggleBlock(selectedAgency)}
+                          >
+                            {isBlocked ? strings.ACTION_UNBLOCK : strings.ACTION_BLOCK}
+                          </Button>
+                        </span>
+                      </Tooltip>
+                    </Box>
                   </Box>
 
                   <Divider />

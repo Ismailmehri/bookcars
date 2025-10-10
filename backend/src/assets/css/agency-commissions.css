@@ -29,16 +29,26 @@
   padding: 16px 20px;
 }
 
+
 .agency-commissions .ac-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  align-items: center;
+  align-items: stretch;
+  width: 100%;
+}
+
+.agency-commissions .ac-filters > * {
+  flex: 1 1 220px;
+}
+
+.agency-commissions .ac-filters > .MuiStack-root {
+  flex: 1 1 100%;
 }
 
 .agency-commissions .ac-kpis {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   width: 100%;
 }
@@ -86,7 +96,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 68px 28px;
+  padding: 68px 28px 40px;
   background: linear-gradient(180deg, #f9fbff 0%, #f1f3f9 100%);
   min-height: 100%;
 }
@@ -96,6 +106,18 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 20px;
+  flex-wrap: wrap;
+}
+
+.ac-drawer-close {
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #fff;
+  color: #0f172a;
+}
+
+.ac-drawer-close:hover {
+  background: #fff;
 }
 
 .agency-commissions .ac-table {
@@ -103,6 +125,92 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.agency-commissions .ac-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.agency-commissions .ac-table-container table {
+  min-width: 960px;
+}
+
+.agency-commissions .ac-table-mobile {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  overflow: visible;
+}
+
+.agency-commissions .ac-mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.agency-commissions .ac-mobile-placeholder {
+  padding: 32px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px dashed #d1d5db;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.agency-commissions .ac-mobile-card {
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.agency-commissions .ac-mobile-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.agency-commissions .ac-mobile-card-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.agency-commissions .ac-mobile-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.agency-commissions .ac-mobile-card-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.agency-commissions .ac-mobile-meta-value {
+  font-weight: 600;
+}
+
+.agency-commissions .ac-mobile-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .agency-commissions .ac-filters > * {
+    flex: 1 1 100%;
+  }
 }
 
 .ac-drawer-identity {
@@ -218,7 +326,7 @@
   }
 
   .ac-drawer-content {
-    padding: 32px 20px;
+    padding: 32px 20px 36px;
   }
 }
 
@@ -256,7 +364,8 @@
   }
 
   .agency-commissions .ac-search-field {
-    min-width: 220px;
+    min-width: 0;
+    width: 100%;
   }
 
   .agency-commissions .ac-filters-card {
@@ -265,6 +374,10 @@
 
   .agency-commissions .ac-kpis {
     grid-template-columns: 1fr;
+  }
+
+  .agency-commissions .ac-mobile-list {
+    padding: 12px 8px;
   }
 
   .agency-commissions .ac-table-footer {
@@ -288,6 +401,18 @@
   }
 
   .ac-drawer-content {
-    padding: 24px 20px;
+    padding: 24px 20px 32px;
+  }
+}
+
+@media (max-width: 600px) {
+  .agency-commissions .ac-mobile-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .agency-commissions .ac-mobile-card-metrics {
+    grid-template-columns: 1fr;
   }
 }

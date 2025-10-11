@@ -1471,5 +1471,6 @@ const CarStats = () => {
       {(!user || isBusy) && <SimpleBackdrop text={strings.LOADING} />}
     </Layout>
   )
+}
 
 export default CarStats

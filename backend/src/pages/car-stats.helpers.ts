@@ -36,3 +36,23 @@ export const getOverdueDays = (endDate: string | Date, reference: Date = new Dat
 
   return diff <= 0 ? 0 : Math.floor(diff / (1000 * 60 * 60 * 24))
 }
+
+export const averagePriceAcrossCategories = (
+  data: bookcarsTypes.AgencyAveragePriceByCategory[],
+  field: 'averageDailyPrice' | 'averageMonthlyPrice',
+) => {
+  if (!data.length) {
+    return null
+  }
+
+  const values = data
+    .map((item) => item[field])
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
+
+  if (!values.length) {
+    return null
+  }
+
+  const total = values.reduce((sum, value) => sum + value, 0)
+  return total / values.length
+}

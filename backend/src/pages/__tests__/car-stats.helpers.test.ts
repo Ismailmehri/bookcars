@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import * as bookcarsTypes from ':bookcars-types'
-import { formatPercentage, getOverdueDays, sumViewsByDate } from '../car-stats.helpers'
+import {
+  averagePriceAcrossCategories,
+  formatPercentage,
+  getOverdueDays,
+  sumViewsByDate,
+} from '../car-stats.helpers'
 
 describe('car-stats.helpers', () => {
   it('aggregates views by date', () => {
@@ -58,5 +63,25 @@ describe('car-stats.helpers', () => {
     expect(getOverdueDays('2024-02-09T00:00:00Z', now)).toBe(1)
     expect(getOverdueDays('2024-02-11T00:00:00Z', now)).toBe(0)
     expect(getOverdueDays('invalid', now)).toBe(0)
+  })
+
+  it('averages prices across categories and skips null values', () => {
+    const averages: bookcarsTypes.AgencyAveragePriceByCategory[] = [
+      { category: bookcarsTypes.CarRange.Mini, averageDailyPrice: 40, averageMonthlyPrice: 1100 },
+      { category: bookcarsTypes.CarRange.Midi, averageDailyPrice: 50, averageMonthlyPrice: null },
+      { category: bookcarsTypes.CarRange.Maxi, averageDailyPrice: 70, averageMonthlyPrice: 1500 },
+    ]
+
+    expect(averagePriceAcrossCategories(averages, 'averageDailyPrice')).toBeCloseTo(53.33, 1)
+    expect(averagePriceAcrossCategories(averages, 'averageMonthlyPrice')).toBeCloseTo(1300, 5)
+    expect(averagePriceAcrossCategories([], 'averageDailyPrice')).toBeNull()
+    expect(
+      averagePriceAcrossCategories(
+        [
+          { category: bookcarsTypes.CarRange.Midi, averageDailyPrice: 0, averageMonthlyPrice: null },
+        ],
+        'averageMonthlyPrice',
+      ),
+    ).toBeNull()
   })
 })

@@ -35,6 +35,8 @@ import {
   TableRow,
   Tooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import WatchLaterIcon from '@mui/icons-material/WatchLater'
@@ -48,7 +50,7 @@ import AgencyScore from '@/components/AgencyScore'
 import * as helper from '@/common/helper'
 import env from '@/config/env.config'
 import { strings } from '@/lang/stats'
-import { formatPercentage, sumViewsByDate } from './car-stats.helpers'
+import { averagePriceAcrossCategories, formatPercentage, sumViewsByDate } from './car-stats.helpers'
 
 const LineChart = lazy(() => import('@mui/x-charts').then((module) => ({ default: module.LineChart })))
 const PieChart = lazy(() => import('@mui/x-charts').then((module) => ({ default: module.PieChart })))
@@ -248,6 +250,9 @@ const CarStats = () => {
   const [pendingUpdatesRowsPerPage, setPendingUpdatesRowsPerPage] = useState(5)
   const [rankingOrderBy, setRankingOrderBy] = useState<RankingOrderKey>('score')
   const [rankingOrder, setRankingOrder] = useState<'asc' | 'desc'>('desc')
+
+  const theme = useTheme()
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'))
 
   const sortedStats = useMemo(
     () => [...stats].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
@@ -534,31 +539,55 @@ const CarStats = () => {
     [pendingUpdates, pendingUpdatesPage, pendingUpdatesRowsPerPage],
   )
 
-  const revenueCards = useMemo(
+  const summaryCards = useMemo(
     () => [
       {
-        label: strings.SUMMARY_TOTAL_REVENUE,
-        value: summary.total,
+        key: 'revenue',
+        label: strings.METRIC_TOTAL_REVENUE,
+        value: formatPrice(summary.total),
         background: '#EEF3FF',
       },
       {
-        label: strings.SUMMARY_PAID,
-        value: summary.paid,
+        key: 'bookings',
+        label: strings.METRIC_TOTAL_BOOKINGS,
+        value: formatInteger(agencyOverview?.totalBookings ?? null),
         background: '#E8F5E9',
       },
       {
-        label: strings.SUMMARY_DEPOSIT,
-        value: summary.deposit,
+        key: 'acceptance',
+        label: strings.METRIC_ACCEPTANCE_RATE,
+        value: agencyOverview
+          ? formatPercentage(agencyOverview.acceptanceRate, localeForDate)
+          : '—',
         background: '#FFF8E1',
       },
       {
-        label: strings.SUMMARY_RESERVED,
-        value: summary.reserved,
+        key: 'cancellation',
+        label: strings.METRIC_CANCELLATION_RATE,
+        value: agencyOverview
+          ? formatPercentage(agencyOverview.cancellationRate, localeForDate)
+          : '—',
         background: '#E3F2FD',
       },
     ],
-    [summary.deposit, summary.paid, summary.reserved, summary.total],
+    [agencyOverview, summary.total, localeForDate],
   )
+
+  const aggregatedPriceAverages = useMemo(
+    () => ({
+      daily: averagePriceAcrossCategories(agencyAveragePrices, 'averageDailyPrice'),
+      monthly: averagePriceAcrossCategories(agencyAveragePrices, 'averageMonthlyPrice'),
+    }),
+    [agencyAveragePrices],
+  )
+
+  const averageBookingValue = useMemo(() => {
+    if (!agencyOverview || agencyOverview.totalBookings === 0) {
+      return null
+    }
+
+    return agencyOverview.totalRevenue / agencyOverview.totalBookings
+  }, [agencyOverview])
 
   const performanceSubtitle = useMemo(
     () =>
@@ -590,7 +619,7 @@ const CarStats = () => {
   return (
     <Layout onLoad={onLoad} strict>
       {user && !isBusy ? (
-        <Box sx={{ padding: env.isMobile() ? 2 : 4, backgroundColor: '#f8fafc', minHeight: '100%' }}>
+        <Box sx={{ padding: isSmallScreen ? 2 : 4, backgroundColor: '#f8fafc', minHeight: '100%' }}>
           <Stack spacing={4}>
             <Box>
               <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }} gutterBottom>
@@ -612,19 +641,30 @@ const CarStats = () => {
               {agencyOverviewError && <Alert severity="error">{agencyOverviewError}</Alert>}
             </Stack>
 
-            <Grid container spacing={2}>
-              {revenueCards.map((card) => (
-                <Grid item xs={12} sm={6} md={3} key={card.label}>
-                  <Card sx={{ height: '100%', backgroundColor: card.background }}>
+            <Grid container spacing={isSmallScreen ? 2 : 3}>
+              {summaryCards.map((card) => (
+                <Grid item xs={12} sm={6} md={3} key={card.key}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      backgroundColor: card.background,
+                      display: 'flex',
+                      flexDirection: 'column',
+                    }}
+                  >
                     <CardHeader
                       title={(
                         <Typography variant="subtitle2" color="text.secondary">
                           {card.label}
                         </Typography>
                       )}
+                      subheader={card.key === 'revenue' && selectedAgencyName ? selectedAgencyName : undefined}
+                      subheaderTypographyProps={{ variant: 'caption' }}
                     />
-                    <CardContent>
-                      <Typography variant="h4">{helper.formatNumber(card.value)}</Typography>
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Typography variant="h4" component="p" sx={{ fontWeight: 700 }}>
+                        {card.value}
+                      </Typography>
                     </CardContent>
                   </Card>
                 </Grid>
@@ -760,30 +800,56 @@ const CarStats = () => {
                           initialScoreBreakdown={agencyOverview.score}
                         />
                         <Divider sx={{ my: 2 }} />
-                        <Stack spacing={1.5}>
-                          <Stack spacing={0.5}>
-                            <Typography variant="body2" color="text.secondary">
-                              {strings.TOTAL_CARS_LABEL}
-                            </Typography>
-                            <Typography variant="h5">{formatInteger(totalCarsForAgency)}</Typography>
-                          </Stack>
-                          <Stack spacing={0.5}>
-                            <Typography variant="body2" color="text.secondary">
-                              {strings.METRIC_LAST_CONNECTION}
-                            </Typography>
-                            <Typography variant="subtitle1">
-                              {formatDate(lastConnectionDate)}
-                            </Typography>
-                          </Stack>
-                          <Stack spacing={0.5}>
-                            <Typography variant="body2" color="text.secondary">
-                              {strings.METRIC_LAST_ACTIVITY}
-                            </Typography>
-                            <Typography variant="subtitle1">
-                              {formatDate(lastActivityDate)}
-                            </Typography>
-                          </Stack>
-                        </Stack>
+                        <Grid container spacing={2}>
+                          <Grid item xs={6} md={3}>
+                            <Stack spacing={0.5}>
+                              <Typography variant="body2" color="text.secondary">
+                                {strings.TOTAL_CARS_LABEL}
+                              </Typography>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                {formatInteger(totalCarsForAgency)}
+                              </Typography>
+                            </Stack>
+                          </Grid>
+                          <Grid item xs={6} md={3}>
+                            <Stack spacing={0.5}>
+                              <Typography variant="body2" color="text.secondary">
+                                {strings.METRIC_PENDING_UPDATES}
+                              </Typography>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                {formatInteger(pendingUpdateDisplayCount)}
+                              </Typography>
+                              {pendingUpdates.length > 0 ? (
+                                <Typography variant="caption" color="text.secondary">
+                                  {strings.METRIC_PENDING_UPDATES_HELP.replace(
+                                    '{count}',
+                                    formatInteger(pendingUpdates.length),
+                                  )}
+                                </Typography>
+                              ) : null}
+                            </Stack>
+                          </Grid>
+                          <Grid item xs={12} md={3}>
+                            <Stack spacing={0.5}>
+                              <Typography variant="body2" color="text.secondary">
+                                {strings.METRIC_LAST_CONNECTION}
+                              </Typography>
+                              <Typography variant="subtitle1">
+                                {formatDate(lastConnectionDate)}
+                              </Typography>
+                            </Stack>
+                          </Grid>
+                          <Grid item xs={12} md={3}>
+                            <Stack spacing={0.5}>
+                              <Typography variant="body2" color="text.secondary">
+                                {strings.METRIC_LAST_ACTIVITY}
+                              </Typography>
+                              <Typography variant="subtitle1">
+                                {formatDate(lastActivityDate)}
+                              </Typography>
+                            </Stack>
+                          </Grid>
+                        </Grid>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -791,36 +857,42 @@ const CarStats = () => {
                     <Grid container spacing={2}>
                       <Grid item xs={12} sm={6} md={4}>
                         <StatCard
-                          label={strings.METRIC_TOTAL_BOOKINGS}
-                          value={formatInteger(agencyOverview.totalBookings)}
+                          label={strings.AVERAGE_BOOKING_VALUE}
+                          value={averageBookingValue !== null ? formatPrice(averageBookingValue) : '—'}
+                          helperText={agencyOverview
+                            ? strings.AVERAGE_BOOKING_VALUE_HELP.replace(
+                                '{count}',
+                                formatInteger(agencyOverview.totalBookings),
+                              )
+                            : undefined}
                         />
                       </Grid>
                       <Grid item xs={12} sm={6} md={4}>
                         <StatCard
-                          label={strings.METRIC_TOTAL_REVENUE}
-                          value={formatPrice(agencyOverview.totalRevenue)}
+                          label={strings.AVERAGE_DAILY_PRICE_LABEL}
+                          value={aggregatedPriceAverages.daily !== null
+                            ? formatPrice(aggregatedPriceAverages.daily)
+                            : '—'}
+                          helperText={agencyAveragePrices.length > 0
+                            ? strings.AVERAGE_PRICE_AGGREGATE_HELP.replace(
+                                '{count}',
+                                formatInteger(agencyAveragePrices.length),
+                              )
+                            : undefined}
                         />
                       </Grid>
                       <Grid item xs={12} sm={6} md={4}>
                         <StatCard
-                          label={strings.METRIC_ACCEPTANCE_RATE}
-                          value={formatPercentage(agencyOverview.acceptanceRate)}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6} md={4}>
-                        <StatCard
-                          label={strings.METRIC_CANCELLATION_RATE}
-                          value={formatPercentage(agencyOverview.cancellationRate)}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6} md={4}>
-                        <StatCard
-                          label={strings.METRIC_PENDING_UPDATES}
-                          value={formatInteger(pendingUpdateDisplayCount)}
-                          helperText={strings.METRIC_PENDING_UPDATES_HELP.replace(
-                            '{count}',
-                            formatInteger(pendingUpdates.length),
-                          )}
+                          label={strings.AVERAGE_MONTHLY_PRICE_LABEL}
+                          value={aggregatedPriceAverages.monthly !== null
+                            ? formatPrice(aggregatedPriceAverages.monthly)
+                            : '—'}
+                          helperText={agencyAveragePrices.length > 0
+                            ? strings.AVERAGE_PRICE_AGGREGATE_HELP.replace(
+                                '{count}',
+                                formatInteger(agencyAveragePrices.length),
+                              )
+                            : undefined}
                         />
                       </Grid>
                       <Grid item xs={12} sm={6} md={4}>
@@ -848,7 +920,7 @@ const CarStats = () => {
                     <CardHeader title={strings.SECTION_AVERAGE_PRICES_GLOBAL} />
                     <CardContent>
                       {adminAveragePrices.length > 0 ? (
-                        <TableContainer>
+                        <TableContainer sx={{ overflowX: 'auto' }}>
                           <Table size="small" aria-label={strings.SECTION_AVERAGE_PRICES_GLOBAL}>
                             <TableHead>
                               <TableRow>
@@ -884,7 +956,7 @@ const CarStats = () => {
                   />
                   <CardContent>
                     {agencyAveragePrices.length > 0 ? (
-                      <TableContainer>
+                      <TableContainer sx={{ overflowX: 'auto' }}>
                         <Table size="small" aria-label={strings.SECTION_AVERAGE_PRICES_AGENCY}>
                           <TableHead>
                             <TableRow>
@@ -917,7 +989,7 @@ const CarStats = () => {
                   <CardContent>
                     {pendingUpdates.length > 0 ? (
                       <>
-                        <TableContainer>
+                        <TableContainer sx={{ overflowX: 'auto' }}>
                           <Table size="small" aria-label={strings.PENDING_UPDATES_TITLE}>
                             <TableHead>
                               <TableRow>
@@ -973,7 +1045,7 @@ const CarStats = () => {
                     <CardContent>
                       {globalTopModels.length > 0 ? (
                         <>
-                          <TableContainer>
+                          <TableContainer sx={{ overflowX: 'auto' }}>
                             <Table size="small" aria-label={strings.SECTION_TOP_MODELS_GLOBAL}>
                               <TableHead>
                                 <TableRow>
@@ -1023,7 +1095,7 @@ const CarStats = () => {
                   <CardContent>
                     {agencyTopModels.length > 0 ? (
                       <>
-                        <TableContainer>
+                        <TableContainer sx={{ overflowX: 'auto' }}>
                           <Table size="small" aria-label={strings.SECTION_TOP_MODELS_AGENCY}>
                             <TableHead>
                               <TableRow>
@@ -1119,7 +1191,7 @@ const CarStats = () => {
                       {bookingStats.length > 0 ? (
                         <Suspense fallback={chartFallback}>
                           <PieChart
-                            height={env.isMobile() ? 400 : 320}
+                            height={isSmallScreen ? 400 : 320}
                             series={[
                               {
                                 data: bookingStats.map((item) => ({
@@ -1132,7 +1204,7 @@ const CarStats = () => {
                               },
                             ]}
                             legend={
-                              env.isMobile()
+                              isSmallScreen
                                 ? { direction: 'row', position: { vertical: 'bottom', horizontal: 'middle' } }
                                 : {}
                             }
@@ -1152,7 +1224,7 @@ const CarStats = () => {
                       {bookingStats.length > 0 ? (
                         <Suspense fallback={chartFallback}>
                           <PieChart
-                            height={env.isMobile() ? 400 : 320}
+                            height={isSmallScreen ? 400 : 320}
                             series={[
                               {
                                 data: bookingStats.map((item) => ({
@@ -1165,7 +1237,7 @@ const CarStats = () => {
                               },
                             ]}
                             legend={
-                              env.isMobile()
+                              isSmallScreen
                                 ? { direction: 'row', position: { vertical: 'bottom', horizontal: 'middle' } }
                                 : {}
                             }
@@ -1190,7 +1262,7 @@ const CarStats = () => {
                       <CardContent>
                         {ranking.length > 0 ? (
                           <>
-                            <TableContainer>
+                            <TableContainer sx={{ overflowX: 'auto' }}>
                               <Table size="small" aria-label={strings.RANKING_TITLE}>
                                 <TableHead>
                                   <TableRow>

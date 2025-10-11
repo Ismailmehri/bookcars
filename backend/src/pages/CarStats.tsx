@@ -9,8 +9,12 @@ import React, {
 import {
   Alert,
   Box,
+  Card,
+  CardContent,
+  CardHeader,
   Chip,
   CircularProgress,
+  Divider,
   FormControl,
   Grid,
   InputLabel,
@@ -18,14 +22,19 @@ import {
   ListItem,
   ListItemText,
   MenuItem,
-  Paper,
   Select,
   SelectChangeEvent,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
   Tooltip,
   Typography,
 } from '@mui/material'
-import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
 import WatchLaterIcon from '@mui/icons-material/WatchLater'
 import { subDays, subMonths } from 'date-fns'
@@ -42,7 +51,6 @@ import { formatPercentage, sumViewsByDate } from './car-stats.helpers'
 
 const LineChart = lazy(() => import('@mui/x-charts').then((module) => ({ default: module.LineChart })))
 const PieChart = lazy(() => import('@mui/x-charts').then((module) => ({ default: module.PieChart })))
-const BarChart = lazy(() => import('@mui/x-charts').then((module) => ({ default: module.BarChart })))
 
 const ALL_CARS_VALUE = 'ALL_CARS'
 
@@ -84,6 +92,27 @@ const statusColors: Record<bookcarsTypes.BookingStatus, string> = {
   [bookcarsTypes.BookingStatus.Cancelled]: '#EF5350',
 }
 
+const formatPrice = (value: number | null | undefined) => {
+  if (value === null || value === undefined) {
+    return '—'
+  }
+
+  return helper.formatNumber(value)
+}
+
+const SectionTitle: React.FC<{ title: string; subtitle?: string }> = ({ title, subtitle }) => (
+  <Box component="header" mb={1}>
+    <Typography variant="h5" component="h2" sx={{ fontWeight: 600 }}>
+      {title}
+    </Typography>
+    {subtitle ? (
+      <Typography variant="body2" color="text.secondary">
+        {subtitle}
+      </Typography>
+    ) : null}
+  </Box>
+)
+
 const carRangeLabels: Record<bookcarsTypes.CarRange, string> = {
   [bookcarsTypes.CarRange.Mini]: 'Mini',
   [bookcarsTypes.CarRange.Midi]: 'Midi',
@@ -121,6 +150,15 @@ const CarStats = () => {
 
   const [suppliers, setSuppliers] = useState<bookcarsTypes.SuppliersStat[]>([])
   const [selectedSupplier, setSelectedSupplier] = useState('')
+
+  const [rankingPage, setRankingPage] = useState(0)
+  const [rankingRowsPerPage, setRankingRowsPerPage] = useState(5)
+  const [globalTopModelsPage, setGlobalTopModelsPage] = useState(0)
+  const [globalTopModelsRowsPerPage, setGlobalTopModelsRowsPerPage] = useState(5)
+  const [agencyTopModelsPage, setAgencyTopModelsPage] = useState(0)
+  const [agencyTopModelsRowsPerPage, setAgencyTopModelsRowsPerPage] = useState(5)
+  const [pendingUpdatesPage, setPendingUpdatesPage] = useState(0)
+  const [pendingUpdatesRowsPerPage, setPendingUpdatesRowsPerPage] = useState(5)
 
   const sortedStats = useMemo(
     () => [...stats].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
@@ -257,6 +295,42 @@ const CarStats = () => {
     }
   }
 
+  const handleRankingPageChange = (_event: unknown, newPage: number) => {
+    setRankingPage(newPage)
+  }
+
+  const handleRankingRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRankingRowsPerPage(Number(event.target.value))
+    setRankingPage(0)
+  }
+
+  const handleGlobalTopModelsPageChange = (_event: unknown, newPage: number) => {
+    setGlobalTopModelsPage(newPage)
+  }
+
+  const handleGlobalTopModelsRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setGlobalTopModelsRowsPerPage(Number(event.target.value))
+    setGlobalTopModelsPage(0)
+  }
+
+  const handleAgencyTopModelsPageChange = (_event: unknown, newPage: number) => {
+    setAgencyTopModelsPage(newPage)
+  }
+
+  const handleAgencyTopModelsRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setAgencyTopModelsRowsPerPage(Number(event.target.value))
+    setAgencyTopModelsPage(0)
+  }
+
+  const handlePendingUpdatesPageChange = (_event: unknown, newPage: number) => {
+    setPendingUpdatesPage(newPage)
+  }
+
+  const handlePendingUpdatesRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setPendingUpdatesRowsPerPage(Number(event.target.value))
+    setPendingUpdatesPage(0)
+  }
+
   const onLoad = (_user?: bookcarsTypes.User) => {
     setUser(_user)
     setIsAdmin(helper.admin(_user))
@@ -268,480 +342,825 @@ const CarStats = () => {
   const inactiveAgencies = adminOverview?.inactiveAgencies ?? []
   const highlights = adminOverview?.highlights ?? { topPerformers: [], watchList: [] }
 
-  const averagePriceData = isAdmin
-    ? adminOverview?.averagePrices ?? []
-    : agencyOverview?.averagePrices ?? []
+  const adminAveragePrices = adminOverview?.averagePrices ?? []
+  const agencyAveragePrices = agencyOverview?.averagePrices ?? []
+  const globalTopModels = adminOverview?.topModels ?? []
+  const agencyTopModels = agencyOverview?.topModels ?? []
+  const pendingUpdates = agencyOverview?.pendingUpdates ?? []
+  const totalCarsForAgency = agencyOverview?.totalCars ?? 0
 
-  const topModelsData = isAdmin
-    ? adminOverview?.topModels ?? []
-    : agencyOverview?.topModels ?? []
+  const selectedAgencyName = useMemo(() => {
+    if (!effectiveSupplierId) {
+      return ''
+    }
+
+    if (isAdmin) {
+      const supplier = suppliers.find((item) => item.supplierId === effectiveSupplierId)
+      return supplier?.supplierName ?? ''
+    }
+
+    return user?.fullName ?? ''
+  }, [effectiveSupplierId, isAdmin, suppliers, user?.fullName])
+
+  const paginatedRanking = useMemo(
+    () =>
+      ranking.slice(
+        rankingPage * rankingRowsPerPage,
+        rankingPage * rankingRowsPerPage + rankingRowsPerPage,
+      ),
+    [ranking, rankingPage, rankingRowsPerPage],
+  )
+
+  const paginatedGlobalTopModels = useMemo(
+    () =>
+      globalTopModels.slice(
+        globalTopModelsPage * globalTopModelsRowsPerPage,
+        globalTopModelsPage * globalTopModelsRowsPerPage + globalTopModelsRowsPerPage,
+      ),
+    [globalTopModels, globalTopModelsPage, globalTopModelsRowsPerPage],
+  )
+
+  const paginatedAgencyTopModels = useMemo(
+    () =>
+      agencyTopModels.slice(
+        agencyTopModelsPage * agencyTopModelsRowsPerPage,
+        agencyTopModelsPage * agencyTopModelsRowsPerPage + agencyTopModelsRowsPerPage,
+      ),
+    [agencyTopModels, agencyTopModelsPage, agencyTopModelsRowsPerPage],
+  )
+
+  const paginatedPendingUpdates = useMemo(
+    () =>
+      pendingUpdates.slice(
+        pendingUpdatesPage * pendingUpdatesRowsPerPage,
+        pendingUpdatesPage * pendingUpdatesRowsPerPage + pendingUpdatesRowsPerPage,
+      ),
+    [pendingUpdates, pendingUpdatesPage, pendingUpdatesRowsPerPage],
+  )
+
+  const revenueCards = useMemo(
+    () => [
+      {
+        label: strings.SUMMARY_TOTAL_REVENUE,
+        value: summary.total,
+        background: '#EEF3FF',
+      },
+      {
+        label: strings.SUMMARY_PAID,
+        value: summary.paid,
+        background: '#E8F5E9',
+      },
+      {
+        label: strings.SUMMARY_DEPOSIT,
+        value: summary.deposit,
+        background: '#FFF8E1',
+      },
+      {
+        label: strings.SUMMARY_RESERVED,
+        value: summary.reserved,
+        background: '#E3F2FD',
+      },
+    ],
+    [summary.deposit, summary.paid, summary.reserved, summary.total],
+  )
+
+  const performanceSubtitle = useMemo(
+    () =>
+      (isAdmin
+        ? strings.SECTION_PERFORMANCE_SUBTITLE_ADMIN.replace(
+            '{agency}',
+            selectedAgencyName || strings.PAGE_SUBTITLE_ADMIN_PLACEHOLDER,
+          )
+        : strings.SECTION_PERFORMANCE_SUBTITLE_AGENCY),
+    [isAdmin, selectedAgencyName],
+  )
+
+  useEffect(() => {
+    setRankingPage(0)
+  }, [ranking])
+
+  useEffect(() => {
+    setGlobalTopModelsPage(0)
+  }, [globalTopModels])
+
+  useEffect(() => {
+    setAgencyTopModelsPage(0)
+  }, [agencyTopModels])
+
+  useEffect(() => {
+    setPendingUpdatesPage(0)
+  }, [pendingUpdates])
 
   return (
     <Layout onLoad={onLoad} strict>
-      {user && !isBusy && (
-        <Box sx={{ padding: env.isMobile() ? 2 : 3 }}>
-          <Stack spacing={2} mb={2}>
-            {chartError && <Alert severity="error">{chartError}</Alert>}
-            {adminOverviewError && <Alert severity="error">{adminOverviewError}</Alert>}
-            {agencyOverviewError && <Alert severity="error">{agencyOverviewError}</Alert>}
-          </Stack>
+      {user && !isBusy ? (
+        <Box sx={{ padding: env.isMobile() ? 2 : 4, backgroundColor: '#f8fafc', minHeight: '100%' }}>
+          <Stack spacing={4}>
+            <Box>
+              <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }} gutterBottom>
+                {strings.CAR_STATS}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                {isAdmin
+                  ? strings.PAGE_SUBTITLE_ADMIN.replace(
+                      '{agency}',
+                      selectedAgencyName || strings.PAGE_SUBTITLE_ADMIN_PLACEHOLDER,
+                    )
+                  : strings.PAGE_SUBTITLE_AGENCY}
+              </Typography>
+            </Box>
 
-          <Grid container spacing={2} mb={2}>
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper sx={{ p: 2, backgroundColor: '#f5f5f5', height: '100%' }}>
-                <Typography variant="subtitle2">{strings.SUMMARY_TOTAL_REVENUE}</Typography>
-                <Typography variant="h4">{helper.formatNumber(summary.total)}</Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper sx={{ p: 2, backgroundColor: '#e8f5e9', height: '100%' }}>
-                <Typography variant="subtitle2">{strings.SUMMARY_PAID}</Typography>
-                <Typography variant="h4">{helper.formatNumber(summary.paid)}</Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper sx={{ p: 2, backgroundColor: '#fff3e0', height: '100%' }}>
-                <Typography variant="subtitle2">{strings.SUMMARY_DEPOSIT}</Typography>
-                <Typography variant="h4">{helper.formatNumber(summary.deposit)}</Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Paper sx={{ p: 2, backgroundColor: '#e3f2fd', height: '100%' }}>
-                <Typography variant="subtitle2">{strings.SUMMARY_RESERVED}</Typography>
-                <Typography variant="h4">{helper.formatNumber(summary.reserved)}</Typography>
-              </Paper>
-            </Grid>
-          </Grid>
+            <Stack spacing={1}>
+              {chartError && <Alert severity="error">{chartError}</Alert>}
+              {adminOverviewError && <Alert severity="error">{adminOverviewError}</Alert>}
+              {agencyOverviewError && <Alert severity="error">{agencyOverviewError}</Alert>}
+            </Stack>
 
-          {isAdmin && adminOverview && (
-            <Grid container spacing={2} mb={3}>
-              <Grid item xs={12} sm={4}>
-                <Paper sx={{ p: 2, height: '100%' }}>
-                  <Typography variant="subtitle2">{strings.SUMMARY_TOTAL_AGENCIES}</Typography>
-                  <Typography variant="h4">{adminOverview.summary.totalAgencies}</Typography>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Paper sx={{ p: 2, height: '100%' }}>
-                  <Typography variant="subtitle2">{strings.SUMMARY_TOTAL_CARS}</Typography>
-                  <Typography variant="h4">{adminOverview.summary.totalCars}</Typography>
-                </Paper>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Paper sx={{ p: 2, height: '100%' }}>
-                  <Typography variant="subtitle2">{strings.SUMMARY_AVERAGE_SCORE}</Typography>
-                  <Typography variant="h4">{Math.round(adminOverview.summary.averageScore)}</Typography>
-                </Paper>
-              </Grid>
-            </Grid>
-          )}
-
-          <Paper elevation={3} sx={{ padding: 3, marginBottom: 3 }}>
-            <Typography variant="h1" sx={{ fontSize: '2rem', marginBottom: 3 }} gutterBottom>
-              {strings.CAR_STATS}
-            </Typography>
-            <Grid container spacing={3}>
-              {isAdmin && (
-                <Grid item xs={12} md={3}>
-                  <FormControl fullWidth>
-                    <InputLabel id="supplier-select-label">{strings.SELECT_SUPPLIER}</InputLabel>
-                    <Select
-                      labelId="supplier-select-label"
-                      value={selectedSupplier}
-                      label={strings.SELECT_SUPPLIER}
-                      onChange={handleSupplierChange}
-                    >
-                      {suppliers.map((supplier) => (
-                        <MenuItem key={supplier.supplierId} value={supplier.supplierId}>
-                          {supplier.supplierName}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+            <Grid container spacing={2}>
+              {revenueCards.map((card) => (
+                <Grid item xs={12} sm={6} md={3} key={card.label}>
+                  <Card sx={{ height: '100%', backgroundColor: card.background }}>
+                    <CardHeader
+                      title={(
+                        <Typography variant="subtitle2" color="text.secondary">
+                          {card.label}
+                        </Typography>
+                      )}
+                    />
+                    <CardContent>
+                      <Typography variant="h4">{helper.formatNumber(card.value)}</Typography>
+                    </CardContent>
+                  </Card>
                 </Grid>
-              )}
-
-              <Grid item xs={12} md={isAdmin ? 3 : 4}>
-                <FormControl fullWidth>
-                  <InputLabel id="car-select-label">{strings.SELECT_CAR}</InputLabel>
-                  <Select
-                    labelId="car-select-label"
-                    value={selectedCar}
-                    label={strings.SELECT_CAR}
-                    onChange={handleCarChange}
-                  >
-                    <MenuItem value={ALL_CARS_VALUE}>
-                      <em>{strings.ALL_CARS}</em>
-                    </MenuItem>
-                    {cars.map((car) => (
-                      <MenuItem key={car.id} value={car.id}>
-                        {car.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} md={isAdmin ? 3 : 4}>
-                <DateTimePicker
-                  label={strings.START_DATE}
-                  value={startDate}
-                  minDate={subMonths(new Date(), 6)}
-                  maxDate={subDays(new Date(), 1)}
-                  onChange={handleStartDateChange}
-                  showTime={false}
-                  language={env.DEFAULT_LANGUAGE}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={isAdmin ? 3 : 4}>
-                <DateTimePicker
-                  label={strings.END_DATE}
-                  value={endDate}
-                  minDate={subMonths(new Date(), 6)}
-                  maxDate={subDays(new Date(), 1)}
-                  onChange={handleEndDateChange}
-                  showTime={false}
-                  language={env.DEFAULT_LANGUAGE}
-                />
-              </Grid>
+              ))}
             </Grid>
-          </Paper>
 
-          {agencyOverview && (
-            <Grid container spacing={3} mb={3}>
-              <Grid item xs={12} md={4}>
-                <AgencyScore
-                  agencyId={effectiveSupplierId || ''}
-                  initialScoreBreakdown={agencyOverview.score}
-                />
-              </Grid>
-              <Grid item xs={12} md={8}>
+            {isAdmin && adminOverview ? (
+              <Box>
+                <SectionTitle title={strings.SECTION_ADMIN_SUMMARY} />
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={4}>
-                    <Paper sx={{ p: 2, height: '100%' }}>
-                      <Typography variant="subtitle2">{strings.TOTAL_BOOKINGS}</Typography>
-                      <Typography variant="h4">{agencyOverview.totalBookings}</Typography>
-                    </Paper>
+                    <Card sx={{ height: '100%' }}>
+                      <CardHeader title={strings.SUMMARY_TOTAL_AGENCIES} />
+                      <CardContent>
+                        <Typography variant="h4">{adminOverview.summary.totalAgencies}</Typography>
+                      </CardContent>
+                    </Card>
                   </Grid>
                   <Grid item xs={12} sm={4}>
-                    <Paper sx={{ p: 2, height: '100%' }}>
-                      <Typography variant="subtitle2">{strings.ACCEPTANCE_RATE}</Typography>
-                      <Typography variant="h4">{formatPercentage(agencyOverview.acceptanceRate)}</Typography>
-                    </Paper>
+                    <Card sx={{ height: '100%' }}>
+                      <CardHeader title={strings.SUMMARY_TOTAL_CARS} />
+                      <CardContent>
+                        <Typography variant="h4">{adminOverview.summary.totalCars}</Typography>
+                      </CardContent>
+                    </Card>
                   </Grid>
                   <Grid item xs={12} sm={4}>
-                    <Paper sx={{ p: 2, height: '100%' }}>
-                      <Typography variant="subtitle2">{strings.CANCELLATION_RATE}</Typography>
-                      <Typography variant="h4">{formatPercentage(agencyOverview.cancellationRate)}</Typography>
-                    </Paper>
+                    <Card sx={{ height: '100%' }}>
+                      <CardHeader title={strings.SUMMARY_AVERAGE_SCORE} />
+                      <CardContent>
+                        <Typography variant="h4">
+                          {Math.round(adminOverview.summary.averageScore)}
+                        </Typography>
+                      </CardContent>
+                    </Card>
                   </Grid>
                 </Grid>
-              </Grid>
+              </Box>
+            ) : null}
 
-              <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 3, height: '100%' }}>
-                  <Typography variant="h6" gutterBottom>
-                    {strings.AVERAGE_PRICES_BY_CATEGORY}
-                  </Typography>
-                  {averagePriceData.length > 0 ? (
-                    <Suspense fallback={chartFallback}>
-                      <BarChart
-                        height={300}
-                        series={[
-                          {
-                            data: averagePriceData.map((item) => item.averageDailyPrice),
-                            label: strings.AVERAGE_PRICE_LABEL,
-                            color: '#1E88E5',
-                          },
-                        ]}
-                        xAxis={[
-                          {
-                            data: averagePriceData.map((item) => carRangeLabels[item.category] || item.category),
-                            scaleType: 'band',
-                          },
-                        ]}
+            <Card>
+              <CardHeader title={strings.SECTION_FILTERS} />
+              <CardContent>
+                <Grid container spacing={3}>
+                  {isAdmin ? (
+                    <Grid item xs={12} md={3}>
+                      <FormControl fullWidth>
+                        <InputLabel id="supplier-select-label">{strings.SELECT_SUPPLIER}</InputLabel>
+                        <Select
+                          labelId="supplier-select-label"
+                          value={selectedSupplier}
+                          label={strings.SELECT_SUPPLIER}
+                          onChange={handleSupplierChange}
+                        >
+                          {suppliers.map((supplier) => (
+                            <MenuItem key={supplier.supplierId} value={supplier.supplierId}>
+                              {supplier.supplierName}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  ) : null}
+
+                  <Grid item xs={12} md={isAdmin ? 3 : 4}>
+                    <FormControl fullWidth>
+                      <InputLabel id="car-select-label">{strings.SELECT_CAR}</InputLabel>
+                      <Select
+                        labelId="car-select-label"
+                        value={selectedCar}
+                        label={strings.SELECT_CAR}
+                        onChange={handleCarChange}
+                      >
+                        <MenuItem value={ALL_CARS_VALUE}>
+                          <em>{strings.ALL_CARS}</em>
+                        </MenuItem>
+                        {cars.map((car) => (
+                          <MenuItem key={car.id} value={car.id}>
+                            {car.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+
+                  <Grid item xs={12} md={isAdmin ? 3 : 4}>
+                    <DateTimePicker
+                      label={strings.START_DATE}
+                      value={startDate}
+                      minDate={subMonths(new Date(), 6)}
+                      maxDate={subDays(new Date(), 1)}
+                      onChange={handleStartDateChange}
+                      showTime={false}
+                      language={env.DEFAULT_LANGUAGE}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} md={isAdmin ? 3 : 4}>
+                    <DateTimePicker
+                      label={strings.END_DATE}
+                      value={endDate}
+                      minDate={subMonths(new Date(), 6)}
+                      maxDate={subDays(new Date(), 1)}
+                      onChange={handleEndDateChange}
+                      showTime={false}
+                      language={env.DEFAULT_LANGUAGE}
+                    />
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
+            {agencyOverview ? (
+              <Box>
+                <SectionTitle title={strings.SECTION_PERFORMANCE} subtitle={performanceSubtitle} />
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={4}>
+                    <Card sx={{ height: '100%' }}>
+                      <CardHeader
+                        title={strings.SCORE_SECTION_TITLE}
+                        subheader={strings.SCORE_SECTION_SUBTITLE}
                       />
-                    </Suspense>
-                  ) : (
-                    <Alert severity="info">{strings.NO_DATA}</Alert>
-                  )}
-                </Paper>
+                      <CardContent>
+                        <AgencyScore
+                          agencyId={effectiveSupplierId || ''}
+                          initialScoreBreakdown={agencyOverview.score}
+                        />
+                        <Divider sx={{ my: 2 }} />
+                        <Stack spacing={0.5}>
+                          <Typography variant="body2" color="text.secondary">
+                            {strings.TOTAL_CARS_LABEL}
+                          </Typography>
+                          <Typography variant="h5">{totalCarsForAgency}</Typography>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} md={8}>
+                    <Card sx={{ height: '100%' }}>
+                      <CardHeader title={strings.SECTION_PERFORMANCE_METRICS_TITLE} />
+                      <CardContent>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={4}>
+                            <Stack spacing={0.5}>
+                              <Typography variant="body2" color="text.secondary">
+                                {strings.TOTAL_BOOKINGS}
+                              </Typography>
+                              <Typography variant="h5">{agencyOverview.totalBookings}</Typography>
+                            </Stack>
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <Stack spacing={0.5}>
+                              <Typography variant="body2" color="text.secondary">
+                                {strings.ACCEPTANCE_RATE}
+                              </Typography>
+                              <Typography variant="h5">
+                                {formatPercentage(agencyOverview.acceptanceRate)}
+                              </Typography>
+                            </Stack>
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <Stack spacing={0.5}>
+                              <Typography variant="body2" color="text.secondary">
+                                {strings.CANCELLATION_RATE}
+                              </Typography>
+                              <Typography variant="h5">
+                                {formatPercentage(agencyOverview.cancellationRate)}
+                              </Typography>
+                            </Stack>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Box>
+            ) : null}
+
+            <Grid container spacing={3}>
+              {isAdmin ? (
+                <Grid item xs={12} md={6}>
+                  <Card sx={{ height: '100%' }}>
+                    <CardHeader title={strings.SECTION_AVERAGE_PRICES_GLOBAL} />
+                    <CardContent>
+                      {adminAveragePrices.length > 0 ? (
+                        <TableContainer>
+                          <Table size="small" aria-label={strings.SECTION_AVERAGE_PRICES_GLOBAL}>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>{strings.AVERAGE_PRICE_CATEGORY}</TableCell>
+                                <TableCell>{strings.AVERAGE_DAILY_PRICE_LABEL}</TableCell>
+                                <TableCell>{strings.AVERAGE_MONTHLY_PRICE_LABEL}</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {adminAveragePrices.map((item) => (
+                                <TableRow key={item.category}>
+                                  <TableCell>{carRangeLabels[item.category]}</TableCell>
+                                  <TableCell>{formatPrice(item.averageDailyPrice)}</TableCell>
+                                  <TableCell>{formatPrice(item.averageMonthlyPrice)}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      ) : (
+                        <Alert severity="info">{strings.NO_DATA}</Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ) : null}
+
+              <Grid item xs={12} md={isAdmin ? 6 : 12}>
+                <Card sx={{ height: '100%' }}>
+                  <CardHeader
+                    title={isAdmin ? strings.SECTION_AVERAGE_PRICES_AGENCY : strings.AVERAGE_PRICES_BY_CATEGORY}
+                    subheader={selectedAgencyName}
+                  />
+                  <CardContent>
+                    {agencyAveragePrices.length > 0 ? (
+                      <TableContainer>
+                        <Table size="small" aria-label={strings.SECTION_AVERAGE_PRICES_AGENCY}>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>{strings.AVERAGE_PRICE_CATEGORY}</TableCell>
+                              <TableCell>{strings.AVERAGE_DAILY_PRICE_LABEL}</TableCell>
+                              <TableCell>{strings.AVERAGE_MONTHLY_PRICE_LABEL}</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {agencyAveragePrices.map((item) => (
+                              <TableRow key={item.category}>
+                                <TableCell>{carRangeLabels[item.category]}</TableCell>
+                                <TableCell>{formatPrice(item.averageDailyPrice)}</TableCell>
+                                <TableCell>{formatPrice(item.averageMonthlyPrice)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    ) : (
+                      <Alert severity="info">{strings.NO_DATA}</Alert>
+                    )}
+                  </CardContent>
+                </Card>
               </Grid>
 
               <Grid item xs={12} md={6}>
-                <Paper sx={{ p: 3, height: '100%' }}>
-                  <Typography variant="h6" gutterBottom>
-                    {strings.TOP_MODELS_TITLE}
-                  </Typography>
-                  {topModelsData.length > 0 ? (
-                    <List dense>
-                      {topModelsData.map((model) => (
-                        <ListItem key={`${model.model}-${model.agencyId ?? ''}`}>
-                          <ListItemText
-                            primary={model.model}
-                            secondary={`${strings.BOOKINGS_LABEL}: ${model.bookings}`}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  ) : (
-                    <Alert severity="info">{strings.NO_DATA}</Alert>
-                  )}
-                </Paper>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Paper sx={{ p: 3 }}>
-                  <Typography variant="h6" gutterBottom>
-                    {strings.PENDING_UPDATES_TITLE}
-                  </Typography>
-                  {agencyOverview.pendingUpdates.length > 0 ? (
-                    <List>
-                      {agencyOverview.pendingUpdates.map((booking) => (
-                        <ListItem key={booking.bookingId}>
-                          <WarningAmberIcon color="warning" sx={{ mr: 2 }} />
-                          <ListItemText
-                            primary={booking.carName}
-                            secondary={`${strings.STATUS_LABEL}: ${helper.getBookingStatus(booking.status)} · ${strings.END_DATE_LABEL}: ${formatDate(booking.endDate)} · ${strings.OVERDUE_DAYS_LABEL.replace('{count}', String(booking.overdueDays))}`}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  ) : (
-                    <Alert severity="success">{strings.NO_PENDING_UPDATES}</Alert>
-                  )}
-                </Paper>
-              </Grid>
-            </Grid>
-          )}
-
-          <Grid container spacing={3} mb={3}>
-            <Grid item xs={12}>
-              <Paper elevation={3} sx={{ padding: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  {strings.VIEWS_OVER_TIME}
-                </Typography>
-                {sortedStats.length > 0 ? (
-                  <Suspense fallback={chartFallback}>
-                    <LineChart
-                      xAxis={[{ data: sortedStats.map((stat) => stat.date), scaleType: 'band', label: strings.DATE }]}
-                      yAxis={[{ tickMinStep: 1 }]}
-                      series={[
-                        {
-                          data: sortedStats.map((stat) => stat.organiqueViews),
-                          label: strings.ORGANIC_VIEWS,
-                          color: '#1E88E5',
-                          stack: 'total',
-                          area: true,
-                          showMark: false,
-                        },
-                        {
-                          data: sortedStats.map((stat) => stat.payedViews),
-                          label: strings.PAID_VIEWS,
-                          color: '#77BC23',
-                          stack: 'total',
-                          area: true,
-                          showMark: false,
-                        },
-                        {
-                          data: sortedStats.map((stat) => stat.views),
-                          label: strings.TOTAL_VIEWS,
-                          color: '#EF6C00',
-                          area: false,
-                          showMark: false,
-                        },
-                      ]}
-                      height={400}
-                    />
-                  </Suspense>
-                ) : (
-                  <Alert severity="info">{strings.NO_DATA}</Alert>
-                )}
-              </Paper>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
-                <Typography variant="h6" gutterBottom>
-                  {strings.STATUS_DISTRIBUTION}
-                </Typography>
-                {bookingStats.length > 0 ? (
-                  <Suspense fallback={chartFallback}>
-                    <PieChart
-                      height={env.isMobile() ? 400 : 320}
-                      series={[
-                        {
-                          data: bookingStats.map((item) => ({
-                            value: item.count,
-                            label: `${helper.getBookingStatus(item.status)} (${item.count})`,
-                            color: statusColors[item.status],
-                          })),
-                          highlightScope: { faded: 'global', highlighted: 'item' },
-                          arcLabel: (params) => params.label,
-                        },
-                      ]}
-                      legend={env.isMobile() ? { direction: 'row', position: { vertical: 'bottom', horizontal: 'middle' } } : {}}
-                    />
-                  </Suspense>
-                ) : (
-                  <Alert severity="info">{strings.NO_DATA}</Alert>
-                )}
-              </Paper>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Paper elevation={3} sx={{ p: 3, height: '100%' }}>
-                <Typography variant="h6" gutterBottom>
-                  {strings.REVENUE_DISTRIBUTION}
-                </Typography>
-                {bookingStats.length > 0 ? (
-                  <Suspense fallback={chartFallback}>
-                    <PieChart
-                      height={env.isMobile() ? 400 : 320}
-                      series={[
-                        {
-                          data: bookingStats.map((item) => ({
-                            value: item.totalPrice,
-                            label: helper.getBookingStatus(item.status),
-                            color: statusColors[item.status],
-                          })),
-                          highlightScope: { faded: 'global', highlighted: 'item' },
-                          arcLabel: (params) => `${Math.round(Number(params.value))} DT`,
-                        },
-                      ]}
-                      legend={env.isMobile() ? { direction: 'row', position: { vertical: 'bottom', horizontal: 'middle' } } : {}}
-                    />
-                  </Suspense>
-                ) : (
-                  <Alert severity="info">{strings.NO_DATA}</Alert>
-                )}
-              </Paper>
-            </Grid>
-          </Grid>
-
-          {isAdmin && adminOverview && (
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={8}>
-                <Paper sx={{ p: 3 }}>
-                  <Typography variant="h6" gutterBottom>
-                    {strings.RANKING_TITLE}
-                  </Typography>
-                  {ranking.length > 0 ? (
-                    <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }} aria-label={strings.RANKING_TITLE}>
-                      <Box component="thead">
-                        <Box component="tr">
-                          <Box component="th" sx={{ textAlign: 'left', padding: 1 }}>{strings.RANKING_POSITION}</Box>
-                          <Box component="th" sx={{ textAlign: 'left', padding: 1 }}>{strings.RANKING_AGENCY}</Box>
-                          <Box component="th" sx={{ textAlign: 'right', padding: 1 }}>{strings.RANKING_SCORE}</Box>
-                          <Box component="th" sx={{ textAlign: 'right', padding: 1 }}>{strings.RANKING_CARS}</Box>
-                          <Box component="th" sx={{ textAlign: 'right', padding: 1 }}>{strings.RANKING_BOOKINGS}</Box>
-                          <Box component="th" sx={{ textAlign: 'right', padding: 1 }}>{strings.ACCEPTANCE_RATE}</Box>
-                          <Box component="th" sx={{ textAlign: 'right', padding: 1 }}>{strings.CANCELLATION_RATE}</Box>
-                          <Box component="th" sx={{ textAlign: 'right', padding: 1 }}>{strings.PENDING_UPDATES_SHORT}</Box>
-                          <Box component="th" sx={{ textAlign: 'left', padding: 1 }}>{strings.LAST_ACTIVITY}</Box>
-                        </Box>
-                      </Box>
-                      <Box component="tbody">
-                        {ranking.map((item, index) => (
-                          <Box component="tr" key={item.agencyId} sx={{ '&:nth-of-type(odd)': { backgroundColor: '#fafafa' } }}>
-                            <Box component="td" sx={{ padding: 1 }}>{index + 1}</Box>
-                            <Box component="td" sx={{ padding: 1 }}>{item.agencyName}</Box>
-                            <Box component="td" sx={{ padding: 1, textAlign: 'right' }}>{Math.round(item.score)}</Box>
-                            <Box component="td" sx={{ padding: 1, textAlign: 'right' }}>{item.totalCars}</Box>
-                            <Box component="td" sx={{ padding: 1, textAlign: 'right' }}>{item.totalBookings}</Box>
-                            <Box component="td" sx={{ padding: 1, textAlign: 'right' }}>{formatPercentage(item.acceptanceRate)}</Box>
-                            <Box component="td" sx={{ padding: 1, textAlign: 'right' }}>{formatPercentage(item.cancellationRate)}</Box>
-                            <Box component="td" sx={{ padding: 1, textAlign: 'right' }}>{item.pendingUpdates}</Box>
-                            <Box component="td" sx={{ padding: 1 }}>{formatDate(item.lastBookingAt)}</Box>
-                          </Box>
-                        ))}
-                      </Box>
-                    </Box>
-                  ) : (
-                    <Alert severity="info">{strings.NO_DATA}</Alert>
-                  )}
-                </Paper>
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <Stack spacing={3}>
-                  <Paper sx={{ p: 3 }}>
-                    <Stack direction="row" alignItems="center" spacing={1} mb={1}>
-                      <EmojiEventsIcon color="primary" />
-                      <Typography variant="h6">{strings.TOP_PERFORMERS_TITLE}</Typography>
-                    </Stack>
-                    {highlights.topPerformers.length > 0 ? (
-                      <Stack spacing={1}>
-                        {highlights.topPerformers.map((item) => (
-                          <Chip
-                            key={item.agencyId}
-                            label={`${item.agencyName} · ${Math.round(item.score)}`}
-                            color="success"
-                          />
-                        ))}
-                      </Stack>
+                <Card sx={{ height: '100%' }}>
+                  <CardHeader title={strings.PENDING_UPDATES_TITLE} subheader={selectedAgencyName} />
+                  <CardContent>
+                    {pendingUpdates.length > 0 ? (
+                      <>
+                        <TableContainer>
+                          <Table size="small" aria-label={strings.PENDING_UPDATES_TITLE}>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>{strings.CAR}</TableCell>
+                                <TableCell>{strings.END_DATE_LABEL}</TableCell>
+                                <TableCell>{strings.STATUS_LABEL}</TableCell>
+                                <TableCell>{strings.OVERDUE_HEADER}</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {paginatedPendingUpdates.map((booking) => (
+                                <TableRow key={booking.bookingId}>
+                                  <TableCell>{booking.carName}</TableCell>
+                                  <TableCell>{formatDate(booking.endDate)}</TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      label={helper.getBookingStatus(booking.status)}
+                                      size="small"
+                                      sx={{ backgroundColor: statusColors[booking.status], color: '#fff' }}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    {booking.overdueDays > 0
+                                      ? strings.OVERDUE_DAYS_LABEL.replace('{count}', String(booking.overdueDays))
+                                      : strings.ON_TIME_LABEL}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                        <TablePagination
+                          component="div"
+                          rowsPerPageOptions={[5, 10]}
+                          count={pendingUpdates.length}
+                          rowsPerPage={pendingUpdatesRowsPerPage}
+                          page={pendingUpdatesPage}
+                          onPageChange={handlePendingUpdatesPageChange}
+                          onRowsPerPageChange={handlePendingUpdatesRowsPerPageChange}
+                        />
+                      </>
                     ) : (
-                      <Typography variant="body2">{strings.NO_TOP_PERFORMERS}</Typography>
+                      <Alert severity="success">{strings.NO_PENDING_UPDATES}</Alert>
                     )}
-                  </Paper>
+                  </CardContent>
+                </Card>
+              </Grid>
 
-                  <Paper sx={{ p: 3 }}>
-                    <Stack direction="row" alignItems="center" spacing={1} mb={1}>
-                      <WatchLaterIcon color="warning" />
-                      <Typography variant="h6">{strings.WATCHLIST_TITLE}</Typography>
-                    </Stack>
-                    {highlights.watchList.length > 0 ? (
-                      <Stack spacing={1}>
-                        {highlights.watchList.map((item) => (
-                          <Tooltip
-                            key={item.agencyId}
-                            title={strings.WATCHLIST_TOOLTIP.replace('{bookings}', String(item.totalBookings))}
-                          >
-                            <Chip
-                              label={`${item.agencyName} · ${Math.round(item.score)}`}
-                              color="warning"
-                              variant="outlined"
+              {isAdmin ? (
+                <Grid item xs={12} md={6}>
+                  <Card sx={{ height: '100%' }}>
+                    <CardHeader title={strings.SECTION_TOP_MODELS_GLOBAL} />
+                    <CardContent>
+                      {globalTopModels.length > 0 ? (
+                        <>
+                          <TableContainer>
+                            <Table size="small" aria-label={strings.SECTION_TOP_MODELS_GLOBAL}>
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell>#</TableCell>
+                                  <TableCell>{strings.MODEL_LABEL}</TableCell>
+                                  <TableCell>{strings.BOOKINGS_LABEL}</TableCell>
+                                  <TableCell>{strings.RANKING_AGENCY}</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {paginatedGlobalTopModels.map((model, index) => {
+                                  const absoluteIndex =
+                                    globalTopModelsPage * globalTopModelsRowsPerPage + index + 1
+                                  return (
+                                    <TableRow key={`${model.agencyId}-${model.model}`}>
+                                      <TableCell>{absoluteIndex}</TableCell>
+                                      <TableCell>{model.model}</TableCell>
+                                      <TableCell>{model.bookings}</TableCell>
+                                      <TableCell>{model.agencyName ?? '—'}</TableCell>
+                                    </TableRow>
+                                  )
+                                })}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
+                          <TablePagination
+                            component="div"
+                            rowsPerPageOptions={[5, 10]}
+                            count={globalTopModels.length}
+                            rowsPerPage={globalTopModelsRowsPerPage}
+                            page={globalTopModelsPage}
+                            onPageChange={handleGlobalTopModelsPageChange}
+                            onRowsPerPageChange={handleGlobalTopModelsRowsPerPageChange}
+                          />
+                        </>
+                      ) : (
+                        <Alert severity="info">{strings.NO_TOP_MODELS}</Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ) : null}
+
+              <Grid item xs={12} md={isAdmin ? 6 : 12}>
+                <Card sx={{ height: '100%' }}>
+                  <CardHeader title={strings.SECTION_TOP_MODELS_AGENCY} subheader={selectedAgencyName} />
+                  <CardContent>
+                    {agencyTopModels.length > 0 ? (
+                      <>
+                        <TableContainer>
+                          <Table size="small" aria-label={strings.SECTION_TOP_MODELS_AGENCY}>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>#</TableCell>
+                                <TableCell>{strings.MODEL_LABEL}</TableCell>
+                                <TableCell>{strings.BOOKINGS_LABEL}</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {paginatedAgencyTopModels.map((model, index) => {
+                                const absoluteIndex =
+                                  agencyTopModelsPage * agencyTopModelsRowsPerPage + index + 1
+                                return (
+                                  <TableRow key={`${model.model}-${index}`}>
+                                    <TableCell>{absoluteIndex}</TableCell>
+                                    <TableCell>{model.model}</TableCell>
+                                    <TableCell>{model.bookings}</TableCell>
+                                  </TableRow>
+                                )
+                              })}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                        <TablePagination
+                          component="div"
+                          rowsPerPageOptions={[5, 10]}
+                          count={agencyTopModels.length}
+                          rowsPerPage={agencyTopModelsRowsPerPage}
+                          page={agencyTopModelsPage}
+                          onPageChange={handleAgencyTopModelsPageChange}
+                          onRowsPerPageChange={handleAgencyTopModelsRowsPerPageChange}
+                        />
+                      </>
+                    ) : (
+                      <Alert severity="info">{strings.NO_TOP_MODELS}</Alert>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+
+            <Box>
+              <SectionTitle title={strings.SECTION_CHARTS} />
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <Card>
+                    <CardHeader title={strings.VIEWS_OVER_TIME} />
+                    <CardContent>
+                      {sortedStats.length > 0 ? (
+                        <Suspense fallback={chartFallback}>
+                          <LineChart
+                            xAxis={[{ data: sortedStats.map((stat) => stat.date), scaleType: 'band', label: strings.DATE }]}
+                            yAxis={[{ tickMinStep: 1 }]}
+                            series={[
+                              {
+                                data: sortedStats.map((stat) => stat.organiqueViews),
+                                label: strings.ORGANIC_VIEWS,
+                                color: '#1E88E5',
+                                stack: 'total',
+                                area: true,
+                                showMark: false,
+                              },
+                              {
+                                data: sortedStats.map((stat) => stat.payedViews),
+                                label: strings.PAID_VIEWS,
+                                color: '#77BC23',
+                                stack: 'total',
+                                area: true,
+                                showMark: false,
+                              },
+                              {
+                                data: sortedStats.map((stat) => stat.views),
+                                label: strings.TOTAL_VIEWS,
+                                color: '#EF6C00',
+                                area: false,
+                                showMark: false,
+                              },
+                            ]}
+                            height={400}
+                          />
+                        </Suspense>
+                      ) : (
+                        <Alert severity="info">{strings.NO_DATA}</Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Card sx={{ height: '100%' }}>
+                    <CardHeader title={strings.STATUS_DISTRIBUTION} />
+                    <CardContent>
+                      {bookingStats.length > 0 ? (
+                        <Suspense fallback={chartFallback}>
+                          <PieChart
+                            height={env.isMobile() ? 400 : 320}
+                            series={[
+                              {
+                                data: bookingStats.map((item) => ({
+                                  value: item.count,
+                                  label: `${helper.getBookingStatus(item.status)} (${item.count})`,
+                                  color: statusColors[item.status],
+                                })),
+                                highlightScope: { faded: 'global', highlighted: 'item' },
+                                arcLabel: (params) => params.label,
+                              },
+                            ]}
+                            legend={
+                              env.isMobile()
+                                ? { direction: 'row', position: { vertical: 'bottom', horizontal: 'middle' } }
+                                : {}
+                            }
+                          />
+                        </Suspense>
+                      ) : (
+                        <Alert severity="info">{strings.NO_DATA}</Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Card sx={{ height: '100%' }}>
+                    <CardHeader title={strings.REVENUE_DISTRIBUTION} />
+                    <CardContent>
+                      {bookingStats.length > 0 ? (
+                        <Suspense fallback={chartFallback}>
+                          <PieChart
+                            height={env.isMobile() ? 400 : 320}
+                            series={[
+                              {
+                                data: bookingStats.map((item) => ({
+                                  value: item.totalPrice,
+                                  label: helper.getBookingStatus(item.status),
+                                  color: statusColors[item.status],
+                                })),
+                                highlightScope: { faded: 'global', highlighted: 'item' },
+                                arcLabel: (params) => `${Math.round(Number(params.value))} DT`,
+                              },
+                            ]}
+                            legend={
+                              env.isMobile()
+                                ? { direction: 'row', position: { vertical: 'bottom', horizontal: 'middle' } }
+                                : {}
+                            }
+                          />
+                        </Suspense>
+                      ) : (
+                        <Alert severity="info">{strings.NO_DATA}</Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            </Box>
+
+            {isAdmin && adminOverview ? (
+              <Box>
+                <SectionTitle title={strings.SECTION_RANKING} />
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={8}>
+                    <Card>
+                      <CardHeader title={strings.RANKING_TITLE} />
+                      <CardContent>
+                        {ranking.length > 0 ? (
+                          <>
+                            <TableContainer>
+                              <Table size="small" aria-label={strings.RANKING_TITLE}>
+                                <TableHead>
+                                  <TableRow>
+                                    <TableCell>{strings.RANKING_POSITION}</TableCell>
+                                    <TableCell>{strings.RANKING_AGENCY}</TableCell>
+                                    <TableCell align="right">{strings.RANKING_SCORE}</TableCell>
+                                    <TableCell align="right">{strings.RANKING_CARS}</TableCell>
+                                    <TableCell align="right">{strings.RANKING_BOOKINGS}</TableCell>
+                                    <TableCell align="right">{strings.ACCEPTANCE_RATE}</TableCell>
+                                    <TableCell align="right">{strings.CANCELLATION_RATE}</TableCell>
+                                    <TableCell align="right">{strings.PENDING_UPDATES_SHORT}</TableCell>
+                                    <TableCell>{strings.LAST_ACTIVITY}</TableCell>
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {paginatedRanking.map((item, index) => {
+                                    const absoluteIndex = rankingPage * rankingRowsPerPage + index + 1
+                                    return (
+                                      <TableRow key={item.agencyId} hover>
+                                        <TableCell>{absoluteIndex}</TableCell>
+                                        <TableCell>{item.agencyName}</TableCell>
+                                        <TableCell align="right">{Math.round(item.score)}</TableCell>
+                                        <TableCell align="right">{item.totalCars}</TableCell>
+                                        <TableCell align="right">{item.totalBookings}</TableCell>
+                                        <TableCell align="right">
+                                          {formatPercentage(item.acceptanceRate)}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                          {formatPercentage(item.cancellationRate)}
+                                        </TableCell>
+                                        <TableCell align="right">{item.pendingUpdates}</TableCell>
+                                        <TableCell>{formatDate(item.lastBookingAt)}</TableCell>
+                                      </TableRow>
+                                    )
+                                  })}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                            <TablePagination
+                              component="div"
+                              rowsPerPageOptions={[5, 10]}
+                              count={ranking.length}
+                              rowsPerPage={rankingRowsPerPage}
+                              page={rankingPage}
+                              onPageChange={handleRankingPageChange}
+                              onRowsPerPageChange={handleRankingRowsPerPageChange}
                             />
-                          </Tooltip>
-                        ))}
-                      </Stack>
-                    ) : (
-                      <Typography variant="body2">{strings.NO_WATCHLIST}</Typography>
-                    )}
-                  </Paper>
+                          </>
+                        ) : (
+                          <Alert severity="info">{strings.NO_DATA}</Alert>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grid>
 
-                  <Paper sx={{ p: 3 }}>
-                    <Typography variant="h6" gutterBottom>
-                      {strings.INACTIVE_AGENCIES_TITLE}
-                    </Typography>
-                    {inactiveAgencies.length > 0 ? (
-                      <List dense>
-                        {inactiveAgencies.map((agency) => (
-                          <ListItem key={agency.agencyId}>
-                            <ListItemText
-                              primary={agency.agencyName}
-                              secondary={strings.INACTIVE_AGENCY_DETAILS
-                                .replace('{count}', String(agency.pendingUpdates))
-                                .replace('{score}', String(Math.round(agency.score)))}
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    ) : (
-                      <Typography variant="body2">{strings.NO_INACTIVE_AGENCIES}</Typography>
-                    )}
-                  </Paper>
-                </Stack>
-              </Grid>
-            </Grid>
-          )}
+                  <Grid item xs={12} md={4}>
+                    <Stack spacing={3}>
+                      <Card>
+                        <CardHeader
+                          avatar={<EmojiEventsIcon color="primary" />}
+                          title={strings.TOP_PERFORMERS_TITLE}
+                        />
+                        <CardContent>
+                          {highlights.topPerformers.length > 0 ? (
+                            <Stack spacing={1}>
+                              {highlights.topPerformers.map((item) => (
+                                <Chip
+                                  key={item.agencyId}
+                                  label={`${item.agencyName} · ${Math.round(item.score)}`}
+                                  color="success"
+                                />
+                              ))}
+                            </Stack>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              {strings.NO_TOP_PERFORMERS}
+                            </Typography>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader
+                          avatar={<WatchLaterIcon color="warning" />}
+                          title={strings.WATCHLIST_TITLE}
+                        />
+                        <CardContent>
+                          {highlights.watchList.length > 0 ? (
+                            <Stack spacing={1}>
+                              {highlights.watchList.map((item) => (
+                                <Tooltip
+                                  key={item.agencyId}
+                                  title={strings.WATCHLIST_TOOLTIP.replace('{bookings}', String(item.totalBookings))}
+                                >
+                                  <Chip
+                                    label={`${item.agencyName} · ${Math.round(item.score)}`}
+                                    color="warning"
+                                    variant="outlined"
+                                  />
+                                </Tooltip>
+                              ))}
+                            </Stack>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              {strings.NO_WATCHLIST}
+                            </Typography>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader title={strings.INACTIVE_AGENCIES_TITLE} />
+                        <CardContent>
+                          {inactiveAgencies.length > 0 ? (
+                            <List dense>
+                              {inactiveAgencies.map((agency) => (
+                                <ListItem key={agency.agencyId} disableGutters>
+                                  <ListItemText
+                                    primary={agency.agencyName}
+                                    secondary={strings.INACTIVE_AGENCY_DETAILS
+                                      .replace('{count}', String(agency.pendingUpdates))
+                                      .replace('{score}', String(Math.round(agency.score)))}
+                                  />
+                                </ListItem>
+                              ))}
+                            </List>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              {strings.NO_INACTIVE_AGENCIES}
+                            </Typography>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </Stack>
+                  </Grid>
+                </Grid>
+              </Box>
+            ) : null}
+          </Stack>
         </Box>
-      )}
+      ) : null}
 
       {(!user || isBusy) && <SimpleBackdrop text={strings.LOADING} />}
     </Layout>
   )
-}
 
 export default CarStats

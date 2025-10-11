@@ -264,6 +264,16 @@ export const getAdminOverview = async (req: Request, res: Response) => {
           $group: {
             _id: '$range',
             averageDailyPrice: { $avg: '$dailyPrice' },
+            monthlyPriceSum: {
+              $sum: {
+                $cond: [{ $and: [{ $ne: ['$monthlyPrice', null] }, { $ne: ['$monthlyPrice', undefined] }] }, '$monthlyPrice', 0],
+              },
+            },
+            monthlyPriceCount: {
+              $sum: {
+                $cond: [{ $and: [{ $ne: ['$monthlyPrice', null] }, { $ne: ['$monthlyPrice', undefined] }] }, 1, 0],
+              },
+            },
           },
         },
         {
@@ -271,6 +281,18 @@ export const getAdminOverview = async (req: Request, res: Response) => {
             _id: 0,
             category: '$_id',
             averageDailyPrice: { $round: ['$averageDailyPrice', 0] },
+            averageMonthlyPrice: {
+              $cond: [
+                { $eq: ['$monthlyPriceCount', 0] },
+                null,
+                {
+                  $round: [
+                    { $divide: ['$monthlyPriceSum', '$monthlyPriceCount'] },
+                    0,
+                  ],
+                },
+              ],
+            },
           },
         },
         { $sort: { averageDailyPrice: -1 } },
@@ -472,6 +494,7 @@ export const getAdminOverview = async (req: Request, res: Response) => {
       averagePrices: averagePrices.map((price) => ({
         category: price.category as bookcarsTypes.CarRange,
         averageDailyPrice: price.averageDailyPrice ?? 0,
+        averageMonthlyPrice: price.averageMonthlyPrice ?? null,
       })),
       topModels: normalizedTopModels,
       inactiveAgencies,
@@ -565,6 +588,16 @@ export const getAgencyOverview = async (req: Request, res: Response) => {
         $group: {
           _id: '$range',
           averageDailyPrice: { $avg: '$dailyPrice' },
+          monthlyPriceSum: {
+            $sum: {
+              $cond: [{ $and: [{ $ne: ['$monthlyPrice', null] }, { $ne: ['$monthlyPrice', undefined] }] }, '$monthlyPrice', 0],
+            },
+          },
+          monthlyPriceCount: {
+            $sum: {
+              $cond: [{ $and: [{ $ne: ['$monthlyPrice', null] }, { $ne: ['$monthlyPrice', undefined] }] }, 1, 0],
+            },
+          },
         },
       },
       {
@@ -572,6 +605,18 @@ export const getAgencyOverview = async (req: Request, res: Response) => {
           _id: 0,
           category: '$_id',
           averageDailyPrice: { $round: ['$averageDailyPrice', 0] },
+          averageMonthlyPrice: {
+            $cond: [
+              { $eq: ['$monthlyPriceCount', 0] },
+              null,
+              {
+                $round: [
+                  { $divide: ['$monthlyPriceSum', '$monthlyPriceCount'] },
+                  0,
+                ],
+              },
+            ],
+          },
         },
       },
       { $sort: { averageDailyPrice: -1 } },
@@ -616,9 +661,11 @@ export const getAgencyOverview = async (req: Request, res: Response) => {
       totalBookings: metrics.total,
       acceptanceRate: computeRate(metrics.accepted, metrics.total),
       cancellationRate: computeRate(metrics.cancelled, metrics.total),
+      totalCars: cars.length,
       averagePrices: categoryAverages.map((item) => ({
         category: item.category as bookcarsTypes.CarRange,
         averageDailyPrice: item.averageDailyPrice ?? 0,
+        averageMonthlyPrice: item.averageMonthlyPrice ?? null,
       })),
       pendingUpdates,
       topModels,

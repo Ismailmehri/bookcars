@@ -978,6 +978,7 @@ export interface AgencyRankingItem {
 export interface AdminAveragePriceByCategory {
   category: CarRange;
   averageDailyPrice: number;
+  averageMonthlyPrice: number | null;
 }
 
 export interface TopModelStat {
@@ -1016,6 +1017,7 @@ export interface AdminStatisticsOverview {
 export interface AgencyAveragePriceByCategory {
   category: CarRange;
   averageDailyPrice: number;
+  averageMonthlyPrice: number | null;
 }
 
 export interface AgencyBookingUpdate {
@@ -1031,6 +1033,7 @@ export interface AgencyStatisticsOverview {
   totalBookings: number;
   acceptanceRate: number;
   cancellationRate: number;
+  totalCars: number;
   averagePrices: AgencyAveragePriceByCategory[];
   pendingUpdates: AgencyBookingUpdate[];
   topModels: TopModelStat[];

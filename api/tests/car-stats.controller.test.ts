@@ -86,6 +86,7 @@ describe('car stats controller', () => {
       name: 'Peugeot 208',
       range: bookcarsTypes.CarRange.Midi,
       dailyPrice: 60,
+      monthlyPrice: 1200,
       periodicPrices: [{ from: new Date(), to: new Date(), price: 55 }],
       unavailablePeriods: [{ from: new Date(), to: new Date() }],
     },
@@ -95,6 +96,7 @@ describe('car stats controller', () => {
       name: 'Citroën C3',
       range: bookcarsTypes.CarRange.Mini,
       dailyPrice: 65,
+      monthlyPrice: 900,
       periodicPrices: [{ from: new Date(), to: new Date(), price: 70 }],
       unavailablePeriods: [{ from: new Date(), to: new Date() }],
     },
@@ -104,24 +106,47 @@ describe('car stats controller', () => {
       name: 'Renault Clio',
       range: bookcarsTypes.CarRange.Mini,
       dailyPrice: 50,
+      monthlyPrice: null,
       periodicPrices: [],
       unavailablePeriods: [],
     },
   ]
 
   const adminAveragePrices = [
-    { category: bookcarsTypes.CarRange.Midi, averageDailyPrice: 60 },
-    { category: bookcarsTypes.CarRange.Mini, averageDailyPrice: 65 },
-    { category: bookcarsTypes.CarRange.Maxi, averageDailyPrice: 50 },
+    {
+      category: bookcarsTypes.CarRange.Midi,
+      averageDailyPrice: 60,
+      averageMonthlyPrice: 1200,
+    },
+    {
+      category: bookcarsTypes.CarRange.Mini,
+      averageDailyPrice: 65,
+      averageMonthlyPrice: 900,
+    },
   ]
 
-  const agencyAveragePrices: Record<string, { category: bookcarsTypes.CarRange; averageDailyPrice: number }[]> = {
+  const agencyAveragePrices: Record<
+    string,
+    { category: bookcarsTypes.CarRange; averageDailyPrice: number; averageMonthlyPrice: number | null }[]
+  > = {
     [supplierAId]: [
-      { category: bookcarsTypes.CarRange.Midi, averageDailyPrice: 62 },
-      { category: bookcarsTypes.CarRange.Mini, averageDailyPrice: 65 },
+      {
+        category: bookcarsTypes.CarRange.Midi,
+        averageDailyPrice: 62,
+        averageMonthlyPrice: 1250,
+      },
+      {
+        category: bookcarsTypes.CarRange.Mini,
+        averageDailyPrice: 65,
+        averageMonthlyPrice: 910,
+      },
     ],
     [supplierBId]: [
-      { category: bookcarsTypes.CarRange.Mini, averageDailyPrice: 50 },
+      {
+        category: bookcarsTypes.CarRange.Mini,
+        averageDailyPrice: 50,
+        averageMonthlyPrice: null,
+      },
     ],
   }
 
@@ -260,6 +285,7 @@ describe('car stats controller', () => {
 
     expect(body.summary.totalAgencies).toBe(2)
     expect(body.averagePrices).toEqual(adminAveragePrices)
+    expect(body.averagePrices[0].averageMonthlyPrice).toBeGreaterThan(0)
     expect(body.topModels).toHaveLength(2)
 
     const highlightTopIds = body.highlights.topPerformers.map((item) => item.agencyId)
@@ -286,6 +312,7 @@ describe('car stats controller', () => {
     expect(body.acceptanceRate).toBeGreaterThan(0)
     expect(body.pendingUpdates.length).toBeGreaterThan(0)
     expect(body.averagePrices).toEqual(agencyAveragePrices[supplierAId])
+    expect(body.totalCars).toBe(2)
     expect(body.topModels[0].model).toBe('Peugeot 208')
   })
 

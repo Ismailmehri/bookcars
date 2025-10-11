@@ -25,7 +25,19 @@ export default ({ mode }: { mode: string }) => {
 
     build: {
       outDir: 'build',
-      target: 'esnext'
-    }
+      target: 'esnext',
+    },
+
+    test: {
+      environment: 'jsdom',
+      coverage: {
+        provider: 'istanbul',
+        reporter: ['text', 'json', 'html'],
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80,
+      },
+    },
   })
 }

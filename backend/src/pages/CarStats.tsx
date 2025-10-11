@@ -447,13 +447,6 @@ const CarStats = () => {
   const agencyTopModels = agencyOverview?.topModels ?? []
   const pendingUpdates = agencyOverview?.pendingUpdates ?? []
   const totalCarsForAgency = agencyOverview?.totalCars ?? 0
-  const pendingUpdateDisplayCount = selectedAgencyRanking?.pendingUpdates
-    ?? agencyOverview?.pendingUpdateCount
-    ?? 0
-  const lastConnectionDate = selectedAgencyRanking?.lastConnectionAt
-  const lastActivityDate = selectedAgencyRanking?.lastBookingAt
-  const reviewCount = selectedAgencyRanking?.reviewCount ?? 0
-  const averageRating = selectedAgencyRanking?.averageRating ?? null
 
   const selectedAgencyName = useMemo(() => {
     if (!effectiveSupplierId) {
@@ -474,6 +467,14 @@ const CarStats = () => {
       : null),
     [effectiveSupplierId, ranking],
   )
+
+  const pendingUpdateDisplayCount = selectedAgencyRanking?.pendingUpdates
+    ?? agencyOverview?.pendingUpdateCount
+    ?? 0
+  const lastConnectionDate = selectedAgencyRanking?.lastConnectionAt
+  const lastActivityDate = selectedAgencyRanking?.lastBookingAt
+  const reviewCount = selectedAgencyRanking?.reviewCount ?? 0
+  const averageRating = selectedAgencyRanking?.averageRating ?? null
 
   const sortedRanking = useMemo(() => {
     const data = [...ranking]

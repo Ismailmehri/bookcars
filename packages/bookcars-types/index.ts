@@ -963,6 +963,79 @@ export interface ScoreBreakdown {
   recommendations: string[];
 }
 
+export interface AgencyRankingItem {
+  agencyId: string;
+  agencyName: string;
+  score: number;
+  totalCars: number;
+  totalBookings: number;
+  acceptanceRate: number;
+  cancellationRate: number;
+  pendingUpdates: number;
+  lastBookingAt?: Date;
+}
+
+export interface AdminAveragePriceByCategory {
+  category: CarRange;
+  averageDailyPrice: number;
+}
+
+export interface TopModelStat {
+  model: string;
+  bookings: number;
+  agencyId?: string;
+  agencyName?: string;
+}
+
+export interface InactiveAgencyStat {
+  agencyId: string;
+  agencyName: string;
+  pendingUpdates: number;
+  score: number;
+  lastActivity?: Date;
+}
+
+export interface AdminStatisticsHighlights {
+  topPerformers: AgencyRankingItem[];
+  watchList: AgencyRankingItem[];
+}
+
+export interface AdminStatisticsOverview {
+  ranking: AgencyRankingItem[];
+  averagePrices: AdminAveragePriceByCategory[];
+  topModels: TopModelStat[];
+  inactiveAgencies: InactiveAgencyStat[];
+  summary: {
+    totalAgencies: number;
+    totalCars: number;
+    averageScore: number;
+  };
+  highlights: AdminStatisticsHighlights;
+}
+
+export interface AgencyAveragePriceByCategory {
+  category: CarRange;
+  averageDailyPrice: number;
+}
+
+export interface AgencyBookingUpdate {
+  bookingId: string;
+  carName: string;
+  status: BookingStatus;
+  endDate: string;
+  overdueDays: number;
+}
+
+export interface AgencyStatisticsOverview {
+  score: ScoreBreakdown;
+  totalBookings: number;
+  acceptanceRate: number;
+  cancellationRate: number;
+  averagePrices: AgencyAveragePriceByCategory[];
+  pendingUpdates: AgencyBookingUpdate[];
+  topModels: TopModelStat[];
+}
+
 // types/bookcars.ts
 export interface CarStats {
   _id: string

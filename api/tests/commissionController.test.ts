@@ -182,7 +182,8 @@ describe('commissionController settings endpoints', () => {
     })
     settingsDocument.updatedAt = new Date()
     settingsDocument.bankTransferEnabled = false
-    ;(settingsDocument as any).save = jest.fn(async () => settingsDocument)
+    const settingsDocumentAny = settingsDocument as unknown as { save: jest.Mock }
+    settingsDocumentAny.save = jest.fn(async () => settingsDocument)
     jest.spyOn(AgencyCommissionSettings, 'findOne').mockResolvedValue(settingsDocument)
 
     const req = await createRequestWithToken(adminId, {

@@ -343,6 +343,7 @@ export const getAdminOverview = async (req: Request, res: Response) => {
       accepted: number
       cancelled: number
       pendingUpdates: number
+      revenue: number
       lastBookingAt?: Date
     }>()
     const bookingsByAgency = new Map<string, bookcarsTypes.Booking[]>()
@@ -355,6 +356,7 @@ export const getAdminOverview = async (req: Request, res: Response) => {
         accepted: 0,
         cancelled: 0,
         pendingUpdates: 0,
+        revenue: 0,
         lastBookingAt: undefined,
       }
 
@@ -374,6 +376,13 @@ export const getAdminOverview = async (req: Request, res: Response) => {
         && PENDING_UPDATE_STATUSES.includes(bookingDoc.status as bookcarsTypes.BookingStatus)
       ) {
         metrics.pendingUpdates += 1
+      }
+
+      if (ACCEPTED_STATUSES.includes(bookingDoc.status as bookcarsTypes.BookingStatus)) {
+        const bookingPrice = typeof (bookingDoc as { price?: number }).price === 'number'
+          ? (bookingDoc as { price: number }).price
+          : 0
+        metrics.revenue += bookingPrice
       }
 
       const lastActivity = (
@@ -428,8 +437,21 @@ export const getAdminOverview = async (req: Request, res: Response) => {
         accepted: 0,
         cancelled: 0,
         pendingUpdates: 0,
+        revenue: 0,
         lastBookingAt: undefined,
       }
+
+      const reviews = Array.isArray((agency as { reviews?: { rating?: number }[] }).reviews)
+        ? (agency as { reviews: { rating?: number }[] }).reviews
+        : []
+      const reviewCount = reviews.length
+      const averageRating = reviewCount === 0
+        ? null
+        : roundTwoDecimals(
+          reviews.reduce((acc, review) => acc + (review.rating ?? 0), 0) / reviewCount,
+        )
+
+      const lastConnectionAt = (agency as { updatedAt?: Date }).updatedAt
 
       const scoreBreakdown = helper.calculateAgencyScore(
         agency as unknown as bookcarsTypes.User,
@@ -446,6 +468,10 @@ export const getAdminOverview = async (req: Request, res: Response) => {
         acceptanceRate: computeRate(metrics.accepted, metrics.total),
         cancellationRate: computeRate(metrics.cancelled, metrics.total),
         pendingUpdates: metrics.pendingUpdates,
+        revenue: roundTwoDecimals(metrics.revenue),
+        lastConnectionAt,
+        reviewCount,
+        averageRating,
         lastBookingAt: metrics.lastBookingAt,
       } satisfies bookcarsTypes.AgencyRankingItem
     })
@@ -465,6 +491,7 @@ export const getAdminOverview = async (req: Request, res: Response) => {
         pendingUpdates: item.pendingUpdates,
         score: item.score,
         lastActivity: item.lastBookingAt,
+        lastConnectionAt: item.lastConnectionAt,
       }))
 
     const HIGH_SCORE_THRESHOLD = 80
@@ -561,6 +588,8 @@ export const getAgencyOverview = async (req: Request, res: Response) => {
       acc.total += 1
       if (ACCEPTED_STATUSES.includes(booking.status)) {
         acc.accepted += 1
+        const price = typeof booking.price === 'number' ? booking.price : 0
+        acc.revenue += price
       }
       if (CANCELLED_STATUSES.includes(booking.status)) {
         acc.cancelled += 1
@@ -579,6 +608,7 @@ export const getAgencyOverview = async (req: Request, res: Response) => {
       total: 0,
       accepted: 0,
       cancelled: 0,
+      revenue: 0,
       pending: [] as bookcarsTypes.Booking[],
     })
 
@@ -662,11 +692,13 @@ export const getAgencyOverview = async (req: Request, res: Response) => {
       acceptanceRate: computeRate(metrics.accepted, metrics.total),
       cancellationRate: computeRate(metrics.cancelled, metrics.total),
       totalCars: cars.length,
+      totalRevenue: roundTwoDecimals(metrics.revenue),
       averagePrices: categoryAverages.map((item) => ({
         category: item.category as bookcarsTypes.CarRange,
         averageDailyPrice: item.averageDailyPrice ?? 0,
         averageMonthlyPrice: item.averageMonthlyPrice ?? null,
       })),
+      pendingUpdateCount: metrics.pending.length,
       pendingUpdates,
       topModels,
     } satisfies bookcarsTypes.AgencyStatisticsOverview)

@@ -19,6 +19,10 @@ describe('car stats controller', () => {
   const carAId = new mongoose.Types.ObjectId()
   const carBId = new mongoose.Types.ObjectId()
 
+  const now = new Date()
+  const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000)
+  const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000)
+
   const adminUser = {
     _id: adminId,
     type: bookcarsTypes.UserType.Admin,
@@ -30,6 +34,29 @@ describe('car stats controller', () => {
     type: bookcarsTypes.UserType.Supplier,
     fullName: 'Agence Alpha',
     phone: '+33123456789',
+    updatedAt: now,
+    reviews: [
+      {
+        booking: new mongoose.Types.ObjectId().toString(),
+        user: supplierAObjectId.toString(),
+        type: 'profile',
+        rating: 4,
+        rentedCar: true,
+        answeredCall: true,
+        canceledLastMinute: false,
+        createdAt: now,
+      },
+      {
+        booking: new mongoose.Types.ObjectId().toString(),
+        user: supplierAObjectId.toString(),
+        type: 'profile',
+        rating: 5,
+        rentedCar: true,
+        answeredCall: true,
+        canceledLastMinute: false,
+        createdAt: fiveDaysAgo,
+      },
+    ],
   }
 
   const agencyB = {
@@ -37,11 +64,20 @@ describe('car stats controller', () => {
     type: bookcarsTypes.UserType.Supplier,
     fullName: 'Agence Beta',
     phone: '+33987654321',
+    updatedAt: tenDaysAgo,
+    reviews: [
+      {
+        booking: new mongoose.Types.ObjectId().toString(),
+        user: supplierBObjectId.toString(),
+        type: 'profile',
+        rating: 3,
+        rentedCar: true,
+        answeredCall: true,
+        canceledLastMinute: false,
+        createdAt: tenDaysAgo,
+      },
+    ],
   }
-
-  const now = new Date()
-  const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000)
-  const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000)
 
   const bookingDocs = [
     {
@@ -51,6 +87,7 @@ describe('car stats controller', () => {
       status: bookcarsTypes.BookingStatus.Paid,
       from: tenDaysAgo,
       to: now,
+      price: 120,
     },
     {
       _id: new mongoose.Types.ObjectId(),
@@ -60,6 +97,7 @@ describe('car stats controller', () => {
       from: tenDaysAgo,
       to: fiveDaysAgo,
       updatedAt: fiveDaysAgo,
+      price: 80,
     },
     {
       _id: new mongoose.Types.ObjectId(),
@@ -68,6 +106,7 @@ describe('car stats controller', () => {
       status: bookcarsTypes.BookingStatus.Reserved,
       from: tenDaysAgo,
       to: fiveDaysAgo,
+      price: 95,
     },
     {
       _id: new mongoose.Types.ObjectId(),
@@ -76,6 +115,7 @@ describe('car stats controller', () => {
       status: bookcarsTypes.BookingStatus.Cancelled,
       from: tenDaysAgo,
       to: tenDaysAgo,
+      price: 50,
     },
   ]
 
@@ -282,6 +322,10 @@ describe('car stats controller', () => {
     const agencyBStats = body.ranking.find((item) => item.agencyId === supplierBId)
     expect(agencyAStats?.totalCars).toBe(2)
     expect(agencyBStats?.totalCars).toBe(1)
+    expect(agencyAStats?.revenue).toBeGreaterThan(0)
+    expect(agencyAStats?.reviewCount).toBe(2)
+    expect(agencyAStats?.averageRating).toBeGreaterThan(0)
+    expect(agencyAStats?.lastConnectionAt).toBeDefined()
 
     expect(body.summary.totalAgencies).toBe(2)
     expect(body.averagePrices).toEqual(adminAveragePrices)
@@ -298,6 +342,8 @@ describe('car stats controller', () => {
 
     const inactiveIds = body.inactiveAgencies.map((item) => item.agencyId)
     expect(inactiveIds).toContain(supplierAId)
+    expect(body.inactiveAgencies.find((item) => item.agencyId === supplierAId)?.lastConnectionAt)
+      .toBeDefined()
   })
 
   it('returns agency overview for the selected supplier', async () => {
@@ -311,9 +357,11 @@ describe('car stats controller', () => {
     expect(body.totalBookings).toBe(2)
     expect(body.acceptanceRate).toBeGreaterThan(0)
     expect(body.pendingUpdates.length).toBeGreaterThan(0)
+    expect(body.pendingUpdateCount).toBeGreaterThan(0)
     expect(body.averagePrices).toEqual(agencyAveragePrices[supplierAId])
     expect(body.totalCars).toBe(2)
     expect(body.topModels[0].model).toBe('Peugeot 208')
+    expect(body.totalRevenue).toBeGreaterThan(0)
   })
 
   it('forbids suppliers from accessing other agencies', async () => {

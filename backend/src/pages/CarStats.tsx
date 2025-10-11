@@ -31,6 +31,7 @@ import {
   TableContainer,
   TableHead,
   TablePagination,
+  TableSortLabel,
   TableRow,
   Tooltip,
   Typography,
@@ -100,6 +101,59 @@ const formatPrice = (value: number | null | undefined) => {
   return helper.formatNumber(value)
 }
 
+const formatInteger = (value: number | null | undefined) => {
+  if (value === null || value === undefined) {
+    return '—'
+  }
+
+  return new Intl.NumberFormat(localeForDate, {
+    maximumFractionDigits: 0,
+  }).format(value)
+}
+
+const formatRatingValue = (value: number | null | undefined) => {
+  if (value === null || value === undefined) {
+    return '—'
+  }
+
+  return new Intl.NumberFormat(localeForDate, {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 1,
+  }).format(value)
+}
+
+const getRankingValue = (
+  item: bookcarsTypes.AgencyRankingItem,
+  key: RankingOrderKey,
+) => {
+  switch (key) {
+    case 'score':
+      return item.score
+    case 'totalBookings':
+      return item.totalBookings
+    case 'totalCars':
+      return item.totalCars
+    case 'acceptanceRate':
+      return item.acceptanceRate
+    case 'cancellationRate':
+      return item.cancellationRate
+    case 'pendingUpdates':
+      return item.pendingUpdates
+    case 'revenue':
+      return item.revenue
+    case 'lastBookingAt':
+      return item.lastBookingAt ? new Date(item.lastBookingAt).getTime() : 0
+    case 'lastConnectionAt':
+      return item.lastConnectionAt ? new Date(item.lastConnectionAt).getTime() : 0
+    case 'reviewCount':
+      return item.reviewCount
+    case 'averageRating':
+      return item.averageRating ?? -1
+    default:
+      return 0
+  }
+}
+
 const SectionTitle: React.FC<{ title: string; subtitle?: string }> = ({ title, subtitle }) => (
   <Box component="header" mb={1}>
     <Typography variant="h5" component="h2" sx={{ fontWeight: 600 }}>
@@ -111,6 +165,26 @@ const SectionTitle: React.FC<{ title: string; subtitle?: string }> = ({ title, s
       </Typography>
     ) : null}
   </Box>
+)
+
+const StatCard: React.FC<{ label: string; value: React.ReactNode; helperText?: string }> = ({
+  label,
+  value,
+  helperText,
+}) => (
+  <Card sx={{ height: '100%' }}>
+    <CardHeader title={label} />
+    <CardContent>
+      <Typography variant="h4" component="p" sx={{ fontWeight: 600 }}>
+        {value}
+      </Typography>
+      {helperText ? (
+        <Typography variant="body2" color="text.secondary" mt={1}>
+          {helperText}
+        </Typography>
+      ) : null}
+    </CardContent>
+  </Card>
 )
 
 const carRangeLabels: Record<bookcarsTypes.CarRange, string> = {
@@ -126,6 +200,19 @@ interface RevenueSummary {
   deposit: number
   reserved: number
 }
+
+type RankingOrderKey =
+  | 'score'
+  | 'totalBookings'
+  | 'totalCars'
+  | 'acceptanceRate'
+  | 'cancellationRate'
+  | 'pendingUpdates'
+  | 'revenue'
+  | 'lastBookingAt'
+  | 'lastConnectionAt'
+  | 'reviewCount'
+  | 'averageRating'
 
 const CarStats = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
@@ -159,6 +246,8 @@ const CarStats = () => {
   const [agencyTopModelsRowsPerPage, setAgencyTopModelsRowsPerPage] = useState(5)
   const [pendingUpdatesPage, setPendingUpdatesPage] = useState(0)
   const [pendingUpdatesRowsPerPage, setPendingUpdatesRowsPerPage] = useState(5)
+  const [rankingOrderBy, setRankingOrderBy] = useState<RankingOrderKey>('score')
+  const [rankingOrder, setRankingOrder] = useState<'asc' | 'desc'>('desc')
 
   const sortedStats = useMemo(
     () => [...stats].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
@@ -304,6 +393,16 @@ const CarStats = () => {
     setRankingPage(0)
   }
 
+  const handleRankingSort = (column: RankingOrderKey) => {
+    if (rankingOrderBy === column) {
+      setRankingOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+      return
+    }
+
+    setRankingOrderBy(column)
+    setRankingOrder('desc')
+  }
+
   const handleGlobalTopModelsPageChange = (_event: unknown, newPage: number) => {
     setGlobalTopModelsPage(newPage)
   }
@@ -348,6 +447,13 @@ const CarStats = () => {
   const agencyTopModels = agencyOverview?.topModels ?? []
   const pendingUpdates = agencyOverview?.pendingUpdates ?? []
   const totalCarsForAgency = agencyOverview?.totalCars ?? 0
+  const pendingUpdateDisplayCount = selectedAgencyRanking?.pendingUpdates
+    ?? agencyOverview?.pendingUpdateCount
+    ?? 0
+  const lastConnectionDate = selectedAgencyRanking?.lastConnectionAt
+  const lastActivityDate = selectedAgencyRanking?.lastBookingAt
+  const reviewCount = selectedAgencyRanking?.reviewCount ?? 0
+  const averageRating = selectedAgencyRanking?.averageRating ?? null
 
   const selectedAgencyName = useMemo(() => {
     if (!effectiveSupplierId) {
@@ -362,13 +468,42 @@ const CarStats = () => {
     return user?.fullName ?? ''
   }, [effectiveSupplierId, isAdmin, suppliers, user?.fullName])
 
+  const selectedAgencyRanking = useMemo(
+    () => (effectiveSupplierId
+      ? ranking.find((item) => item.agencyId === effectiveSupplierId) ?? null
+      : null),
+    [effectiveSupplierId, ranking],
+  )
+
+  const sortedRanking = useMemo(() => {
+    const data = [...ranking]
+    data.sort((a, b) => {
+      const valueA = getRankingValue(a, rankingOrderBy)
+      const valueB = getRankingValue(b, rankingOrderBy)
+      const safeA = Number.isFinite(valueA) ? valueA : 0
+      const safeB = Number.isFinite(valueB) ? valueB : 0
+
+      if (safeA === safeB) {
+        return a.agencyName.localeCompare(b.agencyName)
+      }
+
+      if (rankingOrder === 'asc') {
+        return safeA - safeB
+      }
+
+      return safeB - safeA
+    })
+
+    return data
+  }, [ranking, rankingOrderBy, rankingOrder])
+
   const paginatedRanking = useMemo(
     () =>
-      ranking.slice(
+      sortedRanking.slice(
         rankingPage * rankingRowsPerPage,
         rankingPage * rankingRowsPerPage + rankingRowsPerPage,
       ),
-    [ranking, rankingPage, rankingRowsPerPage],
+    [sortedRanking, rankingPage, rankingRowsPerPage],
   )
 
   const paginatedGlobalTopModels = useMemo(
@@ -437,7 +572,7 @@ const CarStats = () => {
 
   useEffect(() => {
     setRankingPage(0)
-  }, [ranking])
+  }, [ranking, rankingOrderBy, rankingOrder])
 
   useEffect(() => {
     setGlobalTopModelsPage(0)
@@ -503,7 +638,9 @@ const CarStats = () => {
                     <Card sx={{ height: '100%' }}>
                       <CardHeader title={strings.SUMMARY_TOTAL_AGENCIES} />
                       <CardContent>
-                        <Typography variant="h4">{adminOverview.summary.totalAgencies}</Typography>
+                        <Typography variant="h4">
+                          {formatInteger(adminOverview.summary.totalAgencies)}
+                        </Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -511,7 +648,9 @@ const CarStats = () => {
                     <Card sx={{ height: '100%' }}>
                       <CardHeader title={strings.SUMMARY_TOTAL_CARS} />
                       <CardContent>
-                        <Typography variant="h4">{adminOverview.summary.totalCars}</Typography>
+                        <Typography variant="h4">
+                          {formatInteger(adminOverview.summary.totalCars)}
+                        </Typography>
                       </CardContent>
                     </Card>
                   </Grid>
@@ -603,9 +742,12 @@ const CarStats = () => {
 
             {agencyOverview ? (
               <Box>
-                <SectionTitle title={strings.SECTION_PERFORMANCE} subtitle={performanceSubtitle} />
+                <SectionTitle
+                  title={strings.SECTION_SELECTED_AGENCY}
+                  subtitle={performanceSubtitle}
+                />
                 <Grid container spacing={3}>
-                  <Grid item xs={12} md={4}>
+                  <Grid item xs={12} lg={4}>
                     <Card sx={{ height: '100%' }}>
                       <CardHeader
                         title={strings.SCORE_SECTION_TITLE}
@@ -617,51 +759,82 @@ const CarStats = () => {
                           initialScoreBreakdown={agencyOverview.score}
                         />
                         <Divider sx={{ my: 2 }} />
-                        <Stack spacing={0.5}>
-                          <Typography variant="body2" color="text.secondary">
-                            {strings.TOTAL_CARS_LABEL}
-                          </Typography>
-                          <Typography variant="h5">{totalCarsForAgency}</Typography>
+                        <Stack spacing={1.5}>
+                          <Stack spacing={0.5}>
+                            <Typography variant="body2" color="text.secondary">
+                              {strings.TOTAL_CARS_LABEL}
+                            </Typography>
+                            <Typography variant="h5">{formatInteger(totalCarsForAgency)}</Typography>
+                          </Stack>
+                          <Stack spacing={0.5}>
+                            <Typography variant="body2" color="text.secondary">
+                              {strings.METRIC_LAST_CONNECTION}
+                            </Typography>
+                            <Typography variant="subtitle1">
+                              {formatDate(lastConnectionDate)}
+                            </Typography>
+                          </Stack>
+                          <Stack spacing={0.5}>
+                            <Typography variant="body2" color="text.secondary">
+                              {strings.METRIC_LAST_ACTIVITY}
+                            </Typography>
+                            <Typography variant="subtitle1">
+                              {formatDate(lastActivityDate)}
+                            </Typography>
+                          </Stack>
                         </Stack>
                       </CardContent>
                     </Card>
                   </Grid>
-                  <Grid item xs={12} md={8}>
-                    <Card sx={{ height: '100%' }}>
-                      <CardHeader title={strings.SECTION_PERFORMANCE_METRICS_TITLE} />
-                      <CardContent>
-                        <Grid container spacing={2}>
-                          <Grid item xs={12} sm={4}>
-                            <Stack spacing={0.5}>
-                              <Typography variant="body2" color="text.secondary">
-                                {strings.TOTAL_BOOKINGS}
-                              </Typography>
-                              <Typography variant="h5">{agencyOverview.totalBookings}</Typography>
-                            </Stack>
-                          </Grid>
-                          <Grid item xs={12} sm={4}>
-                            <Stack spacing={0.5}>
-                              <Typography variant="body2" color="text.secondary">
-                                {strings.ACCEPTANCE_RATE}
-                              </Typography>
-                              <Typography variant="h5">
-                                {formatPercentage(agencyOverview.acceptanceRate)}
-                              </Typography>
-                            </Stack>
-                          </Grid>
-                          <Grid item xs={12} sm={4}>
-                            <Stack spacing={0.5}>
-                              <Typography variant="body2" color="text.secondary">
-                                {strings.CANCELLATION_RATE}
-                              </Typography>
-                              <Typography variant="h5">
-                                {formatPercentage(agencyOverview.cancellationRate)}
-                              </Typography>
-                            </Stack>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
+                  <Grid item xs={12} lg={8}>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <StatCard
+                          label={strings.METRIC_TOTAL_BOOKINGS}
+                          value={formatInteger(agencyOverview.totalBookings)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <StatCard
+                          label={strings.METRIC_TOTAL_REVENUE}
+                          value={formatPrice(agencyOverview.totalRevenue)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <StatCard
+                          label={strings.METRIC_ACCEPTANCE_RATE}
+                          value={formatPercentage(agencyOverview.acceptanceRate)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <StatCard
+                          label={strings.METRIC_CANCELLATION_RATE}
+                          value={formatPercentage(agencyOverview.cancellationRate)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <StatCard
+                          label={strings.METRIC_PENDING_UPDATES}
+                          value={formatInteger(pendingUpdateDisplayCount)}
+                          helperText={strings.METRIC_PENDING_UPDATES_HELP.replace(
+                            '{count}',
+                            formatInteger(pendingUpdates.length),
+                          )}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <StatCard
+                          label={strings.METRIC_REVIEW_QUALITY}
+                          value={averageRating !== null
+                            ? `${formatRatingValue(averageRating)} / 5`
+                            : '—'}
+                          helperText={strings.METRIC_REVIEW_COUNT_LABEL.replace(
+                            '{count}',
+                            formatInteger(reviewCount),
+                          )}
+                        />
+                      </Grid>
+                    </Grid>
                   </Grid>
                 </Grid>
               </Box>
@@ -1022,13 +1195,136 @@ const CarStats = () => {
                                   <TableRow>
                                     <TableCell>{strings.RANKING_POSITION}</TableCell>
                                     <TableCell>{strings.RANKING_AGENCY}</TableCell>
-                                    <TableCell align="right">{strings.RANKING_SCORE}</TableCell>
-                                    <TableCell align="right">{strings.RANKING_CARS}</TableCell>
-                                    <TableCell align="right">{strings.RANKING_BOOKINGS}</TableCell>
-                                    <TableCell align="right">{strings.ACCEPTANCE_RATE}</TableCell>
-                                    <TableCell align="right">{strings.CANCELLATION_RATE}</TableCell>
-                                    <TableCell align="right">{strings.PENDING_UPDATES_SHORT}</TableCell>
-                                    <TableCell>{strings.LAST_ACTIVITY}</TableCell>
+                                    <TableCell
+                                      align="right"
+                                      sortDirection={rankingOrderBy === 'score' ? rankingOrder : false}
+                                    >
+                                      <TableSortLabel
+                                        active={rankingOrderBy === 'score'}
+                                        direction={rankingOrderBy === 'score' ? rankingOrder : 'desc'}
+                                        onClick={() => handleRankingSort('score')}
+                                      >
+                                        {strings.RANKING_SCORE}
+                                      </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell
+                                      align="right"
+                                      sortDirection={rankingOrderBy === 'revenue' ? rankingOrder : false}
+                                    >
+                                      <TableSortLabel
+                                        active={rankingOrderBy === 'revenue'}
+                                        direction={rankingOrderBy === 'revenue' ? rankingOrder : 'desc'}
+                                        onClick={() => handleRankingSort('revenue')}
+                                      >
+                                        {strings.RANKING_REVENUE}
+                                      </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell
+                                      align="right"
+                                      sortDirection={rankingOrderBy === 'totalCars' ? rankingOrder : false}
+                                    >
+                                      <TableSortLabel
+                                        active={rankingOrderBy === 'totalCars'}
+                                        direction={rankingOrderBy === 'totalCars' ? rankingOrder : 'desc'}
+                                        onClick={() => handleRankingSort('totalCars')}
+                                      >
+                                        {strings.RANKING_CARS}
+                                      </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell
+                                      align="right"
+                                      sortDirection={rankingOrderBy === 'totalBookings' ? rankingOrder : false}
+                                    >
+                                      <TableSortLabel
+                                        active={rankingOrderBy === 'totalBookings'}
+                                        direction={rankingOrderBy === 'totalBookings' ? rankingOrder : 'desc'}
+                                        onClick={() => handleRankingSort('totalBookings')}
+                                      >
+                                        {strings.RANKING_BOOKINGS}
+                                      </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell
+                                      align="right"
+                                      sortDirection={rankingOrderBy === 'acceptanceRate' ? rankingOrder : false}
+                                    >
+                                      <TableSortLabel
+                                        active={rankingOrderBy === 'acceptanceRate'}
+                                        direction={rankingOrderBy === 'acceptanceRate' ? rankingOrder : 'desc'}
+                                        onClick={() => handleRankingSort('acceptanceRate')}
+                                      >
+                                        {strings.METRIC_ACCEPTANCE_RATE}
+                                      </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell
+                                      align="right"
+                                      sortDirection={rankingOrderBy === 'cancellationRate' ? rankingOrder : false}
+                                    >
+                                      <TableSortLabel
+                                        active={rankingOrderBy === 'cancellationRate'}
+                                        direction={rankingOrderBy === 'cancellationRate' ? rankingOrder : 'desc'}
+                                        onClick={() => handleRankingSort('cancellationRate')}
+                                      >
+                                        {strings.METRIC_CANCELLATION_RATE}
+                                      </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell
+                                      align="right"
+                                      sortDirection={rankingOrderBy === 'pendingUpdates' ? rankingOrder : false}
+                                    >
+                                      <TableSortLabel
+                                        active={rankingOrderBy === 'pendingUpdates'}
+                                        direction={rankingOrderBy === 'pendingUpdates' ? rankingOrder : 'desc'}
+                                        onClick={() => handleRankingSort('pendingUpdates')}
+                                      >
+                                        {strings.PENDING_UPDATES_SHORT}
+                                      </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell
+                                      sortDirection={rankingOrderBy === 'lastConnectionAt' ? rankingOrder : false}
+                                    >
+                                      <TableSortLabel
+                                        active={rankingOrderBy === 'lastConnectionAt'}
+                                        direction={rankingOrderBy === 'lastConnectionAt' ? rankingOrder : 'desc'}
+                                        onClick={() => handleRankingSort('lastConnectionAt')}
+                                      >
+                                        {strings.RANKING_LAST_CONNECTION}
+                                      </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell
+                                      sortDirection={rankingOrderBy === 'lastBookingAt' ? rankingOrder : false}
+                                    >
+                                      <TableSortLabel
+                                        active={rankingOrderBy === 'lastBookingAt'}
+                                        direction={rankingOrderBy === 'lastBookingAt' ? rankingOrder : 'desc'}
+                                        onClick={() => handleRankingSort('lastBookingAt')}
+                                      >
+                                        {strings.LAST_ACTIVITY}
+                                      </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell
+                                      align="right"
+                                      sortDirection={rankingOrderBy === 'reviewCount' ? rankingOrder : false}
+                                    >
+                                      <TableSortLabel
+                                        active={rankingOrderBy === 'reviewCount'}
+                                        direction={rankingOrderBy === 'reviewCount' ? rankingOrder : 'desc'}
+                                        onClick={() => handleRankingSort('reviewCount')}
+                                      >
+                                        {strings.RANKING_REVIEWS}
+                                      </TableSortLabel>
+                                    </TableCell>
+                                    <TableCell
+                                      align="right"
+                                      sortDirection={rankingOrderBy === 'averageRating' ? rankingOrder : false}
+                                    >
+                                      <TableSortLabel
+                                        active={rankingOrderBy === 'averageRating'}
+                                        direction={rankingOrderBy === 'averageRating' ? rankingOrder : 'desc'}
+                                        onClick={() => handleRankingSort('averageRating')}
+                                      >
+                                        {strings.RANKING_RATING}
+                                      </TableSortLabel>
+                                    </TableCell>
                                   </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -1039,16 +1335,20 @@ const CarStats = () => {
                                         <TableCell>{absoluteIndex}</TableCell>
                                         <TableCell>{item.agencyName}</TableCell>
                                         <TableCell align="right">{Math.round(item.score)}</TableCell>
-                                        <TableCell align="right">{item.totalCars}</TableCell>
-                                        <TableCell align="right">{item.totalBookings}</TableCell>
+                                        <TableCell align="right">{formatPrice(item.revenue)}</TableCell>
+                                        <TableCell align="right">{formatInteger(item.totalCars)}</TableCell>
+                                        <TableCell align="right">{formatInteger(item.totalBookings)}</TableCell>
                                         <TableCell align="right">
                                           {formatPercentage(item.acceptanceRate)}
                                         </TableCell>
                                         <TableCell align="right">
                                           {formatPercentage(item.cancellationRate)}
                                         </TableCell>
-                                        <TableCell align="right">{item.pendingUpdates}</TableCell>
+                                        <TableCell align="right">{formatInteger(item.pendingUpdates)}</TableCell>
+                                        <TableCell>{formatDate(item.lastConnectionAt)}</TableCell>
                                         <TableCell>{formatDate(item.lastBookingAt)}</TableCell>
+                                        <TableCell align="right">{formatInteger(item.reviewCount)}</TableCell>
+                                        <TableCell align="right">{formatRatingValue(item.averageRating)}</TableCell>
                                       </TableRow>
                                     )
                                   })}
@@ -1083,11 +1383,15 @@ const CarStats = () => {
                           {highlights.topPerformers.length > 0 ? (
                             <Stack spacing={1}>
                               {highlights.topPerformers.map((item) => (
-                                <Chip
+                                <Tooltip
                                   key={item.agencyId}
-                                  label={`${item.agencyName} · ${Math.round(item.score)}`}
-                                  color="success"
-                                />
+                                  title={`${strings.METRIC_TOTAL_REVENUE}: ${formatPrice(item.revenue)}`}
+                                >
+                                  <Chip
+                                    label={`${item.agencyName} · ${Math.round(item.score)}`}
+                                    color="success"
+                                  />
+                                </Tooltip>
                               ))}
                             </Stack>
                           ) : (
@@ -1109,10 +1413,13 @@ const CarStats = () => {
                               {highlights.watchList.map((item) => (
                                 <Tooltip
                                   key={item.agencyId}
-                                  title={strings.WATCHLIST_TOOLTIP.replace('{bookings}', String(item.totalBookings))}
+                                  title={strings.WATCHLIST_TOOLTIP.replace(
+                                    '{bookings}',
+                                    formatInteger(item.totalBookings),
+                                  )}
                                 >
                                   <Chip
-                                    label={`${item.agencyName} · ${Math.round(item.score)}`}
+                                    label={`${item.agencyName} · ${Math.round(item.score)} · ${formatInteger(item.pendingUpdates)} ${strings.PENDING_UPDATES_SHORT}`}
                                     color="warning"
                                     variant="outlined"
                                   />
@@ -1138,7 +1445,8 @@ const CarStats = () => {
                                     primary={agency.agencyName}
                                     secondary={strings.INACTIVE_AGENCY_DETAILS
                                       .replace('{count}', String(agency.pendingUpdates))
-                                      .replace('{score}', String(Math.round(agency.score)))}
+                                      .replace('{score}', String(Math.round(agency.score)))
+                                      .replace('{lastConnection}', formatDate(agency.lastConnectionAt))}
                                   />
                                 </ListItem>
                               ))}

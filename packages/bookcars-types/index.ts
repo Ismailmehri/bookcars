@@ -709,6 +709,8 @@ export interface User {
   reviews?: Review[]
   score?: number
   slug?: string
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 export interface Option {
@@ -972,6 +974,10 @@ export interface AgencyRankingItem {
   acceptanceRate: number;
   cancellationRate: number;
   pendingUpdates: number;
+  revenue: number;
+  lastConnectionAt?: Date;
+  reviewCount: number;
+  averageRating: number | null;
   lastBookingAt?: Date;
 }
 
@@ -994,6 +1000,7 @@ export interface InactiveAgencyStat {
   pendingUpdates: number;
   score: number;
   lastActivity?: Date;
+  lastConnectionAt?: Date;
 }
 
 export interface AdminStatisticsHighlights {
@@ -1034,7 +1041,9 @@ export interface AgencyStatisticsOverview {
   acceptanceRate: number;
   cancellationRate: number;
   totalCars: number;
+  totalRevenue: number;
   averagePrices: AgencyAveragePriceByCategory[];
+  pendingUpdateCount: number;
   pendingUpdates: AgencyBookingUpdate[];
   topModels: TopModelStat[];
 }

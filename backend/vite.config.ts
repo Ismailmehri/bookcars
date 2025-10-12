@@ -26,6 +26,15 @@ export default ({ mode }: { mode: string }) => {
     build: {
       outDir: 'build',
       target: 'esnext'
+    },
+
+    test: {
+      environment: 'jsdom',
+      setupFiles: './src/setupTests.ts',
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'lcov'],
+      },
     }
   })
 }

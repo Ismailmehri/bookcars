@@ -53,6 +53,7 @@ const AgencyVerification = lazy(() => import('@/pages/AgencyVerification'))
 const AdminVerificationDashboard = lazy(() => import('@/pages/AdminVerificationDashboard'))
 const AgencyCommissions = lazy(() => import('@/pages/AgencyCommissions'))
 const AgencyDetailsCommissions = lazy(() => import('@/pages/AgencyDetailsCommissions'))
+const StaticInsights = lazy(() => import('@/pages/StaticInsights'))
 
 const App = () => (
   <GlobalProvider>
@@ -95,6 +96,7 @@ const App = () => (
             <Route path="/create-country" element={<CreateCountry />} />
             <Route path="/update-country" element={<UpdateCountry />} />
             <Route path="/insights" element={<CarStats />} />
+            <Route path="/insights/static" element={<StaticInsights />} />
             {env.PRICING_ENABLED && <Route path="/pricing" element={<Pricing />} />}
             {env.PRICING_ENABLED && (
               <Route path="/pricing/checkout" element={<PricingCheckout />} />

@@ -47,6 +47,7 @@ import { strings as settingsStrings } from '@/lang/settings'
 import { strings as signInStrings } from '@/lang/sign-in'
 import { strings as signUpStrings } from '@/lang/sign-up'
 import { strings as tosStrings } from '@/lang/tos'
+import { strings as insightsStrings } from '@/lang/insights'
 
 import 'github-fork-ribbon-css/gh-fork-ribbon.css'
 
@@ -155,6 +156,7 @@ if (lang) {
     signUpStrings.setLanguage(_lang)
     tosStrings.setLanguage(_lang)
     carSpecsStrings.setLanguage(_lang)
+    insightsStrings.setLanguage(_lang)
   }
 
   if (env.SET_LANGUAGE_FROM_IP && !storedLang) {

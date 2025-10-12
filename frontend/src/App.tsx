@@ -33,6 +33,7 @@ const Suppliers = lazy(() => import('@/pages/Suppliers'))
 const LocationATunis = lazy(() => import('@/pages/LocationATunis'))
 const LocationVoitureTunisiePrixDinars = lazy(() => import('@/pages/LocationVoitureTunisiePrixDinars'))
 const Review = lazy(() => import('@/pages/Review'))
+const Insights = lazy(() => import('@/pages/Insights'))
 
 const App = () => (
   <GlobalProvider>
@@ -63,6 +64,7 @@ const App = () => (
             <Route path="/review" element={<Review />} />
             <Route path="/location-voiture-pas-cher-a-tunis" element={<LocationATunis />} />
             <Route path="/location-voiture-tunisie-prix-dinars" element={<LocationVoitureTunisiePrixDinars />} />
+            <Route path="/insights" element={<Insights />} />
 
             <Route path="*" element={<NoMatch />} />
           </Routes>

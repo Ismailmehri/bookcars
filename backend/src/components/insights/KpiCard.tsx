@@ -1,5 +1,5 @@
 import React from 'react'
-import { Card, CardContent, Skeleton, Tooltip, Typography } from '@mui/material'
+import { Box, Card, CardContent, Skeleton, Tooltip, Typography } from '@mui/material'
 
 interface KpiCardProps {
   label: string
@@ -56,8 +56,10 @@ const KpiCard: React.FC<KpiCardProps> = ({ label, value, helperText, tooltip, ac
 
   if (tooltip) {
     return (
-      <Tooltip title={tooltip} arrow placement="top">
-        <div>{content}</div>
+      <Tooltip title={tooltip} arrow placement="top" enterTouchDelay={0} enterDelay={0}>
+        <Box data-testid="kpi-card-tooltip-trigger" sx={{ display: 'block' }}>
+          {content}
+        </Box>
       </Tooltip>
     )
   }

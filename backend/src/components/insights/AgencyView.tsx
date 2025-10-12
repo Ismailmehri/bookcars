@@ -87,22 +87,50 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
 
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6} md={4} lg={2}>
-          <KpiCard label={strings.KPI_REVENUE} value={formatCurrency(summary.totalRevenue)} loading={loading} />
+          <KpiCard
+            label={strings.KPI_REVENUE}
+            value={formatCurrency(summary.totalRevenue)}
+            tooltip={strings.KPI_REVENUE_HELPER}
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
-          <KpiCard label={strings.KPI_BOOKINGS} value={formatNumber(summary.totalBookings, { maximumFractionDigits: 0 })} loading={loading} />
+          <KpiCard
+            label={strings.KPI_BOOKINGS}
+            value={formatNumber(summary.totalBookings, { maximumFractionDigits: 0 })}
+            tooltip={strings.KPI_BOOKINGS_HELPER}
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
-          <KpiCard label={strings.KPI_ACCEPTANCE} value={formatPercentage(summary.acceptanceRate)} loading={loading} />
+          <KpiCard
+            label={strings.KPI_ACCEPTANCE}
+            value={formatPercentage(summary.acceptanceRate)}
+            tooltip={strings.KPI_ACCEPTANCE_HELPER}
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
-          <KpiCard label={strings.KPI_CANCELLATION} value={formatPercentage(summary.cancellationRate)} loading={loading} />
+          <KpiCard
+            label={strings.KPI_CANCELLATION}
+            value={formatPercentage(summary.cancellationRate)}
+            tooltip={strings.KPI_CANCELLATION_HELPER}
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
           <KpiCard
             label={strings.KPI_RATING}
             value={metrics.rating ? `${metrics.rating.average.toFixed(1)} / 5` : strings.RATING_PLACEHOLDER}
-            helperText={metrics.rating ? strings.REVIEWS_COUNT.replace('{count}', formatNumber(metrics.rating.reviews, { maximumFractionDigits: 0 })) : undefined}
+            helperText={
+              metrics.rating
+                ? strings.REVIEWS_COUNT.replace(
+                    '{count}',
+                    formatNumber(metrics.rating.reviews, { maximumFractionDigits: 0 }),
+                  )
+                : undefined
+            }
+            tooltip={strings.KPI_RATING_HELPER}
             loading={loading}
           />
         </Grid>
@@ -115,7 +143,12 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
           />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
-          <KpiCard label={strings.KPI_AVG_REVENUE_PER_BOOKING} value={formatCurrency(summary.averageRevenuePerBooking)} loading={loading} />
+          <KpiCard
+            label={strings.KPI_AVG_REVENUE_PER_BOOKING}
+            value={formatCurrency(summary.averageRevenuePerBooking)}
+            helperText={strings.KPI_AVG_REVENUE_PER_BOOKING_HELPER}
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
           <KpiCard
@@ -129,7 +162,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
           <KpiCard
             label={strings.KPI_REBOOKING_RATE}
             value={formatPercentage(summary.rebookingRate * 100)}
-            tooltip={strings.KPI_REBOOKING_TOOLTIP}
+            tooltip={strings.KPI_REBOOKING_RATE_HELPER}
             loading={loading}
           />
         </Grid>
@@ -137,7 +170,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
           <KpiCard
             label={strings.KPI_LEAD_TIME}
             value={formatNumber(summary.averageLeadTime, { maximumFractionDigits: 1 })}
-            tooltip={strings.KPI_LEAD_TIME_TOOLTIP}
+            helperText={strings.KPI_LEAD_TIME_HELPER}
             loading={loading}
           />
         </Grid>

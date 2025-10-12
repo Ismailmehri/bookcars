@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, Skeleton, Typography } from '@mui/material'
+import { Box, Skeleton, Tooltip, Typography } from '@mui/material'
 import { BarChart, LineChart, PieChart } from '@mui/x-charts'
 import * as bookcarsTypes from ':bookcars-types'
 import { strings } from '@/lang/insights'
@@ -34,25 +34,27 @@ interface RevenueLineChartProps extends BaseChartProps {
 }
 
 export const RevenueLineChart: React.FC<RevenueLineChartProps> = ({ data, loading }) => (
-  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
-    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-      {strings.CHART_REVENUE}
-    </Typography>
-    {loading ? (
-      <Skeleton variant="rectangular" height={260} />
-    ) : data.length === 0 ? (
-      <Typography variant="body2" color="text.secondary">
-        {strings.GLOBAL_REVENUE_EMPTY}
+  <Tooltip title={strings.CHART_REVENUE_HELPER} arrow placement="top-start" enterTouchDelay={0}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        {strings.CHART_REVENUE}
       </Typography>
-    ) : (
-      <LineChart
-        height={260}
-        series={[{ data: data.map((item) => item.revenue), color: chartPalette.primary, label: strings.KPI_REVENUE }]}
-        xAxis={[{ scaleType: 'point', data: data.map((item) => item.period) }]}
-        slotProps={{ legend: { hidden: true } }}
-      />
-    )}
-  </Box>
+      {loading ? (
+        <Skeleton variant="rectangular" height={260} />
+      ) : data.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          {strings.GLOBAL_REVENUE_EMPTY}
+        </Typography>
+      ) : (
+        <LineChart
+          height={260}
+          series={[{ data: data.map((item) => item.revenue), color: chartPalette.primary, label: strings.KPI_REVENUE }]}
+          xAxis={[{ scaleType: 'point', data: data.map((item) => item.period) }]}
+          slotProps={{ legend: { hidden: true } }}
+        />
+      )}
+    </Box>
+  </Tooltip>
 )
 
 interface WeeklyTrendChartProps extends BaseChartProps {
@@ -60,58 +62,60 @@ interface WeeklyTrendChartProps extends BaseChartProps {
 }
 
 export const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ data, loading }) => (
-  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
-    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-      {strings.CHART_WEEKLY_TREND}
-    </Typography>
-    {loading ? (
-      <Skeleton variant="rectangular" height={260} />
-    ) : data.length === 0 ? (
-      <Typography variant="body2" color="text.secondary">
-        {strings.EMPTY}
+  <Tooltip title={strings.CHART_WEEKLY_TREND_HELPER} arrow placement="top-start" enterTouchDelay={0}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        {strings.CHART_WEEKLY_TREND}
       </Typography>
-    ) : (
-      <LineChart
-        height={260}
-        series={[
-          {
-            data: data.map((item) => item.revenue),
-            label: strings.KPI_REVENUE,
-            color: chartPalette.primary,
-            yAxisKey: 'revenue',
-            valueFormatter: ({ value }) => formatCurrency(value ?? 0),
-          },
-          {
-            data: data.map((item) => item.bookings),
-            label: strings.KPI_BOOKINGS,
-            color: chartPalette.secondary,
-            yAxisKey: 'bookings',
-            valueFormatter: ({ value }) =>
-              formatNumber(value ?? 0, { maximumFractionDigits: 0 }),
-          },
-        ]}
-        xAxis={[{ scaleType: 'point', data: data.map((item) => item.week) }]}
-        yAxis={[
-          {
-            id: 'revenue',
-            position: 'left',
-            label: strings.CHART_AXIS_REVENUE,
-            valueFormatter: (value) => formatCurrency(value as number),
-          },
-          {
-            id: 'bookings',
-            position: 'right',
-            label: strings.CHART_AXIS_BOOKINGS,
-            valueFormatter: (value) =>
-              formatNumber((value as number) ?? 0, {
-                maximumFractionDigits: 0,
-              }),
-          },
-        ]}
-        slotProps={{ legend: { hidden: false } }}
-      />
-    )}
-  </Box>
+      {loading ? (
+        <Skeleton variant="rectangular" height={260} />
+      ) : data.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          {strings.EMPTY}
+        </Typography>
+      ) : (
+        <LineChart
+          height={260}
+          series={[
+            {
+              data: data.map((item) => item.revenue),
+              label: strings.KPI_REVENUE,
+              color: chartPalette.primary,
+              yAxisKey: 'revenue',
+              valueFormatter: ({ value }) => formatCurrency(value ?? 0),
+            },
+            {
+              data: data.map((item) => item.bookings),
+              label: strings.KPI_BOOKINGS,
+              color: chartPalette.secondary,
+              yAxisKey: 'bookings',
+              valueFormatter: ({ value }) =>
+                formatNumber(value ?? 0, { maximumFractionDigits: 0 }),
+            },
+          ]}
+          xAxis={[{ scaleType: 'point', data: data.map((item) => item.week) }]}
+          yAxis={[
+            {
+              id: 'revenue',
+              position: 'left',
+              label: strings.CHART_AXIS_REVENUE,
+              valueFormatter: (value) => formatCurrency(value as number),
+            },
+            {
+              id: 'bookings',
+              position: 'right',
+              label: strings.CHART_AXIS_BOOKINGS,
+              valueFormatter: (value) =>
+                formatNumber((value as number) ?? 0, {
+                  maximumFractionDigits: 0,
+                }),
+            },
+          ]}
+          slotProps={{ legend: { hidden: false } }}
+        />
+      )}
+    </Box>
+  </Tooltip>
 )
 
 interface ViewsChartProps extends BaseChartProps {
@@ -119,28 +123,30 @@ interface ViewsChartProps extends BaseChartProps {
 }
 
 export const ViewsLineChart: React.FC<ViewsChartProps> = ({ data, loading }) => (
-  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
-    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-      {strings.CHART_VIEWS}
-    </Typography>
-    {loading ? (
-      <Skeleton variant="rectangular" height={260} />
-    ) : data.length === 0 ? (
-      <Typography variant="body2" color="text.secondary">
-        {strings.GLOBAL_VIEWS_EMPTY}
+  <Tooltip title={strings.CHART_VIEWS_HELPER} arrow placement="top-start" enterTouchDelay={0}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        {strings.CHART_VIEWS}
       </Typography>
-    ) : (
-      <LineChart
-        height={260}
-        series={[
-          { data: data.map((item) => item.organique), label: strings.CHART_LABEL_ORGANIC, color: chartPalette.primary },
-          { data: data.map((item) => item.paid), label: strings.CHART_LABEL_PAID, color: chartPalette.secondary },
-          { data: data.map((item) => item.total), label: strings.CHART_LABEL_TOTAL, color: chartPalette.neutral },
-        ]}
-        xAxis={[{ scaleType: 'point', data: data.map((item) => item.date) }]}
-      />
-    )}
-  </Box>
+      {loading ? (
+        <Skeleton variant="rectangular" height={260} />
+      ) : data.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          {strings.GLOBAL_VIEWS_EMPTY}
+        </Typography>
+      ) : (
+        <LineChart
+          height={260}
+          series={[
+            { data: data.map((item) => item.organique), label: strings.CHART_LABEL_ORGANIC, color: chartPalette.primary },
+            { data: data.map((item) => item.paid), label: strings.CHART_LABEL_PAID, color: chartPalette.secondary },
+            { data: data.map((item) => item.total), label: strings.CHART_LABEL_TOTAL, color: chartPalette.neutral },
+          ]}
+          xAxis={[{ scaleType: 'point', data: data.map((item) => item.date) }]}
+        />
+      )}
+    </Box>
+  </Tooltip>
 )
 
 interface StatusChartProps extends BaseChartProps {
@@ -148,65 +154,69 @@ interface StatusChartProps extends BaseChartProps {
 }
 
 export const StatusPieChart: React.FC<StatusChartProps> = ({ data, loading }) => (
-  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
-    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-      {strings.CHART_STATUS_COUNT}
-    </Typography>
-    {loading ? (
-      <Skeleton variant="rectangular" height={260} />
-    ) : data.length === 0 ? (
-      <Typography variant="body2" color="text.secondary">
-        {strings.EMPTY}
+  <Tooltip title={strings.CHART_STATUS_COUNT_HELPER} arrow placement="top-start" enterTouchDelay={0}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        {strings.CHART_STATUS_COUNT}
       </Typography>
-    ) : (
-      <PieChart
-        height={260}
-        series={[{
-          data: data.map((item) => ({
-            id: item.status,
-            value: item.count,
-            label: getStatusLabel(item.status),
-            color: getStatusColor(item.status),
-            data: {
-              backgroundColor: getStatusBackground(item.status),
-            },
-          })),
-          innerRadius: 40,
-          outerRadius: 100,
-        }]}
-        slotProps={{ legend: { hidden: false } }}
-      />
-    )}
-  </Box>
+      {loading ? (
+        <Skeleton variant="rectangular" height={260} />
+      ) : data.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          {strings.EMPTY}
+        </Typography>
+      ) : (
+        <PieChart
+          height={260}
+          series={[{
+            data: data.map((item) => ({
+              id: item.status,
+              value: item.count,
+              label: getStatusLabel(item.status),
+              color: getStatusColor(item.status),
+              data: {
+                backgroundColor: getStatusBackground(item.status),
+              },
+            })),
+            innerRadius: 40,
+            outerRadius: 100,
+          }]}
+          slotProps={{ legend: { hidden: false } }}
+        />
+      )}
+    </Box>
+  </Tooltip>
 )
 
 export const StatusRevenuePieChart: React.FC<StatusChartProps> = ({ data, loading }) => (
-  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
-    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-      {strings.CHART_STATUS_REVENUE}
-    </Typography>
-    {loading ? (
-      <Skeleton variant="rectangular" height={260} />
-    ) : data.length === 0 ? (
-      <Typography variant="body2" color="text.secondary">
-        {strings.EMPTY}
+  <Tooltip title={strings.CHART_STATUS_REVENUE_HELPER} arrow placement="top-start" enterTouchDelay={0}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        {strings.CHART_STATUS_REVENUE}
       </Typography>
-    ) : (
-      <PieChart
-        height={260}
-        series={[{
-          data: data.map((item) => ({
-            id: item.status,
-            value: item.totalPrice,
-            label: getStatusLabel(item.status),
-            color: getStatusColor(item.status),
-          })),
-          innerRadius: 40,
-          outerRadius: 100,
-        }]}
-      />
-    )}
-  </Box>
+      {loading ? (
+        <Skeleton variant="rectangular" height={260} />
+      ) : data.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          {strings.EMPTY}
+        </Typography>
+      ) : (
+        <PieChart
+          height={260}
+          series={[{
+            data: data.map((item) => ({
+              id: item.status,
+              value: item.totalPrice,
+              label: getStatusLabel(item.status),
+              color: getStatusColor(item.status),
+            })),
+            innerRadius: 40,
+            outerRadius: 100,
+          }]}
+        />
+      )}
+    </Box>
+  </Tooltip>
 )
 
 interface AcceptCancelChartProps extends BaseChartProps {
@@ -215,20 +225,22 @@ interface AcceptCancelChartProps extends BaseChartProps {
 }
 
 export const AcceptCancelBarChart: React.FC<AcceptCancelChartProps> = ({ accepted, cancelled, loading }) => (
-  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
-    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-      {strings.CHART_ACCEPT_CANCEL}
-    </Typography>
-    {loading ? (
-      <Skeleton variant="rectangular" height={260} />
-    ) : (
-      <BarChart
-        height={260}
-        series={[{ data: [accepted, cancelled], color: chartPalette.primary }]}
-        xAxis={[{ scaleType: 'band', data: [strings.CHART_LABEL_ACCEPTED, strings.CHART_LABEL_CANCELLED] }]}
-      />
-    )}
-  </Box>
+  <Tooltip title={strings.CHART_ACCEPT_CANCEL_HELPER} arrow placement="top-start" enterTouchDelay={0}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        {strings.CHART_ACCEPT_CANCEL}
+      </Typography>
+      {loading ? (
+        <Skeleton variant="rectangular" height={260} />
+      ) : (
+        <BarChart
+          height={260}
+          series={[{ data: [accepted, cancelled], color: chartPalette.primary }]}
+          xAxis={[{ scaleType: 'band', data: [strings.CHART_LABEL_ACCEPTED, strings.CHART_LABEL_CANCELLED] }]}
+        />
+      )}
+    </Box>
+  </Tooltip>
 )
 
 interface AverageDurationChartProps extends BaseChartProps {
@@ -236,24 +248,26 @@ interface AverageDurationChartProps extends BaseChartProps {
 }
 
 export const AverageDurationBarChart: React.FC<AverageDurationChartProps> = ({ data, loading }) => (
-  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
-    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-      {strings.CHART_AVG_DURATION}
-    </Typography>
-    {loading ? (
-      <Skeleton variant="rectangular" height={260} />
-    ) : data.length === 0 ? (
-      <Typography variant="body2" color="text.secondary">
-        {strings.EMPTY}
+  <Tooltip title={strings.CHART_AVG_DURATION_HELPER} arrow placement="top-start" enterTouchDelay={0}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        {strings.CHART_AVG_DURATION}
       </Typography>
-    ) : (
-      <BarChart
-        height={260}
-        series={[{ data: data.map((item) => Number(item.averageDuration.toFixed(2))), color: chartPalette.primary }]}
-        xAxis={[{ scaleType: 'band', data: data.map((item) => item.agencyName) }]}
-      />
-    )}
-  </Box>
+      {loading ? (
+        <Skeleton variant="rectangular" height={260} />
+      ) : data.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          {strings.EMPTY}
+        </Typography>
+      ) : (
+        <BarChart
+          height={260}
+          series={[{ data: data.map((item) => Number(item.averageDuration.toFixed(2))), color: chartPalette.primary }]}
+          xAxis={[{ scaleType: 'band', data: data.map((item) => item.agencyName) }]}
+        />
+      )}
+    </Box>
+  </Tooltip>
 )
 
 interface ModelRevenueChartProps extends BaseChartProps {
@@ -261,24 +275,26 @@ interface ModelRevenueChartProps extends BaseChartProps {
 }
 
 export const ModelRevenueBarChart: React.FC<ModelRevenueChartProps> = ({ data, loading }) => (
-  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
-    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-      {strings.CHART_MODEL_REVENUE}
-    </Typography>
-    {loading ? (
-      <Skeleton variant="rectangular" height={260} />
-    ) : data.length === 0 ? (
-      <Typography variant="body2" color="text.secondary">
-        {strings.EMPTY}
+  <Tooltip title={strings.CHART_MODEL_REVENUE_HELPER} arrow placement="top-start" enterTouchDelay={0}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        {strings.CHART_MODEL_REVENUE}
       </Typography>
-    ) : (
-      <BarChart
-        height={260}
-        series={[{ data: data.map((item) => Number(item.revenue.toFixed(0))), color: chartPalette.primary }]}
-        xAxis={[{ scaleType: 'band', data: data.map((item) => item.modelName) }]}
-      />
-    )}
-  </Box>
+      {loading ? (
+        <Skeleton variant="rectangular" height={260} />
+      ) : data.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          {strings.EMPTY}
+        </Typography>
+      ) : (
+        <BarChart
+          height={260}
+          series={[{ data: data.map((item) => Number(item.revenue.toFixed(0))), color: chartPalette.primary }]}
+          xAxis={[{ scaleType: 'band', data: data.map((item) => item.modelName) }]}
+        />
+      )}
+    </Box>
+  </Tooltip>
 )
 
 interface ModelOccupancyChartProps extends BaseChartProps {
@@ -286,24 +302,26 @@ interface ModelOccupancyChartProps extends BaseChartProps {
 }
 
 export const ModelOccupancyBarChart: React.FC<ModelOccupancyChartProps> = ({ data, loading }) => (
-  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
-    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-      {strings.CHART_MODEL_OCCUPANCY}
-    </Typography>
-    {loading ? (
-      <Skeleton variant="rectangular" height={260} />
-    ) : data.length === 0 ? (
-      <Typography variant="body2" color="text.secondary">
-        {strings.EMPTY}
+  <Tooltip title={strings.CHART_MODEL_OCCUPANCY_HELPER} arrow placement="top-start" enterTouchDelay={0}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        {strings.CHART_MODEL_OCCUPANCY}
       </Typography>
-    ) : (
-      <BarChart
-        height={260}
-        series={[{ data: data.map((item) => Number((item.occupancyRate * 100).toFixed(1))), color: chartPalette.secondary }]}
-        xAxis={[{ scaleType: 'band', data: data.map((item) => item.modelName) }]}
-      />
-    )}
-  </Box>
+      {loading ? (
+        <Skeleton variant="rectangular" height={260} />
+      ) : data.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          {strings.EMPTY}
+        </Typography>
+      ) : (
+        <BarChart
+          height={260}
+          series={[{ data: data.map((item) => Number((item.occupancyRate * 100).toFixed(1))), color: chartPalette.secondary }]}
+          xAxis={[{ scaleType: 'band', data: data.map((item) => item.modelName) }]}
+        />
+      )}
+    </Box>
+  </Tooltip>
 )
 
 interface CancellationChartProps extends BaseChartProps {
@@ -311,22 +329,24 @@ interface CancellationChartProps extends BaseChartProps {
 }
 
 export const CancellationByPaymentBarChart: React.FC<CancellationChartProps> = ({ data, loading }) => (
-  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
-    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-      {strings.CHART_CANCELLATION_PAYMENT}
-    </Typography>
-    {loading ? (
-      <Skeleton variant="rectangular" height={260} />
-    ) : data.length === 0 ? (
-      <Typography variant="body2" color="text.secondary">
-        {strings.EMPTY}
+  <Tooltip title={strings.CHART_CANCELLATION_PAYMENT_HELPER} arrow placement="top-start" enterTouchDelay={0}>
+    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        {strings.CHART_CANCELLATION_PAYMENT}
       </Typography>
-    ) : (
-      <BarChart
-        height={260}
-        series={[{ data: data.map((item) => item.count), color: chartPalette.danger }]}
-        xAxis={[{ scaleType: 'band', data: data.map((item) => getCancellationPaymentLabel(item.paymentStatus)) }]}
-      />
-    )}
-  </Box>
+      {loading ? (
+        <Skeleton variant="rectangular" height={260} />
+      ) : data.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          {strings.EMPTY}
+        </Typography>
+      ) : (
+        <BarChart
+          height={260}
+          series={[{ data: data.map((item) => item.count), color: chartPalette.danger }]}
+          xAxis={[{ scaleType: 'band', data: data.map((item) => getCancellationPaymentLabel(item.paymentStatus)) }]}
+        />
+      )}
+    </Box>
+  </Tooltip>
 )

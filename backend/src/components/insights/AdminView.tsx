@@ -96,24 +96,45 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
 
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6} md={4} lg={2}>
-          <KpiCard label={strings.KPI_TOTAL_REVENUE} value={formatCurrency(summary.totalRevenue)} loading={loading} />
+          <KpiCard
+            label={strings.KPI_TOTAL_REVENUE}
+            value={formatCurrency(summary.totalRevenue)}
+            tooltip={strings.KPI_REVENUE_HELPER}
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
-          <KpiCard label={strings.KPI_TOTAL_BOOKINGS} value={formatNumber(summary.totalBookings, { maximumFractionDigits: 0 })} loading={loading} />
+          <KpiCard
+            label={strings.KPI_TOTAL_BOOKINGS}
+            value={formatNumber(summary.totalBookings, { maximumFractionDigits: 0 })}
+            tooltip={strings.KPI_BOOKINGS_HELPER}
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
           <KpiCard label={strings.KPI_AGENCIES} value={formatNumber(summary.activeAgencies, { maximumFractionDigits: 0 })} loading={loading} />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
-          <KpiCard label={strings.KPI_AVG_ACCEPTANCE} value={formatPercentage(summary.acceptanceRate)} loading={loading} />
+          <KpiCard
+            label={strings.KPI_AVG_ACCEPTANCE}
+            value={formatPercentage(summary.acceptanceRate)}
+            tooltip={strings.KPI_ACCEPTANCE_HELPER}
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
-          <KpiCard label={strings.KPI_AVG_CANCELLATION} value={formatPercentage(summary.cancellationRate)} loading={loading} />
+          <KpiCard
+            label={strings.KPI_AVG_CANCELLATION}
+            value={formatPercentage(summary.cancellationRate)}
+            tooltip={strings.KPI_CANCELLATION_HELPER}
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
           <KpiCard
             label={strings.KPI_AVG_RATING}
             value={metrics.averageRating ? metrics.averageRating.toFixed(1) : strings.RATING_PLACEHOLDER}
+            tooltip={strings.KPI_RATING_HELPER}
             loading={loading}
           />
         </Grid>
@@ -126,16 +147,26 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
-          <KpiCard label={strings.KPI_REVENUE_CURRENT_YEAR} value={formatCurrency(summary.currentYearRevenue)} loading={loading} />
+          <KpiCard
+            label={strings.KPI_REVENUE_CURRENT_YEAR}
+            value={formatCurrency(summary.currentYearRevenue)}
+            helperText={strings.KPI_REVENUE_CURRENT_YEAR_HELPER}
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
-          <KpiCard label={strings.KPI_REVENUE_PREVIOUS_YEAR} value={formatCurrency(summary.previousYearRevenue)} loading={loading} />
+          <KpiCard
+            label={strings.KPI_REVENUE_PREVIOUS_YEAR}
+            value={formatCurrency(summary.previousYearRevenue)}
+            helperText={strings.KPI_REVENUE_PREVIOUS_YEAR_HELPER}
+            loading={loading}
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={4} lg={2}>
           <KpiCard
             label={strings.KPI_VIEWS_TO_BOOKINGS}
             value={formatPercentage(summary.conversionRate * 100)}
-            tooltip={strings.KPI_VIEWS_TO_BOOKINGS_TOOLTIP}
+            tooltip={strings.KPI_VIEWS_TO_BOOKINGS_HELPER}
             loading={loading}
           />
         </Grid>
@@ -143,7 +174,7 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           <KpiCard
             label={strings.KPI_REBOOKING_RATE}
             value={formatPercentage(summary.rebookingRate * 100)}
-            tooltip={strings.KPI_REBOOKING_TOOLTIP}
+            tooltip={strings.KPI_REBOOKING_RATE_HELPER}
             loading={loading}
           />
         </Grid>
@@ -151,7 +182,7 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           <KpiCard
             label={strings.KPI_LEAD_TIME}
             value={formatNumber(summary.averageLeadTime, { maximumFractionDigits: 1 })}
-            tooltip={strings.KPI_LEAD_TIME_TOOLTIP}
+            helperText={strings.KPI_LEAD_TIME_HELPER}
             loading={loading}
           />
         </Grid>
@@ -159,6 +190,7 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           <KpiCard
             label={strings.KPI_AVG_REVENUE_PER_BOOKING}
             value={formatCurrency(summary.averageRevenuePerBooking)}
+            helperText={strings.KPI_AVG_REVENUE_PER_BOOKING_HELPER}
             loading={loading}
           />
         </Grid>

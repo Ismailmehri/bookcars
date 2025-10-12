@@ -56,5 +56,13 @@ export const formatDateTime = (value: string | Date | null | undefined, options?
     return '—'
   }
 
-  return new Intl.DateTimeFormat(getLocale(), options ?? { year: 'numeric', month: 'short', day: '2-digit' }).format(date)
+  const baseOptions: Intl.DateTimeFormatOptions = {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }
+
+  const finalOptions = options ? { ...baseOptions, ...options } : baseOptions
+
+  return new Intl.DateTimeFormat(getLocale(), finalOptions).format(date)
 }

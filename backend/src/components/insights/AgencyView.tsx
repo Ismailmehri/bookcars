@@ -38,6 +38,8 @@ interface AgencyViewProps {
   viewsOverTime: ViewsTimePoint[]
   statusCounts: bookcarsTypes.BookingStat[]
   statusRevenue: bookcarsTypes.BookingStat[]
+  averageRevenuePerBooking: number
+  averageDuration: number
   lastBookingAt?: string
   lastConnectionAt?: string
 }
@@ -58,6 +60,8 @@ const AgencyView: React.FC<AgencyViewProps> = ({
   viewsOverTime,
   statusCounts,
   statusRevenue,
+  averageRevenuePerBooking,
+  averageDuration,
   lastBookingAt,
   lastConnectionAt,
 }) => {
@@ -130,6 +134,21 @@ const AgencyView: React.FC<AgencyViewProps> = ({
             label={strings.KPI_OCCUPANCY}
             value={formatPercentage(occupancyRate * 100)}
             tooltip={strings.OCCUPANCY_TOOLTIP}
+            loading={loading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={4} lg={2}>
+          <KpiCard
+            label={strings.KPI_AVG_REVENUE_PER_BOOKING}
+            value={formatCurrency(averageRevenuePerBooking)}
+            loading={loading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={4} lg={2}>
+          <KpiCard
+            label={strings.KPI_AVG_DURATION}
+            value={formatNumber(averageDuration, { maximumFractionDigits: 1 })}
+            helperText={strings.KPI_AVG_DURATION_HELPER}
             loading={loading}
           />
         </Grid>

@@ -1,7 +1,11 @@
 import React from 'react'
 import { Grid, Stack, Typography } from '@mui/material'
 import * as bookcarsTypes from ':bookcars-types'
-import { MonthlyRevenuePoint, ViewsTimePoint } from '@/pages/insights.helpers'
+import {
+  MonthlyRevenuePoint,
+  ViewsTimePoint,
+  type AgencyAverageDurationPoint,
+} from '@/pages/insights.helpers'
 import { formatCurrency, formatNumber, formatPercentage } from '@/common/format'
 import KpiCard from './KpiCard'
 import TableSimple, { TableColumn } from './TableSimple'
@@ -11,6 +15,7 @@ import {
   StatusPieChart,
   StatusRevenueBarChart,
   AcceptCancelBarChart,
+  AverageDurationBarChart,
 } from './Charts'
 import { strings } from '@/lang/insights'
 
@@ -30,6 +35,10 @@ interface AdminViewProps {
   statusCounts: bookcarsTypes.BookingStat[]
   statusRevenue: bookcarsTypes.BookingStat[]
   ranking: bookcarsTypes.AgencyRankingItem[]
+  currentYearRevenue: number
+  previousYearRevenue: number
+  conversionRate: number
+  averageDurationByAgency: AgencyAverageDurationPoint[]
 }
 
 const AdminView: React.FC<AdminViewProps> = ({
@@ -48,6 +57,10 @@ const AdminView: React.FC<AdminViewProps> = ({
   statusCounts,
   statusRevenue,
   ranking,
+  currentYearRevenue,
+  previousYearRevenue,
+  conversionRate,
+  averageDurationByAgency,
 }) => {
   const rankingColumns: TableColumn<bookcarsTypes.AgencyRankingItem>[] = [
     {
@@ -128,6 +141,20 @@ const AdminView: React.FC<AdminViewProps> = ({
         <Grid item xs={12} sm={6} md={4} lg={2}>
           <KpiCard label={strings.KPI_AVG_RATING} value={averageRating ? averageRating.toFixed(1) : strings.RATING_PLACEHOLDER} loading={loading} />
         </Grid>
+        <Grid item xs={12} sm={6} md={4} lg={2}>
+          <KpiCard label={strings.KPI_REVENUE_CURRENT_YEAR} value={formatCurrency(currentYearRevenue)} loading={loading} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={4} lg={2}>
+          <KpiCard label={strings.KPI_REVENUE_PREVIOUS_YEAR} value={formatCurrency(previousYearRevenue)} loading={loading} />
+        </Grid>
+        <Grid item xs={12} sm={6} md={4} lg={2}>
+          <KpiCard
+            label={strings.KPI_VIEWS_TO_BOOKINGS}
+            value={formatPercentage(conversionRate * 100)}
+            tooltip={strings.KPI_VIEWS_TO_BOOKINGS_TOOLTIP}
+            loading={loading}
+          />
+        </Grid>
       </Grid>
 
       <Grid container spacing={2}>
@@ -156,6 +183,9 @@ const AdminView: React.FC<AdminViewProps> = ({
         </Grid>
         <Grid item xs={12} md={6}>
           <AcceptCancelBarChart accepted={acceptedBookings} cancelled={cancelledBookings} loading={loading} />
+        </Grid>
+        <Grid item xs={12}>
+          <AverageDurationBarChart data={averageDurationByAgency} loading={loading} />
         </Grid>
       </Grid>
 

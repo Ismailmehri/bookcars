@@ -63,6 +63,10 @@ import { strings as commonStrings } from '@/lang/common'
 import * as helper from '@/common/helper'
 import env from '@/config/env.config'
 import * as CommissionService from '@/services/CommissionService'
+import {
+  BOOKING_STATUS_CHIP_STYLES,
+  FALLBACK_STATUS_CHIP_STYLE,
+} from '@/constants/bookingStatusStyles'
 
 const formatter = new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 0 })
 const formatCurrency = (value: number) => `${formatter.format(Math.round(value || 0))} ${strings.CURRENCY}`
@@ -80,16 +84,6 @@ const BILLABLE_STATUSES = new Set<bookcarsTypes.BookingStatus>([
   bookcarsTypes.BookingStatus.Reserved,
   bookcarsTypes.BookingStatus.Paid,
 ])
-
-const BOOKING_STATUS_CHIP_STYLES: Record<bookcarsTypes.BookingStatus, { background: string; color: string }> = {
-  [bookcarsTypes.BookingStatus.Void]: { background: '#D9D9D9', color: '#6E7C86' },
-  [bookcarsTypes.BookingStatus.Pending]: { background: '#FBDCC2', color: '#EF6C00' },
-  [bookcarsTypes.BookingStatus.Deposit]: { background: '#CDECDA', color: '#3CB371' },
-  [bookcarsTypes.BookingStatus.Paid]: { background: '#D1F9D1', color: '#77BC23' },
-  [bookcarsTypes.BookingStatus.Reserved]: { background: '#D9E7F4', color: '#1E88E5' },
-  [bookcarsTypes.BookingStatus.Cancelled]: { background: '#FBDFDE', color: '#E53935' },
-}
-const FALLBACK_STATUS_CHIP_STYLE = { background: '#ECEFF1', color: '#455A64' }
 
 type ReservationStatusKey = 'paid' | 'reserved' | 'ongoing' | 'completed' | 'cancelled'
 

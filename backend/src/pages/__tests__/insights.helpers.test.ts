@@ -11,6 +11,10 @@ import {
   createAgencyOptionFromUser,
   sumBookingsRevenue,
   sumViewsByDate,
+  getBookingDurationInDays,
+  calculateAverageDuration,
+  groupAverageDurationByAgency,
+  calculateViewsToBookingsConversion,
 } from '../insights.helpers'
 
 describe('insights helpers', () => {
@@ -120,6 +124,68 @@ describe('insights helpers', () => {
     const bookings = [booking('2024-01-01', '2024-01-02', 100), booking('2024-01-05', '2024-01-06', 200)]
     expect(sumBookingsRevenue(bookings)).toBe(300)
     expect(countBookings(bookings)).toBe(2)
+  })
+
+  it('computes booking duration in days safely', () => {
+    expect(getBookingDurationInDays(booking('2024-06-01', '2024-06-05'))).toBe(5)
+    expect(getBookingDurationInDays({ ...booking('2024-06-01', '2024-06-05'), from: undefined })).toBe(0)
+  })
+
+  it('calculates average duration across bookings', () => {
+    const bookings = [booking('2024-07-01', '2024-07-03'), booking('2024-07-10', '2024-07-15')]
+    expect(calculateAverageDuration(bookings)).toBeCloseTo((3 + 6) / 2)
+  })
+
+  it('groups average duration by agency preserving ranking names', () => {
+    const agencyBookings: bookcarsTypes.Booking[] = [
+      { ...booking('2024-08-01', '2024-08-05'), supplier: 'agency-1' },
+      { ...booking('2024-08-10', '2024-08-12'), supplier: 'agency-1' },
+      { ...booking('2024-08-15', '2024-08-18'), supplier: 'agency-2' },
+    ]
+
+    const ranking: bookcarsTypes.AgencyRankingItem[] = [
+      {
+        agencyId: 'agency-1',
+        agencyName: 'Agency One',
+        score: 90,
+        totalCars: 10,
+        totalBookings: 100,
+        acceptanceRate: 95,
+        cancellationRate: 3,
+        pendingUpdates: 1,
+        revenue: 100000,
+        reviewCount: 20,
+        averageRating: 4.5,
+      },
+      {
+        agencyId: 'agency-2',
+        agencyName: 'Agency Two',
+        score: 80,
+        totalCars: 5,
+        totalBookings: 40,
+        acceptanceRate: 90,
+        cancellationRate: 5,
+        pendingUpdates: 0,
+        revenue: 60000,
+        reviewCount: 10,
+        averageRating: 4.2,
+      },
+    ]
+
+    const grouped = groupAverageDurationByAgency(agencyBookings, ranking)
+
+    expect(grouped).toHaveLength(2)
+    expect(grouped).toEqual(
+      expect.arrayContaining([
+        { agencyId: 'agency-2', agencyName: 'Agency Two', averageDuration: 4 },
+        { agencyId: 'agency-1', agencyName: 'Agency One', averageDuration: 4 },
+      ]),
+    )
+  })
+
+  it('computes views to bookings conversion ratio', () => {
+    expect(calculateViewsToBookingsConversion(10, 100)).toBe(0.1)
+    expect(calculateViewsToBookingsConversion(5, 0)).toBe(0)
   })
 
   it('builds agency options from suppliers and ranking without duplicates', () => {

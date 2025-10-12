@@ -18,6 +18,12 @@ export interface AgencyOption {
   name: string
 }
 
+export interface AgencyAverageDurationPoint {
+  agencyId: string
+  agencyName: string
+  averageDuration: number
+}
+
 export const createAgencyOptionFromUser = (user?: bookcarsTypes.User): AgencyOption | null => {
   if (!user || !user._id) {
     return null
@@ -196,6 +202,95 @@ export const aggregateBookingsByStatus = (
   }))
 }
 
+export const getBookingDurationInDays = (booking: bookcarsTypes.Booking): number => {
+  if (!booking.from || !booking.to) {
+    return 0
+  }
+
+  const from = new Date(booking.from)
+  const to = new Date(booking.to)
+
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+    return 0
+  }
+
+  const diff = differenceInCalendarDays(to, from) + 1
+
+  if (!Number.isFinite(diff) || diff <= 0) {
+    return 0
+  }
+
+  return diff
+}
+
+export const calculateAverageDuration = (bookings: bookcarsTypes.Booking[]): number => {
+  if (bookings.length === 0) {
+    return 0
+  }
+
+  const { totalDuration, count } = bookings.reduce(
+    (acc, booking) => {
+      const duration = getBookingDurationInDays(booking)
+
+      if (duration > 0) {
+        acc.totalDuration += duration
+        acc.count += 1
+      }
+
+      return acc
+    },
+    { totalDuration: 0, count: 0 },
+  )
+
+  if (count === 0) {
+    return 0
+  }
+
+  return totalDuration / count
+}
+
+export const groupAverageDurationByAgency = (
+  bookings: bookcarsTypes.Booking[],
+  ranking: bookcarsTypes.AgencyRankingItem[],
+): AgencyAverageDurationPoint[] => {
+  if (bookings.length === 0) {
+    return []
+  }
+
+  const rankingMap = new Map(ranking.map((item) => [item.agencyId, item.agencyName]))
+  const accumulator = bookings.reduce<Map<string, { total: number; count: number }>>((acc, booking) => {
+    const supplierId = typeof booking.supplier === 'string'
+      ? booking.supplier
+      : (booking.supplier as bookcarsTypes.User | undefined)?._id
+
+    if (!supplierId) {
+      return acc
+    }
+
+    const duration = getBookingDurationInDays(booking)
+
+    if (duration <= 0) {
+      return acc
+    }
+
+    const current = acc.get(supplierId) ?? { total: 0, count: 0 }
+    acc.set(supplierId, {
+      total: current.total + duration,
+      count: current.count + 1,
+    })
+
+    return acc
+  }, new Map())
+
+  return Array.from(accumulator.entries())
+    .map(([agencyId, { total, count }]) => ({
+      agencyId,
+      agencyName: rankingMap.get(agencyId) ?? agencyId,
+      averageDuration: count === 0 ? 0 : total / count,
+    }))
+    .sort((a, b) => b.averageDuration - a.averageDuration)
+}
+
 export const buildAgencyOptions = (
   suppliers: bookcarsTypes.SuppliersStat[],
   ranking: bookcarsTypes.AgencyRankingItem[],
@@ -253,4 +348,12 @@ export const extractTotalRecords = (pageInfo: unknown): number => {
   }
 
   return 0
+}
+
+export const calculateViewsToBookingsConversion = (accepted: number, totalViews: number): number => {
+  if (totalViews <= 0) {
+    return 0
+  }
+
+  return accepted / totalViews
 }

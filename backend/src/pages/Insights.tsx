@@ -27,13 +27,17 @@ import { strings } from '@/lang/insights'
 import {
   aggregateBookingsByStatus,
   buildAgencyOptions,
+  calculateAverageDuration,
   calculateOccupancyRate,
+  calculateViewsToBookingsConversion,
   countBookings,
   extractTotalRecords,
+  groupAverageDurationByAgency,
   groupMonthlyRevenue,
   sumBookingsRevenue,
   sumViewsByDate,
   type AgencyOption,
+  type AgencyAverageDurationPoint,
   createAgencyOptionFromUser,
 } from './insights.helpers'
 import AgencyView from '@/components/insights/AgencyView'
@@ -66,6 +70,8 @@ interface AgencyMetricsState {
   viewsOverTime: ReturnType<typeof sumViewsByDate>
   statusCounts: bookcarsTypes.BookingStat[]
   statusRevenue: bookcarsTypes.BookingStat[]
+  averageRevenuePerBooking: number
+  averageDuration: number
   lastBookingAt?: string
   lastConnectionAt?: string
 }
@@ -85,6 +91,10 @@ interface AdminMetricsState {
   statusCounts: bookcarsTypes.BookingStat[]
   statusRevenue: bookcarsTypes.BookingStat[]
   ranking: bookcarsTypes.AgencyRankingItem[]
+  currentYearRevenue: number
+  previousYearRevenue: number
+  conversionRate: number
+  averageDurationByAgency: AgencyAverageDurationPoint[]
 }
 
 const createInitialAgencyMetrics = (): AgencyMetricsState => ({
@@ -101,6 +111,8 @@ const createInitialAgencyMetrics = (): AgencyMetricsState => ({
   viewsOverTime: [],
   statusCounts: [],
   statusRevenue: [],
+  averageRevenuePerBooking: 0,
+  averageDuration: 0,
   lastBookingAt: undefined,
   lastConnectionAt: undefined,
 })
@@ -120,6 +132,10 @@ const createInitialAdminMetrics = (): AdminMetricsState => ({
   statusCounts: [],
   statusRevenue: [],
   ranking: [],
+  currentYearRevenue: 0,
+  previousYearRevenue: 0,
+  conversionRate: 0,
+  averageDurationByAgency: [],
 })
 
 const Insights = () => {
@@ -270,6 +286,8 @@ const Insights = () => {
         )
         const revenueTotal = sumBookingsRevenue(acceptedAgencyBookings)
         const bookingsCount = countBookings(acceptedAgencyBookings)
+        const averageRevenuePerBooking = bookingsCount > 0 ? revenueTotal / bookingsCount : 0
+        const averageDuration = calculateAverageDuration(acceptedAgencyBookings)
 
         setAgencyMetrics({
           revenue: revenueTotal,
@@ -291,6 +309,8 @@ const Insights = () => {
           viewsOverTime: agencyViews,
           statusCounts: statusStats,
           statusRevenue: statusStats,
+          averageRevenuePerBooking,
+          averageDuration,
           lastBookingAt: selectedAgencyRanking?.lastBookingAt,
           lastConnectionAt: selectedAgencyRanking?.lastConnectionAt,
         })
@@ -331,6 +351,36 @@ const Insights = () => {
             .reduce((total, item) => total + (item.count ?? 0), 0)
 
           const mergedViews = sumViewsByDate(carStatsCollection.flat())
+
+          const currentYearStart = new Date(endDate.getFullYear(), 0, 1)
+          const previousYearStart = new Date(endDate.getFullYear() - 1, 0, 1)
+          const previousYearEnd = new Date(endDate.getFullYear() - 1, 11, 31, 23, 59, 59, 999)
+
+          const currentYearRevenue = sumBookingsRevenue(
+            acceptedAdminBookings.filter((booking) => {
+              if (!booking.from) {
+                return false
+              }
+
+              const from = new Date(booking.from)
+              return from.getTime() >= currentYearStart.getTime() && from.getTime() <= endDate.getTime()
+            }),
+          )
+
+          const previousYearRevenue = sumBookingsRevenue(
+            acceptedAdminBookings.filter((booking) => {
+              if (!booking.from) {
+                return false
+              }
+
+              const from = new Date(booking.from)
+              return from.getTime() >= previousYearStart.getTime() && from.getTime() <= previousYearEnd.getTime()
+            }),
+          )
+
+          const totalViews = mergedViews.reduce((acc, item) => acc + (item.total ?? 0), 0)
+          const conversionRate = calculateViewsToBookingsConversion(accepted, totalViews)
+          const averageDurationByAgency = groupAverageDurationByAgency(acceptedAdminBookings, overview.ranking)
 
           const weightedAcceptance = overview.ranking.reduce(
             (acc, item) => ({
@@ -375,6 +425,10 @@ const Insights = () => {
             statusCounts: statusSummary,
             statusRevenue: statusSummary,
             ranking: overview.ranking,
+            currentYearRevenue,
+            previousYearRevenue,
+            conversionRate,
+            averageDurationByAgency,
           })
 
           setAdminTabLoaded(true)
@@ -568,6 +622,8 @@ const Insights = () => {
               viewsOverTime={agencyMetrics.viewsOverTime}
               statusCounts={agencyMetrics.statusCounts}
               statusRevenue={agencyMetrics.statusRevenue}
+              averageRevenuePerBooking={agencyMetrics.averageRevenuePerBooking}
+              averageDuration={agencyMetrics.averageDuration}
               lastBookingAt={agencyMetrics.lastBookingAt}
               lastConnectionAt={agencyMetrics.lastConnectionAt}
             />
@@ -590,6 +646,10 @@ const Insights = () => {
               statusCounts={adminMetrics.statusCounts}
               statusRevenue={adminMetrics.statusRevenue}
               ranking={adminMetrics.ranking}
+              currentYearRevenue={adminMetrics.currentYearRevenue}
+              previousYearRevenue={adminMetrics.previousYearRevenue}
+              conversionRate={adminMetrics.conversionRate}
+              averageDurationByAgency={adminMetrics.averageDurationByAgency}
             />
           ) : null}
         </>

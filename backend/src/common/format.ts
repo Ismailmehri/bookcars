@@ -39,11 +39,11 @@ export const formatNumber = (value: number | null | undefined, options?: Intl.Nu
 }
 
 export const formatPercentage = (value: number | null | undefined, fractionDigits = 1) => {
-  if (value === null || value === undefined || Number.isNaN(value)) {
+  if (value === null || value === undefined || Number.isNaN(value) || !Number.isFinite(value)) {
     return '—'
   }
 
-  return `${(value * 100).toFixed(fractionDigits)}%`
+  return `${value.toFixed(fractionDigits)}%`
 }
 
 export const formatDateTime = (value: string | Date | null | undefined, options?: Intl.DateTimeFormatOptions) => {

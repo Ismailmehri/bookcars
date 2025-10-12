@@ -128,7 +128,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({
         <Grid item xs={12} sm={6} md={4} lg={2}>
           <KpiCard
             label={strings.KPI_OCCUPANCY}
-            value={formatPercentage(occupancyRate)}
+            value={formatPercentage(occupancyRate * 100)}
             tooltip={strings.OCCUPANCY_TOOLTIP}
             loading={loading}
           />

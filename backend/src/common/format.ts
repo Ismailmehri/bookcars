@@ -6,8 +6,10 @@ const getLocale = () => {
       return 'fr-FR'
     case 'es':
       return 'es-ES'
+    case 'en':
+      return 'en-GB'
     default:
-      return 'en-US'
+      return 'fr-FR'
   }
 }
 

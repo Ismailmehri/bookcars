@@ -147,25 +147,30 @@ export const sumViewsByDate = (stats: bookcarsTypes.CarStat[]): ViewsTimePoint[]
     .map(([date, values]) => ({ date, ...values }))
 }
 
-export const mergeBookingStats = (
-  statsList: bookcarsTypes.BookingStat[][],
+export const aggregateBookingsByStatus = (
+  bookings: bookcarsTypes.Booking[],
 ): bookcarsTypes.BookingStat[] => {
-  const merged = new Map<bookcarsTypes.BookingStatus, { count: number; totalPrice: number }>()
+  const accumulator = bookings.reduce<Map<bookcarsTypes.BookingStatus, { count: number; totalPrice: number }>>(
+    (acc, current) => {
+      const status = (current.status ?? bookcarsTypes.BookingStatus.Pending) as bookcarsTypes.BookingStatus
+      const existing = acc.get(status) ?? { count: 0, totalPrice: 0 }
 
-  statsList.flat().forEach((stat) => {
-    const status = stat.status
-    const entry = merged.get(status) ?? { count: 0, totalPrice: 0 }
+      const price = typeof current.price === 'number' && Number.isFinite(current.price) ? current.price : 0
 
-    merged.set(status, {
-      count: entry.count + (stat.count ?? 0),
-      totalPrice: entry.totalPrice + (stat.totalPrice ?? 0),
-    })
-  })
+      acc.set(status, {
+        count: existing.count + 1,
+        totalPrice: existing.totalPrice + price,
+      })
 
-  return Array.from(merged.entries()).map(([status, value]) => ({
+      return acc
+    },
+    new Map(),
+  )
+
+  return Array.from(accumulator.entries()).map(([status, summary]) => ({
     status,
-    count: value.count,
-    totalPrice: value.totalPrice,
+    count: summary.count,
+    totalPrice: summary.totalPrice,
   }))
 }
 

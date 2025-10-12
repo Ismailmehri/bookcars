@@ -6,7 +6,7 @@ import {
   extractTotalRecords,
   getBookedDays,
   groupMonthlyRevenue,
-  mergeBookingStats,
+  aggregateBookingsByStatus,
   sumBookingsRevenue,
   sumViewsByDate,
 } from '../insights.helpers'
@@ -92,21 +92,25 @@ describe('insights helpers', () => {
     ])
   })
 
-  it('merges booking stats', () => {
-    const merged = mergeBookingStats([
-      [
-        { status: bookcarsTypes.BookingStatus.Paid, count: 3, totalPrice: 300 },
-        { status: bookcarsTypes.BookingStatus.Deposit, count: 1, totalPrice: 50 },
-      ],
-      [
-        { status: bookcarsTypes.BookingStatus.Paid, count: 2, totalPrice: 150 },
-      ],
-    ])
+  it('aggregates bookings by status', () => {
+    const bookings: bookcarsTypes.Booking[] = [
+      { ...booking('2024-01-01', '2024-01-02', 200), status: bookcarsTypes.BookingStatus.Paid },
+      { ...booking('2024-01-03', '2024-01-04', 150), status: bookcarsTypes.BookingStatus.Paid },
+      { ...booking('2024-01-05', '2024-01-06', 50), status: bookcarsTypes.BookingStatus.Cancelled },
+    ]
 
-    expect(merged.find((item) => item.status === bookcarsTypes.BookingStatus.Paid)).toEqual({
+    const aggregated = aggregateBookingsByStatus(bookings)
+
+    expect(aggregated).toContainEqual({
       status: bookcarsTypes.BookingStatus.Paid,
-      count: 5,
-      totalPrice: 450,
+      count: 2,
+      totalPrice: 350,
+    })
+
+    expect(aggregated).toContainEqual({
+      status: bookcarsTypes.BookingStatus.Cancelled,
+      count: 1,
+      totalPrice: 50,
     })
   })
 

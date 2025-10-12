@@ -25,11 +25,11 @@ import * as BookingService from '@/services/BookingService'
 import env from '@/config/env.config'
 import { strings } from '@/lang/insights'
 import {
+  aggregateBookingsByStatus,
   calculateOccupancyRate,
   countBookings,
   extractTotalRecords,
   groupMonthlyRevenue,
-  mergeBookingStats,
   sumBookingsRevenue,
   sumViewsByDate,
 } from './insights.helpers'
@@ -64,6 +64,7 @@ const Insights = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<'agency' | 'admin'>('agency')
+  const [adminTabLoaded, setAdminTabLoaded] = useState(false)
   const initialLoadDone = useRef(false)
 
   const [agencyMetrics, setAgencyMetrics] = useState({
@@ -105,14 +106,18 @@ const Insights = () => {
     suppliers: string[] | undefined,
     from: Date,
     to: Date,
+    statuses?: bookcarsTypes.BookingStatus[],
   ) => {
     const payload: bookcarsTypes.GetBookingsPayload = {
       suppliers,
-      statuses: ACCEPTED_STATUSES,
       filter: {
         from,
         to,
       },
+    }
+
+    if (statuses && statuses.length > 0) {
+      payload.statuses = statuses
     }
 
     const bookings: bookcarsTypes.Booking[] = []
@@ -145,8 +150,7 @@ const Insights = () => {
     return bookings
   }, [])
 
-  const loadAdminOverview = useCallback(async () => {
-    setError(null)
+  const loadAdminOverview = useCallback(async (): Promise<bookcarsTypes.AdminStatisticsOverview | null> => {
     try {
       const overview = await CarStatsService.getAdminOverview()
       setAdminOverview(overview)
@@ -160,9 +164,11 @@ const Insights = () => {
         activeAgencies: overview.summary.totalAgencies,
         ranking: overview.ranking,
       }))
+      return overview
     } catch (err) {
       helper.error(err, strings.ERROR)
       setError(strings.ERROR)
+      return null
     }
   }, [])
 
@@ -171,138 +177,172 @@ const Insights = () => {
     [adminOverview, selectedAgency],
   )
 
-  const applyFilters = useCallback(async () => {
-    if (!selectedAgency) {
-      return
-    }
+  const applyFilters = useCallback(
+    async (options?: { includeAdmin?: boolean }) => {
+      if (!selectedAgency) {
+        return
+      }
 
-    if (endDate.getTime() < startDate.getTime()) {
-      setError(strings.SELECT_PERIOD_ERROR)
-      return
-    }
+      if (endDate.getTime() < startDate.getTime()) {
+        setError(strings.SELECT_PERIOD_ERROR)
+        return
+      }
 
-    setLoading(true)
-    setError(null)
+      const includeAdmin = Boolean(options?.includeAdmin && isAdmin)
 
-    try {
-      const [agencyOverviewData, carStats, bookingStats, bookings] = await Promise.all([
-        CarStatsService.getAgencyOverview(selectedAgency),
-        CarStatsService.getCarStats(selectedAgency, undefined, startDate, endDate),
-        CarStatsService.getBookingStats(selectedAgency, undefined, startDate, endDate),
-        loadBookings([selectedAgency], startDate, endDate),
-      ])
+      setLoading(true)
+      setError(null)
 
-      const agencyMonthlyRevenue = groupMonthlyRevenue(bookings, startDate, endDate)
-      const agencyViews = sumViewsByDate(carStats)
-      const occupancyRate = calculateOccupancyRate(bookings, agencyOverviewData.totalCars, startDate, endDate)
-      const revenueTotal = sumBookingsRevenue(bookings)
-      const bookingsCount = countBookings(bookings)
-
-      setAgencyMetrics({
-        revenue: revenueTotal,
-        bookings: bookingsCount,
-        acceptanceRate: agencyOverviewData.acceptanceRate,
-        cancellationRate: agencyOverviewData.cancellationRate,
-        rating: selectedAgencyRanking && selectedAgencyRanking.averageRating !== null
-          ? {
-            average: selectedAgencyRanking.averageRating,
-            reviews: selectedAgencyRanking.reviewCount,
-          }
-          : undefined,
-        occupancyRate,
-        pendingUpdates: agencyOverviewData.pendingUpdateCount,
-        pendingUpdatesRows: agencyOverviewData.pendingUpdates,
-        topModels: agencyOverviewData.topModels,
-        monthlyRevenue: agencyMonthlyRevenue,
-        viewsOverTime: agencyViews,
-        statusCounts: bookingStats,
-        statusRevenue: bookingStats,
-        lastBookingAt: selectedAgencyRanking?.lastBookingAt,
-        lastConnectionAt: selectedAgencyRanking?.lastConnectionAt,
-      })
-
-      if (isAdmin) {
-        const supplierIds = adminOverview?.ranking.map((item) => item.agencyId) ?? []
-        const [adminBookings, carStatsCollection, bookingStatsCollection] = await Promise.all([
-          loadBookings(undefined, startDate, endDate),
-          Promise.all(supplierIds.map((id) => CarStatsService.getCarStats(id, undefined, startDate, endDate))),
-          Promise.all(supplierIds.map((id) => CarStatsService.getBookingStats(id, undefined, startDate, endDate))),
+      try {
+        const [agencyOverviewData, carStats, bookings] = await Promise.all([
+          CarStatsService.getAgencyOverview(selectedAgency),
+          CarStatsService.getCarStats(selectedAgency, undefined, startDate, endDate),
+          loadBookings([selectedAgency], startDate, endDate),
         ])
 
-        const mergedViews = sumViewsByDate(carStatsCollection.flat())
-        const mergedStats = mergeBookingStats(bookingStatsCollection)
-        const monthlyRevenueGlobal = groupMonthlyRevenue(adminBookings, startDate, endDate)
-        const totalRevenue = sumBookingsRevenue(adminBookings)
-        const totalBookings = countBookings(adminBookings)
-        const totalCars = (adminOverview?.ranking ?? []).reduce((total, item) => total + item.totalCars, 0)
-        const occupancy = calculateOccupancyRate(adminBookings, totalCars, startDate, endDate)
-
-        const weightedAcceptance = (adminOverview?.ranking ?? []).reduce(
-          (acc, item) => ({
-            total: acc.total + item.acceptanceRate * item.totalBookings,
-            weight: acc.weight + item.totalBookings,
-          }),
-          { total: 0, weight: 0 },
+        const acceptedAgencyBookings = bookings.filter((booking) =>
+          ACCEPTED_STATUSES.includes((booking.status ?? bookcarsTypes.BookingStatus.Pending) as bookcarsTypes.BookingStatus),
         )
-        const weightedCancellation = (adminOverview?.ranking ?? []).reduce(
-          (acc, item) => ({
-            total: acc.total + item.cancellationRate * item.totalBookings,
-            weight: acc.weight + item.totalBookings,
-          }),
-          { total: 0, weight: 0 },
+        const statusStats = aggregateBookingsByStatus(bookings)
+        const agencyMonthlyRevenue = groupMonthlyRevenue(acceptedAgencyBookings, startDate, endDate)
+        const agencyViews = sumViewsByDate(carStats)
+        const occupancyRate = calculateOccupancyRate(
+          acceptedAgencyBookings,
+          agencyOverviewData.totalCars,
+          startDate,
+          endDate,
         )
-        const weightedRating = (adminOverview?.ranking ?? []).reduce(
-          (acc, item) => {
-            if (item.averageRating === null || item.reviewCount === 0) {
-              return acc
-            }
-            return {
-              total: acc.total + item.averageRating * item.reviewCount,
-              weight: acc.weight + item.reviewCount,
-            }
-          },
-          { total: 0, weight: 0 },
-        )
+        const revenueTotal = sumBookingsRevenue(acceptedAgencyBookings)
+        const bookingsCount = countBookings(acceptedAgencyBookings)
 
-        const accepted = mergedStats
-          .filter((item) => ACCEPTED_STATUSES.includes(item.status))
-          .reduce((total, item) => total + item.count, 0)
-        const cancelled = mergedStats
-          .filter((item) => CANCELLED_STATUSES.includes(item.status))
-          .reduce((total, item) => total + item.count, 0)
-
-        setAdminMetrics({
-          totalRevenue,
-          totalBookings,
-          activeAgencies: adminOverview?.summary.totalAgencies ?? 0,
-          acceptanceRate: weightedAcceptance.weight > 0 ? weightedAcceptance.total / weightedAcceptance.weight : 0,
-          cancellationRate: weightedCancellation.weight > 0 ? weightedCancellation.total / weightedCancellation.weight : 0,
-          averageRating: weightedRating.weight > 0 ? weightedRating.total / weightedRating.weight : undefined,
-          occupancyRate: occupancy,
-          acceptedBookings: accepted,
-          cancelledBookings: cancelled,
-          monthlyRevenue: monthlyRevenueGlobal,
-          viewsOverTime: mergedViews,
-          statusCounts: mergedStats,
-          statusRevenue: mergedStats,
-          ranking: adminOverview?.ranking ?? [],
+        setAgencyMetrics({
+          revenue: revenueTotal,
+          bookings: bookingsCount,
+          acceptanceRate: agencyOverviewData.acceptanceRate,
+          cancellationRate: agencyOverviewData.cancellationRate,
+          rating:
+            selectedAgencyRanking && selectedAgencyRanking.averageRating !== null
+              ? {
+                average: selectedAgencyRanking.averageRating,
+                reviews: selectedAgencyRanking.reviewCount,
+              }
+              : undefined,
+          occupancyRate,
+          pendingUpdates: agencyOverviewData.pendingUpdateCount,
+          pendingUpdatesRows: agencyOverviewData.pendingUpdates,
+          topModels: agencyOverviewData.topModels,
+          monthlyRevenue: agencyMonthlyRevenue,
+          viewsOverTime: agencyViews,
+          statusCounts: statusStats,
+          statusRevenue: statusStats,
+          lastBookingAt: selectedAgencyRanking?.lastBookingAt,
+          lastConnectionAt: selectedAgencyRanking?.lastConnectionAt,
         })
+
+        if (includeAdmin) {
+          const overview = adminOverview ?? (await loadAdminOverview())
+
+          if (!overview) {
+            throw new Error('ADMIN_OVERVIEW_UNAVAILABLE')
+          }
+
+          const supplierIds = overview.ranking.map((item) => item.agencyId)
+          const [adminBookings, carStatsCollection] = await Promise.all([
+            loadBookings(undefined, startDate, endDate),
+            supplierIds.length > 0
+              ? Promise.all(
+                supplierIds.map((id) => CarStatsService.getCarStats(id, undefined, startDate, endDate)),
+              )
+              : Promise.resolve([] as bookcarsTypes.CarStat[][]),
+          ])
+
+          const acceptedAdminBookings = adminBookings.filter((booking) =>
+            ACCEPTED_STATUSES.includes((booking.status ?? bookcarsTypes.BookingStatus.Pending) as bookcarsTypes.BookingStatus),
+          )
+
+          const monthlyRevenueGlobal = groupMonthlyRevenue(acceptedAdminBookings, startDate, endDate)
+          const totalRevenue = sumBookingsRevenue(acceptedAdminBookings)
+          const totalBookings = countBookings(acceptedAdminBookings)
+          const totalCars = overview.ranking.reduce((total, item) => total + item.totalCars, 0)
+          const occupancy = calculateOccupancyRate(acceptedAdminBookings, totalCars, startDate, endDate)
+          const statusSummary = aggregateBookingsByStatus(adminBookings)
+
+          const accepted = statusSummary
+            .filter((item) => ACCEPTED_STATUSES.includes(item.status))
+            .reduce((total, item) => total + (item.count ?? 0), 0)
+          const cancelled = statusSummary
+            .filter((item) => CANCELLED_STATUSES.includes(item.status))
+            .reduce((total, item) => total + (item.count ?? 0), 0)
+
+          const mergedViews = sumViewsByDate(carStatsCollection.flat())
+
+          const weightedAcceptance = overview.ranking.reduce(
+            (acc, item) => ({
+              total: acc.total + item.acceptanceRate * item.totalBookings,
+              weight: acc.weight + item.totalBookings,
+            }),
+            { total: 0, weight: 0 },
+          )
+          const weightedCancellation = overview.ranking.reduce(
+            (acc, item) => ({
+              total: acc.total + item.cancellationRate * item.totalBookings,
+              weight: acc.weight + item.totalBookings,
+            }),
+            { total: 0, weight: 0 },
+          )
+          const weightedRating = overview.ranking.reduce(
+            (acc, item) => {
+              if (item.averageRating === null || item.reviewCount === 0) {
+                return acc
+              }
+
+              return {
+                total: acc.total + item.averageRating * item.reviewCount,
+                weight: acc.weight + item.reviewCount,
+              }
+            },
+            { total: 0, weight: 0 },
+          )
+
+          setAdminMetrics({
+            totalRevenue,
+            totalBookings,
+            activeAgencies: overview.summary.totalAgencies,
+            acceptanceRate: weightedAcceptance.weight > 0 ? weightedAcceptance.total / weightedAcceptance.weight : 0,
+            cancellationRate: weightedCancellation.weight > 0 ? weightedCancellation.total / weightedCancellation.weight : 0,
+            averageRating: weightedRating.weight > 0 ? weightedRating.total / weightedRating.weight : undefined,
+            occupancyRate: occupancy,
+            acceptedBookings: accepted,
+            cancelledBookings: cancelled,
+            monthlyRevenue: monthlyRevenueGlobal,
+            viewsOverTime: mergedViews,
+            statusCounts: statusSummary,
+            statusRevenue: statusSummary,
+            ranking: overview.ranking,
+          })
+
+          setAdminTabLoaded(true)
+        }
+      } catch (err) {
+        helper.error(err, strings.ERROR)
+        setError(strings.ERROR)
+
+        if (includeAdmin) {
+          setAdminTabLoaded(false)
+        }
+      } finally {
+        setLoading(false)
       }
-    } catch (err) {
-      helper.error(err, strings.ERROR)
-      setError(strings.ERROR)
-    } finally {
-      setLoading(false)
-    }
-  }, [
-    selectedAgency,
-    endDate,
-    startDate,
-    loadBookings,
-    isAdmin,
-    adminOverview,
-    selectedAgencyRanking,
-  ])
+    }, [
+      selectedAgency,
+      endDate,
+      startDate,
+      loadBookings,
+      isAdmin,
+      adminOverview,
+      selectedAgencyRanking,
+      loadAdminOverview,
+    ])
 
   useEffect(() => {
     if (isAdmin) {
@@ -318,7 +358,13 @@ const Insights = () => {
   }, [applyFilters, selectedAgency])
 
   const handleApply = () => {
-    void applyFilters()
+    const includeAdmin = isAdmin && tab === 'admin'
+
+    if (isAdmin && tab !== 'admin') {
+      setAdminTabLoaded(false)
+    }
+
+    void applyFilters({ includeAdmin })
   }
 
   const handleStartDateChange = (date: Date | null) => {
@@ -420,7 +466,15 @@ const Insights = () => {
       ) : (
         <>
           {isAdmin ? (
-            <Tabs value={tab} onChange={(_event, value) => setTab(value)}>
+            <Tabs
+              value={tab}
+              onChange={(_event, value: 'agency' | 'admin') => {
+                setTab(value)
+                if (value === 'admin' && !adminTabLoaded) {
+                  void applyFilters({ includeAdmin: true })
+                }
+              }}
+            >
               <Tab value="agency" label={strings.TAB_AGENCY} />
               <Tab value="admin" label={strings.TAB_ADMIN} />
             </Tabs>

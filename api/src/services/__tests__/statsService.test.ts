@@ -15,6 +15,7 @@ const createBooking = (overrides: Partial<BookingMetricDocument> = {}): BookingM
   driverId: 'driver-1',
   paymentIntentId: 'pi_1',
   sessionId: 'sess_1',
+  updatedAt: new Date('2024-01-12T00:00:00Z'),
   ...overrides,
 })
 
@@ -112,5 +113,19 @@ describe('statsService helpers', () => {
     expect(bounds.end.getMinutes()).toBe(59)
     expect(bounds.end.getSeconds()).toBe(59)
     expect(bounds.end.getMilliseconds()).toBe(999)
+  })
+
+  it('finds the latest booking activity date', () => {
+    const latest = __private.findLastBookingActivity([
+      createBooking({ from: new Date('2024-05-01T00:00:00Z'), to: new Date('2024-05-02T00:00:00Z') }),
+      createBooking({
+        from: new Date('2024-05-10T00:00:00Z'),
+        to: new Date('2024-05-12T00:00:00Z'),
+        updatedAt: new Date('2024-05-20T08:30:00Z'),
+      }),
+      createBooking({ from: new Date('2024-05-18T00:00:00Z'), to: new Date('2024-05-19T00:00:00Z') }),
+    ])
+
+    expect(latest?.toISOString()).toBe('2024-05-20T08:30:00.000Z')
   })
 })

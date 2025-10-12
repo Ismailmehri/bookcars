@@ -28,8 +28,10 @@ const chartContainerStyles = {
   width: '100%',
   maxWidth: '100%',
   minWidth: 0,
-  overflow: 'hidden',
+  overflow: 'visible',
 }
+
+const ensureNumber = (value: number | null | undefined) => (typeof value === 'number' ? value : undefined)
 
 const getStatusColor = (status: bookcarsTypes.BookingStatus) =>
   BOOKING_STATUS_CHIP_STYLES[status]?.color ?? FALLBACK_STATUS_CHIP_STYLE.color
@@ -95,7 +97,7 @@ export const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ data, loadin
               label: strings.KPI_REVENUE,
               color: chartPalette.primary,
               yAxisKey: 'revenue',
-              valueFormatter: (value) => formatCurrency(value ?? 0),
+              valueFormatter: (value) => formatCurrency(ensureNumber(value)),
             },
             {
               data: data.map((item) => item.bookings),
@@ -103,7 +105,7 @@ export const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ data, loadin
               color: chartPalette.secondary,
               yAxisKey: 'bookings',
               valueFormatter: (value) =>
-                formatNumber(value ?? 0, { maximumFractionDigits: 0 }),
+                formatNumber(ensureNumber(value), { maximumFractionDigits: 0 }),
             },
           ]}
           xAxis={[{ scaleType: 'point', data: data.map((item) => item.week) }]}

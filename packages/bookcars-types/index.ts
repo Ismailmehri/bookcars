@@ -1195,6 +1195,8 @@ export interface AgencyStatsResponse {
   occupancyByModel: AgencyModelOccupancyStat[];
   cancellationsByPaymentStatus: PaymentStatusCancellationStat[];
   topModels: TopModelStat[];
+  lastBookingAt?: Date | null;
+  lastConnectionAt?: Date | null;
 }
 
 export interface AdminStatsSummary {

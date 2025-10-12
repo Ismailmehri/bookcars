@@ -257,8 +257,12 @@ export const useInsightsMetrics = () => {
         revenueByModel: stats.revenueByModel,
         occupancyByModel: stats.occupancyByModel,
         cancellationsByPaymentStatus: stats.cancellationsByPaymentStatus,
-        lastBookingAt: normalizeDate(rankingItem?.lastBookingAt ?? overview.lastBookingAt),
-        lastConnectionAt: normalizeDate(rankingItem?.lastConnectionAt ?? overview.lastConnectionAt),
+        lastBookingAt: normalizeDate(
+          stats.lastBookingAt ?? rankingItem?.lastBookingAt ?? overview.lastBookingAt,
+        ),
+        lastConnectionAt: normalizeDate(
+          stats.lastConnectionAt ?? rankingItem?.lastConnectionAt ?? overview.lastConnectionAt,
+        ),
       })
     },
     [],

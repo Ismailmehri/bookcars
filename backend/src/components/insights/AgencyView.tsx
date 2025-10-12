@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button, Grid, Stack, Typography } from '@mui/material'
+import { Button, Grid, Skeleton, Stack, Typography } from '@mui/material'
 import DownloadIcon from '@mui/icons-material/DownloadOutlined'
 import { formatCurrency, formatDateTime, formatNumber, formatPercentage } from '@/common/format'
 import TableSimple, { TableColumn } from './TableSimple'
@@ -41,7 +41,19 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
   ]
 
   const pendingUpdatesColumns: TableColumn<bookcarsTypes.AgencyBookingUpdate>[] = [
-    { key: 'bookingId', label: 'ID' },
+    {
+      key: 'bookingId',
+      label: 'ID',
+      render: (row) => (
+        <Typography
+          component="span"
+          variant="body2"
+          sx={{ fontFamily: 'monospace', display: 'inline-block', wordBreak: 'break-all' }}
+        >
+          {row.bookingId}
+        </Typography>
+      ),
+    },
     {
       key: 'carName',
       label: strings.TABLE_COL_MODEL,
@@ -65,6 +77,8 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
   ]
 
   const { summary } = metrics
+  const lastBookingLabel = `${strings.LAST_BOOKING_AT}: ${formatDateTime(metrics.lastBookingAt)}`
+  const lastConnectionLabel = `${strings.LAST_CONNECTION_AT}: ${formatDateTime(metrics.lastConnectionAt)}`
 
   return (
     <Stack spacing={3}>
@@ -76,9 +90,13 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
           <Typography variant="body2" color="text.secondary">
             {strings.AGENCY_TAB_INFO}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {`${strings.LAST_BOOKING_AT}: ${formatDateTime(metrics.lastBookingAt)}`} · {`${strings.LAST_CONNECTION_AT}: ${formatDateTime(metrics.lastConnectionAt)}`}
-          </Typography>
+          {loading ? (
+            <Skeleton variant="text" width={260} sx={{ bgcolor: 'rgba(30,136,229,0.08)' }} />
+          ) : (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              {`${lastBookingLabel} · ${lastConnectionLabel}`}
+            </Typography>
+          )}
         </Stack>
         <Button variant="outlined" color="primary" startIcon={<DownloadIcon />} onClick={onExport}>
           {strings.EXPORT}
@@ -203,7 +221,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
       </Grid>
 
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={8}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             {strings.TABLE_PENDING}
           </Typography>
@@ -215,7 +233,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
             initialRowsPerPage={5}
           />
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={4}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             {strings.TABLE_TOP_MODELS}
           </Typography>

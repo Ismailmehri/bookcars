@@ -31,6 +31,7 @@ export interface BookingMetricDocument {
   driverId?: string | null
   paymentIntentId?: string | null
   sessionId?: string | null
+  updatedAt?: Date
 }
 
 interface ViewsAggregationDocument {
@@ -214,6 +215,30 @@ const buildCancellationByPaymentStatus = (
     { paymentStatus: 'deposit', count: counters.deposit },
     { paymentStatus: 'paid', count: counters.paid },
   ]
+}
+
+const findLastBookingActivity = (bookings: BookingMetricDocument[]) => {
+  let latest: Date | undefined
+
+  bookings.forEach((booking) => {
+    const candidates = [
+      booking.updatedAt ? new Date(booking.updatedAt) : undefined,
+      booking.to ? new Date(booking.to) : undefined,
+      booking.from ? new Date(booking.from) : undefined,
+    ]
+
+    candidates.forEach((candidate) => {
+      if (!candidate || Number.isNaN(candidate.getTime())) {
+        return
+      }
+
+      if (!latest || candidate.getTime() > latest.getTime()) {
+        latest = candidate
+      }
+    })
+  })
+
+  return latest
 }
 
 const calculateAverage = (values: number[]) => {
@@ -491,10 +516,11 @@ export const getAgencyStats = async (
   startDate: Date,
   endDate: Date,
 ): Promise<bookcarsTypes.AgencyStatsResponse> => {
-  const [bookings, totalCars, views] = await Promise.all([
+  const [bookings, totalCars, views, supplier] = await Promise.all([
     fetchBookings(startDate, endDate, supplierId),
     Car.countDocuments({ supplier: supplierId, deleted: { $ne: true } }),
     fetchViews(startDate, endDate, supplierId),
+    User.findById(supplierId).select({ updatedAt: 1 }).lean(),
   ])
 
   const { totalBookings, acceptedBookings, cancelledBookings } = computeSummary(bookings)
@@ -518,6 +544,8 @@ export const getAgencyStats = async (
   const occupancyByModel = buildModelOccupancy(bookings, startDate, endDate)
   const cancellationsByPaymentStatus = buildCancellationByPaymentStatus(bookings)
   const topModels = buildTopModels(bookings).slice(0, 5)
+  const lastBookingAt = findLastBookingActivity(bookings)
+  const lastConnectionAt = (supplier as { updatedAt?: Date } | null)?.updatedAt ?? undefined
 
   return {
     summary: {
@@ -542,6 +570,8 @@ export const getAgencyStats = async (
     occupancyByModel: occupancyByModel.slice(0, 5),
     cancellationsByPaymentStatus,
     topModels,
+    lastBookingAt: lastBookingAt ?? null,
+    lastConnectionAt: lastConnectionAt ?? null,
   }
 }
 
@@ -726,4 +756,5 @@ export const __private = {
   buildModelOccupancy,
   buildCancellationByPaymentStatus,
   getYearBounds,
+  findLastBookingActivity,
 }

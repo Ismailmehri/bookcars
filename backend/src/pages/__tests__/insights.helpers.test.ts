@@ -7,6 +7,7 @@ import {
   getBookedDays,
   groupMonthlyRevenue,
   aggregateBookingsByStatus,
+  buildAgencyOptions,
   sumBookingsRevenue,
   sumViewsByDate,
 } from '../insights.helpers'
@@ -118,6 +119,50 @@ describe('insights helpers', () => {
     const bookings = [booking('2024-01-01', '2024-01-02', 100), booking('2024-01-05', '2024-01-06', 200)]
     expect(sumBookingsRevenue(bookings)).toBe(300)
     expect(countBookings(bookings)).toBe(2)
+  })
+
+  it('builds agency options from suppliers and ranking without duplicates', () => {
+    const suppliers: bookcarsTypes.SuppliersStat[] = [
+      { supplierId: '2', supplierName: 'Beta Cars' },
+      { supplierId: '1', supplierName: 'Alpha Rentals' },
+    ]
+
+    const ranking: bookcarsTypes.AgencyRankingItem[] = [
+      {
+        agencyId: '3',
+        agencyName: 'Gamma Mobility',
+        score: 90,
+        totalCars: 12,
+        totalBookings: 150,
+        acceptanceRate: 0.95,
+        cancellationRate: 0.03,
+        pendingUpdates: 1,
+        revenue: 200000,
+        reviewCount: 20,
+        averageRating: 4.7,
+      },
+      {
+        agencyId: '2',
+        agencyName: 'Beta Cars',
+        score: 80,
+        totalCars: 10,
+        totalBookings: 120,
+        acceptanceRate: 0.9,
+        cancellationRate: 0.05,
+        pendingUpdates: 2,
+        revenue: 150000,
+        reviewCount: 15,
+        averageRating: 4.5,
+      },
+    ]
+
+    const options = buildAgencyOptions(suppliers, ranking)
+
+    expect(options).toEqual([
+      { id: '1', name: 'Alpha Rentals' },
+      { id: '2', name: 'Beta Cars' },
+      { id: '3', name: 'Gamma Mobility' },
+    ])
   })
 
   it('extracts total records from various pageInfo shapes', () => {

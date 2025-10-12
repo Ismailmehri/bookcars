@@ -26,12 +26,14 @@ import env from '@/config/env.config'
 import { strings } from '@/lang/insights'
 import {
   aggregateBookingsByStatus,
+  buildAgencyOptions,
   calculateOccupancyRate,
   countBookings,
   extractTotalRecords,
   groupMonthlyRevenue,
   sumBookingsRevenue,
   sumViewsByDate,
+  type AgencyOption,
 } from './insights.helpers'
 import AgencyView from '@/components/insights/AgencyView'
 import AdminView from '@/components/insights/AdminView'
@@ -48,11 +50,6 @@ const CANCELLED_STATUSES = [
   bookcarsTypes.BookingStatus.Cancelled,
   bookcarsTypes.BookingStatus.Void,
 ]
-
-interface AgencyOption {
-  id: string
-  name: string
-}
 
 const Insights = () => {
   const [user, setUser] = useState<bookcarsTypes.User | undefined>()
@@ -157,12 +154,26 @@ const Insights = () => {
 
   const loadAdminOverview = useCallback(async (): Promise<bookcarsTypes.AdminStatisticsOverview | null> => {
     try {
-      const overview = await CarStatsService.getAdminOverview()
+      const [overview, suppliers] = await Promise.all([
+        CarStatsService.getAdminOverview(),
+        CarStatsService.getUniqueSuppliers(),
+      ])
+
       setAdminOverview(overview)
-      const options = overview.ranking.map((item) => ({ id: item.agencyId, name: item.agencyName }))
+
+      const options = buildAgencyOptions(suppliers, overview.ranking)
       setAgencyOptions(options)
+
       if (options.length > 0) {
-        setSelectedAgency((current) => (current ? current : options[0].id))
+        setSelectedAgency((current) => {
+          if (current && options.some((option) => option.id === current)) {
+            return current
+          }
+
+          return options[0].id
+        })
+      } else {
+        setSelectedAgency('')
       }
       setAdminMetrics((prev) => ({
         ...prev,

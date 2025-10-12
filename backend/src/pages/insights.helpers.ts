@@ -13,6 +13,11 @@ export interface ViewsTimePoint {
   total: number
 }
 
+export interface AgencyOption {
+  id: string
+  name: string
+}
+
 export const clampDateToRange = (value: Date, start: Date, end: Date) => {
   if (value.getTime() < start.getTime()) {
     return start
@@ -172,6 +177,35 @@ export const aggregateBookingsByStatus = (
     count: summary.count,
     totalPrice: summary.totalPrice,
   }))
+}
+
+export const buildAgencyOptions = (
+  suppliers: bookcarsTypes.SuppliersStat[],
+  ranking: bookcarsTypes.AgencyRankingItem[],
+): AgencyOption[] => {
+  const options = new Map<string, string>()
+
+  suppliers.forEach((supplier) => {
+    if (!supplier.supplierId || !supplier.supplierName) {
+      return
+    }
+
+    options.set(supplier.supplierId, supplier.supplierName)
+  })
+
+  ranking.forEach((agency) => {
+    if (!agency.agencyId || !agency.agencyName) {
+      return
+    }
+
+    if (!options.has(agency.agencyId)) {
+      options.set(agency.agencyId, agency.agencyName)
+    }
+  })
+
+  return Array.from(options.entries())
+    .sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: 'base' }))
+    .map(([id, name]) => ({ id, name }))
 }
 
 export const sumBookingsRevenue = (bookings: bookcarsTypes.Booking[]) =>

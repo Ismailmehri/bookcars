@@ -1,17 +1,14 @@
 import React from 'react'
 import { Box, Skeleton, Typography } from '@mui/material'
-import { LineChart, BarChart, PieChart } from '@mui/x-charts'
+import { BarChart, LineChart, PieChart } from '@mui/x-charts'
 import * as bookcarsTypes from ':bookcars-types'
-import {
-  MonthlyRevenuePoint,
-  ViewsTimePoint,
-  type AgencyAverageDurationPoint,
-} from '@/pages/insights.helpers'
 import { strings } from '@/lang/insights'
 import {
   BOOKING_STATUS_CHIP_STYLES,
   FALLBACK_STATUS_CHIP_STYLE,
 } from '@/constants/bookingStatusStyles'
+import { getStatusLabel, getCancellationPaymentLabel } from '@/pages/insights.helpers'
+import { formatCurrency, formatNumber } from '@/common/format'
 
 const chartPalette = {
   primary: '#1E88E5',
@@ -19,15 +16,6 @@ const chartPalette = {
   neutral: '#394867',
   success: '#34A853',
   danger: '#E53935',
-}
-
-const statusLabels: Record<bookcarsTypes.BookingStatus, string> = {
-  [bookcarsTypes.BookingStatus.Paid]: strings.STATUS_PAID,
-  [bookcarsTypes.BookingStatus.Deposit]: strings.STATUS_DEPOSIT,
-  [bookcarsTypes.BookingStatus.Reserved]: strings.STATUS_RESERVED,
-  [bookcarsTypes.BookingStatus.Cancelled]: strings.STATUS_CANCELLED,
-  [bookcarsTypes.BookingStatus.Pending]: strings.STATUS_PENDING,
-  [bookcarsTypes.BookingStatus.Void]: strings.STATUS_VOID,
 }
 
 const getStatusColor = (status: bookcarsTypes.BookingStatus) =>
@@ -42,7 +30,7 @@ interface BaseChartProps {
 }
 
 interface RevenueLineChartProps extends BaseChartProps {
-  data: MonthlyRevenuePoint[]
+  data: bookcarsTypes.RevenueTimePoint[]
 }
 
 export const RevenueLineChart: React.FC<RevenueLineChartProps> = ({ data, loading }) => (
@@ -59,16 +47,75 @@ export const RevenueLineChart: React.FC<RevenueLineChartProps> = ({ data, loadin
     ) : (
       <LineChart
         height={260}
-        series={[{ data: data.map((item) => item.total), color: chartPalette.primary, label: strings.KPI_REVENUE }]}
-        xAxis={[{ scaleType: 'point', data: data.map((item) => item.month) }]}
+        series={[{ data: data.map((item) => item.revenue), color: chartPalette.primary, label: strings.KPI_REVENUE }]}
+        xAxis={[{ scaleType: 'point', data: data.map((item) => item.period) }]}
         slotProps={{ legend: { hidden: true } }}
       />
     )}
   </Box>
 )
 
+interface WeeklyTrendChartProps extends BaseChartProps {
+  data: bookcarsTypes.WeeklyTrendPoint[]
+}
+
+export const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ data, loading }) => (
+  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+      {strings.CHART_WEEKLY_TREND}
+    </Typography>
+    {loading ? (
+      <Skeleton variant="rectangular" height={260} />
+    ) : data.length === 0 ? (
+      <Typography variant="body2" color="text.secondary">
+        {strings.EMPTY}
+      </Typography>
+    ) : (
+      <LineChart
+        height={260}
+        series={[
+          {
+            data: data.map((item) => item.revenue),
+            label: strings.KPI_REVENUE,
+            color: chartPalette.primary,
+            yAxisKey: 'revenue',
+            valueFormatter: ({ value }) => formatCurrency(value ?? 0),
+          },
+          {
+            data: data.map((item) => item.bookings),
+            label: strings.KPI_BOOKINGS,
+            color: chartPalette.secondary,
+            yAxisKey: 'bookings',
+            valueFormatter: ({ value }) =>
+              formatNumber(value ?? 0, { maximumFractionDigits: 0 }),
+          },
+        ]}
+        xAxis={[{ scaleType: 'point', data: data.map((item) => item.week) }]}
+        yAxis={[
+          {
+            id: 'revenue',
+            position: 'left',
+            label: strings.CHART_AXIS_REVENUE,
+            valueFormatter: (value) => formatCurrency(value as number),
+          },
+          {
+            id: 'bookings',
+            position: 'right',
+            label: strings.CHART_AXIS_BOOKINGS,
+            valueFormatter: (value) =>
+              formatNumber((value as number) ?? 0, {
+                maximumFractionDigits: 0,
+              }),
+          },
+        ]}
+        slotProps={{ legend: { hidden: false } }}
+      />
+    )}
+  </Box>
+)
+
 interface ViewsChartProps extends BaseChartProps {
-  data: ViewsTimePoint[]
+  data: bookcarsTypes.ViewsTimePoint[]
 }
 
 export const ViewsLineChart: React.FC<ViewsChartProps> = ({ data, loading }) => (
@@ -118,7 +165,7 @@ export const StatusPieChart: React.FC<StatusChartProps> = ({ data, loading }) =>
           data: data.map((item) => ({
             id: item.status,
             value: item.count,
-            label: statusLabels[item.status] ?? item.status,
+            label: getStatusLabel(item.status),
             color: getStatusColor(item.status),
             data: {
               backgroundColor: getStatusBackground(item.status),
@@ -133,7 +180,7 @@ export const StatusPieChart: React.FC<StatusChartProps> = ({ data, loading }) =>
   </Box>
 )
 
-export const StatusRevenueBarChart: React.FC<StatusChartProps> = ({ data, loading }) => (
+export const StatusRevenuePieChart: React.FC<StatusChartProps> = ({ data, loading }) => (
   <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
     <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
       {strings.CHART_STATUS_REVENUE}
@@ -151,7 +198,7 @@ export const StatusRevenueBarChart: React.FC<StatusChartProps> = ({ data, loadin
           data: data.map((item) => ({
             id: item.status,
             value: item.totalPrice,
-            label: statusLabels[item.status] ?? item.status,
+            label: getStatusLabel(item.status),
             color: getStatusColor(item.status),
           })),
           innerRadius: 40,
@@ -185,7 +232,7 @@ export const AcceptCancelBarChart: React.FC<AcceptCancelChartProps> = ({ accepte
 )
 
 interface AverageDurationChartProps extends BaseChartProps {
-  data: AgencyAverageDurationPoint[]
+  data: bookcarsTypes.AgencyAverageDurationPoint[]
 }
 
 export const AverageDurationBarChart: React.FC<AverageDurationChartProps> = ({ data, loading }) => (
@@ -204,6 +251,81 @@ export const AverageDurationBarChart: React.FC<AverageDurationChartProps> = ({ d
         height={260}
         series={[{ data: data.map((item) => Number(item.averageDuration.toFixed(2))), color: chartPalette.primary }]}
         xAxis={[{ scaleType: 'band', data: data.map((item) => item.agencyName) }]}
+      />
+    )}
+  </Box>
+)
+
+interface ModelRevenueChartProps extends BaseChartProps {
+  data: bookcarsTypes.AgencyModelRevenueStat[]
+}
+
+export const ModelRevenueBarChart: React.FC<ModelRevenueChartProps> = ({ data, loading }) => (
+  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+      {strings.CHART_MODEL_REVENUE}
+    </Typography>
+    {loading ? (
+      <Skeleton variant="rectangular" height={260} />
+    ) : data.length === 0 ? (
+      <Typography variant="body2" color="text.secondary">
+        {strings.EMPTY}
+      </Typography>
+    ) : (
+      <BarChart
+        height={260}
+        series={[{ data: data.map((item) => Number(item.revenue.toFixed(0))), color: chartPalette.primary }]}
+        xAxis={[{ scaleType: 'band', data: data.map((item) => item.modelName) }]}
+      />
+    )}
+  </Box>
+)
+
+interface ModelOccupancyChartProps extends BaseChartProps {
+  data: bookcarsTypes.AgencyModelOccupancyStat[]
+}
+
+export const ModelOccupancyBarChart: React.FC<ModelOccupancyChartProps> = ({ data, loading }) => (
+  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+      {strings.CHART_MODEL_OCCUPANCY}
+    </Typography>
+    {loading ? (
+      <Skeleton variant="rectangular" height={260} />
+    ) : data.length === 0 ? (
+      <Typography variant="body2" color="text.secondary">
+        {strings.EMPTY}
+      </Typography>
+    ) : (
+      <BarChart
+        height={260}
+        series={[{ data: data.map((item) => Number((item.occupancyRate * 100).toFixed(1))), color: chartPalette.secondary }]}
+        xAxis={[{ scaleType: 'band', data: data.map((item) => item.modelName) }]}
+      />
+    )}
+  </Box>
+)
+
+interface CancellationChartProps extends BaseChartProps {
+  data: bookcarsTypes.PaymentStatusCancellationStat[]
+}
+
+export const CancellationByPaymentBarChart: React.FC<CancellationChartProps> = ({ data, loading }) => (
+  <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+      {strings.CHART_CANCELLATION_PAYMENT}
+    </Typography>
+    {loading ? (
+      <Skeleton variant="rectangular" height={260} />
+    ) : data.length === 0 ? (
+      <Typography variant="body2" color="text.secondary">
+        {strings.EMPTY}
+      </Typography>
+    ) : (
+      <BarChart
+        height={260}
+        series={[{ data: data.map((item) => item.count), color: chartPalette.danger }]}
+        xAxis={[{ scaleType: 'band', data: data.map((item) => getCancellationPaymentLabel(item.paymentStatus)) }]}
       />
     )}
   </Box>

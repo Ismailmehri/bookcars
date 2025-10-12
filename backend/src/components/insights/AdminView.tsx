@@ -150,7 +150,7 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           <KpiCard
             label={strings.KPI_REVENUE_CURRENT_YEAR}
             value={formatCurrency(summary.currentYearRevenue)}
-            helperText={strings.KPI_REVENUE_CURRENT_YEAR_HELPER}
+            tooltip={strings.KPI_REVENUE_CURRENT_YEAR_HELPER}
             loading={loading}
           />
         </Grid>
@@ -158,7 +158,7 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           <KpiCard
             label={strings.KPI_REVENUE_PREVIOUS_YEAR}
             value={formatCurrency(summary.previousYearRevenue)}
-            helperText={strings.KPI_REVENUE_PREVIOUS_YEAR_HELPER}
+            tooltip={strings.KPI_REVENUE_PREVIOUS_YEAR_HELPER}
             loading={loading}
           />
         </Grid>
@@ -182,7 +182,7 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           <KpiCard
             label={strings.KPI_LEAD_TIME}
             value={formatNumber(summary.averageLeadTime, { maximumFractionDigits: 1 })}
-            helperText={strings.KPI_LEAD_TIME_HELPER}
+            tooltip={strings.KPI_LEAD_TIME_HELPER}
             loading={loading}
           />
         </Grid>
@@ -190,7 +190,7 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           <KpiCard
             label={strings.KPI_AVG_REVENUE_PER_BOOKING}
             value={formatCurrency(summary.averageRevenuePerBooking)}
-            helperText={strings.KPI_AVG_REVENUE_PER_BOOKING_HELPER}
+            tooltip={strings.KPI_AVG_REVENUE_PER_BOOKING_HELPER}
             loading={loading}
           />
         </Grid>
@@ -198,7 +198,7 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           <KpiCard
             label={strings.KPI_AVG_DURATION}
             value={formatNumber(summary.averageDuration, { maximumFractionDigits: 1 })}
-            helperText={strings.KPI_AVG_DURATION_HELPER}
+            tooltip={strings.KPI_AVG_DURATION_HELPER}
             loading={loading}
           />
         </Grid>

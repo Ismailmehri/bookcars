@@ -18,6 +18,19 @@ const chartPalette = {
   danger: '#E53935',
 }
 
+const chartContainerStyles = {
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: 2,
+  p: 2,
+  background: '#fff',
+  height: '100%',
+  width: '100%',
+  maxWidth: '100%',
+  minWidth: 0,
+  overflow: 'hidden',
+}
+
 const getStatusColor = (status: bookcarsTypes.BookingStatus) =>
   BOOKING_STATUS_CHIP_STYLES[status]?.color ?? FALLBACK_STATUS_CHIP_STYLE.color
 
@@ -35,7 +48,7 @@ interface RevenueLineChartProps extends BaseChartProps {
 
 export const RevenueLineChart: React.FC<RevenueLineChartProps> = ({ data, loading }) => (
   <Tooltip title={strings.CHART_REVENUE_HELPER} arrow placement="top-start" enterTouchDelay={0}>
-    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Box sx={chartContainerStyles}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
         {strings.CHART_REVENUE}
       </Typography>
@@ -63,7 +76,7 @@ interface WeeklyTrendChartProps extends BaseChartProps {
 
 export const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ data, loading }) => (
   <Tooltip title={strings.CHART_WEEKLY_TREND_HELPER} arrow placement="top-start" enterTouchDelay={0}>
-    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Box sx={chartContainerStyles}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
         {strings.CHART_WEEKLY_TREND}
       </Typography>
@@ -82,14 +95,14 @@ export const WeeklyTrendChart: React.FC<WeeklyTrendChartProps> = ({ data, loadin
               label: strings.KPI_REVENUE,
               color: chartPalette.primary,
               yAxisKey: 'revenue',
-              valueFormatter: ({ value }) => formatCurrency(value ?? 0),
+              valueFormatter: (value) => formatCurrency(value ?? 0),
             },
             {
               data: data.map((item) => item.bookings),
               label: strings.KPI_BOOKINGS,
               color: chartPalette.secondary,
               yAxisKey: 'bookings',
-              valueFormatter: ({ value }) =>
+              valueFormatter: (value) =>
                 formatNumber(value ?? 0, { maximumFractionDigits: 0 }),
             },
           ]}
@@ -124,7 +137,7 @@ interface ViewsChartProps extends BaseChartProps {
 
 export const ViewsLineChart: React.FC<ViewsChartProps> = ({ data, loading }) => (
   <Tooltip title={strings.CHART_VIEWS_HELPER} arrow placement="top-start" enterTouchDelay={0}>
-    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Box sx={chartContainerStyles}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
         {strings.CHART_VIEWS}
       </Typography>
@@ -155,7 +168,7 @@ interface StatusChartProps extends BaseChartProps {
 
 export const StatusPieChart: React.FC<StatusChartProps> = ({ data, loading }) => (
   <Tooltip title={strings.CHART_STATUS_COUNT_HELPER} arrow placement="top-start" enterTouchDelay={0}>
-    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Box sx={chartContainerStyles}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
         {strings.CHART_STATUS_COUNT}
       </Typography>
@@ -190,7 +203,7 @@ export const StatusPieChart: React.FC<StatusChartProps> = ({ data, loading }) =>
 
 export const StatusRevenuePieChart: React.FC<StatusChartProps> = ({ data, loading }) => (
   <Tooltip title={strings.CHART_STATUS_REVENUE_HELPER} arrow placement="top-start" enterTouchDelay={0}>
-    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Box sx={chartContainerStyles}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
         {strings.CHART_STATUS_REVENUE}
       </Typography>
@@ -226,7 +239,7 @@ interface AcceptCancelChartProps extends BaseChartProps {
 
 export const AcceptCancelBarChart: React.FC<AcceptCancelChartProps> = ({ accepted, cancelled, loading }) => (
   <Tooltip title={strings.CHART_ACCEPT_CANCEL_HELPER} arrow placement="top-start" enterTouchDelay={0}>
-    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Box sx={chartContainerStyles}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
         {strings.CHART_ACCEPT_CANCEL}
       </Typography>
@@ -249,7 +262,7 @@ interface AverageDurationChartProps extends BaseChartProps {
 
 export const AverageDurationBarChart: React.FC<AverageDurationChartProps> = ({ data, loading }) => (
   <Tooltip title={strings.CHART_AVG_DURATION_HELPER} arrow placement="top-start" enterTouchDelay={0}>
-    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Box sx={chartContainerStyles}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
         {strings.CHART_AVG_DURATION}
       </Typography>
@@ -276,7 +289,7 @@ interface ModelRevenueChartProps extends BaseChartProps {
 
 export const ModelRevenueBarChart: React.FC<ModelRevenueChartProps> = ({ data, loading }) => (
   <Tooltip title={strings.CHART_MODEL_REVENUE_HELPER} arrow placement="top-start" enterTouchDelay={0}>
-    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Box sx={chartContainerStyles}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
         {strings.CHART_MODEL_REVENUE}
       </Typography>
@@ -303,7 +316,7 @@ interface ModelOccupancyChartProps extends BaseChartProps {
 
 export const ModelOccupancyBarChart: React.FC<ModelOccupancyChartProps> = ({ data, loading }) => (
   <Tooltip title={strings.CHART_MODEL_OCCUPANCY_HELPER} arrow placement="top-start" enterTouchDelay={0}>
-    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Box sx={chartContainerStyles}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
         {strings.CHART_MODEL_OCCUPANCY}
       </Typography>
@@ -330,7 +343,7 @@ interface CancellationChartProps extends BaseChartProps {
 
 export const CancellationByPaymentBarChart: React.FC<CancellationChartProps> = ({ data, loading }) => (
   <Tooltip title={strings.CHART_CANCELLATION_PAYMENT_HELPER} arrow placement="top-start" enterTouchDelay={0}>
-    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, background: '#fff', height: '100%' }}>
+    <Box sx={chartContainerStyles}>
       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
         {strings.CHART_CANCELLATION_PAYMENT}
       </Typography>

@@ -77,7 +77,7 @@ const Insights: React.FC = () => {
   }
 
   const content = (
-    <Stack spacing={4}>
+    <Stack spacing={4} sx={{ overflowX: 'hidden', width: '100%' }}>
       <Box
         sx={{
           borderRadius: 3,

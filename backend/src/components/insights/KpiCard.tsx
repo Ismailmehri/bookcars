@@ -4,7 +4,6 @@ import { Box, Card, CardContent, Skeleton, Tooltip, Typography } from '@mui/mate
 interface KpiCardProps {
   label: string
   value: React.ReactNode
-  helperText?: string
   tooltip?: string
   accent?: 'primary' | 'warning'
   loading?: boolean
@@ -15,7 +14,7 @@ const accentColors: Record<NonNullable<KpiCardProps['accent']>, string> = {
   warning: '#FF7A00',
 }
 
-const KpiCard: React.FC<KpiCardProps> = ({ label, value, helperText, tooltip, accent = 'primary', loading }) => {
+const KpiCard: React.FC<KpiCardProps> = ({ label, value, tooltip, accent = 'primary', loading }) => {
   const content = (
     <Card
       elevation={0}
@@ -45,11 +44,6 @@ const KpiCard: React.FC<KpiCardProps> = ({ label, value, helperText, tooltip, ac
             {value}
           </Typography>
         )}
-        {helperText ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            {helperText}
-          </Typography>
-        ) : null}
       </CardContent>
     </Card>
   )

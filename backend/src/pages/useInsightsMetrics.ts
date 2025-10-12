@@ -166,6 +166,19 @@ const buildSummaryCsvRows = (
   return rows
 }
 
+const normalizeDate = (value?: string | Date | null) => {
+  if (!value) {
+    return undefined
+  }
+
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return undefined
+  }
+
+  return date.toISOString()
+}
+
 export const useInsightsMetrics = () => {
   const [user, setUser] = useState<bookcarsTypes.User | undefined>()
   const [isAdmin, setIsAdmin] = useState(false)
@@ -244,8 +257,8 @@ export const useInsightsMetrics = () => {
         revenueByModel: stats.revenueByModel,
         occupancyByModel: stats.occupancyByModel,
         cancellationsByPaymentStatus: stats.cancellationsByPaymentStatus,
-        lastBookingAt: rankingItem?.lastBookingAt ? new Date(rankingItem.lastBookingAt).toISOString() : undefined,
-        lastConnectionAt: rankingItem?.lastConnectionAt ? new Date(rankingItem.lastConnectionAt).toISOString() : undefined,
+        lastBookingAt: normalizeDate(rankingItem?.lastBookingAt ?? overview.lastBookingAt),
+        lastConnectionAt: normalizeDate(rankingItem?.lastConnectionAt ?? overview.lastConnectionAt),
       })
     },
     [],

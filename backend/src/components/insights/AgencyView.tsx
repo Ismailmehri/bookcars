@@ -122,15 +122,14 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
           <KpiCard
             label={strings.KPI_RATING}
             value={metrics.rating ? `${metrics.rating.average.toFixed(1)} / 5` : strings.RATING_PLACEHOLDER}
-            helperText={
+            tooltip={
               metrics.rating
-                ? strings.REVIEWS_COUNT.replace(
+                ? `${strings.KPI_RATING_HELPER} · ${strings.REVIEWS_COUNT.replace(
                     '{count}',
                     formatNumber(metrics.rating.reviews, { maximumFractionDigits: 0 }),
-                  )
-                : undefined
+                  )}`
+                : strings.KPI_RATING_HELPER
             }
-            tooltip={strings.KPI_RATING_HELPER}
             loading={loading}
           />
         </Grid>
@@ -146,7 +145,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
           <KpiCard
             label={strings.KPI_AVG_REVENUE_PER_BOOKING}
             value={formatCurrency(summary.averageRevenuePerBooking)}
-            helperText={strings.KPI_AVG_REVENUE_PER_BOOKING_HELPER}
+            tooltip={strings.KPI_AVG_REVENUE_PER_BOOKING_HELPER}
             loading={loading}
           />
         </Grid>
@@ -154,7 +153,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
           <KpiCard
             label={strings.KPI_AVG_DURATION}
             value={formatNumber(summary.averageDuration, { maximumFractionDigits: 1 })}
-            helperText={strings.KPI_AVG_DURATION_HELPER}
+            tooltip={strings.KPI_AVG_DURATION_HELPER}
             loading={loading}
           />
         </Grid>
@@ -170,7 +169,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
           <KpiCard
             label={strings.KPI_LEAD_TIME}
             value={formatNumber(summary.averageLeadTime, { maximumFractionDigits: 1 })}
-            helperText={strings.KPI_LEAD_TIME_HELPER}
+            tooltip={strings.KPI_LEAD_TIME_HELPER}
             loading={loading}
           />
         </Grid>
@@ -234,7 +233,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
         label={strings.KPI_PENDING}
         value={formatNumber(metrics.pendingUpdates, { maximumFractionDigits: 0 })}
         accent="warning"
-        helperText={strings.DATA_REFRESHED}
+        tooltip={strings.DATA_REFRESHED}
         loading={loading}
       />
     </Stack>

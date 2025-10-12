@@ -603,6 +603,13 @@ export const getAgencyOverview = async (req: Request, res: Response) => {
         acc.pending.push(booking)
       }
 
+      const lastActivity = (
+        'updatedAt' in booking ? (booking as { updatedAt?: Date }).updatedAt : undefined
+      ) || booking.to || booking.from
+      if (!acc.lastBookingAt || (lastActivity && lastActivity > acc.lastBookingAt)) {
+        acc.lastBookingAt = lastActivity
+      }
+
       return acc
     }, {
       total: 0,
@@ -610,6 +617,7 @@ export const getAgencyOverview = async (req: Request, res: Response) => {
       cancelled: 0,
       revenue: 0,
       pending: [] as bookcarsTypes.Booking[],
+      lastBookingAt: undefined as Date | undefined,
     })
 
     const categoryAverages = await Car.aggregate([
@@ -686,6 +694,8 @@ export const getAgencyOverview = async (req: Request, res: Response) => {
       .sort((a, b) => b.overdueDays - a.overdueDays)
       .slice(0, 10)
 
+    const lastConnectionAt = (agency as { updatedAt?: Date }).updatedAt
+
     return res.json({
       score: scoreBreakdown,
       totalBookings: metrics.total,
@@ -693,6 +703,8 @@ export const getAgencyOverview = async (req: Request, res: Response) => {
       cancellationRate: computeRate(metrics.cancelled, metrics.total),
       totalCars: cars.length,
       totalRevenue: roundTwoDecimals(metrics.revenue),
+      lastBookingAt: metrics.lastBookingAt,
+      lastConnectionAt,
       averagePrices: categoryAverages.map((item) => ({
         category: item.category as bookcarsTypes.CarRange,
         averageDailyPrice: item.averageDailyPrice ?? 0,

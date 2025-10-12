@@ -1047,6 +1047,8 @@ export interface AgencyStatisticsOverview {
   pendingUpdateCount: number;
   pendingUpdates: AgencyBookingUpdate[];
   topModels: TopModelStat[];
+  lastBookingAt?: Date;
+  lastConnectionAt?: Date;
 }
 
 // types/bookcars.ts

@@ -34,10 +34,11 @@ describe('KpiCard', () => {
     vi.useRealTimers()
   })
 
-  it('renders helper text when provided', () => {
-    render(<KpiCard label="Bookings" value="12" helperText="Nombre total" />)
+  it('renders the KPI label and value', () => {
+    render(<KpiCard label="Bookings" value="12" />)
 
-    expect(container.textContent).toContain('Nombre total')
+    expect(container.textContent).toContain('Bookings')
+    expect(container.textContent).toContain('12')
   })
 
   it('displays tooltip content on hover', () => {

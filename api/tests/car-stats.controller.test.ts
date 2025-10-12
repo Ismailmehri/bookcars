@@ -362,6 +362,8 @@ describe('car stats controller', () => {
     expect(body.totalCars).toBe(2)
     expect(body.topModels[0].model).toBe('Peugeot 208')
     expect(body.totalRevenue).toBeGreaterThan(0)
+    expect(body.lastBookingAt).toBeTruthy()
+    expect(body.lastConnectionAt).toBeTruthy()
   })
 
   it('forbids suppliers from accessing other agencies', async () => {

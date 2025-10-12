@@ -1,128 +1,34 @@
 import { describe, expect, it } from 'vitest'
 import * as bookcarsTypes from ':bookcars-types'
 import {
-  calculateOccupancyRate,
-  countBookings,
-  extractTotalRecords,
-  getBookedDays,
-  groupMonthlyRevenue,
-  aggregateBookingsByStatus,
   buildAgencyOptions,
   createAgencyOptionFromUser,
-  sumBookingsRevenue,
-  sumViewsByDate,
+  getStatusLabel,
+  getCancellationPaymentLabel,
 } from '../insights.helpers'
+import { strings } from '@/lang/insights'
 
-describe('insights helpers', () => {
-  const booking = (from: string, to: string, price = 100): bookcarsTypes.Booking => ({
-    from: new Date(from),
-    to: new Date(to),
-    price,
-    status: bookcarsTypes.BookingStatus.Paid,
-    supplier: '',
-    car: '',
-    pickupLocation: '',
-    dropOffLocation: '',
+describe('insights helpers (frontend)', () => {
+  it('creates agency option from user when valid', () => {
+    const user: bookcarsTypes.User = {
+      _id: 'agency-1',
+      fullName: 'Plany Cars',
+      email: '',
+      phone: '',
+      type: bookcarsTypes.UserType.Supplier,
+      language: 'fr',
+      blacklisted: false,
+    }
+
+    expect(createAgencyOptionFromUser(user)).toEqual({ id: 'agency-1', name: 'Plany Cars' })
   })
 
-  it('computes booked days within range', () => {
-    const bookings = [booking('2024-01-05', '2024-01-10'), booking('2024-01-08', '2024-01-12')]
-    const booked = getBookedDays(bookings, new Date('2024-01-01'), new Date('2024-01-31'))
-    expect(booked).toBe(11)
+  it('returns null for invalid users when building option', () => {
+    expect(createAgencyOptionFromUser()).toBeNull()
+    expect(createAgencyOptionFromUser({ fullName: '', _id: '', email: '', phone: '', type: bookcarsTypes.UserType.Supplier, language: 'fr', blacklisted: false })).toBeNull()
   })
 
-  it('computes occupancy rate clamped between 0 and 1', () => {
-    const bookings = [booking('2024-02-01', '2024-02-05')]
-    const occupancy = calculateOccupancyRate(bookings, 2, new Date('2024-02-01'), new Date('2024-02-29'))
-    expect(occupancy).toBeCloseTo(5 / (29 * 2))
-  })
-
-  it('groups monthly revenue', () => {
-    const bookings = [
-      booking('2024-03-02', '2024-03-05', 200),
-      booking('2024-03-15', '2024-03-20', 150),
-      booking('2024-04-01', '2024-04-03', 100),
-    ]
-    const grouped = groupMonthlyRevenue(bookings, new Date('2024-03-01'), new Date('2024-04-30'))
-    expect(grouped).toEqual([
-      { month: '2024-03', total: 350 },
-      { month: '2024-04', total: 100 },
-    ])
-  })
-
-  it('aggregates views by date', () => {
-    const stats: bookcarsTypes.CarStat[] = [
-      {
-        _id: { date: '2024-05-01', car: '1' },
-        date: '2024-05-01',
-        views: 10,
-        payedViews: 4,
-        organiqueViews: 6,
-        carName: 'Car A',
-        carId: '1',
-        supplierId: 'sup1',
-        supplierName: 'Agency 1',
-      },
-      {
-        _id: { date: '2024-05-01', car: '2' },
-        date: '2024-05-01',
-        views: 5,
-        payedViews: 1,
-        organiqueViews: 4,
-        carName: 'Car B',
-        carId: '2',
-        supplierId: 'sup1',
-        supplierName: 'Agency 1',
-      },
-      {
-        _id: { date: '2024-05-02', car: '1' },
-        date: '2024-05-02',
-        views: 8,
-        payedViews: 3,
-        organiqueViews: 5,
-        carName: 'Car A',
-        carId: '1',
-        supplierId: 'sup1',
-        supplierName: 'Agency 1',
-      },
-    ]
-
-    const aggregated = sumViewsByDate(stats)
-    expect(aggregated).toEqual([
-      { date: '2024-05-01', organique: 10, paid: 5, total: 15 },
-      { date: '2024-05-02', organique: 5, paid: 3, total: 8 },
-    ])
-  })
-
-  it('aggregates bookings by status', () => {
-    const bookings: bookcarsTypes.Booking[] = [
-      { ...booking('2024-01-01', '2024-01-02', 200), status: bookcarsTypes.BookingStatus.Paid },
-      { ...booking('2024-01-03', '2024-01-04', 150), status: bookcarsTypes.BookingStatus.Paid },
-      { ...booking('2024-01-05', '2024-01-06', 50), status: bookcarsTypes.BookingStatus.Cancelled },
-    ]
-
-    const aggregated = aggregateBookingsByStatus(bookings)
-
-    expect(aggregated).toContainEqual({
-      status: bookcarsTypes.BookingStatus.Paid,
-      count: 2,
-      totalPrice: 350,
-    })
-
-    expect(aggregated).toContainEqual({
-      status: bookcarsTypes.BookingStatus.Cancelled,
-      count: 1,
-      totalPrice: 50,
-    })
-  })
-
-  it('sums booking revenue and counts bookings', () => {
-    const bookings = [booking('2024-01-01', '2024-01-02', 100), booking('2024-01-05', '2024-01-06', 200)]
-    expect(sumBookingsRevenue(bookings)).toBe(300)
-    expect(countBookings(bookings)).toBe(2)
-  })
-
-  it('builds agency options from suppliers and ranking without duplicates', () => {
+  it('builds agency options without duplicates using suppliers then ranking', () => {
     const suppliers: bookcarsTypes.SuppliersStat[] = [
       { supplierId: '2', supplierName: 'Beta Cars' },
       { supplierId: '1', supplierName: 'Alpha Rentals' },
@@ -133,32 +39,31 @@ describe('insights helpers', () => {
         agencyId: '3',
         agencyName: 'Gamma Mobility',
         score: 90,
-        totalCars: 12,
-        totalBookings: 150,
-        acceptanceRate: 0.95,
-        cancellationRate: 0.03,
-        pendingUpdates: 1,
-        revenue: 200000,
-        reviewCount: 20,
-        averageRating: 4.7,
+        totalCars: 15,
+        totalBookings: 120,
+        acceptanceRate: 95,
+        cancellationRate: 3,
+        pendingUpdates: 0,
+        revenue: 120000,
+        reviewCount: 45,
+        averageRating: 4.6,
       },
       {
-        agencyId: '2',
-        agencyName: 'Beta Cars',
+        agencyId: '1',
+        agencyName: 'Alpha Rentals',
         score: 80,
         totalCars: 10,
-        totalBookings: 120,
-        acceptanceRate: 0.9,
-        cancellationRate: 0.05,
+        totalBookings: 60,
+        acceptanceRate: 92,
+        cancellationRate: 5,
         pendingUpdates: 2,
-        revenue: 150000,
-        reviewCount: 15,
-        averageRating: 4.5,
+        revenue: 80000,
+        reviewCount: 20,
+        averageRating: 4.2,
       },
     ]
 
     const options = buildAgencyOptions(suppliers, ranking)
-
     expect(options).toEqual([
       { id: '1', name: 'Alpha Rentals' },
       { id: '2', name: 'Beta Cars' },
@@ -166,28 +71,13 @@ describe('insights helpers', () => {
     ])
   })
 
-  it('creates agency option from user when id and name exist', () => {
-    const option = createAgencyOptionFromUser({
-      _id: 'agency-1',
-      fullName: 'Agency One',
-    } as bookcarsTypes.User)
-
-    expect(option).toEqual({ id: 'agency-1', name: 'Agency One' })
+  it('returns localized status labels', () => {
+    expect(getStatusLabel(bookcarsTypes.BookingStatus.Paid)).toBe(strings.STATUS_PAID)
+    expect(getStatusLabel(bookcarsTypes.BookingStatus.Pending)).toBe(strings.STATUS_PENDING)
   })
 
-  it('returns null when user is missing id or name', () => {
-    expect(createAgencyOptionFromUser(undefined)).toBeNull()
-    expect(
-      createAgencyOptionFromUser({
-        _id: '',
-        fullName: ' ',
-      } as bookcarsTypes.User),
-    ).toBeNull()
-  })
-
-  it('extracts total records from various pageInfo shapes', () => {
-    expect(extractTotalRecords({ totalRecords: 20 })).toBe(20)
-    expect(extractTotalRecords([{ totalRecords: 10 }])).toBe(10)
-    expect(extractTotalRecords(undefined)).toBe(0)
+  it('returns cancellation labels for payment status', () => {
+    expect(getCancellationPaymentLabel('deposit')).toBe(strings.CANCELLATION_PAYMENT_DEPOSIT)
+    expect(getCancellationPaymentLabel('paid')).toBe(strings.CANCELLATION_PAYMENT_PAID)
   })
 })

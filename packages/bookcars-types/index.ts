@@ -992,6 +992,7 @@ export interface TopModelStat {
   bookings: number;
   agencyId?: string;
   agencyName?: string;
+  modelId?: string;
 }
 
 export interface InactiveAgencyStat {
@@ -1046,6 +1047,8 @@ export interface AgencyStatisticsOverview {
   pendingUpdateCount: number;
   pendingUpdates: AgencyBookingUpdate[];
   topModels: TopModelStat[];
+  lastBookingAt?: Date;
+  lastConnectionAt?: Date;
 }
 
 // types/bookcars.ts
@@ -1120,6 +1123,112 @@ export interface SummedStat {
   views: number;
   payedViews: number;
   organiqueViews: number;
+}
+
+export interface ViewsTimePoint {
+  date: string;
+  organique: number;
+  paid: number;
+  total: number;
+}
+
+export interface RevenueTimePoint {
+  period: string;
+  revenue: number;
+  bookings: number;
+}
+
+export interface WeeklyTrendPoint {
+  week: string;
+  revenue: number;
+  bookings: number;
+}
+
+export interface AgencyModelRevenueStat {
+  modelId: string;
+  modelName: string;
+  revenue: number;
+  bookings: number;
+}
+
+export interface AgencyModelOccupancyStat {
+  modelId: string;
+  modelName: string;
+  occupancyRate: number;
+  bookedDays: number;
+  totalDays: number;
+}
+
+export interface PaymentStatusCancellationStat {
+  paymentStatus: 'deposit' | 'paid';
+  count: number;
+}
+
+export interface AgencyAverageDurationPoint {
+  agencyId: string;
+  agencyName: string;
+  averageDuration: number;
+}
+
+export interface AgencyStatsSummary {
+  totalRevenue: number;
+  totalBookings: number;
+  acceptedBookings: number;
+  cancelledBookings: number;
+  acceptanceRate: number;
+  cancellationRate: number;
+  averageRevenuePerBooking: number;
+  averageDuration: number;
+  occupancyRate: number;
+  rebookingRate: number;
+  averageLeadTime: number;
+}
+
+export interface AgencyStatsResponse {
+  summary: AgencyStatsSummary;
+  statusBreakdown: BookingStat[];
+  revenueByStatus: BookingStat[];
+  monthlyRevenue: RevenueTimePoint[];
+  weeklyTrend: WeeklyTrendPoint[];
+  viewsOverTime: ViewsTimePoint[];
+  revenueByModel: AgencyModelRevenueStat[];
+  occupancyByModel: AgencyModelOccupancyStat[];
+  cancellationsByPaymentStatus: PaymentStatusCancellationStat[];
+  topModels: TopModelStat[];
+  lastBookingAt?: Date | null;
+  lastConnectionAt?: Date | null;
+}
+
+export interface AdminStatsSummary {
+  totalRevenue: number;
+  totalBookings: number;
+  activeAgencies: number;
+  acceptanceRate: number;
+  cancellationRate: number;
+  occupancyRate: number;
+  acceptedBookings: number;
+  cancelledBookings: number;
+  averageRevenuePerBooking: number;
+  averageDuration: number;
+  currentYearRevenue: number;
+  previousYearRevenue: number;
+  conversionRate: number;
+  rebookingRate: number;
+  averageLeadTime: number;
+}
+
+export interface AdminStatsResponse {
+  summary: AdminStatsSummary;
+  monthlyRevenue: RevenueTimePoint[];
+  weeklyTrend: WeeklyTrendPoint[];
+  statusBreakdown: BookingStat[];
+  revenueByStatus: BookingStat[];
+  revenueByModel: AgencyModelRevenueStat[];
+  occupancyByModel: AgencyModelOccupancyStat[];
+  cancellationsByPaymentStatus: PaymentStatusCancellationStat[];
+  averageDurationByAgency: AgencyAverageDurationPoint[];
+  viewsOverTime: ViewsTimePoint[];
+  topModels: TopModelStat[];
 }
 
 export interface SuppliersStat {

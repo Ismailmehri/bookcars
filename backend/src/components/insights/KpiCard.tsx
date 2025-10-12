@@ -1,10 +1,9 @@
 import React from 'react'
-import { Card, CardContent, Skeleton, Tooltip, Typography } from '@mui/material'
+import { Box, Card, CardContent, Skeleton, Tooltip, Typography } from '@mui/material'
 
 interface KpiCardProps {
   label: string
   value: React.ReactNode
-  helperText?: string
   tooltip?: string
   accent?: 'primary' | 'warning'
   loading?: boolean
@@ -15,7 +14,7 @@ const accentColors: Record<NonNullable<KpiCardProps['accent']>, string> = {
   warning: '#FF7A00',
 }
 
-const KpiCard: React.FC<KpiCardProps> = ({ label, value, helperText, tooltip, accent = 'primary', loading }) => {
+const KpiCard: React.FC<KpiCardProps> = ({ label, value, tooltip, accent = 'primary', loading }) => {
   const content = (
     <Card
       elevation={0}
@@ -45,19 +44,16 @@ const KpiCard: React.FC<KpiCardProps> = ({ label, value, helperText, tooltip, ac
             {value}
           </Typography>
         )}
-        {helperText ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            {helperText}
-          </Typography>
-        ) : null}
       </CardContent>
     </Card>
   )
 
   if (tooltip) {
     return (
-      <Tooltip title={tooltip} arrow placement="top">
-        <div>{content}</div>
+      <Tooltip title={tooltip} arrow placement="top" enterTouchDelay={0} enterDelay={0}>
+        <Box data-testid="kpi-card-tooltip-trigger" sx={{ display: 'block' }}>
+          {content}
+        </Box>
       </Tooltip>
     )
   }

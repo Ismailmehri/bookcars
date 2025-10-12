@@ -477,7 +477,9 @@ const CarStats = () => {
     ?? agencyOverview?.pendingUpdateCount
     ?? 0
   const lastConnectionDate = selectedAgencyRanking?.lastConnectionAt
+    ?? agencyOverview?.lastConnectionAt
   const lastActivityDate = selectedAgencyRanking?.lastBookingAt
+    ?? agencyOverview?.lastBookingAt
   const reviewCount = selectedAgencyRanking?.reviewCount ?? 0
   const averageRating = selectedAgencyRanking?.averageRating ?? null
 

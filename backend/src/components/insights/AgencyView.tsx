@@ -155,13 +155,25 @@ const AgencyView: React.FC<AgencyViewProps> = ({
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             {strings.TABLE_PENDING}
           </Typography>
-          <TableSimple columns={pendingUpdatesColumns} data={pendingUpdatesRows} emptyLabel={strings.EMPTY} />
+          <TableSimple
+            columns={pendingUpdatesColumns}
+            data={pendingUpdatesRows}
+            emptyLabel={strings.EMPTY}
+            rowsPerPageOptions={[5, 10, 20]}
+            initialRowsPerPage={5}
+          />
         </Grid>
         <Grid item xs={12} md={6}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             {strings.TABLE_TOP_MODELS}
           </Typography>
-          <TableSimple columns={topModelsColumns} data={topModels} emptyLabel={strings.EMPTY} />
+          <TableSimple
+            columns={topModelsColumns}
+            data={topModels}
+            emptyLabel={strings.EMPTY}
+            rowsPerPageOptions={[5, 10, 20]}
+            initialRowsPerPage={5}
+          />
         </Grid>
       </Grid>
 

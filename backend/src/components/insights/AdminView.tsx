@@ -163,7 +163,13 @@ const AdminView: React.FC<AdminViewProps> = ({
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           {strings.TABLE_AGENCY_RANKING}
         </Typography>
-        <TableSimple columns={rankingColumns} data={ranking} emptyLabel={strings.EMPTY} />
+        <TableSimple
+          columns={rankingColumns}
+          data={ranking}
+          emptyLabel={strings.EMPTY}
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          initialRowsPerPage={10}
+        />
       </Stack>
     </Stack>
   )

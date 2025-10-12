@@ -37,6 +37,7 @@ import AgencyView from '@/components/insights/AgencyView'
 import AdminView from '@/components/insights/AdminView'
 
 const BOOKINGS_PAGE_SIZE = 200
+const ALL_BOOKING_STATUSES = Object.values(bookcarsTypes.BookingStatus) as bookcarsTypes.BookingStatus[]
 const ACCEPTED_STATUSES = [
   bookcarsTypes.BookingStatus.Paid,
   bookcarsTypes.BookingStatus.Deposit,
@@ -102,53 +103,57 @@ const Insights = () => {
     ranking: [] as bookcarsTypes.AgencyRankingItem[],
   })
 
-  const loadBookings = useCallback(async (
-    suppliers: string[] | undefined,
-    from: Date,
-    to: Date,
-    statuses?: bookcarsTypes.BookingStatus[],
-  ) => {
-    const payload: bookcarsTypes.GetBookingsPayload = {
-      suppliers,
-      filter: {
-        from,
-        to,
-      },
-    }
-
-    if (statuses && statuses.length > 0) {
-      payload.statuses = statuses
-    }
-
-    const bookings: bookcarsTypes.Booking[] = []
-    let page = 1
-    let totalRecords = Number.POSITIVE_INFINITY
-
-    while (bookings.length < totalRecords) {
-      // eslint-disable-next-line no-await-in-loop
-      const response = await BookingService.getBookings(payload, page, BOOKINGS_PAGE_SIZE)
-      const pageData = response && response.length > 0 ? response[0] : undefined
-      if (!pageData) {
-        break
+  const loadBookings = useCallback(
+    async (
+      suppliers: string[] | undefined,
+      from: Date,
+      to: Date,
+      statuses: bookcarsTypes.BookingStatus[] = ALL_BOOKING_STATUSES,
+    ) => {
+      if (!suppliers || suppliers.length === 0) {
+        return []
       }
 
-      const pageInfo = extractTotalRecords(pageData.pageInfo)
-      if (Number.isFinite(pageInfo)) {
-        totalRecords = pageInfo
+      const payload: bookcarsTypes.GetBookingsPayload = {
+        suppliers,
+        filter: {
+          from,
+          to,
+        },
+        statuses: statuses.map((status) => status.toString()),
       }
 
-      const rows = pageData.resultData ?? []
-      bookings.push(...rows)
+      const bookings: bookcarsTypes.Booking[] = []
+      let page = 1
+      let totalRecords = Number.POSITIVE_INFINITY
 
-      if (rows.length < BOOKINGS_PAGE_SIZE) {
-        break
+      while (bookings.length < totalRecords) {
+        // eslint-disable-next-line no-await-in-loop
+        const response = await BookingService.getBookings(payload, page, BOOKINGS_PAGE_SIZE)
+        const pageData = response && response.length > 0 ? response[0] : undefined
+        if (!pageData) {
+          break
+        }
+
+        const pageInfo = extractTotalRecords(pageData.pageInfo)
+        if (Number.isFinite(pageInfo)) {
+          totalRecords = pageInfo
+        }
+
+        const rows = pageData.resultData ?? []
+        bookings.push(...rows)
+
+        if (rows.length < BOOKINGS_PAGE_SIZE) {
+          break
+        }
+
+        page += 1
       }
 
-      page += 1
-    }
-
-    return bookings
-  }, [])
+      return bookings
+    },
+    [],
+  )
 
   const loadAdminOverview = useCallback(async (): Promise<bookcarsTypes.AdminStatisticsOverview | null> => {
     try {
@@ -248,7 +253,7 @@ const Insights = () => {
 
           const supplierIds = overview.ranking.map((item) => item.agencyId)
           const [adminBookings, carStatsCollection] = await Promise.all([
-            loadBookings(undefined, startDate, endDate),
+            loadBookings(supplierIds, startDate, endDate),
             supplierIds.length > 0
               ? Promise.all(
                 supplierIds.map((id) => CarStatsService.getCarStats(id, undefined, startDate, endDate)),

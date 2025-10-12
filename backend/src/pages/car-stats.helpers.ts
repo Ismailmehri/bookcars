@@ -56,3 +56,30 @@ export const averagePriceAcrossCategories = (
   const total = values.reduce((sum, value) => sum + value, 0)
   return total / values.length
 }
+
+export const computeTrendPercentage = (values: number[]): number | null => {
+  if (values.length < 2) {
+    return null
+  }
+
+  const [previous, current] = values.slice(-2)
+  if (!Number.isFinite(previous) || !Number.isFinite(current)) {
+    return null
+  }
+
+  if (previous === 0) {
+    if (current === 0) {
+      return 0
+    }
+
+    return 100
+  }
+
+  return Math.round(((current - previous) / previous) * 100)
+}
+
+export const sumBookingRevenue = (data: bookcarsTypes.BookingStat[]) =>
+  data.reduce((total, item) => total + (Number.isFinite(item.totalPrice) ? item.totalPrice : 0), 0)
+
+export const sumBookingCount = (data: bookcarsTypes.BookingStat[]) =>
+  data.reduce((total, item) => total + (Number.isFinite(item.count) ? item.count : 0), 0)

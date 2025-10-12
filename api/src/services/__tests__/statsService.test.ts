@@ -91,4 +91,26 @@ describe('statsService helpers', () => {
       { paymentStatus: 'paid', count: 1 },
     ])
   })
+
+  it('derives full-year bounds independent of selected range', () => {
+    const reference = new Date('2024-06-15T12:00:00Z')
+
+    const bounds = __private.getYearBounds(reference)
+
+    expect(bounds.start.getFullYear()).toBe(2024)
+    expect(bounds.start.getMonth()).toBe(0)
+    expect(bounds.start.getDate()).toBe(1)
+    expect(bounds.start.getHours()).toBe(0)
+    expect(bounds.start.getMinutes()).toBe(0)
+    expect(bounds.start.getSeconds()).toBe(0)
+    expect(bounds.start.getMilliseconds()).toBe(0)
+
+    expect(bounds.end.getFullYear()).toBe(2024)
+    expect(bounds.end.getMonth()).toBe(11)
+    expect(bounds.end.getDate()).toBe(31)
+    expect(bounds.end.getHours()).toBe(23)
+    expect(bounds.end.getMinutes()).toBe(59)
+    expect(bounds.end.getSeconds()).toBe(59)
+    expect(bounds.end.getMilliseconds()).toBe(999)
+  })
 })

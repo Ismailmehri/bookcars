@@ -626,6 +626,11 @@ const computeYearlyRevenue = async (
   return result[0]?.total ?? 0
 }
 
+const getYearBounds = (date: Date) => ({
+  start: new Date(date.getFullYear(), 0, 1),
+  end: new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999),
+})
+
 export const getAdminStats = async (
   startDate: Date,
   endDate: Date,
@@ -672,13 +677,12 @@ export const getAdminStats = async (
   const averageLeadTime = calculateAverageLeadTime(bookings)
   const topModels = buildTopModels(bookings).slice(0, 5)
 
-  const currentYearStart = new Date(endDate.getFullYear(), 0, 1)
-  const previousYearStart = new Date(endDate.getFullYear() - 1, 0, 1)
-  const previousYearEnd = new Date(endDate.getFullYear() - 1, 11, 31, 23, 59, 59, 999)
+  const currentYear = getYearBounds(endDate)
+  const previousYear = getYearBounds(new Date(endDate.getFullYear() - 1, 0, 1))
 
   const [currentYearRevenue, previousYearRevenue] = await Promise.all([
-    computeYearlyRevenue(currentYearStart, endDate),
-    computeYearlyRevenue(previousYearStart, previousYearEnd),
+    computeYearlyRevenue(currentYear.start, currentYear.end),
+    computeYearlyRevenue(previousYear.start, previousYear.end),
   ])
 
   return {
@@ -721,4 +725,5 @@ export const __private = {
   buildModelRevenue,
   buildModelOccupancy,
   buildCancellationByPaymentStatus,
+  getYearBounds,
 }

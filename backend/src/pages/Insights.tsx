@@ -34,6 +34,7 @@ import {
   sumBookingsRevenue,
   sumViewsByDate,
   type AgencyOption,
+  createAgencyOptionFromUser,
 } from './insights.helpers'
 import AgencyView from '@/components/insights/AgencyView'
 import AdminView from '@/components/insights/AdminView'
@@ -51,6 +52,76 @@ const CANCELLED_STATUSES = [
   bookcarsTypes.BookingStatus.Void,
 ]
 
+interface AgencyMetricsState {
+  revenue: number
+  bookings: number
+  acceptanceRate: number
+  cancellationRate: number
+  rating?: { average: number; reviews: number }
+  occupancyRate: number
+  pendingUpdates: number
+  pendingUpdatesRows: bookcarsTypes.AgencyBookingUpdate[]
+  topModels: bookcarsTypes.TopModelStat[]
+  monthlyRevenue: ReturnType<typeof groupMonthlyRevenue>
+  viewsOverTime: ReturnType<typeof sumViewsByDate>
+  statusCounts: bookcarsTypes.BookingStat[]
+  statusRevenue: bookcarsTypes.BookingStat[]
+  lastBookingAt?: string
+  lastConnectionAt?: string
+}
+
+interface AdminMetricsState {
+  totalRevenue: number
+  totalBookings: number
+  activeAgencies: number
+  acceptanceRate: number
+  cancellationRate: number
+  averageRating?: number
+  occupancyRate: number
+  acceptedBookings: number
+  cancelledBookings: number
+  monthlyRevenue: ReturnType<typeof groupMonthlyRevenue>
+  viewsOverTime: ReturnType<typeof sumViewsByDate>
+  statusCounts: bookcarsTypes.BookingStat[]
+  statusRevenue: bookcarsTypes.BookingStat[]
+  ranking: bookcarsTypes.AgencyRankingItem[]
+}
+
+const createInitialAgencyMetrics = (): AgencyMetricsState => ({
+  revenue: 0,
+  bookings: 0,
+  acceptanceRate: 0,
+  cancellationRate: 0,
+  rating: undefined,
+  occupancyRate: 0,
+  pendingUpdates: 0,
+  pendingUpdatesRows: [],
+  topModels: [],
+  monthlyRevenue: [],
+  viewsOverTime: [],
+  statusCounts: [],
+  statusRevenue: [],
+  lastBookingAt: undefined,
+  lastConnectionAt: undefined,
+})
+
+const createInitialAdminMetrics = (): AdminMetricsState => ({
+  totalRevenue: 0,
+  totalBookings: 0,
+  activeAgencies: 0,
+  acceptanceRate: 0,
+  cancellationRate: 0,
+  averageRating: undefined,
+  occupancyRate: 0,
+  acceptedBookings: 0,
+  cancelledBookings: 0,
+  monthlyRevenue: [],
+  viewsOverTime: [],
+  statusCounts: [],
+  statusRevenue: [],
+  ranking: [],
+})
+
 const Insights = () => {
   const [user, setUser] = useState<bookcarsTypes.User | undefined>()
   const [isAdmin, setIsAdmin] = useState(false)
@@ -65,40 +136,9 @@ const Insights = () => {
   const [adminTabLoaded, setAdminTabLoaded] = useState(false)
   const initialLoadDone = useRef(false)
 
-  const [agencyMetrics, setAgencyMetrics] = useState({
-    revenue: 0,
-    bookings: 0,
-    acceptanceRate: 0,
-    cancellationRate: 0,
-    rating: undefined as { average: number; reviews: number } | undefined,
-    occupancyRate: 0,
-    pendingUpdates: 0,
-    pendingUpdatesRows: [] as bookcarsTypes.AgencyBookingUpdate[],
-    topModels: [] as bookcarsTypes.TopModelStat[],
-    monthlyRevenue: [] as ReturnType<typeof groupMonthlyRevenue>,
-    viewsOverTime: [] as ReturnType<typeof sumViewsByDate>,
-    statusCounts: [] as bookcarsTypes.BookingStat[],
-    statusRevenue: [] as bookcarsTypes.BookingStat[],
-    lastBookingAt: undefined as string | undefined,
-    lastConnectionAt: undefined as string | undefined,
-  })
+  const [agencyMetrics, setAgencyMetrics] = useState<AgencyMetricsState>(() => createInitialAgencyMetrics())
 
-  const [adminMetrics, setAdminMetrics] = useState({
-    totalRevenue: 0,
-    totalBookings: 0,
-    activeAgencies: 0,
-    acceptanceRate: 0,
-    cancellationRate: 0,
-    averageRating: undefined as number | undefined,
-    occupancyRate: 0,
-    acceptedBookings: 0,
-    cancelledBookings: 0,
-    monthlyRevenue: [] as ReturnType<typeof groupMonthlyRevenue>,
-    viewsOverTime: [] as ReturnType<typeof sumViewsByDate>,
-    statusCounts: [] as bookcarsTypes.BookingStat[],
-    statusRevenue: [] as bookcarsTypes.BookingStat[],
-    ranking: [] as bookcarsTypes.AgencyRankingItem[],
-  })
+  const [adminMetrics, setAdminMetrics] = useState<AdminMetricsState>(() => createInitialAdminMetrics())
 
   const loadBookings = useCallback(
     async (
@@ -401,11 +441,26 @@ const Insights = () => {
 
   const onLoad = (loadedUser?: bookcarsTypes.User) => {
     setUser(loadedUser)
-    setIsAdmin(helper.admin(loadedUser))
-    if (loadedUser && !helper.admin(loadedUser)) {
-      setSelectedAgency(loadedUser._id || '')
+    const isUserAdmin = helper.admin(loadedUser)
+    setIsAdmin(isUserAdmin)
+
+    if (!isUserAdmin) {
+      const option = createAgencyOptionFromUser(loadedUser)
+      setAgencyOptions(option ? [option] : [])
+      setSelectedAgency(option?.id ?? '')
+    } else {
+      setAgencyOptions([])
     }
   }
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setTab('agency')
+      setAdminTabLoaded(false)
+      setAdminOverview(null)
+      setAdminMetrics(createInitialAdminMetrics())
+    }
+  }, [isAdmin])
 
   const content = (
     <Stack spacing={4}>

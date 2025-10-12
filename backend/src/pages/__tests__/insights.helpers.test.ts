@@ -8,6 +8,7 @@ import {
   groupMonthlyRevenue,
   aggregateBookingsByStatus,
   buildAgencyOptions,
+  createAgencyOptionFromUser,
   sumBookingsRevenue,
   sumViewsByDate,
 } from '../insights.helpers'
@@ -163,6 +164,25 @@ describe('insights helpers', () => {
       { id: '2', name: 'Beta Cars' },
       { id: '3', name: 'Gamma Mobility' },
     ])
+  })
+
+  it('creates agency option from user when id and name exist', () => {
+    const option = createAgencyOptionFromUser({
+      _id: 'agency-1',
+      fullName: 'Agency One',
+    } as bookcarsTypes.User)
+
+    expect(option).toEqual({ id: 'agency-1', name: 'Agency One' })
+  })
+
+  it('returns null when user is missing id or name', () => {
+    expect(createAgencyOptionFromUser(undefined)).toBeNull()
+    expect(
+      createAgencyOptionFromUser({
+        _id: '',
+        fullName: ' ',
+      } as bookcarsTypes.User),
+    ).toBeNull()
   })
 
   it('extracts total records from various pageInfo shapes', () => {

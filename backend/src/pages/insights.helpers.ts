@@ -18,6 +18,23 @@ export interface AgencyOption {
   name: string
 }
 
+export const createAgencyOptionFromUser = (user?: bookcarsTypes.User): AgencyOption | null => {
+  if (!user || !user._id) {
+    return null
+  }
+
+  const name = (user.fullName || '').trim()
+
+  if (!name) {
+    return null
+  }
+
+  return {
+    id: user._id,
+    name,
+  }
+}
+
 export const clampDateToRange = (value: Date, start: Date, end: Date) => {
   if (value.getTime() < start.getTime()) {
     return start

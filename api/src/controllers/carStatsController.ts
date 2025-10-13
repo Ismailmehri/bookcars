@@ -451,7 +451,7 @@ export const getAdminOverview = async (req: Request, res: Response) => {
           reviews.reduce((acc, review) => acc + (review.rating ?? 0), 0) / reviewCount,
         )
 
-      const lastConnectionAt = (agency as { updatedAt?: Date }).updatedAt
+      const lastConnectionAt = (agency as { lastLoginAt?: Date }).lastLoginAt
 
       const scoreBreakdown = helper.calculateAgencyScore(
         agency as unknown as bookcarsTypes.User,
@@ -694,7 +694,7 @@ export const getAgencyOverview = async (req: Request, res: Response) => {
       .sort((a, b) => b.overdueDays - a.overdueDays)
       .slice(0, 10)
 
-    const lastConnectionAt = (agency as { updatedAt?: Date }).updatedAt
+    const lastConnectionAt = (agency as { lastLoginAt?: Date }).lastLoginAt
 
     return res.json({
       score: scoreBreakdown,

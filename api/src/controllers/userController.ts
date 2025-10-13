@@ -551,6 +551,13 @@ export const signin = async (req: Request, res: Response) => {
     const passwordMatch = await bcrypt.compare(password, user.password)
 
     if (passwordMatch) {
+      const lastLoginAt = new Date()
+      try {
+        await User.updateOne({ _id: user._id }, { $set: { lastLoginAt } }).exec()
+      } catch (updateError) {
+        logger.error(`[user.signin] Failed to record last login ${user.id}`, updateError)
+      }
+
       //
       // On production, authentication cookies are httpOnly, signed, secure and strict sameSite.
       // These options prevent XSS, CSRF and MITM attacks.
@@ -585,6 +592,7 @@ export const signin = async (req: Request, res: Response) => {
         blacklisted: user.blacklisted,
         avatar: user.avatar,
         active: user.active,
+        lastLoginAt,
       }
 
       //
@@ -656,6 +664,7 @@ export const socialSignin = async (req: Request, res: Response) => {
     }
 
     let user = await User.findOne({ email })
+    const lastLoginAt = new Date()
 
     if (!user) {
       user = new User({
@@ -668,8 +677,15 @@ export const socialSignin = async (req: Request, res: Response) => {
         type: bookcarsTypes.UserType.User,
         blacklisted: false,
         avatar,
+        lastLoginAt,
       })
       await user.save()
+    } else {
+      try {
+        await User.updateOne({ _id: user._id }, { $set: { lastLoginAt } }).exec()
+      } catch (updateError) {
+        logger.error(`[user.socialSignin] Failed to record last login ${user.id}`, updateError)
+      }
     }
 
     //
@@ -706,6 +722,7 @@ export const socialSignin = async (req: Request, res: Response) => {
       blacklisted: user.blacklisted,
       avatar: user.avatar,
       active: user.active,
+      lastLoginAt,
     }
 
     //

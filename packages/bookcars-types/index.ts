@@ -711,6 +711,7 @@ export interface User {
   slug?: string
   createdAt?: Date
   updatedAt?: Date
+  lastLoginAt?: Date
 }
 
 export interface Option {

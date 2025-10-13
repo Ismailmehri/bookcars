@@ -475,6 +475,7 @@ export interface User extends Document {
   agencyVerified?: boolean
   active?: boolean
   language: string
+  lastLoginAt?: Date
   enableEmailNotifications?: boolean
   avatar?: string
   bio?: string
@@ -511,6 +512,7 @@ export interface UserInfo {
   agencyVerified?: boolean
   active?: boolean
   language?: string
+  lastLoginAt?: Date
   enableEmailNotifications?: boolean
   avatar?: string
   bio?: string

@@ -31,16 +31,26 @@ const KpiCard: React.FC<KpiCardProps> = ({ label, value, tooltip, accent = 'prim
     >
       <CardContent>
         <Typography
-          variant="subtitle2"
+          variant="body2"
           component="h3"
-          sx={{ fontWeight: 600, color: accentColors[accent], mb: 1 }}
+          data-testid="kpi-card-label"
+          sx={{
+            fontWeight: 600,
+            color: accentColors[accent],
+            mb: 1,
+          }}
         >
           {label}
         </Typography>
         {loading ? (
           <Skeleton variant="rectangular" height={32} width="60%" />
         ) : (
-          <Typography variant="h4" component="p" sx={{ fontWeight: 700 }}>
+          <Typography
+            variant="h5"
+            component="p"
+            data-testid="kpi-card-value"
+            sx={{ fontWeight: 700 }}
+          >
             {value}
           </Typography>
         )}

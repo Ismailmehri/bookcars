@@ -498,18 +498,20 @@ const computeSummary = (
   return { totalBookings, acceptedBookings, cancelledBookings }
 }
 
-const computeRevenue = (bookings: BookingMetricDocument[]) =>
+const computeRevenue = (bookings: BookingMetricDocument[]) => (
   bookings
     .filter((booking) => ACCEPTED_STATUSES.includes(booking.status))
     .reduce((total, booking) => total + (Number.isFinite(booking.price) ? booking.price : 0), 0)
+)
 
-const buildViewsResponse = (views: ViewsAggregationDocument[]): bookcarsTypes.ViewsTimePoint[] =>
+const buildViewsResponse = (views: ViewsAggregationDocument[]): bookcarsTypes.ViewsTimePoint[] => (
   views.map((item) => ({
     date: item.date,
     organique: item.organique,
     paid: item.paid,
     total: item.total,
   }))
+)
 
 export const getAgencyStats = async (
   supplierId: mongoose.Types.ObjectId,
@@ -520,7 +522,7 @@ export const getAgencyStats = async (
     fetchBookings(startDate, endDate, supplierId),
     Car.countDocuments({ supplier: supplierId, deleted: { $ne: true } }),
     fetchViews(startDate, endDate, supplierId),
-    User.findById(supplierId).select({ updatedAt: 1 }).lean(),
+    User.findById(supplierId).select({ lastLoginAt: 1 }).lean(),
   ])
 
   const { totalBookings, acceptedBookings, cancelledBookings } = computeSummary(bookings)
@@ -545,7 +547,7 @@ export const getAgencyStats = async (
   const cancellationsByPaymentStatus = buildCancellationByPaymentStatus(bookings)
   const topModels = buildTopModels(bookings).slice(0, 5)
   const lastBookingAt = findLastBookingActivity(bookings)
-  const lastConnectionAt = (supplier as { updatedAt?: Date } | null)?.updatedAt ?? undefined
+  const lastConnectionAt = (supplier as { lastLoginAt?: Date } | null)?.lastLoginAt ?? undefined
 
   return {
     summary: {

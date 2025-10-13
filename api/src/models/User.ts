@@ -72,6 +72,9 @@ const userSchema = new Schema<env.User>(
       minlength: 2,
       maxlength: 2,
     },
+    lastLoginAt: {
+      type: Date,
+    },
     enableEmailNotifications: {
       type: Boolean,
       default: true,

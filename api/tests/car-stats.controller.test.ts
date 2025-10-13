@@ -34,7 +34,7 @@ describe('car stats controller', () => {
     type: bookcarsTypes.UserType.Supplier,
     fullName: 'Agence Alpha',
     phone: '+33123456789',
-    updatedAt: now,
+    lastLoginAt: now,
     reviews: [
       {
         booking: new mongoose.Types.ObjectId().toString(),
@@ -64,7 +64,7 @@ describe('car stats controller', () => {
     type: bookcarsTypes.UserType.Supplier,
     fullName: 'Agence Beta',
     phone: '+33987654321',
-    updatedAt: tenDaysAgo,
+    lastLoginAt: tenDaysAgo,
     reviews: [
       {
         booking: new mongoose.Types.ObjectId().toString(),
@@ -213,8 +213,7 @@ describe('car stats controller', () => {
     supplierAToken = await authHelper.encryptJWT({ id: supplierAId })
   })
 
-  beforeEach(() => {
-
+    beforeEach(() => {
     const findByIdMock = jest.spyOn(User, 'findById') as unknown as jest.Mock
     findByIdMock.mockImplementation((rawId) => ({
       lean: async () => {
@@ -325,7 +324,10 @@ describe('car stats controller', () => {
     expect(agencyAStats?.revenue).toBeGreaterThan(0)
     expect(agencyAStats?.reviewCount).toBe(2)
     expect(agencyAStats?.averageRating).toBeGreaterThan(0)
-    expect(agencyAStats?.lastConnectionAt).toBeDefined()
+    if (!agencyAStats?.lastConnectionAt) {
+      throw new Error('Expected lastConnectionAt for agency A to be defined')
+    }
+    expect(new Date(agencyAStats.lastConnectionAt).toISOString()).toBe(now.toISOString())
 
     expect(body.summary.totalAgencies).toBe(2)
     expect(body.averagePrices).toEqual(adminAveragePrices)
@@ -342,8 +344,11 @@ describe('car stats controller', () => {
 
     const inactiveIds = body.inactiveAgencies.map((item) => item.agencyId)
     expect(inactiveIds).toContain(supplierAId)
-    expect(body.inactiveAgencies.find((item) => item.agencyId === supplierAId)?.lastConnectionAt)
-      .toBeDefined()
+    const agencyAInactive = body.inactiveAgencies.find((item) => item.agencyId === supplierAId)
+    if (!agencyAInactive?.lastConnectionAt) {
+      throw new Error('Expected inactive agency lastConnectionAt to be defined')
+    }
+    expect(new Date(agencyAInactive.lastConnectionAt).toISOString()).toBe(now.toISOString())
   })
 
   it('returns agency overview for the selected supplier', async () => {
@@ -363,7 +368,10 @@ describe('car stats controller', () => {
     expect(body.topModels[0].model).toBe('Peugeot 208')
     expect(body.totalRevenue).toBeGreaterThan(0)
     expect(body.lastBookingAt).toBeTruthy()
-    expect(body.lastConnectionAt).toBeTruthy()
+    if (!body.lastConnectionAt) {
+      throw new Error('Expected agency overview lastConnectionAt to be defined')
+    }
+    expect(new Date(body.lastConnectionAt).toISOString()).toBe(now.toISOString())
   })
 
   it('forbids suppliers from accessing other agencies', async () => {

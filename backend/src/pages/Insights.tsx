@@ -21,6 +21,7 @@ import AgencyView from '@/components/insights/AgencyView'
 import AdminView from '@/components/insights/AdminView'
 import env from '@/config/env.config'
 import { strings } from '@/lang/insights'
+import { insightsPageContainerSx } from './insights.styles'
 import { useInsightsMetrics } from './useInsightsMetrics'
 
 const Insights: React.FC = () => {
@@ -77,7 +78,7 @@ const Insights: React.FC = () => {
   }
 
   const content = (
-    <Stack spacing={4} sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
+    <Stack spacing={4} sx={insightsPageContainerSx}>
       <Box
         sx={{
           borderRadius: 3,

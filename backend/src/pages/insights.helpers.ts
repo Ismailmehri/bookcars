@@ -65,10 +65,3 @@ export const getStatusLabel = (status: bookcarsTypes.BookingStatus) => {
   }
 }
 
-export const getCancellationPaymentLabel = (status: 'deposit' | 'paid') => {
-  if (status === 'deposit') {
-    return strings.CANCELLATION_PAYMENT_DEPOSIT
-  }
-
-  return strings.CANCELLATION_PAYMENT_PAID
-}

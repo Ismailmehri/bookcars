@@ -14,7 +14,6 @@ import {
   WeeklyTrendChart,
   ModelRevenueBarChart,
   ModelOccupancyBarChart,
-  CancellationByPaymentBarChart,
 } from './Charts'
 import { strings } from '@/lang/insights'
 import * as bookcarsTypes from ':bookcars-types'
@@ -32,10 +31,12 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
       key: 'agencyId',
       label: '#',
       render: (_row, index) => index + 1,
+      sortable: false,
     },
     {
       key: 'agencyName',
       label: strings.TABLE_AGENCY_RANKING,
+      sortValue: (row) => row.agencyName.toLowerCase(),
     },
     {
       key: 'revenue',
@@ -227,9 +228,6 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           <ModelOccupancyBarChart data={metrics.occupancyByModel} loading={loading} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <CancellationByPaymentBarChart data={metrics.cancellationsByPaymentStatus} loading={loading} />
-        </Grid>
-        <Grid item xs={12} md={6}>
           <AcceptCancelBarChart
             accepted={summary.acceptedBookings}
             cancelled={summary.cancelledBookings}
@@ -251,6 +249,7 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           emptyLabel={strings.EMPTY}
           rowsPerPageOptions={[5, 10, 25, 50]}
           initialRowsPerPage={10}
+          mobileSortLabel={strings.TABLE_SORT_LABEL}
         />
       </Stack>
     </Stack>

@@ -41,6 +41,16 @@ describe('KpiCard', () => {
     expect(container.textContent).toContain('12')
   })
 
+  it('applies compact typography variants', () => {
+    render(<KpiCard label="Revenue" value="1200" />)
+
+    const label = container.querySelector('[data-testid="kpi-card-label"]')
+    const value = container.querySelector('[data-testid="kpi-card-value"]')
+
+    expect(label?.className).toContain('MuiTypography-body2')
+    expect(value?.className).toContain('MuiTypography-h5')
+  })
+
   it('displays tooltip content on hover', () => {
     render(<KpiCard label="Revenue" value="1200" tooltip="Somme des montants" />)
 

@@ -7,7 +7,7 @@ import {
   BOOKING_STATUS_CHIP_STYLES,
   FALLBACK_STATUS_CHIP_STYLE,
 } from '@/constants/bookingStatusStyles'
-import { getStatusLabel, getCancellationPaymentLabel } from '@/pages/insights.helpers'
+import { getStatusLabel } from '@/pages/insights.helpers'
 import { formatCurrency, formatNumber } from '@/common/format'
 
 const chartPalette = {
@@ -333,33 +333,6 @@ export const ModelOccupancyBarChart: React.FC<ModelOccupancyChartProps> = ({ dat
           height={260}
           series={[{ data: data.map((item) => Number((item.occupancyRate * 100).toFixed(1))), color: chartPalette.secondary }]}
           xAxis={[{ scaleType: 'band', data: data.map((item) => item.modelName) }]}
-        />
-      )}
-    </Box>
-  </Tooltip>
-)
-
-interface CancellationChartProps extends BaseChartProps {
-  data: bookcarsTypes.PaymentStatusCancellationStat[]
-}
-
-export const CancellationByPaymentBarChart: React.FC<CancellationChartProps> = ({ data, loading }) => (
-  <Tooltip title={strings.CHART_CANCELLATION_PAYMENT_HELPER} arrow placement="top-start" enterTouchDelay={0}>
-    <Box sx={chartContainerStyles}>
-      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-        {strings.CHART_CANCELLATION_PAYMENT}
-      </Typography>
-      {loading ? (
-        <Skeleton variant="rectangular" height={260} />
-      ) : data.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          {strings.EMPTY}
-        </Typography>
-      ) : (
-        <BarChart
-          height={260}
-          series={[{ data: data.map((item) => item.count), color: chartPalette.danger }]}
-          xAxis={[{ scaleType: 'band', data: data.map((item) => getCancellationPaymentLabel(item.paymentStatus)) }]}
         />
       )}
     </Box>

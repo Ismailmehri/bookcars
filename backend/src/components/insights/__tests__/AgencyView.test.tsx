@@ -44,7 +44,6 @@ const buildMetrics = (): Parameters<typeof AgencyView>[0]['metrics'] => ({
   statusBreakdown: [],
   revenueByModel: [],
   occupancyByModel: [],
-  cancellationsByPaymentStatus: [],
   lastBookingAt: new Date('2025-12-10T00:00:00Z').toISOString(),
   lastConnectionAt: new Date('2025-09-13T00:00:00Z').toISOString(),
 })
@@ -93,6 +92,8 @@ describe('AgencyView', () => {
 
     expect(container.textContent).toContain('Dernière réservation: 10/12/2025')
     expect(container.textContent).toContain('Dernière connexion: 13/09/2025')
-    expect(container.textContent).toContain('ABC1234567890')
+    const bookingLink = container.querySelector('a[href$="/update-booking?b=ABC1234567890"]') as HTMLAnchorElement
+    expect(bookingLink).toBeTruthy()
+    expect(bookingLink.textContent).toContain('ABC1234567890')
   })
 })

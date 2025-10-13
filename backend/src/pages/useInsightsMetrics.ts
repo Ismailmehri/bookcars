@@ -71,7 +71,6 @@ const createInitialAgencyMetrics = (): AgencyMetricsViewModel => ({
   statusBreakdown: [],
   revenueByModel: [],
   occupancyByModel: [],
-  cancellationsByPaymentStatus: [],
   lastBookingAt: undefined,
   lastConnectionAt: undefined,
 })
@@ -86,7 +85,6 @@ const createInitialAdminMetrics = (): AdminMetricsViewModel => ({
   statusBreakdown: [],
   revenueByModel: [],
   occupancyByModel: [],
-  cancellationsByPaymentStatus: [],
   averageDurationByAgency: [],
   topModels: [],
 })
@@ -256,7 +254,6 @@ export const useInsightsMetrics = () => {
         statusBreakdown: stats.statusBreakdown,
         revenueByModel: stats.revenueByModel,
         occupancyByModel: stats.occupancyByModel,
-        cancellationsByPaymentStatus: stats.cancellationsByPaymentStatus,
         lastBookingAt: normalizeDate(
           stats.lastBookingAt ?? rankingItem?.lastBookingAt ?? overview.lastBookingAt,
         ),
@@ -304,7 +301,6 @@ export const useInsightsMetrics = () => {
         statusBreakdown: stats.statusBreakdown,
         revenueByModel: stats.revenueByModel,
         occupancyByModel: stats.occupancyByModel,
-        cancellationsByPaymentStatus: stats.cancellationsByPaymentStatus,
         averageDurationByAgency: stats.averageDurationByAgency,
         topModels: stats.topModels,
       })

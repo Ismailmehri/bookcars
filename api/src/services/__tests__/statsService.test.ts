@@ -1,5 +1,5 @@
-import * as bookcarsTypes from ':bookcars-types'
 import { describe, expect, it } from '@jest/globals'
+import * as bookcarsTypes from ':bookcars-types'
 import { __private, type BookingMetricDocument } from '../statsService'
 
 const createBooking = (overrides: Partial<BookingMetricDocument> = {}): BookingMetricDocument => ({

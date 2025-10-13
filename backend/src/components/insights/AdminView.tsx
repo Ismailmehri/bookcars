@@ -32,10 +32,12 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
       key: 'agencyId',
       label: '#',
       render: (_row, index) => index + 1,
+      sortable: false,
     },
     {
       key: 'agencyName',
       label: strings.TABLE_AGENCY_RANKING,
+      sortValue: (row) => row.agencyName.toLowerCase(),
     },
     {
       key: 'revenue',
@@ -251,6 +253,7 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           emptyLabel={strings.EMPTY}
           rowsPerPageOptions={[5, 10, 25, 50]}
           initialRowsPerPage={10}
+          mobileSortLabel={strings.TABLE_SORT_LABEL}
         />
       </Stack>
     </Stack>

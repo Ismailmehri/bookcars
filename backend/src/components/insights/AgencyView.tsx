@@ -1,5 +1,5 @@
 import React from 'react'
-import { Button, Grid, Skeleton, Stack, Typography } from '@mui/material'
+import { Button, Grid, Link, Skeleton, Stack, Typography } from '@mui/material'
 import DownloadIcon from '@mui/icons-material/DownloadOutlined'
 import { formatCurrency, formatDateTime, formatNumber, formatPercentage } from '@/common/format'
 import TableSimple, { TableColumn } from './TableSimple'
@@ -36,7 +36,7 @@ interface AgencyViewProps {
 
 const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, onExport }) => {
   const topModelsColumns: TableColumn<bookcarsTypes.TopModelStat>[] = [
-    { key: 'model', label: strings.TABLE_COL_MODEL },
+    { key: 'model', label: strings.TABLE_COL_MODEL, sortValue: (row) => row.model.toLowerCase() },
     { key: 'bookings', label: strings.TABLE_COL_BOOKINGS, align: 'right', render: (row) => formatNumber(row.bookings, { maximumFractionDigits: 0 }) },
   ]
 
@@ -45,14 +45,18 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
       key: 'bookingId',
       label: 'ID',
       render: (row) => (
-        <Typography
-          component="span"
-          variant="body2"
-          sx={{ fontFamily: 'monospace', display: 'inline-block', wordBreak: 'break-all' }}
+        <Link
+          href={`/update-booking?b=${row.bookingId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          underline="hover"
+          color="primary"
+          sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}
         >
           {row.bookingId}
-        </Typography>
+        </Link>
       ),
+      sortValue: (row) => row.bookingId.toLowerCase(),
     },
     {
       key: 'carName',
@@ -62,11 +66,13 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
       key: 'status',
       label: strings.TABLE_COL_STATUS,
       render: (row) => statusLabels[row.status] ?? row.status,
+      sortValue: (row) => statusLabels[row.status] ?? row.status,
     },
     {
       key: 'endDate',
       label: strings.END_DATE,
       render: (row) => formatDateTime(row.endDate),
+      sortValue: (row) => new Date(row.endDate),
     },
     {
       key: 'overdueDays',
@@ -231,6 +237,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
             emptyLabel={strings.EMPTY}
             rowsPerPageOptions={[5, 10, 20]}
             initialRowsPerPage={5}
+            mobileSortLabel={strings.TABLE_SORT_LABEL}
           />
         </Grid>
         <Grid item xs={12} lg={4}>
@@ -243,6 +250,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
             emptyLabel={strings.EMPTY}
             rowsPerPageOptions={[5, 10, 20]}
             initialRowsPerPage={5}
+            mobileSortLabel={strings.TABLE_SORT_LABEL}
           />
         </Grid>
       </Grid>

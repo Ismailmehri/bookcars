@@ -12,7 +12,6 @@ export interface AgencyMetricsViewModel {
   statusBreakdown: bookcarsTypes.BookingStat[]
   revenueByModel: bookcarsTypes.AgencyModelRevenueStat[]
   occupancyByModel: bookcarsTypes.AgencyModelOccupancyStat[]
-  cancellationsByPaymentStatus: bookcarsTypes.PaymentStatusCancellationStat[]
   lastBookingAt?: string
   lastConnectionAt?: string
 }
@@ -27,7 +26,6 @@ export interface AdminMetricsViewModel {
   statusBreakdown: bookcarsTypes.BookingStat[]
   revenueByModel: bookcarsTypes.AgencyModelRevenueStat[]
   occupancyByModel: bookcarsTypes.AgencyModelOccupancyStat[]
-  cancellationsByPaymentStatus: bookcarsTypes.PaymentStatusCancellationStat[]
   averageDurationByAgency: bookcarsTypes.AgencyAverageDurationPoint[]
   topModels: bookcarsTypes.TopModelStat[]
 }

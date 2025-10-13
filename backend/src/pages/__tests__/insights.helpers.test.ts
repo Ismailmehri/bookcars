@@ -4,7 +4,6 @@ import {
   buildAgencyOptions,
   createAgencyOptionFromUser,
   getStatusLabel,
-  getCancellationPaymentLabel,
 } from '../insights.helpers'
 import { strings } from '@/lang/insights'
 
@@ -76,8 +75,4 @@ describe('insights helpers (frontend)', () => {
     expect(getStatusLabel(bookcarsTypes.BookingStatus.Pending)).toBe(strings.STATUS_PENDING)
   })
 
-  it('returns cancellation labels for payment status', () => {
-    expect(getCancellationPaymentLabel('deposit')).toBe(strings.CANCELLATION_PAYMENT_DEPOSIT)
-    expect(getCancellationPaymentLabel('paid')).toBe(strings.CANCELLATION_PAYMENT_PAID)
-  })
 })

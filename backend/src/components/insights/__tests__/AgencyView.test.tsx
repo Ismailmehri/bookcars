@@ -44,7 +44,6 @@ const buildMetrics = (): Parameters<typeof AgencyView>[0]['metrics'] => ({
   statusBreakdown: [],
   revenueByModel: [],
   occupancyByModel: [],
-  cancellationsByPaymentStatus: [],
   lastBookingAt: new Date('2025-12-10T00:00:00Z').toISOString(),
   lastConnectionAt: new Date('2025-09-13T00:00:00Z').toISOString(),
 })

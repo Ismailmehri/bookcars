@@ -12,7 +12,6 @@ import {
   WeeklyTrendChart,
   ModelRevenueBarChart,
   ModelOccupancyBarChart,
-  CancellationByPaymentBarChart,
 } from './Charts'
 import { strings } from '@/lang/insights'
 import * as bookcarsTypes from ':bookcars-types'
@@ -221,13 +220,10 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
         <Grid item xs={12} md={6}>
           <ModelOccupancyBarChart data={metrics.occupancyByModel} loading={loading} />
         </Grid>
-        <Grid item xs={12} md={6}>
-          <CancellationByPaymentBarChart data={metrics.cancellationsByPaymentStatus} loading={loading} />
-        </Grid>
       </Grid>
 
       <Grid container spacing={2}>
-        <Grid item xs={12} lg={8}>
+        <Grid item xs={12}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             {strings.TABLE_PENDING}
           </Typography>
@@ -240,7 +236,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
             mobileSortLabel={strings.TABLE_SORT_LABEL}
           />
         </Grid>
-        <Grid item xs={12} lg={4}>
+        <Grid item xs={12}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             {strings.TABLE_TOP_MODELS}
           </Typography>

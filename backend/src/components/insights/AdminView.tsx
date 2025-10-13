@@ -14,7 +14,6 @@ import {
   WeeklyTrendChart,
   ModelRevenueBarChart,
   ModelOccupancyBarChart,
-  CancellationByPaymentBarChart,
 } from './Charts'
 import { strings } from '@/lang/insights'
 import * as bookcarsTypes from ':bookcars-types'
@@ -227,9 +226,6 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
         </Grid>
         <Grid item xs={12} md={6}>
           <ModelOccupancyBarChart data={metrics.occupancyByModel} loading={loading} />
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <CancellationByPaymentBarChart data={metrics.cancellationsByPaymentStatus} loading={loading} />
         </Grid>
         <Grid item xs={12} md={6}>
           <AcceptCancelBarChart

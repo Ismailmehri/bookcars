@@ -155,6 +155,27 @@ export const signin = (data: bookcarsTypes.SignInPayload): Promise<{ status: num
       return { status: res.status, data: res.data }
     })
 
+export const acceptCommissionAgreement = async (): Promise<bookcarsTypes.CommissionAgreementAcceptanceResponse> => {
+  const response = await axiosInstance
+    .post(
+      '/api/commission-agreement/accept',
+      null,
+      { withCredentials: true }
+    )
+
+  if (response.status === 200) {
+    const storedUser = JSON.parse(localStorage.getItem('bc-user') ?? 'null')
+
+    if (storedUser) {
+      storedUser.commissionAgreementAccepted = response.data.commissionAgreementAccepted
+      storedUser.commissionAgreementAcceptedAt = response.data.commissionAgreementAcceptedAt
+      localStorage.setItem('bc-user', JSON.stringify(storedUser))
+    }
+  }
+
+  return response.data
+}
+
 /**
  * Sign out.
  *

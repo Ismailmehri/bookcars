@@ -490,6 +490,8 @@ export interface User extends Document {
   reviews?: Review[]
   score: number,
   slug?: string;
+  commissionAgreementAccepted?: boolean
+  commissionAgreementAcceptedAt?: Date
 }
 
 /**
@@ -522,6 +524,8 @@ export interface UserInfo {
   payLater?: boolean
   score?: number
   slug?: string
+  commissionAgreementAccepted?: boolean
+  commissionAgreementAcceptedAt?: Date
 }
 
 /**

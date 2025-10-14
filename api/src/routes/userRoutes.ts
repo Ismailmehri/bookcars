@@ -40,6 +40,7 @@ routes.route(routeNames.getVerifiedUsers).get(apiKeyValidator, userController.ge
 routes.route(routeNames.delete).post(authJwt.verifyToken, userController.deleteUsers)
 routes.route(routeNames.addReview).post(authJwt.verifyToken, userController.addReview)
 routes.route(routeNames.verifyRecaptcha).post(userController.verifyRecaptcha)
+routes.route(routeNames.acceptCommissionAgreement).post(authJwt.verifyToken, userController.acceptCommissionAgreement)
 routes.route(routeNames.sendEmail).post(userController.sendEmail)
 routes.route(routeNames.hasPassword).get(authJwt.verifyToken, userController.hasPassword)
 routes.route(routeNames.getUsersReviews).get(authJwt.verifyToken, userController.getUsersReviews)

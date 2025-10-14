@@ -709,6 +709,13 @@ export interface User {
   reviews?: Review[]
   score?: number
   slug?: string
+  commissionAgreementAccepted?: boolean
+  commissionAgreementAcceptedAt?: string | Date
+}
+
+export interface CommissionAgreementAcceptanceResponse {
+  commissionAgreementAccepted: boolean
+  commissionAgreementAcceptedAt: string
   createdAt?: Date
   updatedAt?: Date
   lastLoginAt?: Date

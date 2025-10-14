@@ -36,5 +36,19 @@ export default ({ mode }: { mode: string }) => {
         reporter: ['text', 'lcov'],
       },
     }
+      target: 'esnext',
+    },
+
+    test: {
+      environment: 'jsdom',
+      coverage: {
+        provider: 'istanbul',
+        reporter: ['text', 'json', 'html'],
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80,
+      },
+    },
   })
 }

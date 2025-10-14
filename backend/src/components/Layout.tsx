@@ -8,6 +8,10 @@ import * as helper from '@/common/helper'
 import { useInit } from '@/common/customHooks'
 import ValidateEmail from './ValidateUser'
 import { useAnalytics } from '@/common/useAnalytics'
+import env from '@/config/env.config'
+import CommissionAgreementModal from './CommissionAgreementModal'
+import { pushEvent } from '@/common/gtm'
+import { strings as commissionStrings } from '@/lang/commission-agreement'
 
 interface LayoutProps {
   user?: bookcarsTypes.User
@@ -31,6 +35,9 @@ const Layout = ({
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [loading, setLoading] = useState(true)
   const [unauthorized, setUnauthorized] = useState(false)
+  const [commissionModalOpen, setCommissionModalOpen] = useState(false)
+  const [commissionAccepting, setCommissionAccepting] = useState(false)
+  const [commissionModalTracked, setCommissionModalTracked] = useState(false)
 
   useAnalytics()
   useEffect(() => {
@@ -97,6 +104,22 @@ const Layout = ({
     }
   })
 
+  useEffect(() => {
+    if (user && user.type === bookcarsTypes.RecordType.Supplier && !user.commissionAgreementAccepted) {
+      setCommissionModalOpen(true)
+    } else {
+      setCommissionModalOpen(false)
+      setCommissionModalTracked(false)
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (commissionModalOpen && !commissionModalTracked && user?._id) {
+      pushEvent('commission_modal_shown', { userId: user._id })
+      setCommissionModalTracked(true)
+    }
+  }, [commissionModalOpen, commissionModalTracked, user])
+
   const handleResend = async (e: React.MouseEvent<HTMLElement>) => {
     e.preventDefault()
 
@@ -115,6 +138,34 @@ const Layout = ({
       }
     } catch (err) {
       helper.error(err, strings.VALIDATION_EMAIL_ERROR)
+    }
+  }
+
+  const handleAcceptCommissionAgreement = async () => {
+    if (!user) {
+      return
+    }
+
+    try {
+      setCommissionAccepting(true)
+      const response = await UserService.acceptCommissionAgreement()
+
+      setUser((prev) => (
+        prev
+          ? {
+            ...prev,
+            commissionAgreementAccepted: response.commissionAgreementAccepted,
+            commissionAgreementAcceptedAt: response.commissionAgreementAcceptedAt,
+          }
+          : prev
+      ))
+
+      setCommissionModalOpen(false)
+      pushEvent('commission_modal_accepted', { userId: user._id })
+    } catch (err) {
+      helper.error(err, commissionStrings.ACCEPT_ERROR)
+    } finally {
+      setCommissionAccepting(false)
     }
   }
 
@@ -147,6 +198,14 @@ const Layout = ({
         )
       )}
       {unauthorized && <Unauthorized style={{ marginTop: '75px' }} />}
+      <CommissionAgreementModal
+        open={commissionModalOpen}
+        accepting={commissionAccepting}
+        commissionPercent={env.COMMISSION_RATE}
+        effectiveDate={env.COMMISSION_EFFECTIVE_DATE}
+        monthlyThreshold={env.COMMISSION_MONTHLY_THRESHOLD}
+        onAccept={handleAcceptCommissionAgreement}
+      />
     </>
   )
 }

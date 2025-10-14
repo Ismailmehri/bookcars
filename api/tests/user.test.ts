@@ -32,11 +32,14 @@ const CONTRACT1_PATH = path.join(__dirname, `./contracts/${CONTRACT1}`)
 let USER1_ID: string
 let USER2_ID: string
 let ADMIN_ID: string
+let COMMISSION_SUPPLIER_ID: string
 
 const USER1_EMAIL = `${testHelper.getName('user1')}@test.bookcars.ma`
 const USER1_PASSWORD = testHelper.PASSWORD
 const USER2_EMAIL = `${testHelper.getName('user2')}@test.bookcars.ma`
 const ADMIN_EMAIL = `${testHelper.getName('admin')}@test.bookcars.ma`
+const COMMISSION_SUPPLIER_EMAIL = `${testHelper.getName('commission-supplier')}@test.bookcars.ma`
+const COMMISSION_SUPPLIER_NAME = 'commission-supplier'
 
 //
 // Connecting and initializing the database before running the test suite
@@ -645,6 +648,69 @@ describe('POST /api/social-sign-in/:type', () => {
     res = await request(app)
       .post('/api/social-sign-in')
     expect(res.statusCode).toBe(400)
+  })
+})
+
+describe('Commission agreement acceptance workflow', () => {
+  beforeAll(async () => {
+    COMMISSION_SUPPLIER_ID = await testHelper.createSupplier(COMMISSION_SUPPLIER_EMAIL, COMMISSION_SUPPLIER_NAME)
+  })
+
+  afterAll(async () => {
+    if (COMMISSION_SUPPLIER_ID) {
+      await testHelper.deleteSupplier(COMMISSION_SUPPLIER_ID)
+    }
+  })
+
+  it('should expose commission agreement status on backend sign in', async () => {
+    const payload: bookcarsTypes.SignInPayload = {
+      email: COMMISSION_SUPPLIER_EMAIL,
+      password: testHelper.PASSWORD,
+    }
+
+    const res = await request(app)
+      .post(`/api/sign-in/${bookcarsTypes.AppType.Backend}`)
+      .send(payload)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.type).toBe(bookcarsTypes.UserType.Supplier)
+    expect(res.body.commissionAgreementAccepted).toBe(false)
+    expect(res.body.commissionAgreementAcceptedAt).toBeUndefined()
+  })
+
+  it('should persist commission agreement acceptance for suppliers', async () => {
+    const token = await testHelper.signinAsSupplier(COMMISSION_SUPPLIER_EMAIL)
+
+    let res = await request(app)
+      .post('/api/commission-agreement/accept')
+      .set(env.X_ACCESS_TOKEN, token)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.commissionAgreementAccepted).toBe(true)
+    expect(typeof res.body.commissionAgreementAcceptedAt).toBe('string')
+
+    const supplier = await User.findById(COMMISSION_SUPPLIER_ID).lean()
+    expect(supplier?.commissionAgreementAccepted).toBe(true)
+    expect(supplier?.commissionAgreementAcceptedAt).toBeInstanceOf(Date)
+
+    const firstAcceptedAt = supplier?.commissionAgreementAcceptedAt as Date
+
+    res = await request(app)
+      .post('/api/commission-agreement/accept')
+      .set(env.X_ACCESS_TOKEN, token)
+
+    expect(res.statusCode).toBe(200)
+    expect(new Date(res.body.commissionAgreementAcceptedAt).getTime()).toBe(firstAcceptedAt.getTime())
+  })
+
+  it('should forbid non-supplier users from accepting the commission agreement', async () => {
+    const adminToken = await testHelper.signinAsAdmin()
+
+    const res = await request(app)
+      .post('/api/commission-agreement/accept')
+      .set(env.X_ACCESS_TOKEN, adminToken)
+
+    expect(res.statusCode).toBe(403)
   })
 })
 

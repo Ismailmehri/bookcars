@@ -140,6 +140,13 @@ const userSchema = new Schema<env.User>(
       },
       file: String,
     }],
+    commissionAgreementAccepted: {
+      type: Boolean,
+      default: false,
+    },
+    commissionAgreementAcceptedAt: {
+      type: Date,
+    },
     expireAt: {
       type: Date,
       index: { name: USER_EXPIRE_AT_INDEX_NAME, expireAfterSeconds: env.USER_EXPIRE_AT, background: true },

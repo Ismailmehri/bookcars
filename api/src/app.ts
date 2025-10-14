@@ -20,6 +20,7 @@ import carStatsRoutes from './routes/carStatsRoutes'
 import subscriptionRoutes from './routes/subscriptionRoutes'
 import agencyVerificationRoutes from './routes/agencyVerificationRoutes'
 import commissionRoutes from './routes/commissionRoutes'
+import statsRoutes from './routes/statsRoutes'
 
 import * as helper from './common/helper'
 import { setClientId } from './middlewares/setClientId'
@@ -65,6 +66,7 @@ app.use('/', carStatsRoutes)
 app.use('/', subscriptionRoutes)
 app.use('/', agencyVerificationRoutes)
 app.use('/', commissionRoutes)
+app.use('/', statsRoutes)
 
 i18n.locale = env.DEFAULT_LANGUAGE
 

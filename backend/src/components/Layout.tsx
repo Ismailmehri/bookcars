@@ -105,7 +105,12 @@ const Layout = ({
   })
 
   useEffect(() => {
-    if (user && user.type === bookcarsTypes.RecordType.Supplier && !user.commissionAgreementAccepted) {
+    if (
+      env.COMMISSION_ENABLED
+      && user
+      && user.type === bookcarsTypes.RecordType.Supplier
+      && !user.commissionAgreementAccepted
+    ) {
       setCommissionModalOpen(true)
     } else {
       setCommissionModalOpen(false)
@@ -114,7 +119,7 @@ const Layout = ({
   }, [user])
 
   useEffect(() => {
-    if (commissionModalOpen && !commissionModalTracked && user?._id) {
+    if (env.COMMISSION_ENABLED && commissionModalOpen && !commissionModalTracked && user?._id) {
       pushEvent('commission_modal_shown', { userId: user._id })
       setCommissionModalTracked(true)
     }
@@ -198,14 +203,16 @@ const Layout = ({
         )
       )}
       {unauthorized && <Unauthorized style={{ marginTop: '75px' }} />}
-      <CommissionAgreementModal
-        open={commissionModalOpen}
-        accepting={commissionAccepting}
-        commissionPercent={env.COMMISSION_RATE}
-        effectiveDate={env.COMMISSION_EFFECTIVE_DATE}
-        monthlyThreshold={env.COMMISSION_MONTHLY_THRESHOLD}
-        onAccept={handleAcceptCommissionAgreement}
-      />
+      {env.COMMISSION_ENABLED && (
+        <CommissionAgreementModal
+          open={commissionModalOpen}
+          accepting={commissionAccepting}
+          commissionPercent={env.COMMISSION_RATE}
+          effectiveDate={env.COMMISSION_EFFECTIVE_DATE}
+          monthlyThreshold={env.COMMISSION_MONTHLY_THRESHOLD}
+          onAccept={handleAcceptCommissionAgreement}
+        />
+      )}
     </>
   )
 }

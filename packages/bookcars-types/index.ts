@@ -711,6 +711,7 @@ export interface User {
   slug?: string
   commissionAgreementAccepted?: boolean
   commissionAgreementAcceptedAt?: string | Date
+  lastLoginAt?: Date
 }
 
 export interface CommissionAgreementAcceptanceResponse {

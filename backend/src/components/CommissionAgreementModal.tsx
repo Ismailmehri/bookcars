@@ -58,6 +58,7 @@ const CommissionAgreementModal = ({
       aria-labelledby="commission-agreement-title"
       fullWidth
       maxWidth="sm"
+      sx={{ mt: 5 }}
       disableEscapeKeyDown
       keepMounted
     >

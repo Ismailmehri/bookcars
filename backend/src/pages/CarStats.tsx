@@ -841,7 +841,7 @@ const CarStats = () => {
                           <Grid item xs={6} md={3}>
                             <Stack spacing={0.5}>
                               <Typography variant="body2" color="text.secondary">
-                                {strings.TOTAL_CARS_LABEL}
+                                {strings.INACTIVE_AGENCIES_TITLE}
                               </Typography>
                               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                                 {formatInteger(totalCarsForAgency)}
@@ -1235,7 +1235,7 @@ const CarStats = () => {
                                   color: statusColors[item.status],
                                 })),
                                 highlightScope: { faded: 'global', highlighted: 'item' },
-                                arcLabel: (params) => params.label,
+                                arcLabel: (params) => params.label ?? '',
                               },
                             ]}
                             legend={

@@ -374,12 +374,12 @@ export const useInsightsMetrics = () => {
       return
     }
 
-    const loadOverview = async () => {
-      try {
-        const [overview, suppliers] = await Promise.all([
-          CarStatsService.getAdminOverview(),
-          CarStatsService.getUniqueSuppliers(),
-        ])
+      const loadOverview = async () => {
+        try {
+          const [overview, suppliers] = await Promise.all([
+            CarStatsService.getAdminOverview(),
+            CarStatsService.getUniqueSuppliers(),
+          ])
 
         setAdminOverview(overview)
         const optionsList = buildAgencyOptions(suppliers, overview.ranking)
@@ -395,19 +395,23 @@ export const useInsightsMetrics = () => {
       } catch (err) {
         helper.error(err, strings.ERROR)
         setError(strings.ERROR)
+        }
       }
-    }
 
-    void loadOverview()
-  }, [isAdmin])
+      loadOverview().catch((err) => {
+        helper.error(err, strings.ERROR)
+      })
+    }, [isAdmin])
 
   useEffect(() => {
     if (!filtersHydrated || isAdmin || !user || !initialFetchPending.current) {
       return
     }
 
-    initialFetchPending.current = false
-    void applyFilters()
+      initialFetchPending.current = false
+      applyFilters().catch((err) => {
+        helper.error(err, strings.ERROR)
+      })
   }, [applyFilters, filtersHydrated, isAdmin, user])
 
   useEffect(() => {
@@ -419,9 +423,11 @@ export const useInsightsMetrics = () => {
       return
     }
 
-    initialFetchPending.current = false
-    storedTabRef.current = null
-    void applyFilters({ includeAdmin: tab === 'admin' })
+      initialFetchPending.current = false
+      storedTabRef.current = null
+      applyFilters({ includeAdmin: tab === 'admin' }).catch((err) => {
+        helper.error(err, strings.ERROR)
+      })
   }, [adminOverview, applyFilters, filtersHydrated, isAdmin, selectedAgency, tab])
 
   const handleExportAgency = useCallback(() => {

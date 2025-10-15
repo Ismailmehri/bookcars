@@ -27,7 +27,7 @@ const AgencyScore: React.FC<AgencyScoreProps> = ({ agencyId, initialScoreBreakdo
 
   useEffect(() => {
     if (initialScoreBreakdown || !agencyId) {
-      return
+      return () => {}
     }
 
     let active = true

@@ -234,6 +234,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
             rowsPerPageOptions={[5, 10, 20]}
             initialRowsPerPage={5}
             mobileSortLabel={strings.TABLE_SORT_LABEL}
+            getRowId={(row) => row.bookingId}
           />
         </Grid>
         <Grid item xs={12}>
@@ -247,6 +248,7 @@ const AgencyView: React.FC<AgencyViewProps> = ({ loading, agencyName, metrics, o
             rowsPerPageOptions={[5, 10, 20]}
             initialRowsPerPage={5}
             mobileSortLabel={strings.TABLE_SORT_LABEL}
+            getRowId={(row) => row.modelId ?? row.model}
           />
         </Grid>
       </Grid>

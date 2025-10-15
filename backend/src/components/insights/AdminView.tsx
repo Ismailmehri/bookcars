@@ -250,6 +250,7 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           rowsPerPageOptions={[5, 10, 25, 50]}
           initialRowsPerPage={10}
           mobileSortLabel={strings.TABLE_SORT_LABEL}
+          getRowId={(row) => row.agencyId}
         />
       </Stack>
     </Stack>

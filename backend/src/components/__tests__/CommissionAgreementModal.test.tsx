@@ -2,7 +2,8 @@ import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react-dom/test-utils'
 import { createRoot, Root } from 'react-dom/client'
-import CommissionAgreementModal, { buildCommissionAgreementViewModel } from '../CommissionAgreementModal'
+import CommissionAgreementModal from '../CommissionAgreementModal'
+import { buildCommissionAgreementViewModel } from '../commissionAgreement.utils'
 import * as UserService from '@/services/UserService'
 
 describe('buildCommissionAgreementViewModel', () => {

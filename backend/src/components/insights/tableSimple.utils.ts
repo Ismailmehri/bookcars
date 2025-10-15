@@ -19,7 +19,7 @@ export const clampPage = (page: number, rowsPerPage: number, totalRows: number) 
   return page
 }
 
-export const paginateRows = <T,>(rows: T[], page: number, rowsPerPage: number): T[] => {
+export const paginateRows = <T, >(rows: T[], page: number, rowsPerPage: number): T[] => {
   if (rowsPerPage <= 0) {
     return rows
   }

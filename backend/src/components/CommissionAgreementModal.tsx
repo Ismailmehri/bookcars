@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import {
   Alert,
   Box,
@@ -18,7 +18,10 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import { Link as RouterLink } from 'react-router-dom'
 
 import { strings } from '@/lang/commission-agreement'
-import * as UserService from '@/services/UserService'
+import {
+  buildCommissionAgreementViewModel,
+  type CommissionAgreementViewModel,
+} from './commissionAgreement.utils'
 
 interface CommissionAgreementModalProps {
   open: boolean
@@ -29,77 +32,6 @@ interface CommissionAgreementModalProps {
   onAccept: () => void
 }
 
-const getLocale = (language: string) => {
-  switch (language) {
-    case 'fr':
-      return 'fr-FR'
-    case 'es':
-      return 'es-ES'
-    default:
-      return 'en-US'
-  }
-}
-
-export interface CommissionAgreementViewModel {
-  formattedPercent: string
-  formattedDate: string
-  formattedBasePrice: string
-  formattedClientPrice: string
-  formattedCommissionValue: string
-  formattedThreshold: string
-}
-
-interface BuildCommissionAgreementParams {
-  language: string
-  commissionPercent: number
-  effectiveDate: Date
-  monthlyThreshold: number
-  basePrice?: number
-}
-
-export const buildCommissionAgreementViewModel = ({
-  language,
-  commissionPercent,
-  effectiveDate,
-  monthlyThreshold,
-  basePrice = 100,
-}: BuildCommissionAgreementParams): CommissionAgreementViewModel => {
-  const locale = getLocale(language)
-
-  const formattedPercent = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(commissionPercent)
-
-  const formattedDate = new Intl.DateTimeFormat(locale, {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(effectiveDate)
-
-  const formatAmount = (value: number) => {
-    const normalized = Number(value.toFixed(2))
-    const hasDecimals = Math.abs(normalized - Math.trunc(normalized)) > 0.001
-    return `${normalized.toLocaleString(locale, {
-      minimumFractionDigits: hasDecimals ? 2 : 0,
-      maximumFractionDigits: hasDecimals ? 2 : 0,
-    })} DT`
-  }
-
-  const commissionValue = Number(((basePrice * commissionPercent) / 100).toFixed(2))
-  const clientPrice = Number((basePrice + commissionValue).toFixed(2))
-
-  return {
-    formattedPercent,
-    formattedDate,
-    formattedBasePrice: formatAmount(basePrice),
-    formattedClientPrice: formatAmount(clientPrice),
-    formattedCommissionValue: formatAmount(commissionValue),
-    formattedThreshold: formatAmount(monthlyThreshold),
-  }
-}
-
 const CommissionAgreementModal = ({
   open,
   accepting,
@@ -108,27 +40,25 @@ const CommissionAgreementModal = ({
   monthlyThreshold,
   onAccept,
 }: CommissionAgreementModalProps) => {
-  const language = UserService.getLanguage()
-  const viewModel = useMemo(() => buildCommissionAgreementViewModel({
-    language,
-    commissionPercent,
-    effectiveDate,
-    monthlyThreshold,
-  }), [language, commissionPercent, effectiveDate, monthlyThreshold])
+  const viewModel = useMemo<CommissionAgreementViewModel>(
+    () => buildCommissionAgreementViewModel({
+      commissionPercent,
+      effectiveDate,
+      monthlyThreshold,
+    }),
+    [commissionPercent, effectiveDate, monthlyThreshold],
+  )
 
-  const handleBackdropClose = (_event: object, reason: 'backdropClick' | 'escapeKeyDown') => {
-    if (reason === 'backdropClick') {
-      return
-    }
-  }
+  const handleDialogClose = useCallback(() => {}, [])
 
   return (
     <Dialog
       open={open}
-      onClose={handleBackdropClose}
+      onClose={handleDialogClose}
       aria-labelledby="commission-agreement-title"
       fullWidth
       maxWidth="sm"
+      sx={{ mt: 5 }}
       disableEscapeKeyDown
       keepMounted
     >

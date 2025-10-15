@@ -74,5 +74,4 @@ describe('insights helpers (frontend)', () => {
     expect(getStatusLabel(bookcarsTypes.BookingStatus.Paid)).toBe(strings.STATUS_PAID)
     expect(getStatusLabel(bookcarsTypes.BookingStatus.Pending)).toBe(strings.STATUS_PENDING)
   })
-
 })

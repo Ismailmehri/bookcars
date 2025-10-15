@@ -66,6 +66,7 @@ describe('TableSimple', () => {
         emptyLabel="Empty"
         rowsPerPageOptions={[5]}
         initialRowsPerPage={5}
+        getRowId={(row) => row.name}
       />,
     )
 
@@ -102,6 +103,7 @@ describe('TableSimple', () => {
         rowsPerPageOptions={[5]}
         initialRowsPerPage={5}
         mobileSortLabel="Trier"
+        getRowId={(row) => row.name}
       />,
     )
 

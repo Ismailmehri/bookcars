@@ -74,7 +74,9 @@ const Insights: React.FC = () => {
     if (isAdmin && tab !== 'admin') {
       setAdminTabLoaded(false)
     }
-    void applyFilters({ includeAdmin })
+    applyFilters({ includeAdmin }).catch((err) => {
+      console.error(err)
+    })
   }
 
   const content = (
@@ -162,11 +164,13 @@ const Insights: React.FC = () => {
         <Tabs
           value={tab}
           onChange={(_event, value: 'agency' | 'admin') => {
-            setTab(value)
-            if (value === 'admin' && !adminTabLoaded) {
-              void applyFilters({ includeAdmin: true })
-            }
-          }}
+              setTab(value)
+              if (value === 'admin' && !adminTabLoaded) {
+                applyFilters({ includeAdmin: true }).catch((err) => {
+                  console.error(err)
+                })
+              }
+            }}
           sx={{ alignSelf: 'flex-start' }}
         >
           <Tab value="agency" label={strings.TAB_AGENCY} />

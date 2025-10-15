@@ -95,6 +95,19 @@ const statusColors: Record<bookcarsTypes.BookingStatus, string> = {
   [bookcarsTypes.BookingStatus.Cancelled]: '#EF5350',
 }
 
+type RankingOrderKey =
+  | 'score'
+  | 'totalBookings'
+  | 'totalCars'
+  | 'acceptanceRate'
+  | 'cancellationRate'
+  | 'pendingUpdates'
+  | 'revenue'
+  | 'lastBookingAt'
+  | 'lastConnectionAt'
+  | 'reviewCount'
+  | 'averageRating'
+
 const formatPrice = (value: number | null | undefined) => {
   if (value === null || value === undefined) {
     return '—'
@@ -203,19 +216,6 @@ interface RevenueSummary {
   reserved: number
 }
 
-type RankingOrderKey =
-  | 'score'
-  | 'totalBookings'
-  | 'totalCars'
-  | 'acceptanceRate'
-  | 'cancellationRate'
-  | 'pendingUpdates'
-  | 'revenue'
-  | 'lastBookingAt'
-  | 'lastConnectionAt'
-  | 'reviewCount'
-  | 'averageRating'
-
 const CarStats = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [isAdmin, setIsAdmin] = useState(false)
@@ -287,10 +287,11 @@ const CarStats = () => {
         )
         setCars(uniqueCars)
       }
-    } catch (err) {
+    } catch (error) {
       setChartError(strings.ERROR_FETCHING_DATA)
       setStats([])
       setBookingStats([])
+      helper.error(error)
     } finally {
       setChartLoading(false)
     }
@@ -320,9 +321,10 @@ const CarStats = () => {
           setSelectedSupplier(supplierOptions[0].supplierId)
         }
       }
-    } catch (err) {
+    } catch (error) {
       setAdminOverviewError(strings.ERROR_LOADING_OVERVIEW)
       setAdminOverview(null)
+      helper.error(error)
     } finally {
       setAdminOverviewLoading(false)
     }
@@ -334,9 +336,10 @@ const CarStats = () => {
     try {
       const overview = await CarStatsService.getAgencyOverview(supplierId)
       setAgencyOverview(overview)
-    } catch (err) {
+    } catch (error) {
       setAgencyOverviewError(strings.ERROR_LOADING_OVERVIEW)
       setAgencyOverview(null)
+      helper.error(error)
     } finally {
       setAgencyOverviewLoading(false)
     }
@@ -344,30 +347,38 @@ const CarStats = () => {
 
   useEffect(() => {
     if (isAdmin) {
-      void loadAdminOverview()
+      loadAdminOverview().catch((error) => {
+        helper.error(error)
+      })
     } else if (user?._id) {
       setSelectedSupplier('')
-      void loadAgencyOverview(user._id)
+      loadAgencyOverview(user._id).catch((error) => {
+        helper.error(error)
+      })
     }
   }, [isAdmin, user?._id, loadAdminOverview, loadAgencyOverview])
 
-  useEffect(() => {
-    if (!effectiveSupplierId) {
-      return
-    }
+    useEffect(() => {
+      if (!effectiveSupplierId) {
+        return
+      }
 
-    setCars([])
-    setSelectedCar(ALL_CARS_VALUE)
-    void loadAgencyOverview(effectiveSupplierId)
-  }, [effectiveSupplierId, loadAgencyOverview])
+      setCars([])
+      setSelectedCar(ALL_CARS_VALUE)
+      loadAgencyOverview(effectiveSupplierId).catch((error) => {
+        helper.error(error)
+      })
+    }, [effectiveSupplierId, loadAgencyOverview])
 
-  useEffect(() => {
-    if (!effectiveSupplierId) {
-      return
-    }
+    useEffect(() => {
+      if (!effectiveSupplierId) {
+        return
+      }
 
-    void loadChartData(effectiveSupplierId, selectedCar, startDate, endDate)
-  }, [effectiveSupplierId, selectedCar, startDate, endDate, loadChartData])
+      loadChartData(effectiveSupplierId, selectedCar, startDate, endDate).catch((error) => {
+        helper.error(error)
+      })
+    }, [effectiveSupplierId, selectedCar, startDate, endDate, loadChartData])
 
   const handleCarChange = (event: SelectChangeEvent<string>) => {
     setSelectedCar(event.target.value)
@@ -442,15 +453,39 @@ const CarStats = () => {
 
   const isBusy = chartLoading || adminOverviewLoading || agencyOverviewLoading
 
-  const ranking = adminOverview?.ranking ?? []
-  const inactiveAgencies = adminOverview?.inactiveAgencies ?? []
-  const highlights = adminOverview?.highlights ?? { topPerformers: [], watchList: [] }
+  const ranking = useMemo(
+    () => adminOverview?.ranking ?? [],
+    [adminOverview],
+  )
+  const inactiveAgencies = useMemo(
+    () => adminOverview?.inactiveAgencies ?? [],
+    [adminOverview],
+  )
+  const highlights = useMemo(
+    () => adminOverview?.highlights ?? { topPerformers: [], watchList: [] },
+    [adminOverview],
+  )
 
-  const adminAveragePrices = adminOverview?.averagePrices ?? []
-  const agencyAveragePrices = agencyOverview?.averagePrices ?? []
-  const globalTopModels = adminOverview?.topModels ?? []
-  const agencyTopModels = agencyOverview?.topModels ?? []
-  const pendingUpdates = agencyOverview?.pendingUpdates ?? []
+  const adminAveragePrices = useMemo(
+    () => adminOverview?.averagePrices ?? [],
+    [adminOverview],
+  )
+  const agencyAveragePrices = useMemo(
+    () => agencyOverview?.averagePrices ?? [],
+    [agencyOverview],
+  )
+  const globalTopModels = useMemo(
+    () => adminOverview?.topModels ?? [],
+    [adminOverview],
+  )
+  const agencyTopModels = useMemo(
+    () => agencyOverview?.topModels ?? [],
+    [agencyOverview],
+  )
+  const pendingUpdates = useMemo(
+    () => agencyOverview?.pendingUpdates ?? [],
+    [agencyOverview],
+  )
   const totalCarsForAgency = agencyOverview?.totalCars ?? 0
 
   const selectedAgencyName = useMemo(() => {
@@ -572,7 +607,7 @@ const CarStats = () => {
         background: '#E3F2FD',
       },
     ],
-    [agencyOverview, summary.total, localeForDate],
+    [agencyOverview, summary.total],
   )
 
   const aggregatedPriceAverages = useMemo(
@@ -1059,8 +1094,7 @@ const CarStats = () => {
                               </TableHead>
                               <TableBody>
                                 {paginatedGlobalTopModels.map((model, index) => {
-                                  const absoluteIndex =
-                                    globalTopModelsPage * globalTopModelsRowsPerPage + index + 1
+                                  const absoluteIndex = globalTopModelsPage * globalTopModelsRowsPerPage + index + 1
                                   return (
                                     <TableRow key={`${model.agencyId}-${model.model}`}>
                                       <TableCell>{absoluteIndex}</TableCell>
@@ -1108,10 +1142,9 @@ const CarStats = () => {
                             </TableHead>
                             <TableBody>
                               {paginatedAgencyTopModels.map((model, index) => {
-                                const absoluteIndex =
-                                  agencyTopModelsPage * agencyTopModelsRowsPerPage + index + 1
+                                const absoluteIndex = agencyTopModelsPage * agencyTopModelsRowsPerPage + index + 1
                                 return (
-                                  <TableRow key={`${model.model}-${index}`}>
+                                  <TableRow key={model.modelId ?? model.model}>
                                     <TableCell>{absoluteIndex}</TableCell>
                                     <TableCell>{model.model}</TableCell>
                                     <TableCell>{model.bookings}</TableCell>

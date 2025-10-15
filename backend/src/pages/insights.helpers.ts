@@ -5,7 +5,6 @@ export interface AgencyOption {
   id: string
   name: string
 }
-
 export const createAgencyOptionFromUser = (user?: bookcarsTypes.User): AgencyOption | null => {
   if (!user || !user._id) {
     return null
@@ -64,4 +63,3 @@ export const getStatusLabel = (status: bookcarsTypes.BookingStatus) => {
       return status
   }
 }
-

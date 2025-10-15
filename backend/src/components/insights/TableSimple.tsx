@@ -48,6 +48,7 @@ interface TableSimpleProps<T> {
   rowsPerPageOptions?: number[]
   initialRowsPerPage?: number
   mobileSortLabel?: string
+  getRowId?: (row: T, index: number) => React.Key
 }
 
 const resolveSortValue = <T extends Record<string, unknown>>(row: T, column: TableColumn<T>): SortValue => {
@@ -104,7 +105,7 @@ const compareValues = (a: SortValue, b: SortValue): number => {
   })
 }
 
-const getColumnId = <T,>(column: TableColumn<T>) => String(column.key)
+const getColumnId = <T, >(column: TableColumn<T>) => String(column.key)
 
 const TableSimple = <T extends Record<string, unknown>>({
   columns,
@@ -113,6 +114,7 @@ const TableSimple = <T extends Record<string, unknown>>({
   rowsPerPageOptions,
   initialRowsPerPage,
   mobileSortLabel,
+  getRowId,
 }: TableSimpleProps<T>) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
@@ -195,7 +197,7 @@ const TableSimple = <T extends Record<string, unknown>>({
   }
 
   const handleMobileSortChange = (event: SelectChangeEvent<string>) => {
-    const value = event.target.value
+    const { value } = event.target
     if (!value) {
       setOrderBy(null)
       setOrderDirection('asc')
@@ -283,46 +285,50 @@ const TableSimple = <T extends Record<string, unknown>>({
             </Typography>
           ) : (
             <Stack spacing={1.5}>
-              {visibleRows.map((row, rowIndex) => (
-                <Box
-                  key={rowIndex}
-                  data-testid="table-simple-card"
-                  sx={{
-                    borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    p: 2,
-                    backgroundColor: '#FAFCFF',
-                  }}
-                >
-                  {columns.map((column) => (
-                    <Stack
-                      key={getColumnId(column)}
-                      spacing={0.5}
-                      direction="row"
-                      justifyContent="space-between"
-                      alignItems="flex-start"
+              {visibleRows.map((row, rowIndex) => {
+                const absoluteIndex = rowIndex + clampedPage * rowsPerPage
+                const rowKey = getRowId?.(row, absoluteIndex) ?? JSON.stringify(row)
+                  return (
+                    <Box
+                      key={rowKey}
+                      data-testid="table-simple-card"
                       sx={{
-                        py: 0.5,
-                        gap: 2,
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        p: 2,
+                        backgroundColor: '#FAFCFF',
                       }}
                     >
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ fontWeight: 600, textTransform: 'uppercase' }}
-                      >
-                        {column.label}
-                      </Typography>
-                      <Box sx={{ textAlign: column.align ?? 'left', flex: 1 }}>
-                        {column.render
-                          ? column.render(row, rowIndex + clampedPage * rowsPerPage)
-                          : (row[column.key] as React.ReactNode)}
-                      </Box>
-                    </Stack>
-                  ))}
-                </Box>
-              ))}
+                      {columns.map((column) => (
+                        <Stack
+                          key={getColumnId(column)}
+                          spacing={0.5}
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="flex-start"
+                          sx={{
+                            py: 0.5,
+                            gap: 2,
+                          }}
+                        >
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ fontWeight: 600, textTransform: 'uppercase' }}
+                          >
+                            {column.label}
+                          </Typography>
+                          <Box sx={{ textAlign: column.align ?? 'left', flex: 1 }}>
+                            {column.render
+                              ? column.render(row, absoluteIndex)
+                              : (row[column.key] as React.ReactNode)}
+                          </Box>
+                        </Stack>
+                      ))}
+                    </Box>
+                  )
+                })}
             </Stack>
           )}
         </Stack>
@@ -368,17 +374,21 @@ const TableSimple = <T extends Record<string, unknown>>({
                   </TableCell>
                 </TableRow>
               ) : (
-                visibleRows.map((row, index) => (
-                  <TableRow key={index} hover>
-                    {columns.map((column) => (
-                      <TableCell key={getColumnId(column)} align={column.align ?? 'left'}>
-                        {column.render
-                          ? column.render(row, index + clampedPage * rowsPerPage)
-                          : (row[column.key] as React.ReactNode)}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                visibleRows.map((row, index) => {
+                  const absoluteIndex = index + clampedPage * rowsPerPage
+                  const rowKey = getRowId?.(row, absoluteIndex) ?? JSON.stringify(row)
+                  return (
+                    <TableRow key={rowKey} hover>
+                      {columns.map((column) => (
+                        <TableCell key={getColumnId(column)} align={column.align ?? 'left'}>
+                          {column.render
+                            ? column.render(row, absoluteIndex)
+                            : (row[column.key] as React.ReactNode)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>

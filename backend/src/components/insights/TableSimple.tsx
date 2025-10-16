@@ -29,8 +29,10 @@ import { clampPage, paginateRows } from './tableSimple.utils'
 export type SortValue = string | number | Date | boolean | null | undefined
 export type SortDirection = 'asc' | 'desc'
 
-export interface TableColumn<T> {
-  key: keyof T
+type ColumnKey<T extends object> = Extract<keyof T, string | number>
+
+export interface TableColumn<T extends object> {
+  key: ColumnKey<T>
   label: string
   align?: 'left' | 'right' | 'center'
   render?: (row: T, index: number) => React.ReactNode
@@ -41,7 +43,7 @@ export interface TableColumn<T> {
 
 const DEFAULT_ROWS_PER_PAGE_OPTIONS = [5, 10, 25]
 
-interface TableSimpleProps<T> {
+interface TableSimpleProps<T extends object> {
   columns: TableColumn<T>[]
   data: T[]
   emptyLabel: string
@@ -51,7 +53,7 @@ interface TableSimpleProps<T> {
   getRowId?: (row: T, index: number) => React.Key
 }
 
-const resolveSortValue = <T extends Record<string, unknown>>(row: T, column: TableColumn<T>): SortValue => {
+const resolveSortValue = <T extends object>(row: T, column: TableColumn<T>): SortValue => {
   if (column.sortValue) {
     return column.sortValue(row)
   }
@@ -105,9 +107,9 @@ const compareValues = (a: SortValue, b: SortValue): number => {
   })
 }
 
-const getColumnId = <T, >(column: TableColumn<T>) => String(column.key)
+const getColumnId = <T extends object>(column: TableColumn<T>) => String(column.key)
 
-const TableSimple = <T extends Record<string, unknown>>({
+const TableSimple = <T extends object>({
   columns,
   data,
   emptyLabel,

@@ -2,7 +2,7 @@ import React from 'react'
 import { act } from 'react-dom/test-utils'
 import { createRoot, Root } from 'react-dom/client'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import * as bookcarsTypes from ':bookcars-types'
 import AgencyScore from '../AgencyScore'
 import * as SupplierService from '@/services/SupplierService'
@@ -28,7 +28,9 @@ const buildScore = (value: number): bookcarsTypes.ScoreBreakdown => ({
   recommendations: [],
 })
 
-const mockedGetScore = SupplierService.getSupplierScore as unknown as vi.Mock
+type SupplierScoreMock = Mock<[string], Promise<bookcarsTypes.ScoreBreakdown>>
+
+const mockedGetScore = SupplierService.getSupplierScore as SupplierScoreMock
 
 describe('AgencyScore', () => {
   let container: HTMLDivElement

@@ -8,6 +8,7 @@ const babel = (api) => {
         alias: {
           // '@': './dist/src',
           ':bookcars-types': '../packages/bookcars-types',
+          ':bookcars-helper': '../packages/bookcars-helper',
         },
       },
     ],

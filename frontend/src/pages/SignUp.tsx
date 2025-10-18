@@ -9,6 +9,7 @@ import {
   Paper,
   Checkbox,
   Link,
+  Alert,
 } from '@mui/material'
 import validator from 'validator'
 import { intervalToDuration } from 'date-fns'
@@ -16,6 +17,8 @@ import { useNavigate } from 'react-router-dom'
 import PhoneInput, { Value } from 'react-phone-number-input' // Import Value
 import fr from 'react-phone-number-input/locale/fr'
 import { Helmet } from 'react-helmet'
+import Seo from '@/components/Seo'
+import { buildDescription } from '@/common/seo'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
@@ -292,24 +295,24 @@ const SignUp = () => {
       },
     },
   }
+  const description = buildDescription(
+    'Créez votre compte Plany.tn pour réserver une voiture en Tunisie. Inscription rapide et gratuite.'
+  )
   return (
     <ReCaptchaProvider>
       <Layout strict={false} onLoad={onLoad}>
-        {/* SEO et données structurées */}
+        <Seo
+          title="Inscription - Plany.tn"
+          description={description}
+          canonical="https://plany.tn/sign-up"
+          robots="noindex,nofollow"
+        />
         <Helmet>
           <meta charSet="utf-8" />
-          <title>Créer un compte - Plany.tn</title>
-          <meta
-            name="description"
-            content="Inscrivez-vous sur Plany.tn pour louer une voiture en Tunisie. Créez votre compte en quelques étapes simples et découvrez nos offres exclusives."
-          />
-          <meta name="robots" content="noindex, nofollow" />
-          <link rel="canonical" href="https://plany.tn/sign-up" />
-          {/* Balises Open Graph */}
-          <meta property="og:title" content="Créer un compte - Plany.tn" />
+          <meta property="og:title" content="Inscription - Plany.tn" />
           <meta
             property="og:description"
-            content="Inscrivez-vous sur Plany.tn pour louer une voiture en Tunisie. Créez votre compte en quelques étapes simples et découvrez nos offres exclusives."
+            content="Créez votre compte Plany.tn pour réserver une voiture en Tunisie. Inscription rapide et gratuite."
           />
           <meta property="og:type" content="website" />
           <meta property="og:url" content="https://plany.tn/sign-up" />
@@ -317,17 +320,15 @@ const SignUp = () => {
           <meta property="og:image:width" content="1200" />
           <meta property="og:image:height" content="630" />
           <meta property="og:site_name" content="Plany" />
-          {/* Balises Twitter Card */}
           <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:title" content="Créer un compte - Plany.tn" />
+          <meta name="twitter:title" content="Inscription - Plany.tn" />
           <meta
             name="twitter:description"
-            content="Inscrivez-vous sur Plany.tn pour louer une voiture en Tunisie. Créez votre compte en quelques étapes simples et découvrez nos offres exclusives."
+            content="Créez votre compte Plany.tn pour réserver une voiture en Tunisie. Inscription rapide et gratuite."
           />
           <meta name="twitter:image" content="https://plany.tn/logo.png" />
           <meta name="twitter:image:width" content="1200" />
           <meta name="twitter:image:height" content="630" />
-          {/* Données structurées */}
           <script type="application/ld+json">
             {JSON.stringify(structuredData)}
           </script>
@@ -336,6 +337,21 @@ const SignUp = () => {
           <div className="signup">
             <Paper className="signup-form" elevation={10}>
               <h1 className="signup-form-title">{strings.SIGN_UP_HEADING}</h1>
+              <Alert
+                severity="info"
+                className="signup-portal-alert"
+                action={(
+                  <Button
+                    color="inherit"
+                    size="small"
+                    href="https://admin.plany.tn/sign-up"
+                  >
+                    {strings.AGENCY_SIGNUP_BUTTON}
+                  </Button>
+                )}
+              >
+                {strings.AGENCY_SIGNUP_INFO}
+              </Alert>
               <form onSubmit={handleSubmit}>
                 <div>
                   <FormControl fullWidth margin="dense">

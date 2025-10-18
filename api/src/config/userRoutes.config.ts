@@ -45,6 +45,7 @@ const routes = {
   migrateToSlug: '/api/cron/migrate-to-slug',
   notifyAgenciesWithCarsURL: '/api/cron/suppliers/cars-url',
   notifySupplierAndClientToReview: '/api/cron/suppliers/review',
+  notifyClientsReview: '/api/cron/clients/review-request',
 }
 
 export default routes

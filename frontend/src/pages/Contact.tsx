@@ -4,6 +4,8 @@ import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
 import ContactForm from '@/components/ContactForm'
 import Footer from '@/components/Footer'
+import Seo from '@/components/Seo'
+import { buildDescription } from '@/common/seo'
 
 import '@/assets/css/contact.css'
 
@@ -14,17 +16,19 @@ const Contact = () => {
     setUser(_user)
   }
 
+  const description = buildDescription(
+    'Contactez-nous pour toute question ou demande concernant la location de voitures en Tunisie. Notre équipe est là pour vous aider !'
+  )
+
   return (
     <Layout onLoad={onLoad} strict={false}>
+      <Seo
+        title="Contactez-Nous - Plany.tn"
+        description={description}
+        canonical="https://plany.tn/contact"
+      />
       <Helmet>
         <meta charSet="utf-8" />
-        <title>Contactez-Nous - Plany.tn</title>
-        <meta
-          name="description"
-          content="Contactez-nous pour toute question ou demande concernant la location de voitures en Tunisie. Notre équipe est là pour vous aider !"
-        />
-        <link rel="canonical" href="https://plany.tn/contact" />
-
         {/* Balises Open Graph pour les réseaux sociaux */}
         <meta property="og:title" content="Contactez-Nous - Plany.tn" />
         <meta

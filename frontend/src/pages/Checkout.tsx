@@ -23,6 +23,7 @@ import {
   Person as DriverIcon,
   EventSeat as BookingIcon,
   Settings as PaymentOptionsIcon,
+  Verified as VerifiedIcon,
 } from '@mui/icons-material'
 import validator from 'validator'
 import { format, intervalToDuration } from 'date-fns'
@@ -33,6 +34,8 @@ import {
 } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
 import { Helmet } from 'react-helmet'
+import Seo from '@/components/Seo'
+import { buildDescription } from '@/common/seo'
 import CarList from '@/components/CarList'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -61,6 +64,10 @@ const stripePromise = loadStripe(env.STRIPE_PUBLISHABLE_KEY)
 const Checkout = () => {
   const location = useLocation()
   const navigate = useNavigate()
+
+  const signInUrl = `/sign-in?redirect=${encodeURIComponent(
+    location.pathname + location.search
+  )}`
 
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [car, setCar] = useState<bookcarsTypes.Car>()
@@ -107,8 +114,12 @@ const Checkout = () => {
   const daysLabel = from && to && `
   ${helper.getDaysShort(days)} (${bookcarsHelper.capitalize(
     format(from, _format, { locale: _locale }),
-  )} 
+  )}
   - ${bookcarsHelper.capitalize(format(to, _format, { locale: _locale }))})`
+
+  const description = buildDescription(
+    'Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture à Tunis, Sousse, Hammamet et autres villes.'
+  )
 
   const handleCancellationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (car && from && to) {
@@ -336,20 +347,30 @@ const Checkout = () => {
     setUser(_user)
     setAuthenticated(_user !== undefined)
     setLanguage(UserService.getLanguage())
+    const state = (location.state as any) || (() => {
+      const stored = localStorage.getItem('checkout')
+      if (stored) {
+        localStorage.removeItem('checkout')
+        return JSON.parse(stored)
+      }
+      return null
+    })()
 
-    const { state } = location
+    if (location.state && !_user) {
+      localStorage.setItem('checkout', JSON.stringify(location.state))
+    }
+
     if (!state) {
       setNoMatch(true)
       return
     }
 
-    const { carId } = state
-    const { pickupLocationId } = state
-    const { dropOffLocationId } = state
-    const { from: _from } = state
-    const { to: _to } = state
+    const { carId, pickupLocationId, dropOffLocationId, from: fromStr, to: toStr } = state
 
-    if (!carId || !pickupLocationId || !dropOffLocationId || !_from || !_to) {
+    const _from = new Date(fromStr)
+    const _to = new Date(toStr)
+
+    if (!carId || !pickupLocationId || !dropOffLocationId || Number.isNaN(_from.getTime()) || Number.isNaN(_to.getTime())) {
       setNoMatch(true)
       return
     }
@@ -463,20 +484,14 @@ const Checkout = () => {
   return (
     <ReCaptchaProvider>
       <Layout onLoad={onLoad} strict={false}>
+        <Seo
+          title="Location Voiture en Tunisie - Meilleures Offres | Plany.tn"
+          description={description}
+          canonical="https://plany.tn/checkout"
+          robots="noindex,nofollow"
+        />
         <Helmet>
           <meta charSet="utf-8" />
-          <title>Location Voiture en Tunisie - Meilleures Offres | Plany.tn</title>
-          <meta
-            name="description"
-            content="Réservez votre voiture en Tunisie avec les meilleures offres. Comparez les prix, les modèles et les options de location de voiture à Tunis, Sousse, Hammamet..."
-          />
-          <meta
-            name="keywords"
-            content="location voiture tunisie, location voiture en tunisie, voiture location tunisie, location de voiture en tunisie, location de voiture tunisie, location voiture Sousse, location voiture en Hammamet, voiture location aéroport, location de voiture en tunis, location de voiture tunis"
-          />
-          <meta name="robots" content="noindex, nofollow" />
-          <link rel="canonical" href="https://plany.tn/checkout" />
-
           {/* Balises Open Graph pour les réseaux sociaux */}
           <meta
             property="og:title"
@@ -601,7 +616,12 @@ const Checkout = () => {
                         <div className="booking-detail-value">
                           <div className="car-supplier">
                             <img src={bookcarsHelper.joinURL(env.CDN_USERS, car.supplier.avatar)} alt={car.supplier.fullName} style={{ height: env.SUPPLIER_IMAGE_HEIGHT }} />
-                            <span className="car-supplier-name">{car.supplier.fullName}</span>
+                            <span className="car-supplier-name">
+                              {car.supplier.agencyVerified && (
+                                <VerifiedIcon className="agency-verified-badge" />
+                              )}
+                              {car.supplier.fullName}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -640,7 +660,7 @@ const Checkout = () => {
                               <span>
                                 <span>{commonStrings.EMAIL_ALREADY_REGISTERED}</span>
                                 <span> </span>
-                                <a href={`/sign-in?c=${car._id}&p=${pickupLocation._id}&d=${dropOffLocation._id}&f=${from.getTime()}&t=${to.getTime()}&from=checkout`}>{strings.SIGN_IN}</a>
+                                <a href={signInUrl}>{strings.SIGN_IN}</a>
                               </span>
                             ))
                               || ''}
@@ -855,7 +875,7 @@ const Checkout = () => {
                     </Button>
                     )}
                     {((!clientSecret || (payLater)) && !user) && (
-                    <Button href="/sign-in" variant="contained" className="btn-checkout btn-margin-bottom" size="small" disabled={loading}>
+                    <Button href={signInUrl} variant="contained" className="btn-checkout btn-margin-bottom" size="small" disabled={loading}>
                       {
                           loading
                             ? <CircularProgress color="inherit" size={24} />

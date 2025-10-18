@@ -7,8 +7,8 @@ import {
   Button,
   Paper
 } from '@mui/material'
-import { Helmet } from 'react-helmet'
 import { useNavigate } from 'react-router-dom'
+import Seo from '@/components/Seo'
 import * as bookcarsTypes from ':bookcars-types'
 import * as UserService from '@/services/UserService'
 import Layout from '@/components/Layout'
@@ -131,9 +131,7 @@ const ResetPassword = () => {
 
   return (
     <Layout onLoad={onLoad} strict={false}>
-      <Helmet>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+      <Seo title="Réinitialiser le mot de passe | Plany.tn" canonical="https://plany.tn/reset-password" robots="noindex,nofollow" />
       {visible && (
         <div className="reset-password">
           <Paper className="reset-password-form" elevation={10}>

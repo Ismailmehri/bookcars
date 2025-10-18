@@ -295,6 +295,13 @@ export const CDN_TEMP_CONTRACTS = __env__('BC_CDN_TEMP_CONTRACTS', true)
 export const CDN_INVOICES = __env__('BC_CDN_INVOICES', true)
 
 /**
+ * Agency documents' CDN folder path.
+ *
+ * @type {string}
+ */
+export const CDN_AGENCY_DOCS = __env__('BC_CDN_AGENCY_DOCS', true)
+
+/**
  * Backend host.
  *
  * @type {string}
@@ -448,6 +455,7 @@ export interface User extends Document {
   birthDate?: Date
   verified?: boolean
   verifiedAt?: Date
+  agencyVerified?: boolean
   active?: boolean
   language: string
   enableEmailNotifications?: boolean
@@ -483,6 +491,7 @@ export interface UserInfo {
   birthDate?: Date
   verified?: boolean
   verifiedAt?: Date
+  agencyVerified?: boolean
   active?: boolean
   language?: string
   enableEmailNotifications?: boolean
@@ -493,6 +502,7 @@ export interface UserInfo {
   blacklisted?: boolean
   payLater?: boolean
   score?: number
+  slug?: string
 }
 
 /**
@@ -802,6 +812,22 @@ export interface Notification extends Document {
  */
 export interface NotificationCounter extends Document {
   user: Types.ObjectId
+  count?: number
+}
+
+/**
+ * PayedReviewClientCount Document.
+ *
+ * Tracks review email notifications per user and booking.
+ *
+ * @export
+ * @interface PayedReviewClientCount
+ * @typedef {PayedReviewClientCount}
+ * @extends {Document}
+ */
+export interface PayedReviewClientCount extends Document {
+  user: Types.ObjectId
+  booking: Types.ObjectId
   count?: number
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { FormControl, Button, FormControlLabel, Checkbox } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import { DateTimeValidationError } from '@mui/x-date-pickers'
@@ -37,8 +37,28 @@ const CarFilter = ({
   collapse,
   onSubmit
 }: CarFilterProps) => {
-  const _minDate = new Date()
-  _minDate.setDate(_minDate.getDate() + 1)
+  const minPickupDate = useMemo(() => {
+    const date = new Date()
+    date.setDate(date.getDate() + 1)
+    date.setHours(10, 0, 0, 0)
+    return date
+  }, [])
+
+  const maxDropOffDate = useMemo(() => {
+    const date = new Date()
+    date.setMonth(date.getMonth() + env.MAX_BOOKING_MONTHS)
+    date.setHours(20, 30, 0, 0)
+    return date
+  }, [])
+
+  const maxPickupDate = useMemo(() => {
+    const date = new Date(maxDropOffDate)
+    date.setDate(date.getDate() - 1)
+    if (date < minPickupDate) {
+      return new Date(minPickupDate)
+    }
+    return date
+  }, [maxDropOffDate, minPickupDate])
 
   const [from, setFrom] = useState<Date | undefined>(filterFrom)
   const [to, setTo] = useState<Date | undefined>(filterTo)
@@ -55,11 +75,27 @@ const CarFilter = ({
       const minEndDate = new Date(startDate)
       minEndDate.setDate(startDate.getDate() + 1)
 
-      if (!endDate || endDate < minEndDate) {
-        const newEndDate = new Date(startDate)
-        newEndDate.setDate(startDate.getDate() + 3)
-        setTo(newEndDate)
+      if (minEndDate > maxDropOffDate) {
+        setTo(undefined)
+        setToError(true)
+        return
       }
+
+      const suggestedEndDate = new Date(startDate)
+      suggestedEndDate.setDate(startDate.getDate() + 3)
+
+      let newEndDate = endDate && endDate >= minEndDate ? new Date(endDate) : suggestedEndDate
+
+      if (newEndDate < minEndDate) {
+        newEndDate = new Date(minEndDate)
+      }
+
+      if (newEndDate > maxDropOffDate) {
+        newEndDate = new Date(maxDropOffDate)
+      }
+
+      setTo(newEndDate)
+      setToError(false)
     }
   }
 
@@ -104,9 +140,10 @@ const CarFilter = ({
 
   const handleFromDateChange = (date: Date | null) => {
     if (date) {
-      setFrom(date)
+      const pickupDate = date > maxPickupDate ? new Date(maxPickupDate) : date
+      setFrom(pickupDate)
       setFromError(false)
-      updateDateRange(date, to)
+      updateDateRange(pickupDate, to)
     } else {
       setFrom(undefined)
     }
@@ -127,8 +164,14 @@ const CarFilter = ({
 
   const handleToDateChange = (date: Date | null) => {
     if (date) {
-      const minEndDate = from ? new Date(from.getTime() + 24 * 60 * 60 * 1000) : _minDate
-      if (date >= minEndDate) {
+      const minEndDate = from ? new Date(from.getTime() + 24 * 60 * 60 * 1000) : minPickupDate
+
+      if (minEndDate > maxDropOffDate) {
+        setToError(true)
+        return
+      }
+
+      if (date >= minEndDate && date <= maxDropOffDate) {
         setTo(date)
         setToError(false)
       }
@@ -182,7 +225,8 @@ const CarFilter = ({
               <DateTimePicker
                 label={strings.PICK_UP_DATE}
                 value={from}
-                minDate={_minDate}
+                minDate={minPickupDate}
+                maxDate={maxPickupDate}
                 variant="standard"
                 required
                 onChange={handleFromDateChange}
@@ -225,7 +269,8 @@ const CarFilter = ({
               <DateTimePicker
                 label={strings.DROP_OFF_DATE}
                 value={to}
-                minDate={from ? new Date(from.getTime() + 24 * 60 * 60 * 1000) : _minDate}
+                minDate={from ? new Date(from.getTime() + 24 * 60 * 60 * 1000) : minPickupDate}
+                maxDate={maxDropOffDate}
                 variant="standard"
                 required
                 onChange={handleToDateChange}
@@ -298,7 +343,8 @@ const CarFilter = ({
               <DateTimePicker
                 label={strings.PICK_UP_DATE}
                 value={from}
-                minDate={_minDate}
+                minDate={minPickupDate}
+                maxDate={maxPickupDate}
                 variant="standard"
                 required
                 onChange={handleFromDateChange}
@@ -312,7 +358,8 @@ const CarFilter = ({
               <DateTimePicker
                 label={strings.DROP_OFF_DATE}
                 value={to}
-                minDate={from ? new Date(from.getTime() + 24 * 60 * 60 * 1000) : _minDate}
+                minDate={from ? new Date(from.getTime() + 24 * 60 * 60 * 1000) : minPickupDate}
+                maxDate={maxDropOffDate}
                 variant="standard"
                 required
                 onChange={handleToDateChange}

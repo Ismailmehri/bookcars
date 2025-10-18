@@ -5,8 +5,8 @@ import {
   Switch,
   Button
 } from '@mui/material'
-import { Helmet } from 'react-helmet'
 import { Info as InfoIcon } from '@mui/icons-material'
+import Seo from '@/components/Seo'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import { strings as commonStrings } from '@/lang/common'
@@ -309,9 +309,7 @@ const Booking = () => {
 
   return (
     <Layout onLoad={onLoad} strict>
-      <Helmet>
-        <meta name="robots" content="noindex, nofollow" />
-      </Helmet>
+      <Seo title="Créer une réservation | Plany.tn" canonical="https://plany.tn/booking" robots="noindex,nofollow" />
       {visible && booking && (
         <div className="booking">
           <div className="col-1">

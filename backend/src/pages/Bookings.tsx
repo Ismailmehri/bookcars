@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Button } from '@mui/material'
+import { Alert, Button } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -121,6 +121,39 @@ const Bookings = () => {
           </div>
           <div className="col-2">
             <ProfileAlert />
+            {!admin && user && !user.agencyVerified && (
+              <Alert
+                severity="warning"
+                sx={{
+                  width: '97%',
+                  marginTop: '5px',
+                  marginLeft: env.isMobile() ? '0px' : '10px',
+                  border: '1px solid #ed6c02',
+                  padding: '10px',
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                  marginBottom: '20px',
+                }}
+                action={(
+                  <Button
+                    color="warning"
+                    variant="contained"
+                    size="small"
+                    href="/agency-verification"
+                  >
+                    Compléter ma vérification
+                  </Button>
+                )}
+              >
+                <span>
+                  Augmentez la confiance des voyageurs et améliorez la visibilité de vos voitures en téléversant vos documents
+                  de vérification. Une agence vérifiée bénéficie d&apos;un meilleur classement et rassure davantage les clients.
+                </span>
+              </Alert>
+            )}
             <BookingList
               containerClassName="bookings"
               offset={offset}

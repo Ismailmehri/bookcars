@@ -5,8 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "rimraf ./index.js ./index.d.ts && tsc -b && node ./scripts/resolve-alias.mjs",
-    "test": "node --test \"scripts/__tests__/**/*.mjs\""
+    "build": "rimraf ./index.js ./index.d.ts && tsc -b"
   },
   "author": "Akram El Assas",
   "license": "ISC",

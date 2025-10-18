@@ -120,6 +120,8 @@ export const signinAsAdmin = () => signin(bookcarsTypes.AppType.Backend, ADMIN_E
 
 export const signinAsUser = () => signin(bookcarsTypes.AppType.Frontend, USER_EMAIL)
 
+export const signinAsSupplier = (email: string) => signin(bookcarsTypes.AppType.Backend, email)
+
 export const signout = async (token: string) => {
   const res = await request(app)
     .post('/api/sign-out')

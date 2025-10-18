@@ -44,13 +44,15 @@ const NoMatch = lazy(() => import('@/pages/NoMatch'))
 const Countries = lazy(() => import('@/pages/Countries'))
 const CreateCountry = lazy(() => import('@/pages/CreateCountry'))
 const UpdateCountry = lazy(() => import('@/pages/UpdateCountry'))
-const CarStats = lazy(() => import('@/pages/CarStats'))
+const Insights = lazy(() => import('@/pages/Insights'))
 const Pricing = lazy(() => import('@/pages/Pricing'))
 const PricingCheckout = lazy(() => import('@/pages/PricingCheckout'))
 const Subscriptions = lazy(() => import('@/pages/Subscriptions'))
 const UpdateSubscription = lazy(() => import('@/pages/UpdateSubscription'))
 const AgencyVerification = lazy(() => import('@/pages/AgencyVerification'))
 const AdminVerificationDashboard = lazy(() => import('@/pages/AdminVerificationDashboard'))
+const AgencyCommissions = lazy(() => import('@/pages/AgencyCommissions'))
+const AgencyDetailsCommissions = lazy(() => import('@/pages/AgencyDetailsCommissions'))
 
 const App = () => (
   <GlobalProvider>
@@ -92,7 +94,7 @@ const App = () => (
             <Route path="/countries" element={<Countries />} />
             <Route path="/create-country" element={<CreateCountry />} />
             <Route path="/update-country" element={<UpdateCountry />} />
-            <Route path="/insights" element={<CarStats />} />
+            <Route path="/insights" element={<Insights />} />
             {env.PRICING_ENABLED && <Route path="/pricing" element={<Pricing />} />}
             {env.PRICING_ENABLED && (
               <Route path="/pricing/checkout" element={<PricingCheckout />} />
@@ -102,6 +104,8 @@ const App = () => (
             <Route path="/users-reviews" element={<UsersReviews />} />
             <Route path="/agency-verification" element={<AgencyVerification />} />
             <Route path="/admin-verification" element={<AdminVerificationDashboard />} />
+            <Route path="/agency-commissions" element={<AgencyDetailsCommissions />} />
+            <Route path="/admin-commissions" element={<AgencyCommissions />} />
 
             <Route path="*" element={<NoMatch />} />
           </Routes>

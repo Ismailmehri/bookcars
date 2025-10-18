@@ -8,30 +8,54 @@ import * as bookcarsTypes from ':bookcars-types'
 import env from '@/config/env.config'
 
 interface AgencyScoreProps {
-  agencyId: string;
+  agencyId: string
+  initialScoreBreakdown?: bookcarsTypes.ScoreBreakdown
 }
 
-const AgencyScore: React.FC<AgencyScoreProps> = ({ agencyId }) => {
-  const [scoreBreakdown, setScoreBreakdown] = useState<bookcarsTypes.ScoreBreakdown | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
+const AgencyScore: React.FC<AgencyScoreProps> = ({ agencyId, initialScoreBreakdown }) => {
+  const [scoreBreakdown, setScoreBreakdown] = useState<bookcarsTypes.ScoreBreakdown | null>(initialScoreBreakdown ?? null)
+  const [loading, setLoading] = useState<boolean>(!initialScoreBreakdown)
   const [error, setError] = useState<string | null>(null)
   const [showRecommendations, setShowRecommendations] = useState<boolean>(false) // État pour afficher/cacher les recommandations
 
   useEffect(() => {
+    if (initialScoreBreakdown) {
+      setScoreBreakdown(initialScoreBreakdown)
+      setLoading(false)
+    }
+  }, [initialScoreBreakdown])
+
+  useEffect(() => {
+    if (initialScoreBreakdown || !agencyId) {
+      return () => {}
+    }
+
+    let active = true
     const fetchAgencyScore = async () => {
       try {
+        setError(null)
+        setLoading(true)
         const response = await SupplierService.getSupplierScore(agencyId)
-        setScoreBreakdown(response)
+        if (active) {
+          setScoreBreakdown(response)
+        }
       } catch (err) {
-        setError('Erreur lors de la récupération du score.')
+        if (active) {
+          setError('Erreur lors de la récupération du score.')
+        }
         console.error(err)
       } finally {
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
     fetchAgencyScore()
-  }, [agencyId])
+    return () => {
+      active = false
+    }
+  }, [agencyId, initialScoreBreakdown])
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'success.main' // Vert

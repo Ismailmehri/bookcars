@@ -32,11 +32,14 @@ const CONTRACT1_PATH = path.join(__dirname, `./contracts/${CONTRACT1}`)
 let USER1_ID: string
 let USER2_ID: string
 let ADMIN_ID: string
+let COMMISSION_SUPPLIER_ID: string
 
 const USER1_EMAIL = `${testHelper.getName('user1')}@test.bookcars.ma`
 const USER1_PASSWORD = testHelper.PASSWORD
 const USER2_EMAIL = `${testHelper.getName('user2')}@test.bookcars.ma`
 const ADMIN_EMAIL = `${testHelper.getName('admin')}@test.bookcars.ma`
+const COMMISSION_SUPPLIER_EMAIL = `${testHelper.getName('commission-supplier')}@test.bookcars.ma`
+const COMMISSION_SUPPLIER_NAME = 'commission-supplier'
 
 //
 // Connecting and initializing the database before running the test suite
@@ -524,6 +527,13 @@ describe('POST /api/sign-in/:type', () => {
     const token = testHelper.getToken(cookies[1])
     expect(token).toBeDefined()
 
+    const signedInUser = await User.findOne({ email: USER1_EMAIL }).lean()
+    if (!signedInUser?.lastLoginAt) {
+      throw new Error('Expected lastLoginAt to be defined after sign in')
+    }
+    expect(signedInUser.lastLoginAt).toBeInstanceOf(Date)
+    let lastLoginTimestamp = signedInUser.lastLoginAt.getTime()
+
     // test failure (email not found)
     payload.email = ''
     res = await request(app)
@@ -550,12 +560,30 @@ describe('POST /api/sign-in/:type', () => {
       .send(payload)
     expect(res.statusCode).toBe(200)
 
+    const stayConnectedUser = await User.findOne({ email: USER1_EMAIL }).lean()
+    if (!stayConnectedUser?.lastLoginAt) {
+      throw new Error('Expected lastLoginAt to be defined after stay connected sign in')
+    }
+    expect(stayConnectedUser.lastLoginAt).toBeInstanceOf(Date)
+    const stayConnectedTimestamp = stayConnectedUser.lastLoginAt.getTime()
+    expect(stayConnectedTimestamp).toBeGreaterThanOrEqual(lastLoginTimestamp)
+    lastLoginTimestamp = stayConnectedTimestamp
+
     payload.stayConnected = false
     payload.mobile = true
     res = await request(app)
       .post(`/api/sign-in/${bookcarsTypes.AppType.Frontend}`)
       .send(payload)
     expect(res.statusCode).toBe(200)
+
+    const mobileLoginUser = await User.findOne({ email: USER1_EMAIL }).lean()
+    if (!mobileLoginUser?.lastLoginAt) {
+      throw new Error('Expected lastLoginAt to be defined after mobile sign in')
+    }
+    expect(mobileLoginUser.lastLoginAt).toBeInstanceOf(Date)
+    const mobileLoginTimestamp = mobileLoginUser.lastLoginAt.getTime()
+    expect(mobileLoginTimestamp).toBeGreaterThanOrEqual(lastLoginTimestamp)
+    lastLoginTimestamp = mobileLoginTimestamp
 
     payload.email = 'unknown'
     res = await request(app)
@@ -596,6 +624,12 @@ describe('POST /api/social-sign-in/:type', () => {
       .post('/api/social-sign-in')
       .send(payload)
     expect(res.statusCode).toBe(200)
+    let socialSigninUser = await User.findOne({ email: USER1_EMAIL }).lean()
+    if (!socialSigninUser?.lastLoginAt) {
+      throw new Error('Expected lastLoginAt to be defined after social sign in')
+    }
+    expect(socialSigninUser.lastLoginAt).toBeInstanceOf(Date)
+    let socialLastLoginTimestamp = socialSigninUser.lastLoginAt.getTime()
 
     // test success (mobile stay connected)
     payload.mobile = true
@@ -604,6 +638,14 @@ describe('POST /api/social-sign-in/:type', () => {
       .post('/api/social-sign-in')
       .send(payload)
     expect(res.statusCode).toBe(200)
+    socialSigninUser = await User.findOne({ email: USER1_EMAIL }).lean()
+    if (!socialSigninUser?.lastLoginAt) {
+      throw new Error('Expected lastLoginAt to be defined after social stay connected sign in')
+    }
+    expect(socialSigninUser.lastLoginAt).toBeInstanceOf(Date)
+    const socialStayConnectedTimestamp = socialSigninUser.lastLoginAt.getTime()
+    expect(socialStayConnectedTimestamp).toBeGreaterThanOrEqual(socialLastLoginTimestamp)
+    socialLastLoginTimestamp = socialStayConnectedTimestamp
 
     // test success (mobile new user)
     payload.email = testHelper.GetRandomEmail()
@@ -612,7 +654,13 @@ describe('POST /api/social-sign-in/:type', () => {
       .post('/api/social-sign-in')
       .send(payload)
     expect(res.statusCode).toBe(200)
-    await User.deleteOne({ email: payload.email })
+    const newUserEmail = payload.email
+    const socialNewUser = await User.findOne({ email: newUserEmail }).lean()
+    if (!socialNewUser?.lastLoginAt) {
+      throw new Error('Expected lastLoginAt to be defined for new social user')
+    }
+    expect(socialNewUser.lastLoginAt).toBeInstanceOf(Date)
+    await User.deleteOne({ email: newUserEmail })
     payload.mobile = false
 
     payload.email = undefined
@@ -645,6 +693,69 @@ describe('POST /api/social-sign-in/:type', () => {
     res = await request(app)
       .post('/api/social-sign-in')
     expect(res.statusCode).toBe(400)
+  })
+})
+
+describe('Commission agreement acceptance workflow', () => {
+  beforeAll(async () => {
+    COMMISSION_SUPPLIER_ID = await testHelper.createSupplier(COMMISSION_SUPPLIER_EMAIL, COMMISSION_SUPPLIER_NAME)
+  })
+
+  afterAll(async () => {
+    if (COMMISSION_SUPPLIER_ID) {
+      await testHelper.deleteSupplier(COMMISSION_SUPPLIER_ID)
+    }
+  })
+
+  it('should expose commission agreement status on backend sign in', async () => {
+    const payload: bookcarsTypes.SignInPayload = {
+      email: COMMISSION_SUPPLIER_EMAIL,
+      password: testHelper.PASSWORD,
+    }
+
+    const res = await request(app)
+      .post(`/api/sign-in/${bookcarsTypes.AppType.Backend}`)
+      .send(payload)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.type).toBe(bookcarsTypes.UserType.Supplier)
+    expect(res.body.commissionAgreementAccepted).toBe(false)
+    expect(res.body.commissionAgreementAcceptedAt).toBeUndefined()
+  })
+
+  it('should persist commission agreement acceptance for suppliers', async () => {
+    const token = await testHelper.signinAsSupplier(COMMISSION_SUPPLIER_EMAIL)
+
+    let res = await request(app)
+      .post('/api/commission-agreement/accept')
+      .set(env.X_ACCESS_TOKEN, token)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.commissionAgreementAccepted).toBe(true)
+    expect(typeof res.body.commissionAgreementAcceptedAt).toBe('string')
+
+    const supplier = await User.findById(COMMISSION_SUPPLIER_ID).lean()
+    expect(supplier?.commissionAgreementAccepted).toBe(true)
+    expect(supplier?.commissionAgreementAcceptedAt).toBeInstanceOf(Date)
+
+    const firstAcceptedAt = supplier?.commissionAgreementAcceptedAt as Date
+
+    res = await request(app)
+      .post('/api/commission-agreement/accept')
+      .set(env.X_ACCESS_TOKEN, token)
+
+    expect(res.statusCode).toBe(200)
+    expect(new Date(res.body.commissionAgreementAcceptedAt).getTime()).toBe(firstAcceptedAt.getTime())
+  })
+
+  it('should forbid non-supplier users from accepting the commission agreement', async () => {
+    const adminToken = await testHelper.signinAsAdmin()
+
+    const res = await request(app)
+      .post('/api/commission-agreement/accept')
+      .set(env.X_ACCESS_TOKEN, adminToken)
+
+    expect(res.statusCode).toBe(403)
   })
 })
 

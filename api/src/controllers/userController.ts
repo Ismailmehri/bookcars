@@ -551,6 +551,13 @@ export const signin = async (req: Request, res: Response) => {
     const passwordMatch = await bcrypt.compare(password, user.password)
 
     if (passwordMatch) {
+      const lastLoginAt = new Date()
+      try {
+        await User.updateOne({ _id: user._id }, { $set: { lastLoginAt } }).exec()
+      } catch (updateError) {
+        logger.error(`[user.signin] Failed to record last login ${user.id}`, updateError)
+      }
+
       //
       // On production, authentication cookies are httpOnly, signed, secure and strict sameSite.
       // These options prevent XSS, CSRF and MITM attacks.
@@ -585,6 +592,10 @@ export const signin = async (req: Request, res: Response) => {
         blacklisted: user.blacklisted,
         avatar: user.avatar,
         active: user.active,
+        type: user.type,
+        commissionAgreementAccepted: user.commissionAgreementAccepted,
+        commissionAgreementAcceptedAt: user.commissionAgreementAcceptedAt,
+        lastLoginAt,
       }
 
       //
@@ -613,6 +624,41 @@ export const signin = async (req: Request, res: Response) => {
     return res.sendStatus(204)
   } catch (err) {
     logger.error(`[user.signin] ${i18n.t('DB_ERROR')} ${emailFromBody}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const acceptCommissionAgreement = async (req: Request, res: Response) => {
+  try {
+    const session = await authHelper.getSessionData(req)
+
+    if (!session?.id || !helper.isValidObjectId(session.id)) {
+      throw new Error('Session user id is not valid')
+    }
+
+    const user = await User.findById(session.id)
+
+    if (!user) {
+      logger.error('[user.acceptCommissionAgreement] User not found', { userId: session.id })
+      return res.sendStatus(404)
+    }
+
+    if (user.type !== bookcarsTypes.UserType.Supplier) {
+      return res.sendStatus(403)
+    }
+
+    if (!user.commissionAgreementAccepted) {
+      user.commissionAgreementAccepted = true
+      user.commissionAgreementAcceptedAt = new Date()
+      await user.save()
+    }
+
+    return res.status(200).json({
+      commissionAgreementAccepted: user.commissionAgreementAccepted,
+      commissionAgreementAcceptedAt: user.commissionAgreementAcceptedAt,
+    })
+  } catch (err) {
+    logger.error('[user.acceptCommissionAgreement]', err)
     return res.status(400).send(i18n.t('DB_ERROR') + err)
   }
 }
@@ -656,6 +702,7 @@ export const socialSignin = async (req: Request, res: Response) => {
     }
 
     let user = await User.findOne({ email })
+    const lastLoginAt = new Date()
 
     if (!user) {
       user = new User({
@@ -668,8 +715,15 @@ export const socialSignin = async (req: Request, res: Response) => {
         type: bookcarsTypes.UserType.User,
         blacklisted: false,
         avatar,
+        lastLoginAt,
       })
       await user.save()
+    } else {
+      try {
+        await User.updateOne({ _id: user._id }, { $set: { lastLoginAt } }).exec()
+      } catch (updateError) {
+        logger.error(`[user.socialSignin] Failed to record last login ${user.id}`, updateError)
+      }
     }
 
     //
@@ -706,6 +760,7 @@ export const socialSignin = async (req: Request, res: Response) => {
       blacklisted: user.blacklisted,
       avatar: user.avatar,
       active: user.active,
+      lastLoginAt,
     }
 
     //
@@ -1241,6 +1296,8 @@ export const getUser = async (req: Request, res: Response) => {
       reviews: 1,
       slug: 1,
       score: 1,
+      commissionAgreementAccepted: 1,
+      commissionAgreementAcceptedAt: 1,
     }).lean()
 
     if (!user) {

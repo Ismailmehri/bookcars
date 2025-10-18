@@ -1,5 +1,67 @@
 import * as bookcarsTypes from ':bookcars-types'
 
+export interface CommissionConfig {
+  enabled: boolean
+  rate: number
+  effectiveDate: Date
+  monthlyThreshold: number
+}
+
+const defaultEffectiveDate = new Date('2025-01-01T00:00:00Z')
+
+let commissionConfig: CommissionConfig = {
+  enabled: true,
+  rate: 5,
+  effectiveDate: defaultEffectiveDate,
+  monthlyThreshold: 50,
+}
+
+const parseDate = (value?: Date | string): Date | undefined => {
+  if (!value) {
+    return undefined
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : value
+  }
+
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed
+}
+
+export const setCommissionConfig = (config: Partial<CommissionConfig>) => {
+  const { enabled, rate, effectiveDate, monthlyThreshold } = config
+
+  if (typeof enabled === 'boolean') {
+    commissionConfig.enabled = enabled
+  }
+
+  if (typeof rate === 'number' && !Number.isNaN(rate) && rate >= 0) {
+    commissionConfig.rate = rate
+  }
+
+  const parsedEffectiveDate = parseDate(effectiveDate)
+  if (parsedEffectiveDate) {
+    commissionConfig.effectiveDate = parsedEffectiveDate
+  }
+
+  if (typeof monthlyThreshold === 'number' && !Number.isNaN(monthlyThreshold) && monthlyThreshold >= 0) {
+    commissionConfig.monthlyThreshold = monthlyThreshold
+  }
+}
+
+export const getCommissionConfig = (): CommissionConfig => ({ ...commissionConfig })
+
+export interface PricingBreakdown {
+  totalPrice: number
+  carPriceBeforeCommission: number
+  carPriceWithCommission: number
+  optionsTotal: number
+  commissionRate: number
+  commissionTotal: number
+  commissionApplied: boolean
+  days: number
+}
 
 /**
  * Format a number.
@@ -244,79 +306,139 @@ export const formatPrice = (price: number, currency: string, language: string) =
  * @param {?bookcarsTypes.CarOptions} [options]
  * @returns {number}
  */
+export const calculatePriceBreakdown = (
+  car: bookcarsTypes.Car,
+  from: Date,
+  to: Date,
+  options?: bookcarsTypes.CarOptions
+): PricingBreakdown => {
+  const totalDays = days(from, to)
+  const dailyPrices: number[] = []
+
+  if (totalDays <= 0) {
+    return {
+      totalPrice: 0,
+      carPriceBeforeCommission: 0,
+      carPriceWithCommission: 0,
+      optionsTotal: 0,
+      commissionRate: 0,
+      commissionTotal: 0,
+      commissionApplied: false,
+      days: 0,
+    }
+  }
+
+  const oneDay = 24 * 60 * 60 * 1000
+  for (let i = 0; i < totalDays; i += 1) {
+    const currentDate = new Date(from.getTime() + i * oneDay)
+    let dailyPrice = car.dailyPrice || 0
+
+    if (car.periodicPrices) {
+      for (const period of car.periodicPrices) {
+        if (!period.startDate || !period.endDate) {
+          break
+        }
+
+        const startDate = new Date(period.startDate)
+        const endDate = new Date(period.endDate)
+
+        if (
+          !Number.isNaN(startDate.getTime())
+          && !Number.isNaN(endDate.getTime())
+          && startDate <= currentDate
+          && currentDate <= endDate
+        ) {
+          dailyPrice = period.dailyPrice ?? 0
+          break
+        }
+      }
+    }
+
+    dailyPrices.push(dailyPrice)
+  }
+
+  if (
+    car.discounts
+    && typeof car.discounts.threshold === 'number'
+    && typeof car.discounts.percentage === 'number'
+    && totalDays >= car.discounts.threshold
+  ) {
+    const discountFactor = Math.max(0, 1 - (car.discounts.percentage / 100))
+    for (let i = 0; i < dailyPrices.length; i += 1) {
+      dailyPrices[i] *= discountFactor
+    }
+  }
+
+  const carPriceBeforeCommission = dailyPrices.reduce((sum, price) => sum + price, 0)
+  const config = commissionConfig
+  const effectiveDate = config.effectiveDate ?? defaultEffectiveDate
+  const fromDate = parseDate(from)
+  const commissionApplied = !!(
+    config.enabled
+    && config.rate > 0
+    && fromDate
+    && fromDate.getTime() >= effectiveDate.getTime()
+  )
+
+  let carPriceWithCommission = 0
+  let commissionTotal = 0
+  let commissionRate = 0
+
+  if (commissionApplied) {
+    commissionRate = config.rate
+    const rateFactor = 1 + (commissionRate / 100)
+
+    for (const price of dailyPrices) {
+      const priceWithCommission = Math.ceil(price * rateFactor)
+      carPriceWithCommission += priceWithCommission
+      commissionTotal += priceWithCommission - price
+    }
+  } else {
+    carPriceWithCommission = carPriceBeforeCommission
+  }
+
+  let optionsTotal = 0
+  if (options) {
+    if (options.cancellation && car.cancellation > 0) {
+      optionsTotal += car.cancellation
+    }
+    if (options.amendments && car.amendments > 0) {
+      optionsTotal += car.amendments
+    }
+    if (options.theftProtection && car.theftProtection > 0) {
+      optionsTotal += car.theftProtection * totalDays
+    }
+    if (options.collisionDamageWaiver && car.collisionDamageWaiver > 0) {
+      optionsTotal += car.collisionDamageWaiver * totalDays
+    }
+    if (options.fullInsurance && car.fullInsurance > 0) {
+      optionsTotal += car.fullInsurance * totalDays
+    }
+    if (options.additionalDriver && car.additionalDriver > 0) {
+      optionsTotal += car.additionalDriver * totalDays
+    }
+  }
+
+  const totalPrice = carPriceWithCommission + optionsTotal
+
+  return {
+    totalPrice,
+    carPriceBeforeCommission,
+    carPriceWithCommission,
+    optionsTotal,
+    commissionRate,
+    commissionTotal,
+    commissionApplied,
+    days: totalDays,
+  }
+}
+
 export const calculateTotalPrice = (
   car: bookcarsTypes.Car,
   from: Date,
   to: Date,
   options?: bookcarsTypes.CarOptions
-): number => {
-  // Calculer le nombre total de jours
-  const oneDay = 24 * 60 * 60 * 1000; // Milliseconds in one day
-  const totalDays = Math.ceil((to.getTime() - from.getTime()) / oneDay);
-  let totalPrice = 0;
-
-  // Parcourir chaque jour de la réservation
-  for (let i = 0; i < totalDays; i++) {
-    const currentDate = new Date(from.getTime() + i * oneDay);
-    let dailyPrice = car.dailyPrice; // Prix par défaut
-
-    // Vérifier si une période spéciale existe pour ce jour
-    if (car.periodicPrices) {
-      for (const period of car.periodicPrices) {
-        if (!period.startDate || !period.endDate) {
-          break;
-        }
-
-        const startDate = new Date(period.startDate);
-        const endDate = new Date(period.endDate);
-
-        // Vérifier que les dates sont valides et que la date courante est dans l'intervalle
-        if (
-          !isNaN(startDate.getTime()) &&
-          !isNaN(endDate.getTime()) &&
-          startDate <= currentDate &&
-          currentDate <= endDate
-        ) {
-          dailyPrice = period.dailyPrice ?? 0;
-          break; // Utiliser le prix spécial pour cette journée
-        }
-      }
-    }
-
-    totalPrice += dailyPrice; // Ajouter le prix de la journée au total
-  }
-
-  if (car.discounts && car.discounts.threshold && car.discounts.percentage && totalDays >= car.discounts.threshold) {
-    // Calcul de la remise en pourcentage sur le total
-    const discountAmount = totalPrice * (car.discounts.percentage / 100);
-    // Soustraction de la remise du prix total
-    totalPrice = totalPrice - discountAmount;
-  }
-
-  // Ajouter les prix par options si définis
-  if (options) {
-    if (options.cancellation && car.cancellation > 0) {
-      totalPrice += car.cancellation;
-    }
-    if (options.amendments && car.amendments > 0) {
-      totalPrice += car.amendments;
-    }
-    if (options.theftProtection && car.theftProtection > 0) {
-      totalPrice += car.theftProtection * totalDays;
-    }
-    if (options.collisionDamageWaiver && car.collisionDamageWaiver > 0) {
-      totalPrice += car.collisionDamageWaiver * totalDays;
-    }
-    if (options.fullInsurance && car.fullInsurance > 0) {
-      totalPrice += car.fullInsurance * totalDays;
-    }
-    if (options.additionalDriver && car.additionalDriver > 0) {
-      totalPrice += car.additionalDriver * totalDays;
-    }
-  }
-
-  return totalPrice;
-};
+): number => calculatePriceBreakdown(car, from, to, options).totalPrice
 
 
 

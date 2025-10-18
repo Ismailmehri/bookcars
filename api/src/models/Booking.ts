@@ -88,6 +88,16 @@ const bookingSchema = new Schema<env.Booking>(
       type: Number,
       required: [true, "can't be blank"],
     },
+    commissionRate: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    commissionTotal: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     cancelRequest: {
       type: Boolean,
       default: false,

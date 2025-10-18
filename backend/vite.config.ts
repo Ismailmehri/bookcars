@@ -1,12 +1,15 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type ConfigEnv, type UserConfig } from 'vite'
+import type { UserConfig as VitestUserConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 
 // https://vitejs.dev/config/
-export default ({ mode }: { mode: string }) => {
+type ExtendedConfig = UserConfig & Pick<VitestUserConfig, 'test'>
+
+export default ({ mode }: ConfigEnv) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd(), '') }
 
-  return defineConfig({
+  const config = {
     plugins: [react()],
 
     resolve: {
@@ -25,7 +28,25 @@ export default ({ mode }: { mode: string }) => {
 
     build: {
       outDir: 'build',
-      target: 'esnext'
-    }
-  })
+      target: 'esnext',
+    },
+
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: './src/setupTests.ts',
+      coverage: {
+        provider: 'istanbul',
+        reporter: ['text', 'json', 'html'],
+        thresholds: {
+          statements: 80,
+          branches: 80,
+          functions: 80,
+          lines: 80,
+        },
+      },
+    },
+  } satisfies ExtendedConfig
+
+  return defineConfig(config)
 }

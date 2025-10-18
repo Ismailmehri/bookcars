@@ -72,6 +72,9 @@ const userSchema = new Schema<env.User>(
       minlength: 2,
       maxlength: 2,
     },
+    lastLoginAt: {
+      type: Date,
+    },
     enableEmailNotifications: {
       type: Boolean,
       default: true,
@@ -140,6 +143,13 @@ const userSchema = new Schema<env.User>(
       },
       file: String,
     }],
+    commissionAgreementAccepted: {
+      type: Boolean,
+      default: false,
+    },
+    commissionAgreementAcceptedAt: {
+      type: Date,
+    },
     expireAt: {
       type: Date,
       index: { name: USER_EXPIRE_AT_INDEX_NAME, expireAfterSeconds: env.USER_EXPIRE_AT, background: true },

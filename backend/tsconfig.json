@@ -24,7 +24,7 @@
       "@/*": ["./src/*"],
       ":bookcars-types": ["../packages/bookcars-types"],
       ":bookcars-helper": ["../packages/bookcars-helper/index.ts"],
-      ":disable-react-devtools": ["../packages/disable-react-devtools"]
+      ":disable-react-devtools": ["../packages/disable-react-devtools/index.ts"]
     },
   },
   "include": ["src"],

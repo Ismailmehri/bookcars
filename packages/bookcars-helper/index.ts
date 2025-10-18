@@ -1,4 +1,4 @@
-import * as bookcarsTypes from '../bookcars-types/index'
+import * as bookcarsTypes from ':bookcars-types'
 
 export interface CommissionConfig {
   enabled: boolean

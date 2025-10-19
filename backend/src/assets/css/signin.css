@@ -92,12 +92,12 @@ div.signin div.forgot-password a {
 }
 
 div.signin div.signin-buttons .btn-secondary {
-  background-color: #ff7a00;
-  color: #fff;
+  background-color: #fff;
+  color: #1976d2;
 }
 
 div.signin div.signin-buttons .btn-secondary:hover {
-  background-color: #e96b00;
+  background-color: #add2f7;;
 }
 
 div.signin div.signin-buttons .btn-primary {

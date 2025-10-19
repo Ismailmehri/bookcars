@@ -132,11 +132,7 @@ const SignIn = () => {
                       <div className="alert-notice alert-notice--credentials">
                         <p className="alert-notice__title">{strings.ERROR_IN_SIGN_IN_TITLE}</p>
                         <p className="alert-notice__description">
-                          {strings.ERROR_IN_SIGN_IN_HELP}{' '}
-                          <a className="alert-notice__link" href={`mailto:${strings.SUPPORT_EMAIL}`}>
-                            {strings.SUPPORT_EMAIL}
-                          </a>
-                          .
+                          {strings.ERROR_IN_SIGN_IN_HELP}
                         </p>
                       </div>
                     )}
@@ -150,7 +146,8 @@ const SignIn = () => {
                       <div className="alert-notice alert-notice--blacklist">
                         <p className="alert-notice__title">{strings.IS_BLACKLISTED_TITLE}</p>
                         <p className="alert-notice__description">
-                          {strings.IS_BLACKLISTED_HELP}{' '}
+                          {strings.IS_BLACKLISTED_HELP}
+                          {' '}
                           <a className="alert-notice__link" href={`mailto:${strings.SUPPORT_EMAIL}`}>
                             {strings.SUPPORT_EMAIL}
                           </a>
@@ -193,7 +190,7 @@ const SignIn = () => {
               </div>
 
               <div className="signin-buttons">
-                <Button type="button" href="/sign-up" variant="contained" size="small" className="btn-secondary">
+                <Button type="submit" href="/sign-up" style={{ marginRight: '10px' }} variant="contained" size="small" className="btn-secondary">
                   {strings.SIGN_UP}
                 </Button>
                 <Button type="submit" variant="contained" size="small" className="btn-primary">

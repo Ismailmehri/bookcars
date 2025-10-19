@@ -97,16 +97,23 @@ describe('SignIn page', () => {
     expect(signoutMock).toHaveBeenCalledWith(false)
 
     const alert = container.querySelector('.error-alert')
-    expect(alert?.textContent).toContain(strings.IS_BLACKLISTED_TITLE)
+    expect(alert).not.toBeNull()
+    if (!alert) {
+      throw new Error('Expected blacklist alert to be rendered')
+    }
+    expect(alert.textContent).toContain(strings.IS_BLACKLISTED_TITLE)
 
-    const title = alert?.querySelector('.blacklist-notice__title')
+    const title = alert.querySelector('.blacklist-notice__title')
     expect(title?.textContent).toBe(strings.IS_BLACKLISTED_TITLE)
 
-    const description = alert?.querySelector('.blacklist-notice__description')
+    const description = alert.querySelector('.blacklist-notice__description')
     expect(description?.textContent).toContain(strings.IS_BLACKLISTED_HELP)
     expect(description?.textContent).toContain(strings.SUPPORT_EMAIL)
 
-    const supportLink = alert?.querySelector('.blacklist-notice__link')
+    const supportLink = alert.querySelector('.blacklist-notice__link')
     expect(supportLink?.getAttribute('href')).toBe(`mailto:${strings.SUPPORT_EMAIL}`)
+
+    const formCard = container.querySelector('.signin-form')
+    expect(formCard?.contains(alert)).toBe(true)
   })
 })

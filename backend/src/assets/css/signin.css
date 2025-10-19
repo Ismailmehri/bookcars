@@ -1,33 +1,49 @@
 /* Signin */
 div.signin {
   display: flex;
-  flex-direction: row;
-  flex: 1 0 auto;
   justify-content: center;
-  margin: 45px 0;
+  padding: 45px 16px;
   transform: translate3d(0, 0, 0);
+}
+
+.signin-form {
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  padding: 32px 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.signin-form form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .signin-form-title {
   text-align: center;
   text-transform: capitalize;
-  margin-top: 35px;
+  margin: 12px 0 24px;
   color: #121212;
 }
 
 .signin-buttons {
-  float: right;
   margin-top: 20px;
+  align-self: flex-end;
+  display: flex;
+  gap: 10px;
 }
 
 .form-error {
-  clear: both;
   min-height: 65px;
-  padding-top: 10px;
-  text-align: center;
+  padding-top: 12px;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 8px;
 }
 
@@ -51,30 +67,17 @@ div.signin div.forgot-password {
   margin-top: 15px;
 }
 
-/* Device width is less than or equal to 960px */
-
-@media only screen and (max-width: 960px) {
-  .signin-form {
-    align-items: center;
-    justify-content: center;
-    display: flex;
-    width: 350px;
-    height: 390px;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    padding: 15px;
+@media only screen and (max-width: 600px) {
+  div.signin {
+    padding: 30px 12px;
   }
-}
 
-/* Device width is greater than or equal to 960px */
-
-@media only screen and (min-width: 960px) {
   .signin-form {
-    align-items: center;
-    justify-content: center;
-    display: flex;
-    width: 380px;
-    height: 390px;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    padding: 15px;
+    padding: 24px 20px;
+  }
+
+  .signin-buttons {
+    width: 100%;
+    justify-content: space-between;
   }
 }

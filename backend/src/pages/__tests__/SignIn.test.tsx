@@ -98,9 +98,15 @@ describe('SignIn page', () => {
 
     const alert = container.querySelector('.error-alert')
     expect(alert?.textContent).toContain(strings.IS_BLACKLISTED_TITLE)
-    expect(alert?.textContent).toContain(strings.SUPPORT_EMAIL)
 
-    const supportLink = alert?.querySelector('a')
+    const title = alert?.querySelector('.blacklist-notice__title')
+    expect(title?.textContent).toBe(strings.IS_BLACKLISTED_TITLE)
+
+    const description = alert?.querySelector('.blacklist-notice__description')
+    expect(description?.textContent).toContain(strings.IS_BLACKLISTED_HELP)
+    expect(description?.textContent).toContain(strings.SUPPORT_EMAIL)
+
+    const supportLink = alert?.querySelector('.blacklist-notice__link')
     expect(supportLink?.getAttribute('href')).toBe(`mailto:${strings.SUPPORT_EMAIL}`)
   })
 })

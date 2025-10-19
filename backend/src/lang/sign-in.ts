@@ -8,7 +8,7 @@ const strings = new LocalizedStrings({
     SIGN_UP: "S'inscrire",
     ERROR_IN_SIGN_IN: 'E-mail ou mot de passe incorrect.',
     IS_BLACKLISTED_TITLE: 'Votre compte est suspendu.',
-    IS_BLACKLISTED_HELP: 'Pour plus d’informations, contactez notre équipe à',
+    IS_BLACKLISTED_HELP: 'Pour obtenir plus d’informations, contactez notre équipe à l’adresse',
     SUPPORT_EMAIL: 'contact@plany.tn',
     RESET_PASSWORD: 'Mot de passe oublié ?',
     STAY_CONNECTED: 'Rester connecté',

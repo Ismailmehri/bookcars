@@ -164,14 +164,16 @@ const SignIn = () => {
                 {blacklisted && (
                   <Error
                     message={(
-                      <span className="blacklist-notice">
-                        <strong>{strings.IS_BLACKLISTED_TITLE}</strong>{' '}
-                        {strings.IS_BLACKLISTED_HELP}{' '}
-                        <a href={`mailto:${strings.SUPPORT_EMAIL}`}>
-                          {strings.SUPPORT_EMAIL}
-                        </a>
-                        .
-                      </span>
+                      <div className="blacklist-notice">
+                        <p className="blacklist-notice__title">{strings.IS_BLACKLISTED_TITLE}</p>
+                        <p className="blacklist-notice__description">
+                          {strings.IS_BLACKLISTED_HELP}{' '}
+                          <a className="blacklist-notice__link" href={`mailto:${strings.SUPPORT_EMAIL}`}>
+                            {strings.SUPPORT_EMAIL}
+                          </a>
+                          .
+                        </p>
+                      </div>
                     )}
                   />
                 )}

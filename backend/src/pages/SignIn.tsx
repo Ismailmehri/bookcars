@@ -161,7 +161,20 @@ const SignIn = () => {
               </div>
               <div className="form-error">
                 {error && <Error message={strings.ERROR_IN_SIGN_IN} />}
-                {blacklisted && <Error message={strings.IS_BLACKLISTED} />}
+                {blacklisted && (
+                  <Error
+                    message={(
+                      <span className="blacklist-notice">
+                        <strong>{strings.IS_BLACKLISTED_TITLE}</strong>{' '}
+                        {strings.IS_BLACKLISTED_HELP}{' '}
+                        <a href={`mailto:${strings.SUPPORT_EMAIL}`}>
+                          {strings.SUPPORT_EMAIL}
+                        </a>
+                        .
+                      </span>
+                    )}
+                  />
+                )}
               </div>
             </form>
           </Paper>

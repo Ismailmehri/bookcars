@@ -1,12 +1,17 @@
 import React from 'react'
-import { Box, Typography, Button } from '@mui/material'
+import {
+  Alert,
+  Box,
+  Button,
+  Typography,
+} from '@mui/material'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 import { strings as commonStrings } from '@/lang/common'
 
 import '@/assets/css/error.css'
 
 interface ErrorProps {
-  message: string
+  message: React.ReactNode
   style?: React.CSSProperties
   homeLink?: boolean
 }
@@ -61,12 +66,16 @@ const Error = ({ message, style, homeLink }: ErrorProps) => {
     )
   }
 
-  // Version existante si homeLink est false
   return (
     <div className="msg" style={style || {}}>
-      <div className="error">
-        <span className="message">{message}</span>
-      </div>
+      <Alert
+        role="alert"
+        icon={<ErrorOutlineIcon fontSize="small" />}
+        severity="error"
+        className="error-alert"
+      >
+        {message}
+      </Alert>
     </div>
   )
 }

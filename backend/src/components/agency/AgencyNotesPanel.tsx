@@ -29,6 +29,8 @@ const getNoteLabel = (type: bookcarsTypes.AgencyNoteType) => {
       return ulStrings.AGENCY_NOTE_TYPE_SMS
     case bookcarsTypes.AgencyNoteType.Block:
       return ulStrings.AGENCY_NOTE_TYPE_BLOCK
+    case bookcarsTypes.AgencyNoteType.Unblock:
+      return ulStrings.AGENCY_NOTE_TYPE_UNBLOCK
     case bookcarsTypes.AgencyNoteType.Note:
     default:
       return ulStrings.AGENCY_NOTE_TYPE_NOTE
@@ -43,6 +45,8 @@ const getChipColor = (type: bookcarsTypes.AgencyNoteType): ChipColor => {
       return 'secondary'
     case bookcarsTypes.AgencyNoteType.Block:
       return 'error'
+    case bookcarsTypes.AgencyNoteType.Unblock:
+      return 'success'
     case bookcarsTypes.AgencyNoteType.Note:
     default:
       return 'info'

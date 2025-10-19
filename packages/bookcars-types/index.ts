@@ -997,6 +997,7 @@ export enum AgencyNoteType {
   Email = 'email',
   Sms = 'sms',
   Block = 'block',
+  Unblock = 'unblock',
   Note = 'note',
 }
 
@@ -1054,6 +1055,11 @@ export interface BulkBlockPayload {
   emailSubject?: string;
   emailMessage?: string;
   smsMessage?: string;
+}
+
+export interface BulkUnblockPayload {
+  agencyIds: string[];
+  reason: string;
 }
 
 export interface BulkNotePayload {

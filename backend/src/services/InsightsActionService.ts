@@ -12,6 +12,9 @@ export const sendBulkSms = (payload: bookcarsTypes.BulkSmsPayload): Promise<book
 export const blockAgencies = (payload: bookcarsTypes.BulkBlockPayload): Promise<bookcarsTypes.BulkActionResponse> =>
   axiosInstance.post('/api/insights/actions/block', payload, withCredentialsConfig).then((res) => res.data)
 
+export const unblockAgencies = (payload: bookcarsTypes.BulkUnblockPayload): Promise<bookcarsTypes.BulkActionResponse> =>
+  axiosInstance.post('/api/insights/actions/unblock', payload, withCredentialsConfig).then((res) => res.data)
+
 export const addManualNote = (payload: bookcarsTypes.BulkNotePayload): Promise<bookcarsTypes.BulkActionResponse> =>
   axiosInstance.post('/api/insights/actions/note', payload, withCredentialsConfig).then((res) => res.data)
 

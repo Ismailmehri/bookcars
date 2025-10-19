@@ -95,6 +95,16 @@ describe('AgencyNotesPanel', () => {
           createdAt: new Date('2024-10-05T12:34:00Z'),
           metadata: {},
         },
+        {
+          _id: 'note-2',
+          agencyId: 'agency-3',
+          type: bookcarsTypes.AgencyNoteType.Unblock,
+          summary: 'Agency unblocked',
+          details: 'Reason: Compliance updated',
+          author: { id: 'admin-2', name: 'Second Admin' },
+          createdAt: new Date('2024-10-06T08:15:00Z'),
+          metadata: {},
+        },
       ],
     })
 
@@ -105,10 +115,14 @@ describe('AgencyNotesPanel', () => {
     })
 
     const items = container.querySelectorAll('[data-testid="agency-note-item"]')
-    expect(items).toHaveLength(1)
+    expect(items).toHaveLength(2)
     expect(container.textContent).toContain('Email sent')
     expect(container.textContent).toContain('Subject: Welcome')
     expect(container.textContent).toContain('Admin User')
     expect(container.textContent).toContain(ulStrings.AGENCY_NOTE_TYPE_EMAIL)
+    expect(container.textContent).toContain('Agency unblocked')
+    expect(container.textContent).toContain('Reason: Compliance updated')
+    expect(container.textContent).toContain('Second Admin')
+    expect(container.textContent).toContain(ulStrings.AGENCY_NOTE_TYPE_UNBLOCK)
   })
 })

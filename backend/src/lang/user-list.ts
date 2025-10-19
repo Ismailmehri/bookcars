@@ -14,6 +14,7 @@ const strings = new LocalizedStrings({
     AGENCY_NOTE_TYPE_EMAIL: 'Email',
     AGENCY_NOTE_TYPE_SMS: 'SMS',
     AGENCY_NOTE_TYPE_BLOCK: 'Blocage',
+    AGENCY_NOTE_TYPE_UNBLOCK: 'Déblocage',
     AGENCY_NOTE_TYPE_NOTE: 'Note interne',
   },
   en: {
@@ -28,6 +29,7 @@ const strings = new LocalizedStrings({
     AGENCY_NOTE_TYPE_EMAIL: 'Email',
     AGENCY_NOTE_TYPE_SMS: 'SMS',
     AGENCY_NOTE_TYPE_BLOCK: 'Block',
+    AGENCY_NOTE_TYPE_UNBLOCK: 'Unblock',
     AGENCY_NOTE_TYPE_NOTE: 'Internal note',
   },
 })

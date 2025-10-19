@@ -325,6 +325,57 @@ const handleBlockAgencies = async (req: Request, res: Response) => {
   }
 }
 
+const handleUnblockAgencies = async (req: Request, res: Response) => {
+  try {
+    const admin = await ensureAdmin(req)
+    if (!admin) {
+      return unauthorized(res)
+    }
+
+    const body = req.body as bookcarsTypes.BulkUnblockPayload
+    const agencyIds = normalizeAgencyIds(body.agencyIds)
+    const reason = typeof body.reason === 'string' ? body.reason.trim() : ''
+
+    if (agencyIds.length === 0 || !reason) {
+      return res.status(400).json({ message: 'INVALID_PAYLOAD' })
+    }
+
+    const { agencies, invalid, missing } = await loadAgencies(agencyIds)
+    const result = initializeResult(missing, invalid)
+
+    await Promise.all(
+      Array.from(agencies.values()).map(async (agency) => {
+        try {
+          if (!agency.blacklisted) {
+            result.warnings.push(toFailureEntry(agency, 'ALREADY_ACTIVE'))
+            return
+          }
+
+          await User.updateOne({ _id: agency._id }, { $set: { blacklisted: false } }).exec()
+
+          await addNote(
+            admin,
+            agency,
+            bookcarsTypes.AgencyNoteType.Unblock,
+            `Agency unblocked: reason="${reason}"`,
+            reason,
+          )
+
+          result.succeeded.push(toResultEntry(agency))
+        } catch (err) {
+          console.error('[insights.unblockAgencies]', err)
+          result.failed.push(toFailureEntry(agency, 'UNBLOCK_FAILED'))
+        }
+      }),
+    )
+
+    return res.json(result)
+  } catch (err) {
+    console.error('[insights.unblockAgencies]', err)
+    return res.status(500).json({ message: 'FAILED_TO_UNBLOCK_AGENCIES' })
+  }
+}
+
 const handleManualNote = async (req: Request, res: Response) => {
   try {
     const admin = await ensureAdmin(req)
@@ -409,5 +460,6 @@ const handleGetNotes = async (req: Request, res: Response) => {
 export const sendBulkEmail = handleBulkEmail
 export const sendBulkSms = handleBulkSms
 export const blockAgencies = handleBlockAgencies
+export const unblockAgencies = handleUnblockAgencies
 export const addManualNote = handleManualNote
 export const getAgencyNotes = handleGetNotes

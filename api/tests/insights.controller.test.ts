@@ -125,6 +125,55 @@ describe('insights controller', () => {
     expect(note?.details).toContain('Missing documentation')
   })
 
+  it('unblocks agencies and records notes', async () => {
+    const supplierEmail = testHelper.GetRandomEmail()
+    const supplierId = await testHelper.createSupplier(supplierEmail, 'Unblock Agency')
+    createdSuppliers.push(supplierId)
+
+    await User.updateOne({ _id: supplierId }, { $set: { blacklisted: true } })
+
+    const res = await request(app)
+      .post('/api/insights/actions/unblock')
+      .set('Cookie', [buildCookie(adminToken)])
+      .send({
+        agencyIds: [supplierId],
+        reason: 'Documents validated',
+      })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.succeeded).toHaveLength(1)
+    expect(res.body.failed).toHaveLength(0)
+
+    const supplier = await User.findById(supplierId)
+    expect(supplier?.blacklisted).toBe(false)
+
+    const note = await AgencyNote.findOne({ agency: new mongoose.Types.ObjectId(supplierId) })
+    expect(note).toBeTruthy()
+    expect(note?.type).toBe(bookcarsTypes.AgencyNoteType.Unblock)
+    expect(note?.summary).toContain('Agency unblocked')
+    expect(note?.details).toContain('Documents validated')
+  })
+
+  it('reports warnings when agencies are already active', async () => {
+    const supplierEmail = testHelper.GetRandomEmail()
+    const supplierId = await testHelper.createSupplier(supplierEmail, 'Active Agency')
+    createdSuppliers.push(supplierId)
+
+    const res = await request(app)
+      .post('/api/insights/actions/unblock')
+      .set('Cookie', [buildCookie(adminToken)])
+      .send({
+        agencyIds: [supplierId],
+        reason: 'Routine check',
+      })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.succeeded).toHaveLength(0)
+    expect(res.body.failed).toHaveLength(0)
+    expect(res.body.warnings).toHaveLength(1)
+    expect(res.body.warnings[0].reason).toBe('ALREADY_ACTIVE')
+  })
+
   it('adds manual notes and fetches history', async () => {
     const supplierEmail = testHelper.GetRandomEmail()
     const supplierId = await testHelper.createSupplier(supplierEmail, 'Notes Agency')

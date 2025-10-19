@@ -240,7 +240,10 @@ export const getAdminOverview = async (req: Request, res: Response) => {
       return unauthorizedResponse(res)
     }
 
-    const agencies = await User.find({ type: bookcarsTypes.UserType.Supplier, blacklisted: false }).lean()
+    const agencies = await User.find(
+      { type: bookcarsTypes.UserType.Supplier },
+      { fullName: 1, phone: 1, email: 1, lastLoginAt: 1, reviews: 1, blacklisted: 1 },
+    ).lean()
 
     if (agencies.length === 0) {
       return res.json({
@@ -452,6 +455,9 @@ export const getAdminOverview = async (req: Request, res: Response) => {
         )
 
       const lastConnectionAt = (agency as { lastLoginAt?: Date }).lastLoginAt
+      const blocked = Boolean((agency as { blacklisted?: boolean }).blacklisted)
+      const email = (agency as { email?: string | null }).email ?? null
+      const phone = (agency as { phone?: string | null }).phone ?? null
 
       const scoreBreakdown = helper.calculateAgencyScore(
         agency as unknown as bookcarsTypes.User,
@@ -473,6 +479,9 @@ export const getAdminOverview = async (req: Request, res: Response) => {
         reviewCount,
         averageRating,
         lastBookingAt: metrics.lastBookingAt,
+        blocked,
+        email,
+        phone,
       } satisfies bookcarsTypes.AgencyRankingItem
     })
 

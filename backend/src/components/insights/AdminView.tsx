@@ -1,7 +1,17 @@
-import React from 'react'
-import { Button, Grid, Stack, Typography } from '@mui/material'
+import React, { useEffect, useMemo, useState } from 'react'
+import {
+  Box,
+  Button,
+  Chip,
+  Grid,
+  Link,
+  Stack,
+  Typography,
+} from '@mui/material'
 import DownloadIcon from '@mui/icons-material/DownloadOutlined'
+import { LoadingButton } from '@mui/lab'
 import { formatCurrency, formatNumber, formatPercentage } from '@/common/format'
+import * as helper from '@/common/helper'
 import TableSimple, { TableColumn } from './TableSimple'
 import KpiCard from './KpiCard'
 import {
@@ -18,14 +28,162 @@ import {
 import { strings } from '@/lang/insights'
 import * as bookcarsTypes from ':bookcars-types'
 import { type AdminMetricsViewModel } from '@/pages/insights.types'
+import * as InsightsActionService from '@/services/InsightsActionService'
+import BulkEmailDialog from './actions/BulkEmailDialog'
+import BulkSmsDialog from './actions/BulkSmsDialog'
+import BlockAgenciesDialog from './actions/BlockAgenciesDialog'
+import AddNoteDialog from './actions/AddNoteDialog'
 
 interface AdminViewProps {
   loading: boolean
   metrics: AdminMetricsViewModel
   onExport: () => void
+  onRankingRefresh: () => Promise<void>
 }
 
-const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => {
+const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport, onRankingRefresh }) => {
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
+  const [smsDialogOpen, setSmsDialogOpen] = useState(false)
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false)
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
+
+  useEffect(() => {
+    setSelectedIds((prev) => prev.filter((id) => metrics.ranking.some((item) => item.agencyId === id)))
+  }, [metrics.ranking])
+
+  const selectedAgencies = useMemo(
+    () => metrics.ranking.filter((item) => selectedIds.includes(item.agencyId)),
+    [metrics.ranking, selectedIds],
+  )
+
+  const reasonLabels: Record<string, string> = {
+    MISSING_EMAIL: strings.REASON_MISSING_EMAIL,
+    EMAIL_SEND_FAILED: strings.REASON_EMAIL_FAILED,
+    INVALID_PHONE: strings.REASON_INVALID_PHONE,
+    SMS_SEND_FAILED: strings.REASON_SMS_FAILED,
+    BLOCK_FAILED: strings.REASON_BLOCK_FAILED,
+    NOTE_SAVE_FAILED: strings.REASON_NOTE_FAILED,
+    AGENCY_NOT_FOUND: strings.REASON_NOT_FOUND,
+    INVALID_AGENCY_ID: strings.REASON_INVALID_ID,
+  }
+
+  const formatFailures = (entries: bookcarsTypes.BulkActionFailureEntry[]) => {
+    if (entries.length === 0) {
+      return ''
+    }
+    const summary = entries
+      .slice(0, 3)
+      .map((entry) => `${entry.agencyName}: ${reasonLabels[entry.reason] ?? entry.reason}`)
+      .join(', ')
+
+    return entries.length > 3 ? `${summary}, …` : summary
+  }
+
+  const handleBulkOutcome = (result: bookcarsTypes.BulkActionResponse, successMessage: string) => {
+    if (result.succeeded.length > 0) {
+      helper.info(successMessage.replace('{count}', result.succeeded.length.toString()))
+    }
+
+    if (result.failed.length > 0) {
+      helper.error(
+        undefined,
+        strings.BULK_ACTION_FAILURE
+          .replace('{count}', result.failed.length.toString())
+          .replace('{details}', formatFailures(result.failed) || '—'),
+      )
+    }
+
+    if (result.warnings.length > 0) {
+      helper.info(
+        strings.BULK_ACTION_WARNINGS
+          .replace('{count}', result.warnings.length.toString())
+          .replace('{details}', formatFailures(result.warnings) || '—'),
+      )
+    }
+
+    if (result.failed.length === 0 && result.warnings.length === 0) {
+      setSelectedIds([])
+    }
+  }
+
+  const handleEmailSubmit = async (payload: { subject: string; message: string }) => {
+    try {
+      setActionLoading(true)
+      const result = await InsightsActionService.sendBulkEmail({
+        agencyIds: selectedIds,
+        ...payload,
+      })
+      handleBulkOutcome(result, strings.BULK_ACTION_SUCCESS)
+      setEmailDialogOpen(false)
+    } catch (err) {
+      helper.error(err)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleSmsSubmit = async (payload: { message: string }) => {
+    try {
+      setActionLoading(true)
+      const result = await InsightsActionService.sendBulkSms({
+        agencyIds: selectedIds,
+        ...payload,
+      })
+      handleBulkOutcome(result, strings.BULK_ACTION_SUCCESS)
+      setSmsDialogOpen(false)
+    } catch (err) {
+      helper.error(err)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleBlockSubmit = async (
+    payload: {
+      reason: string
+      notifyByEmail: boolean
+      notifyBySms: boolean
+      emailSubject?: string
+      emailMessage?: string
+      smsMessage?: string
+    },
+  ) => {
+    try {
+      setActionLoading(true)
+      const result = await InsightsActionService.blockAgencies({
+        agencyIds: selectedIds,
+        ...payload,
+      })
+      if (result.succeeded.length > 0) {
+        await onRankingRefresh()
+      }
+      handleBulkOutcome(result, strings.BULK_ACTION_SUCCESS)
+      setBlockDialogOpen(false)
+    } catch (err) {
+      helper.error(err)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleNoteSubmit = async (payload: { note: string }) => {
+    try {
+      setActionLoading(true)
+      const result = await InsightsActionService.addManualNote({
+        agencyIds: selectedIds,
+        note: payload.note,
+      })
+      handleBulkOutcome(result, strings.BULK_ACTION_SUCCESS)
+      setNoteDialogOpen(false)
+    } catch (err) {
+      helper.error(err)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const rankingColumns: TableColumn<bookcarsTypes.AgencyRankingItem>[] = [
     {
       key: 'agencyId',
@@ -37,6 +195,31 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
       key: 'agencyName',
       label: strings.TABLE_AGENCY_RANKING,
       sortValue: (row) => row.agencyName.toLowerCase(),
+      render: (row) => (
+        <Link
+          href={`https://admin.plany.tn/user?u=${row.agencyId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          underline="hover"
+          color="primary"
+        >
+          {row.agencyName}
+        </Link>
+      ),
+    },
+    {
+      key: 'blocked',
+      label: strings.TABLE_COL_AGENCY_STATUS,
+      align: 'center',
+      sortable: false,
+      render: (row) => (
+        <Chip
+          size="small"
+          color={row.blocked ? 'error' : 'success'}
+          label={row.blocked ? strings.AGENCY_STATUS_BLOCKED : strings.AGENCY_STATUS_ACTIVE}
+          variant={row.blocked ? 'filled' : 'outlined'}
+        />
+      ),
     },
     {
       key: 'revenue',
@@ -94,6 +277,76 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           {strings.EXPORT}
         </Button>
       </Stack>
+
+      {selectedAgencies.length > 0 ? (
+        <Box
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            p: 2,
+            backgroundColor: '#FAFCFF',
+          }}
+        >
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+            alignItems={{ xs: 'flex-start', md: 'center' }}
+            justifyContent="space-between"
+          >
+            <Stack spacing={0.5}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                {strings.ACTIONS_BAR_TITLE}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {strings.ACTIONS_SELECTION_COUNT.replace('{count}', selectedAgencies.length.toString())}
+              </Typography>
+            </Stack>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} width={{ xs: '100%', sm: 'auto' }}>
+              <LoadingButton
+                variant="contained"
+                color="primary"
+                onClick={() => setEmailDialogOpen(true)}
+                disabled={actionLoading}
+              >
+                {strings.ACTION_EMAIL}
+              </LoadingButton>
+              <LoadingButton
+                variant="contained"
+                color="primary"
+                onClick={() => setSmsDialogOpen(true)}
+                disabled={actionLoading}
+              >
+                {strings.ACTION_SMS}
+              </LoadingButton>
+              <LoadingButton
+                variant="contained"
+                color="error"
+                onClick={() => setBlockDialogOpen(true)}
+                disabled={actionLoading}
+              >
+                {strings.ACTION_BLOCK}
+              </LoadingButton>
+              <LoadingButton
+                variant="outlined"
+                color="primary"
+                onClick={() => setNoteDialogOpen(true)}
+                disabled={actionLoading}
+              >
+                {strings.ACTION_NOTE}
+              </LoadingButton>
+              <Button
+                variant="text"
+                color="inherit"
+                onClick={() => setSelectedIds([])}
+                disabled={actionLoading}
+              >
+                {strings.ACTION_CLEAR}
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
+      ) : null}
 
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6} md={4} lg={2}>
@@ -251,8 +504,41 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport }) => 
           initialRowsPerPage={10}
           mobileSortLabel={strings.TABLE_SORT_LABEL}
           getRowId={(row) => row.agencyId}
+          selectable
+          selectedRows={selectedIds}
+          onSelectionChange={(_rows, ids) => setSelectedIds(ids.map((id) => String(id)))}
+          selectionLabel={strings.ACTION_SELECTION_LABEL}
         />
       </Stack>
+
+      <BulkEmailDialog
+        open={emailDialogOpen}
+        agencies={selectedAgencies}
+        loading={actionLoading}
+        onClose={() => setEmailDialogOpen(false)}
+        onSubmit={handleEmailSubmit}
+      />
+      <BulkSmsDialog
+        open={smsDialogOpen}
+        agencies={selectedAgencies}
+        loading={actionLoading}
+        onClose={() => setSmsDialogOpen(false)}
+        onSubmit={handleSmsSubmit}
+      />
+      <BlockAgenciesDialog
+        open={blockDialogOpen}
+        agencies={selectedAgencies}
+        loading={actionLoading}
+        onClose={() => setBlockDialogOpen(false)}
+        onSubmit={handleBlockSubmit}
+      />
+      <AddNoteDialog
+        open={noteDialogOpen}
+        agencies={selectedAgencies}
+        loading={actionLoading}
+        onClose={() => setNoteDialogOpen(false)}
+        onSubmit={handleNoteSubmit}
+      />
     </Stack>
   )
 }

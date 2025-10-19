@@ -988,6 +988,77 @@ export interface AgencyRankingItem {
   reviewCount: number;
   averageRating: number | null;
   lastBookingAt?: Date;
+  blocked: boolean;
+  email?: string | null;
+  phone?: string | null;
+}
+
+export enum AgencyNoteType {
+  Email = 'email',
+  Sms = 'sms',
+  Block = 'block',
+  Note = 'note',
+}
+
+export interface AgencyNoteAuthor {
+  id: string;
+  name: string;
+}
+
+export interface AgencyNote {
+  _id: string;
+  agencyId: string;
+  type: AgencyNoteType;
+  summary: string;
+  details?: string;
+  author: AgencyNoteAuthor;
+  createdAt: Date;
+  metadata?: Record<string, unknown>;
+}
+
+export interface AgencyNotesResponse {
+  notes: AgencyNote[];
+}
+
+export interface BulkActionResultEntry {
+  agencyId: string;
+  agencyName: string;
+}
+
+export interface BulkActionFailureEntry extends BulkActionResultEntry {
+  reason: string;
+}
+
+export interface BulkActionResponse {
+  succeeded: BulkActionResultEntry[];
+  failed: BulkActionFailureEntry[];
+  warnings: BulkActionFailureEntry[];
+}
+
+export interface BulkEmailPayload {
+  agencyIds: string[];
+  subject: string;
+  message: string;
+}
+
+export interface BulkSmsPayload {
+  agencyIds: string[];
+  message: string;
+}
+
+export interface BulkBlockPayload {
+  agencyIds: string[];
+  reason: string;
+  notifyByEmail?: boolean;
+  notifyBySms?: boolean;
+  emailSubject?: string;
+  emailMessage?: string;
+  smsMessage?: string;
+}
+
+export interface BulkNotePayload {
+  agencyIds: string[];
+  note: string;
 }
 
 export interface AdminAveragePriceByCategory {

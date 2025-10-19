@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Box,
+  Checkbox,
   FormControl,
   IconButton,
   InputLabel,
@@ -51,6 +52,10 @@ interface TableSimpleProps<T extends object> {
   initialRowsPerPage?: number
   mobileSortLabel?: string
   getRowId?: (row: T, index: number) => React.Key
+  selectable?: boolean
+  selectedRows?: React.Key[]
+  onSelectionChange?: (rows: T[], ids: React.Key[]) => void
+  selectionLabel?: string
 }
 
 const resolveSortValue = <T extends object>(row: T, column: TableColumn<T>): SortValue => {
@@ -117,10 +122,15 @@ const TableSimple = <T extends object>({
   initialRowsPerPage,
   mobileSortLabel,
   getRowId,
+  selectable = false,
+  selectedRows = [],
+  onSelectionChange,
+  selectionLabel,
 }: TableSimpleProps<T>) => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const sortLabel = mobileSortLabel ?? 'Sort'
+  const resolvedSelectionLabel = selectionLabel ?? 'Select rows'
 
   const options = rowsPerPageOptions && rowsPerPageOptions.length > 0 ? rowsPerPageOptions : DEFAULT_ROWS_PER_PAGE_OPTIONS
   const initialRows = initialRowsPerPage && initialRowsPerPage > 0 ? initialRowsPerPage : options[0]
@@ -142,32 +152,33 @@ const TableSimple = <T extends object>({
     }
   }, [orderBy, sortableColumns])
 
-  const sortedRows = useMemo(() => {
+  const sortedEntries = useMemo(() => {
+    const entries = data.map((row, index) => ({ row, index }))
+
     if (!orderBy) {
-      return data
+      return entries
     }
 
     const activeColumn = columns.find((column) => getColumnId(column) === orderBy)
     if (!activeColumn || activeColumn.sortable === false) {
-      return data
+      return entries
     }
 
     const comparator = activeColumn.sortComparator
       ? activeColumn.sortComparator
       : (a: T, b: T) => compareValues(resolveSortValue(a, activeColumn), resolveSortValue(b, activeColumn))
 
-    return data
-      .map((row, index) => ({ row, index }))
-      .sort((a, b) => {
-        const result = comparator(a.row, b.row)
-        if (result !== 0) {
-          return orderDirection === 'asc' ? result : -result
-        }
+    return [...entries].sort((a, b) => {
+      const result = comparator(a.row, b.row)
+      if (result !== 0) {
+        return orderDirection === 'asc' ? result : -result
+      }
 
-        return a.index - b.index
-      })
-      .map(({ row }) => row)
+      return a.index - b.index
+    })
   }, [columns, data, orderBy, orderDirection])
+
+  const sortedRows = useMemo(() => sortedEntries.map((entry) => entry.row), [sortedEntries])
 
   const clampedPage = useMemo(
     () => clampPage(page, rowsPerPage, sortedRows.length),
@@ -180,13 +191,118 @@ const TableSimple = <T extends object>({
     }
   }, [clampedPage, page])
 
-  const visibleRows = useMemo(
-    () => paginateRows(sortedRows, clampedPage, rowsPerPage),
-    [clampedPage, rowsPerPage, sortedRows],
+  const visibleEntries = useMemo(
+    () => paginateRows(sortedEntries, clampedPage, rowsPerPage),
+    [sortedEntries, clampedPage, rowsPerPage],
   )
+
+  const visibleRows = useMemo(() => visibleEntries.map((entry) => entry.row), [visibleEntries])
 
   const totalPages = rowsPerPage > 0 ? Math.ceil(sortedRows.length / rowsPerPage) : 1
   const showPagination = totalPages > 1
+
+  const selectionActive = selectable && typeof onSelectionChange === 'function' && typeof getRowId === 'function'
+
+  const selectedIdSet = useMemo(() => {
+    if (!selectionActive) {
+      return new Set<string>()
+    }
+    return new Set((selectedRows ?? []).map((value) => String(value)))
+  }, [selectedRows, selectionActive])
+
+  const rowIdAccessor = useMemo(() => {
+    if (!selectionActive || !getRowId) {
+      return null
+    }
+    return getRowId
+  }, [selectionActive, getRowId])
+
+  const rowIdMap = useMemo(() => {
+    if (!selectionActive || !rowIdAccessor) {
+      return new Map<string, T>()
+    }
+
+    return data.reduce<Map<string, T>>((acc, row, index) => {
+      const id = String(rowIdAccessor(row, index))
+      acc.set(id, row)
+      return acc
+    }, new Map())
+  }, [data, rowIdAccessor, selectionActive])
+
+  const emitSelection = useCallback(
+    (ids: string[]) => {
+      if (!selectionActive || !rowIdAccessor || !onSelectionChange) {
+        return
+      }
+      const uniqueIds = Array.from(new Set(ids))
+      const selectedData = uniqueIds
+        .map((id) => rowIdMap.get(id))
+        .filter((value): value is T => Boolean(value))
+
+      onSelectionChange(selectedData, uniqueIds)
+    },
+    [selectionActive, rowIdAccessor, onSelectionChange, rowIdMap],
+  )
+
+  const toggleRowSelection = useCallback(
+    (row: T, originalIndex: number) => {
+      if (!selectionActive || !rowIdAccessor) {
+        return
+      }
+      const rowId = String(rowIdAccessor(row, originalIndex))
+      const next = new Set(selectedIdSet)
+      if (next.has(rowId)) {
+        next.delete(rowId)
+      } else {
+        next.add(rowId)
+      }
+      emitSelection(Array.from(next))
+    },
+    [selectionActive, rowIdAccessor, selectedIdSet, emitSelection],
+  )
+
+  const toggleSelectAllVisible = useCallback(
+    (checked: boolean) => {
+      if (!selectionActive || !rowIdAccessor) {
+        return
+      }
+      const next = new Set(selectedIdSet)
+      visibleEntries.forEach((entry) => {
+        const id = String(rowIdAccessor(entry.row, entry.index))
+        if (checked) {
+          next.add(id)
+        } else {
+          next.delete(id)
+        }
+      })
+      emitSelection(Array.from(next))
+    },
+    [selectionActive, rowIdAccessor, selectedIdSet, visibleEntries, emitSelection],
+  )
+
+  const visibleSelectionState = useMemo(() => {
+    if (!selectionActive || !rowIdAccessor) {
+      return { selected: 0, total: visibleEntries.length }
+    }
+
+    let selected = 0
+    visibleEntries.forEach((entry) => {
+      const id = String(rowIdAccessor(entry.row, entry.index))
+      if (selectedIdSet.has(id)) {
+        selected += 1
+      }
+    })
+
+    return { selected, total: visibleEntries.length }
+  }, [selectionActive, rowIdAccessor, visibleEntries, selectedIdSet])
+
+  const allVisibleSelected = selectionActive
+    && visibleSelectionState.total > 0
+    && visibleSelectionState.selected === visibleSelectionState.total
+
+  const someVisibleSelected = selectionActive
+    && visibleSelectionState.selected > 0
+    && visibleSelectionState.selected < visibleSelectionState.total
 
   const handleSortRequest = (columnId: string) => {
     if (orderBy === columnId) {
@@ -281,56 +397,90 @@ const TableSimple = <T extends object>({
               </IconButton>
             </Stack>
           ) : null}
-          {visibleRows.length === 0 ? (
+          {visibleEntries.length === 0 ? (
             <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
               {emptyLabel}
             </Typography>
           ) : (
             <Stack spacing={1.5}>
-              {visibleRows.map((row, rowIndex) => {
-                const absoluteIndex = rowIndex + clampedPage * rowsPerPage
-                const rowKey = getRowId?.(row, absoluteIndex) ?? JSON.stringify(row)
-                  return (
-                    <Box
-                      key={rowKey}
-                      data-testid="table-simple-card"
-                      sx={{
-                        borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        p: 2,
-                        backgroundColor: '#FAFCFF',
-                      }}
-                    >
-                      {columns.map((column) => (
-                        <Stack
-                          key={getColumnId(column)}
-                          spacing={0.5}
-                          direction="row"
-                          justifyContent="space-between"
-                          alignItems="flex-start"
-                          sx={{
-                            py: 0.5,
-                            gap: 2,
+              {selectionActive ? (
+                <Box display="flex" justifyContent="flex-end">
+                  <Checkbox
+                    size="small"
+                    indeterminate={someVisibleSelected}
+                    checked={allVisibleSelected}
+                    onChange={(event) => toggleSelectAllVisible(event.target.checked)}
+                    inputProps={{ 'aria-label': resolvedSelectionLabel }}
+                  />
+                </Box>
+              ) : null}
+              {visibleEntries.map((entry, rowIndex) => {
+                const row = entry.row
+                const sortedIndex = rowIndex + clampedPage * rowsPerPage
+                const originalIndex = entry.index
+                const rowIdentifier = getRowId ? getRowId(row, sortedIndex) : JSON.stringify(row)
+                const rowKey = typeof rowIdentifier === 'string' || typeof rowIdentifier === 'number'
+                  ? rowIdentifier
+                  : JSON.stringify(rowIdentifier)
+                const selectionId = selectionActive && rowIdAccessor
+                  ? String(rowIdAccessor(row, originalIndex))
+                  : undefined
+                const isSelected = selectionId ? selectedIdSet.has(selectionId) : false
+
+                return (
+                  <Box
+                    key={rowKey}
+                    data-testid="table-simple-card"
+                    sx={{
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: isSelected ? 'primary.main' : 'divider',
+                      p: 2,
+                      backgroundColor: isSelected ? 'rgba(30,136,229,0.08)' : '#FAFCFF',
+                    }}
+                  >
+                    {selectionActive ? (
+                      <Box display="flex" justifyContent="flex-end" mb={1}>
+                        <Checkbox
+                          size="small"
+                          checked={isSelected}
+                          onChange={(event) => {
+                            event.stopPropagation()
+                            toggleRowSelection(row, originalIndex)
                           }}
+                          inputProps={{ 'aria-label': resolvedSelectionLabel }}
+                        />
+                      </Box>
+                    ) : null}
+                    {columns.map((column) => (
+                      <Stack
+                        key={getColumnId(column)}
+                        spacing={0.5}
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="flex-start"
+                        sx={{
+                          py: 0.5,
+                          gap: 2,
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ fontWeight: 600, textTransform: 'uppercase' }}
                         >
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ fontWeight: 600, textTransform: 'uppercase' }}
-                          >
-                            {column.label}
-                          </Typography>
-                          <Box sx={{ textAlign: column.align ?? 'left', flex: 1 }}>
-                            {column.render
-                              ? column.render(row, absoluteIndex)
-                              : (row[column.key] as React.ReactNode)}
-                          </Box>
-                        </Stack>
-                      ))}
-                    </Box>
-                  )
-                })}
+                          {column.label}
+                        </Typography>
+                        <Box sx={{ textAlign: column.align ?? 'left', flex: 1 }}>
+                          {column.render
+                            ? column.render(row, sortedIndex)
+                            : (row[column.key] as React.ReactNode)}
+                        </Box>
+                      </Stack>
+                    ))}
+                  </Box>
+                )
+              })}
             </Stack>
           )}
         </Stack>
@@ -339,6 +489,17 @@ const TableSimple = <T extends object>({
           <Table size="small" sx={{ minWidth: 560 }}>
             <TableHead sx={{ backgroundColor: '#F5F7FB' }}>
               <TableRow>
+                {selectionActive ? (
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      color="primary"
+                      indeterminate={someVisibleSelected}
+                      checked={allVisibleSelected}
+                      onChange={(event) => toggleSelectAllVisible(event.target.checked)}
+                      inputProps={{ 'aria-label': resolvedSelectionLabel }}
+                    />
+                  </TableCell>
+                ) : null}
                 {columns.map((column) => {
                   const columnId = getColumnId(column)
                   const isSortable = column.sortable !== false
@@ -367,24 +528,47 @@ const TableSimple = <T extends object>({
               </TableRow>
             </TableHead>
             <TableBody>
-              {visibleRows.length === 0 ? (
+              {visibleEntries.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length}>
+                  <TableCell colSpan={columns.length + (selectionActive ? 1 : 0)}>
                     <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
                       {emptyLabel}
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                visibleRows.map((row, index) => {
-                  const absoluteIndex = index + clampedPage * rowsPerPage
-                  const rowKey = getRowId?.(row, absoluteIndex) ?? JSON.stringify(row)
+                visibleEntries.map((entry, rowIndex) => {
+                  const row = entry.row
+                  const sortedIndex = rowIndex + clampedPage * rowsPerPage
+                  const originalIndex = entry.index
+                  const resolvedKey = getRowId ? getRowId(row, sortedIndex) : JSON.stringify(row)
+                  const rowKey = typeof resolvedKey === 'string' || typeof resolvedKey === 'number'
+                    ? resolvedKey
+                    : JSON.stringify(resolvedKey)
+                  const selectionId = selectionActive && rowIdAccessor
+                    ? String(rowIdAccessor(row, originalIndex))
+                    : undefined
+                  const isSelected = selectionId ? selectedIdSet.has(selectionId) : false
+
                   return (
-                    <TableRow key={rowKey} hover>
+                    <TableRow key={rowKey} hover selected={isSelected}>
+                      {selectionActive ? (
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            color="primary"
+                            checked={isSelected}
+                            onChange={(event) => {
+                              event.stopPropagation()
+                              toggleRowSelection(row, originalIndex)
+                            }}
+                            inputProps={{ 'aria-label': resolvedSelectionLabel }}
+                          />
+                        </TableCell>
+                      ) : null}
                       {columns.map((column) => (
                         <TableCell key={getColumnId(column)} align={column.align ?? 'left'}>
                           {column.render
-                            ? column.render(row, absoluteIndex)
+                            ? column.render(row, sortedIndex)
                             : (row[column.key] as React.ReactNode)}
                         </TableCell>
                       ))}

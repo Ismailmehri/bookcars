@@ -139,4 +139,56 @@ describe('TableSimple', () => {
     const cardsAfterToggle = container.querySelectorAll('[data-testid="table-simple-card"]')
     expect(cardsAfterToggle[0].textContent).toContain('Beta')
   })
+
+  it('supports row selection and select-all controls', () => {
+    const SelectableTable = () => {
+      const [selected, setSelected] = React.useState<React.Key[]>([])
+      return (
+        <TableSimple
+          columns={buildColumns()}
+          data={[
+            { name: 'Alpha', bookings: 5 },
+            { name: 'Beta', bookings: 2 },
+          ]}
+          emptyLabel="Empty"
+          rowsPerPageOptions={[5]}
+          initialRowsPerPage={5}
+          getRowId={(row) => row.name}
+          selectable
+          selectedRows={selected}
+          selectionLabel="Select row"
+          onSelectionChange={(_rows, ids) => setSelected(ids)}
+        />
+      )
+    }
+
+    render(<SelectableTable />)
+
+    const [firstRowCheckbox, secondRowCheckbox] = Array.from(
+      container.querySelectorAll('tbody input[type="checkbox"]'),
+    ) as HTMLInputElement[]
+    expect(firstRowCheckbox.checked).toBe(false)
+    expect(secondRowCheckbox.checked).toBe(false)
+
+    act(() => {
+      firstRowCheckbox.click()
+    })
+    expect(firstRowCheckbox.checked).toBe(true)
+    expect(secondRowCheckbox.checked).toBe(false)
+
+    const headerCheckbox = container.querySelector('thead input[type="checkbox"]') as HTMLInputElement
+    expect(headerCheckbox).toBeTruthy()
+
+    act(() => {
+      headerCheckbox.click()
+    })
+    expect(firstRowCheckbox.checked).toBe(true)
+    expect(secondRowCheckbox.checked).toBe(true)
+
+    act(() => {
+      headerCheckbox.click()
+    })
+    expect(firstRowCheckbox.checked).toBe(false)
+    expect(secondRowCheckbox.checked).toBe(false)
+  })
 })

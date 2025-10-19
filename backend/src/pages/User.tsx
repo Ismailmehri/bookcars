@@ -24,6 +24,7 @@ import Layout from '@/components/Layout'
 import Backdrop from '@/components/SimpleBackdrop'
 import Avatar from '@/components/Avatar'
 import BookingList from '@/components/BookingList'
+import AgencyNotesPanel from '@/components/agency/AgencyNotesPanel'
 import NoMatch from './NoMatch'
 import * as SupplierService from '@/services/SupplierService'
 
@@ -143,7 +144,9 @@ const User = () => {
   }
 
   const edit = loggedUser && user && (loggedUser.type === bookcarsTypes.RecordType.Admin || loggedUser._id === user._id || (loggedUser.type === bookcarsTypes.RecordType.Supplier && loggedUser._id === user.supplier))
-  const supplier = user && user.type === bookcarsTypes.RecordType.Supplier
+  const supplier = !!(user && user.type === bookcarsTypes.RecordType.Supplier)
+  const agencyId = supplier && user && user._id ? String(user._id) : undefined
+  const showNotesPanel = Boolean(loggedUser && helper.admin(loggedUser) && supplier && agencyId)
 
   let _suppliers: string[] = []
   if (loggedUser && user) {
@@ -225,20 +228,34 @@ const User = () => {
             </div>
           </div>
           <div className="col-2">
-            {_suppliers.length > 0 && (
-              <BookingList
-                containerClassName="user"
-                offset={offset}
-                loggedUser={loggedUser}
-                user={supplier ? undefined : user}
-                suppliers={_suppliers}
-                statuses={statuses}
-                hideDates={env.isMobile()}
-                checkboxSelection={!env.isMobile()}
-                hideSupplierColumn={supplier}
-                language={loggedUser.language}
-              />
-            )}
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+                p: { xs: 2, md: 3 },
+                minHeight: '100%',
+                boxSizing: 'border-box',
+              }}
+            >
+              {_suppliers.length > 0 && (
+                <Box sx={{ width: '100%' }}>
+                  <BookingList
+                    containerClassName="user"
+                    offset={offset}
+                    loggedUser={loggedUser}
+                    user={supplier ? undefined : user}
+                    suppliers={_suppliers}
+                    statuses={statuses}
+                    hideDates={env.isMobile()}
+                    checkboxSelection={!env.isMobile()}
+                    hideSupplierColumn={supplier}
+                    language={loggedUser.language}
+                  />
+                </Box>
+              )}
+              {showNotesPanel && agencyId && <AgencyNotesPanel agencyId={agencyId} />}
+            </Box>
           </div>
         </div>
       )}

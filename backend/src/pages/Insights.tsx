@@ -48,6 +48,7 @@ const Insights: React.FC = () => {
     handleUserLoaded,
     handleExportAgency,
     handleExportAdmin,
+    refreshAdminOverview,
   } = useInsightsMetrics()
 
   const handleStartDateChange = (date: Date | null) => {
@@ -192,6 +193,7 @@ const Insights: React.FC = () => {
           loading={loading}
           metrics={adminMetrics}
           onExport={handleExportAdmin}
+          onRankingRefresh={refreshAdminOverview}
         />
       ) : null}
     </Stack>

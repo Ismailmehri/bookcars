@@ -626,6 +626,18 @@ export interface AgencyCommissionSettings extends Document {
   updatedAt?: Date
 }
 
+export interface AgencyNote extends Document {
+  _id: Types.ObjectId
+  agency: Types.ObjectId
+  type: bookcarsTypes.AgencyNoteType
+  summary: string
+  details?: string
+  metadata?: Record<string, unknown>
+  createdBy: Types.ObjectId
+  createdAt: Date
+  updatedAt: Date
+}
+
 interface PricePeriod {
   startDate: null | Date
   endDate: null | Date

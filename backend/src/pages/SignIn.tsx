@@ -123,6 +123,41 @@ const SignIn = () => {
           <Paper className="signin-form" elevation={10}>
             <form onSubmit={handleSubmit}>
               <h1 className="signin-form-title">{strings.SIGN_IN_HEADING}</h1>
+              <div className="form-error" aria-live="assertive">
+                {error && (
+                  <Error
+                    message={(
+                      <div className="alert-notice alert-notice--credentials">
+                        <p className="alert-notice__title">{strings.ERROR_IN_SIGN_IN_TITLE}</p>
+                        <p className="alert-notice__description">
+                          {strings.ERROR_IN_SIGN_IN_HELP}{' '}
+                          <a className="alert-notice__link" href={`mailto:${strings.SUPPORT_EMAIL}`}>
+                            {strings.SUPPORT_EMAIL}
+                          </a>
+                          .
+                        </p>
+                      </div>
+                    )}
+                  />
+                )}
+                {blacklisted && (
+                  <Error
+                    message={(
+                      <div className="alert-notice alert-notice--blacklist">
+                        <p className="alert-notice__title">{strings.IS_BLACKLISTED_TITLE}</p>
+                        <p className="alert-notice__description">
+                          {strings.IS_BLACKLISTED_HELP}{' '}
+                          <a className="alert-notice__link" href={`mailto:${strings.SUPPORT_EMAIL}`}>
+                            {strings.SUPPORT_EMAIL}
+                          </a>
+                          .
+                        </p>
+                      </div>
+                    )}
+                  />
+                )}
+              </div>
+
               <FormControl fullWidth margin="dense">
                 <InputLabel htmlFor="email">{commonStrings.EMAIL}</InputLabel>
                 <Input id="email" type="text" name="Email" onChange={handleEmailChange} autoComplete="email" required />
@@ -158,25 +193,6 @@ const SignIn = () => {
                 <Button type="submit" variant="contained" size="small" className="btn-primary">
                   {strings.SIGN_IN}
                 </Button>
-              </div>
-              <div className="form-error">
-                {error && <Error message={strings.ERROR_IN_SIGN_IN} />}
-                {blacklisted && (
-                  <Error
-                    message={(
-                      <div className="blacklist-notice">
-                        <p className="blacklist-notice__title">{strings.IS_BLACKLISTED_TITLE}</p>
-                        <p className="blacklist-notice__description">
-                          {strings.IS_BLACKLISTED_HELP}{' '}
-                          <a className="blacklist-notice__link" href={`mailto:${strings.SUPPORT_EMAIL}`}>
-                            {strings.SUPPORT_EMAIL}
-                          </a>
-                          .
-                        </p>
-                      </div>
-                    )}
-                  />
-                )}
               </div>
             </form>
           </Paper>

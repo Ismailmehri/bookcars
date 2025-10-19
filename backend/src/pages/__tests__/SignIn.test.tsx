@@ -103,15 +103,74 @@ describe('SignIn page', () => {
     }
     expect(alert.textContent).toContain(strings.IS_BLACKLISTED_TITLE)
 
-    const title = alert.querySelector('.blacklist-notice__title')
+    const notice = alert.querySelector('.alert-notice--blacklist')
+    expect(notice).not.toBeNull()
+
+    const title = notice?.querySelector('.alert-notice__title')
     expect(title?.textContent).toBe(strings.IS_BLACKLISTED_TITLE)
 
-    const description = alert.querySelector('.blacklist-notice__description')
+    const description = notice?.querySelector('.alert-notice__description')
     expect(description?.textContent).toContain(strings.IS_BLACKLISTED_HELP)
     expect(description?.textContent).toContain(strings.SUPPORT_EMAIL)
 
-    const supportLink = alert.querySelector('.blacklist-notice__link')
+    const supportLink = notice?.querySelector('.alert-notice__link')
     expect(supportLink?.getAttribute('href')).toBe(`mailto:${strings.SUPPORT_EMAIL}`)
+
+    const formCard = container.querySelector('.signin-form')
+    expect(formCard?.contains(alert)).toBe(true)
+  })
+
+  it('shows credential errors above the form fields with localized help', async () => {
+    signinMock.mockResolvedValue({
+      status: 401,
+    })
+    signoutMock.mockResolvedValue(undefined)
+
+    render(<SignIn />)
+
+    const emailInput = container.querySelector('input#email') as HTMLInputElement
+    const passwordInput = container.querySelector('input#password') as HTMLInputElement
+    const form = container.querySelector('form') as HTMLFormElement
+
+    act(() => {
+      Simulate.change(emailInput, { target: { value: 'user@agency.tn' } })
+      Simulate.change(passwordInput, { target: { value: 'wrong' } })
+    })
+
+    await act(async () => {
+      Simulate.submit(form)
+    })
+
+    const alert = container.querySelector('.error-alert')
+    expect(alert).not.toBeNull()
+    if (!alert) {
+      throw new Error('Expected credential alert to be rendered')
+    }
+
+    const notice = alert.querySelector('.alert-notice--credentials')
+    expect(notice).not.toBeNull()
+    if (!notice) {
+      throw new Error('Expected credential notice markup to be rendered')
+    }
+
+    expect(notice.querySelector('.alert-notice__title')?.textContent).toBe(strings.ERROR_IN_SIGN_IN_TITLE)
+    expect(notice.querySelector('.alert-notice__description')?.textContent).toContain(strings.ERROR_IN_SIGN_IN_HELP)
+    expect(notice.querySelector('.alert-notice__description')?.textContent).toContain(strings.SUPPORT_EMAIL)
+
+    const supportLink = notice.querySelector<HTMLAnchorElement>('.alert-notice__link')
+    expect(supportLink?.getAttribute('href')).toBe(`mailto:${strings.SUPPORT_EMAIL}`)
+
+    const errorContainer = container.querySelector('.form-error')
+    expect(errorContainer?.contains(alert)).toBe(true)
+
+    const firstControl = container.querySelector('.MuiFormControl-root')
+    expect(firstControl).not.toBeNull()
+    if (!errorContainer || !firstControl) {
+      throw new Error('Expected form controls to be rendered after error container')
+    }
+
+    const position = errorContainer.compareDocumentPosition(firstControl)
+    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
     const formCard = container.querySelector('.signin-form')
     expect(formCard?.contains(alert)).toBe(true)

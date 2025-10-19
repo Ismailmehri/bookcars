@@ -9,6 +9,8 @@ import * as testHelper from './testHelper'
 import * as env from '../src/config/env.config'
 import AgencyNote from '../src/models/AgencyNote'
 import User from '../src/models/User'
+import Car from '../src/models/Car'
+import AgencyCommissionState from '../src/models/AgencyCommissionState'
 import * as mailHelper from '../src/common/mailHelper'
 import * as smsHelper from '../src/common/smsHelper'
 
@@ -17,6 +19,7 @@ const buildCookie = (token: string) => `${env.X_ACCESS_TOKEN}=${token};`
 describe('insights controller', () => {
   let adminToken: string
   const createdSuppliers: string[] = []
+  const createdCars: string[] = []
 
   beforeAll(async () => {
     testHelper.initializeLogger()
@@ -27,6 +30,12 @@ describe('insights controller', () => {
   })
 
   afterEach(async () => {
+    if (createdCars.length > 0) {
+      await Car.deleteMany({ _id: { $in: createdCars.splice(0).map((id) => new mongoose.Types.ObjectId(id)) } })
+    }
+    if (createdSuppliers.length > 0) {
+      await AgencyCommissionState.deleteMany({ agency: { $in: createdSuppliers.map((id) => new mongoose.Types.ObjectId(id)) } })
+    }
     if (createdSuppliers.length > 0) {
       await AgencyNote.deleteMany({ agency: { $in: createdSuppliers.map((id) => new mongoose.Types.ObjectId(id)) } })
       await Promise.all(createdSuppliers.splice(0).map((id) => testHelper.deleteSupplier(id)))
@@ -103,6 +112,34 @@ describe('insights controller', () => {
     const supplierId = await testHelper.createSupplier(supplierEmail, 'Block Agency')
     createdSuppliers.push(supplierId)
 
+    const car = new Car({
+      name: 'Blocking Car',
+      supplier: supplierId,
+      minimumAge: 21,
+      locations: [testHelper.GetRandromObjectIdAsString()],
+      dailyPrice: 50,
+      deposit: 500,
+      available: true,
+      type: bookcarsTypes.CarType.Diesel,
+      gearbox: bookcarsTypes.GearboxType.Automatic,
+      aircon: true,
+      seats: 5,
+      doors: 4,
+      fuelPolicy: bookcarsTypes.FuelPolicy.FreeTank,
+      mileage: -1,
+      cancellation: 0,
+      amendments: 0,
+      theftProtection: 10,
+      collisionDamageWaiver: 10,
+      fullInsurance: 10,
+      additionalDriver: 0,
+      range: bookcarsTypes.CarRange.Midi,
+      rating: 4,
+      multimedia: [bookcarsTypes.CarMultimedia.AndroidAuto],
+    })
+    await car.save()
+    createdCars.push(car.id)
+
     const res = await request(app)
       .post('/api/insights/actions/block')
       .set('Cookie', [buildCookie(adminToken)])
@@ -119,6 +156,13 @@ describe('insights controller', () => {
     const supplier = await User.findById(supplierId)
     expect(supplier?.blacklisted).toBe(true)
 
+    const refreshedCar = await Car.findById(car.id)
+    expect(refreshedCar?.available).toBe(false)
+
+    const state = await AgencyCommissionState.findOne({ agency: new mongoose.Types.ObjectId(supplierId) })
+    expect(state).toBeTruthy()
+    expect(state?.disabledCars.map((id) => id.toString())).toContain(car.id)
+
     const note = await AgencyNote.findOne({ agency: new mongoose.Types.ObjectId(supplierId) })
     expect(note).toBeTruthy()
     expect(note?.type).toBe(bookcarsTypes.AgencyNoteType.Block)
@@ -131,6 +175,42 @@ describe('insights controller', () => {
     createdSuppliers.push(supplierId)
 
     await User.updateOne({ _id: supplierId }, { $set: { blacklisted: true } })
+
+    const car = new Car({
+      name: 'Unblocking Car',
+      supplier: supplierId,
+      minimumAge: 21,
+      locations: [testHelper.GetRandromObjectIdAsString()],
+      dailyPrice: 60,
+      deposit: 600,
+      available: false,
+      type: bookcarsTypes.CarType.Diesel,
+      gearbox: bookcarsTypes.GearboxType.Automatic,
+      aircon: true,
+      seats: 5,
+      doors: 4,
+      fuelPolicy: bookcarsTypes.FuelPolicy.FreeTank,
+      mileage: -1,
+      cancellation: 0,
+      amendments: 0,
+      theftProtection: 10,
+      collisionDamageWaiver: 10,
+      fullInsurance: 10,
+      additionalDriver: 0,
+      range: bookcarsTypes.CarRange.Midi,
+      rating: 4,
+      multimedia: [bookcarsTypes.CarMultimedia.AndroidAuto],
+    })
+    await car.save()
+    createdCars.push(car.id)
+
+    await AgencyCommissionState.create({
+      agency: new mongoose.Types.ObjectId(supplierId),
+      blocked: true,
+      blockedAt: new Date(),
+      blockedBy: new mongoose.Types.ObjectId(testHelper.getAdminUserId()),
+      disabledCars: [new mongoose.Types.ObjectId(car.id)],
+    })
 
     const res = await request(app)
       .post('/api/insights/actions/unblock')
@@ -146,6 +226,13 @@ describe('insights controller', () => {
 
     const supplier = await User.findById(supplierId)
     expect(supplier?.blacklisted).toBe(false)
+
+    const refreshedCar = await Car.findById(car.id)
+    expect(refreshedCar?.available).toBe(true)
+
+    const state = await AgencyCommissionState.findOne({ agency: new mongoose.Types.ObjectId(supplierId) })
+    expect(state?.disabledCars).toHaveLength(0)
+    expect(state?.blocked).toBe(false)
 
     const note = await AgencyNote.findOne({ agency: new mongoose.Types.ObjectId(supplierId) })
     expect(note).toBeTruthy()

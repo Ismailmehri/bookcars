@@ -82,7 +82,7 @@ describe('SignIn page', () => {
 
     const emailInput = container.querySelector('input#email') as HTMLInputElement
     const passwordInput = container.querySelector('input#password') as HTMLInputElement
-    const form = container.querySelector('form') as HTMLFormElement
+    const formElement = container.querySelector('form') as HTMLFormElement
 
     act(() => {
       Simulate.change(emailInput, { target: { value: 'blocked@agency.tn' } })
@@ -90,13 +90,13 @@ describe('SignIn page', () => {
     })
 
     await act(async () => {
-      Simulate.submit(form)
+      Simulate.submit(formElement)
     })
 
     expect(signinMock).toHaveBeenCalled()
     expect(signoutMock).toHaveBeenCalledWith(false)
 
-    const alert = container.querySelector('.error-alert')
+    const alert = container.querySelector('.error-alert--warning')
     expect(alert).not.toBeNull()
     if (!alert) {
       throw new Error('Expected blacklist alert to be rendered')
@@ -116,8 +116,15 @@ describe('SignIn page', () => {
     const supportLink = notice?.querySelector('.alert-notice__link')
     expect(supportLink?.getAttribute('href')).toBe(`mailto:${strings.SUPPORT_EMAIL}`)
 
+    const alertsContainer = container.querySelector('.signin-alerts')
+    expect(alertsContainer).not.toBeNull()
+    if (!alertsContainer) {
+      throw new Error('Expected alerts container to be rendered for blacklist state')
+    }
+    expect(alertsContainer.contains(alert)).toBe(true)
+
     const formCard = container.querySelector('.signin-form')
-    expect(formCard?.contains(alert)).toBe(true)
+    expect(formCard?.contains(alertsContainer)).toBe(true)
   })
 
   it('shows credential errors above the form fields with localized help', async () => {
@@ -141,7 +148,7 @@ describe('SignIn page', () => {
       Simulate.submit(form)
     })
 
-    const alert = container.querySelector('.error-alert')
+    const alert = container.querySelector('.error-alert--error')
     expect(alert).not.toBeNull()
     if (!alert) {
       throw new Error('Expected credential alert to be rendered')
@@ -160,19 +167,29 @@ describe('SignIn page', () => {
     const supportLink = notice.querySelector<HTMLAnchorElement>('.alert-notice__link')
     expect(supportLink?.getAttribute('href')).toBe(`mailto:${strings.SUPPORT_EMAIL}`)
 
-    const errorContainer = container.querySelector('.form-error')
-    expect(errorContainer?.contains(alert)).toBe(true)
-
-    const firstControl = container.querySelector('.MuiFormControl-root')
-    expect(firstControl).not.toBeNull()
-    if (!errorContainer || !firstControl) {
-      throw new Error('Expected form controls to be rendered after error container')
+    const alertsContainer = container.querySelector('.signin-alerts')
+    expect(alertsContainer).not.toBeNull()
+    if (!alertsContainer) {
+      throw new Error('Expected alerts container to be rendered for credential errors')
     }
 
-    const position = errorContainer.compareDocumentPosition(firstControl)
-    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-
     const formCard = container.querySelector('.signin-form')
-    expect(formCard?.contains(alert)).toBe(true)
+    expect(formCard).not.toBeNull()
+    if (!formCard) {
+      throw new Error('Expected sign-in card to be rendered')
+    }
+
+    const cardForm = formCard.querySelector('form')
+    expect(cardForm).not.toBeNull()
+    if (!cardForm) {
+      throw new Error('Expected form element inside sign-in card')
+    }
+
+    expect(alertsContainer.contains(alert)).toBe(true)
+    expect(formCard.contains(alertsContainer)).toBe(true)
+    expect(formCard.contains(cardForm)).toBe(true)
+
+    const position = alertsContainer.compareDocumentPosition(cardForm)
+    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

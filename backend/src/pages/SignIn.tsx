@@ -120,12 +120,14 @@ const SignIn = () => {
       <Header />
       {visible && (
         <div className="signin">
-          <Paper className="signin-form" elevation={10}>
-            <form onSubmit={handleSubmit}>
-              <h1 className="signin-form-title">{strings.SIGN_IN_HEADING}</h1>
-              <div className="form-error" aria-live="assertive">
+          <Paper className="signin-form" elevation={0}>
+            <h1 className="signin-form-title">{strings.SIGN_IN_HEADING}</h1>
+            {(error || blacklisted) && (
+              <div className="signin-alerts" aria-live="assertive">
                 {error && (
                   <Error
+                    severity="error"
+                    className="signin-alert"
                     message={(
                       <div className="alert-notice alert-notice--credentials">
                         <p className="alert-notice__title">{strings.ERROR_IN_SIGN_IN_TITLE}</p>
@@ -142,6 +144,8 @@ const SignIn = () => {
                 )}
                 {blacklisted && (
                   <Error
+                    severity="warning"
+                    className="signin-alert"
                     message={(
                       <div className="alert-notice alert-notice--blacklist">
                         <p className="alert-notice__title">{strings.IS_BLACKLISTED_TITLE}</p>
@@ -157,7 +161,9 @@ const SignIn = () => {
                   />
                 )}
               </div>
+            )}
 
+            <form onSubmit={handleSubmit}>
               <FormControl fullWidth margin="dense">
                 <InputLabel htmlFor="email">{commonStrings.EMAIL}</InputLabel>
                 <Input id="email" type="text" name="Email" onChange={handleEmailChange} autoComplete="email" required />
@@ -187,7 +193,7 @@ const SignIn = () => {
               </div>
 
               <div className="signin-buttons">
-                <Button type="submit" href="/sign-up" style={{ marginRight: '10px' }} variant="contained" size="small" className="btn-secondary">
+                <Button type="button" href="/sign-up" variant="contained" size="small" className="btn-secondary">
                   {strings.SIGN_UP}
                 </Button>
                 <Button type="submit" variant="contained" size="small" className="btn-primary">

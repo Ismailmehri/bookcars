@@ -6,17 +6,27 @@ import {
   Typography,
 } from '@mui/material'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
+import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import { strings as commonStrings } from '@/lang/common'
 
 import '@/assets/css/error.css'
 
+type ErrorSeverity = 'error' | 'warning'
+
 interface ErrorProps {
-  message: React.ReactNode
+  message?: React.ReactNode
   style?: React.CSSProperties
   homeLink?: boolean
+  severity?: ErrorSeverity
+  className?: string
 }
 
-const Error = ({ message, style, homeLink }: ErrorProps) => {
+const iconForSeverity: Record<ErrorSeverity, React.ReactNode> = {
+  error: <ErrorOutlineIcon fontSize="small" />,
+  warning: <WarningAmberOutlinedIcon fontSize="small" />,
+}
+
+const Error = ({ message, style, homeLink, severity = 'error', className }: ErrorProps) => {
   if (homeLink) {
     return (
       <Box
@@ -66,15 +76,20 @@ const Error = ({ message, style, homeLink }: ErrorProps) => {
     )
   }
 
+  const severityClass = `error-alert--${severity}`
+  const containerClassName = ['msg', className].filter(Boolean).join(' ')
+
+  const content = message ?? commonStrings.GENERIC_ERROR
+
   return (
-    <div className="msg" style={style || {}}>
+    <div className={containerClassName} style={style || {}}>
       <Alert
         role="alert"
-        icon={<ErrorOutlineIcon fontSize="small" />}
-        severity="error"
-        className="error-alert"
+        icon={iconForSeverity[severity]}
+        severity={severity}
+        className={`error-alert ${severityClass}`}
       >
-        {message}
+        {content}
       </Alert>
     </div>
   )

@@ -1,11 +1,13 @@
 import { Request, Response } from 'express'
-import mongoose from 'mongoose'
+import mongoose, { Types } from 'mongoose'
 import * as bookcarsTypes from ':bookcars-types'
 import * as authHelper from '../common/authHelper'
 import * as mailHelper from '../common/mailHelper'
 import { sendSms, validateAndFormatPhoneNumber } from '../common/smsHelper'
 import User from '../models/User'
 import AgencyNote from '../models/AgencyNote'
+import Car from '../models/Car'
+import AgencyCommissionState from '../models/AgencyCommissionState'
 
 interface AdminSession {
   id: mongoose.Types.ObjectId
@@ -265,6 +267,42 @@ const handleBlockAgencies = async (req: Request, res: Response) => {
 
         const warnings: bookcarsTypes.BulkActionFailureEntry[] = []
 
+        const agencyObjectId = getAgencyObjectId(agency)
+        const cars = await Car.find(
+          { supplier: agencyObjectId },
+          { _id: 1, available: 1 },
+        )
+          .lean()
+          .exec()
+
+        const availableCarIds = cars
+          .filter((car) => car.available)
+          .map((car) => car._id as Types.ObjectId)
+
+        if (availableCarIds.length > 0) {
+          await Car.updateMany(
+            { _id: { $in: availableCarIds } },
+            { $set: { available: false } },
+          ).exec()
+        }
+
+        let state = await AgencyCommissionState.findOne({ agency: agencyObjectId }).exec()
+
+        if (!state) {
+          state = new AgencyCommissionState({ agency: agencyObjectId, blocked: false, disabledCars: [] })
+        }
+
+        if (availableCarIds.length > 0) {
+          const disabledCarSet = new Set(state.disabledCars?.map((id) => id.toString()) ?? [])
+          availableCarIds.forEach((id) => disabledCarSet.add(id.toString()))
+          state.disabledCars = Array.from(disabledCarSet).map((id) => new mongoose.Types.ObjectId(id))
+        }
+
+        state.blocked = true
+        state.blockedAt = new Date()
+        state.blockedBy = admin.id
+        await state.save()
+
         if (notifyByEmail) {
           try {
             if (!agency.email) {
@@ -351,7 +389,27 @@ const handleUnblockAgencies = async (req: Request, res: Response) => {
             return
           }
 
+          const agencyObjectId = getAgencyObjectId(agency)
+
           await User.updateOne({ _id: agency._id }, { $set: { blacklisted: false } }).exec()
+
+          const state = await AgencyCommissionState.findOne({ agency: agencyObjectId }).exec()
+
+          if (state) {
+            const disabledCars = state.disabledCars ?? []
+            if (disabledCars.length > 0) {
+              await Car.updateMany(
+                { _id: { $in: disabledCars } },
+                { $set: { available: true } },
+              ).exec()
+            }
+
+            state.blocked = false
+            state.blockedAt = undefined
+            state.blockedBy = undefined
+            state.disabledCars = []
+            await state.save()
+          }
 
           await addNote(
             admin,

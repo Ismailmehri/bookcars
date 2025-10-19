@@ -1,16 +1,13 @@
 import React from 'react'
 import {
   Alert,
+  Autocomplete,
   Box,
-  FormControl,
   Grid,
-  InputLabel,
-  MenuItem,
-  Select,
-  SelectChangeEvent,
   Stack,
   Tab,
   Tabs,
+  TextField,
   Typography,
 } from '@mui/material'
 import { LoadingButton } from '@mui/lab'
@@ -63,8 +60,8 @@ const Insights: React.FC = () => {
     }
   }
 
-  const handleAgencyChange = (event: SelectChangeEvent<string>) => {
-    setSelectedAgency(event.target.value)
+  const handleAgencyChange = (value: string | null) => {
+    setSelectedAgency(value ?? '')
     if (isAdmin) {
       setAdminTabLoaded(false)
     }
@@ -113,6 +110,7 @@ const Insights: React.FC = () => {
               onChange={handleStartDateChange}
               showTime={false}
               language={env.DEFAULT_LANGUAGE}
+              format="dd/MM/yyyy"
             />
           </Grid>
           <Grid item xs={12} md={3}>
@@ -124,25 +122,29 @@ const Insights: React.FC = () => {
               onChange={handleEndDateChange}
               showTime={false}
               language={env.DEFAULT_LANGUAGE}
+              format="dd/MM/yyyy"
             />
           </Grid>
           {isAdmin ? (
             <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>{strings.AGENCY_PLACEHOLDER}</InputLabel>
-                <Select
-                  value={selectedAgency}
-                  label={strings.AGENCY_PLACEHOLDER}
-                  onChange={handleAgencyChange}
-                  MenuProps={{ MenuListProps: { sx: { maxHeight: 320 } } }}
-                >
-                  {agencyOptions.map((option) => (
-                    <MenuItem key={option.id} value={option.id}>
-                      {option.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                value={agencyOptions.find((option) => option.id === selectedAgency) ?? null}
+                options={agencyOptions}
+                fullWidth
+                autoHighlight
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                getOptionLabel={(option) => option.name}
+                onChange={(_event, option) => handleAgencyChange(option?.id ?? null)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={strings.AGENCY_SEARCH_PLACEHOLDER}
+                    placeholder={strings.AGENCY_SEARCH_PLACEHOLDER}
+                  />
+                )}
+                ListboxProps={{ style: { maxHeight: 320 } }}
+                noOptionsText={strings.AGENCY_NO_RESULTS}
+              />
             </Grid>
           ) : null}
           <Grid item xs={12} md={3} display="flex" alignItems="center">

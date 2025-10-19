@@ -225,7 +225,7 @@ const AdminView: React.FC<AdminViewProps> = ({ loading, metrics, onExport, onRan
       sortValue: (row) => row.agencyName.toLowerCase(),
       render: (row) => (
         <Link
-          href={`https://admin.plany.tn/user?u=${row.agencyId}`}
+          href={`/user?u=${row.agencyId}`}
           target="_blank"
           rel="noopener noreferrer"
           underline="hover"

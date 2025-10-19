@@ -17,6 +17,7 @@ interface DateTimePickerProps {
   readOnly?: boolean;
   showClear?: boolean;
   showTime?: boolean; // Nouvelle prop pour afficher/masquer l'heure
+  format?: string;
   onChange?: (value: Date | null) => void;
   onError?: (error: DateTimeValidationError, value: Date | null) => void;
 }
@@ -32,6 +33,7 @@ const DateTimePicker = ({
   readOnly,
   showClear,
   showTime = true, // Valeur par défaut : true (afficher l'heure)
+  format,
   onChange,
   onError,
 }: DateTimePickerProps) => {
@@ -52,6 +54,8 @@ const DateTimePicker = ({
     ? ['year', 'month', 'day', 'hours', 'minutes'] // Inclure l'heure
     : ['year', 'month', 'day'] // Exclure l'heure
 
+  const resolvedFormat = format || (showTime ? 'dd/MM/yyyy HH:mm' : 'dd/MM/yyyy')
+
   return (
     <LocalizationProvider adapterLocale={language === 'fr' ? fr : enUS} dateAdapter={AdapterDateFns}>
       <MuiDateTimePicker
@@ -59,6 +63,7 @@ const DateTimePicker = ({
         value={value}
         readOnly={readOnly}
         views={views} // Utiliser les vues définies
+        format={resolvedFormat}
         onChange={(_value) => {
           setValue(_value)
 

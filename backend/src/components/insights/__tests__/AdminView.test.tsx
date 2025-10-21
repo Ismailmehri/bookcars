@@ -4,6 +4,7 @@ import { createRoot, Root } from 'react-dom/client'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import * as bookcarsTypes from ':bookcars-types'
+import { type AdminMetricsViewModel } from '@/pages/insights.types'
 import AdminView from '../AdminView'
 import { strings } from '@/lang/insights'
 
@@ -25,7 +26,7 @@ const buildRankingItem = (overrides?: Partial<bookcarsTypes.AgencyRankingItem>):
   ...overrides,
 })
 
-const buildMetrics = (): bookcarsTypes.AdminMetricsViewModel => ({
+const buildMetrics = (): AdminMetricsViewModel => ({
   summary: {
     totalRevenue: 50000,
     totalBookings: 320,

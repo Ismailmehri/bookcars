@@ -46,6 +46,7 @@ describe('insights helpers (frontend)', () => {
         revenue: 120000,
         reviewCount: 45,
         averageRating: 4.6,
+        blocked: false,
       },
       {
         agencyId: '1',
@@ -59,6 +60,7 @@ describe('insights helpers (frontend)', () => {
         revenue: 80000,
         reviewCount: 20,
         averageRating: 4.2,
+        blocked: false,
       },
     ]
 

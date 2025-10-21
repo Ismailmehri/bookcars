@@ -59,7 +59,7 @@ const UnblockAgenciesDialog: React.FC<UnblockAgenciesDialogProps> = ({
             label={strings.UNBLOCK_DIALOG_REASON}
             value={reason}
             onChange={(event) => {
-              const value = event.target.value
+              const { value } = event.target
               setReason(value)
               if (error && value.trim()) {
                 setError('')

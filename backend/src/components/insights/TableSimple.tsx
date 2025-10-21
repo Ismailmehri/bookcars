@@ -196,8 +196,6 @@ const TableSimple = <T extends object>({
     [sortedEntries, clampedPage, rowsPerPage],
   )
 
-  const visibleRows = useMemo(() => visibleEntries.map((entry) => entry.row), [visibleEntries])
-
   const totalPages = rowsPerPage > 0 ? Math.ceil(sortedRows.length / rowsPerPage) : 1
   const showPagination = totalPages > 1
 
@@ -409,7 +407,10 @@ const TableSimple = <T extends object>({
                     size="small"
                     indeterminate={someVisibleSelected}
                     checked={allVisibleSelected}
-                    onChange={(event) => toggleSelectAllVisible(event.target.checked)}
+                    onChange={(event) => {
+                      const { checked } = event.target as HTMLInputElement
+                      toggleSelectAllVisible(checked)
+                    }}
                     inputProps={{ 'aria-label': resolvedSelectionLabel }}
                   />
                 </Box>
@@ -446,7 +447,10 @@ const TableSimple = <T extends object>({
                           checked={isSelected}
                           onChange={(event) => {
                             event.stopPropagation()
-                            toggleRowSelection(row, originalIndex)
+                            const { checked } = event.target as HTMLInputElement
+                            if (checked !== isSelected) {
+                              toggleRowSelection(row, originalIndex)
+                            }
                           }}
                           inputProps={{ 'aria-label': resolvedSelectionLabel }}
                         />
@@ -495,7 +499,10 @@ const TableSimple = <T extends object>({
                       color="primary"
                       indeterminate={someVisibleSelected}
                       checked={allVisibleSelected}
-                      onChange={(event) => toggleSelectAllVisible(event.target.checked)}
+                    onChange={(event) => {
+                      const { checked } = event.target as HTMLInputElement
+                      toggleSelectAllVisible(checked)
+                    }}
                       inputProps={{ 'aria-label': resolvedSelectionLabel }}
                     />
                   </TableCell>
@@ -589,11 +596,12 @@ const TableSimple = <T extends object>({
           onPageChange={(_event, newPage) => setPage(newPage)}
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={(event) => {
-            const value = Number(event.target.value)
-            if (Number.isNaN(value) || value <= 0) {
+            const { value } = event.target as HTMLInputElement
+            const numericValue = Number(value)
+            if (Number.isNaN(numericValue) || numericValue <= 0) {
               setRowsPerPage(options[0])
             } else {
-              setRowsPerPage(value)
+              setRowsPerPage(numericValue)
             }
             setPage(0)
           }}

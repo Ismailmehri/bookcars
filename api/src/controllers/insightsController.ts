@@ -94,8 +94,9 @@ const toFailureEntry = (agency: LoadedAgency | { _id: string; fullName?: string 
   reason,
 })
 
-const getAgencyObjectId = (agency: LoadedAgency) =>
-  (agency._id instanceof mongoose.Types.ObjectId ? agency._id : new mongoose.Types.ObjectId(agency._id))
+const getAgencyObjectId = (agency: LoadedAgency) => (
+  agency._id instanceof mongoose.Types.ObjectId ? agency._id : new mongoose.Types.ObjectId(agency._id)
+)
 
 const addNote = async (
   admin: AdminSession,

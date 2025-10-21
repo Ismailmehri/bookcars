@@ -190,6 +190,10 @@ describe('SignIn page', () => {
     expect(formCard.contains(cardForm)).toBe(true)
 
     const position = alertsContainer.compareDocumentPosition(cardForm)
-    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const followingPositions = [
+      Node.DOCUMENT_POSITION_FOLLOWING,
+      Node.DOCUMENT_POSITION_FOLLOWING + Node.DOCUMENT_POSITION_CONTAINED_BY,
+    ]
+    expect(followingPositions).toContain(position)
   })
 })

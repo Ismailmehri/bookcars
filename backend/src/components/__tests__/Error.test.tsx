@@ -37,7 +37,8 @@ describe('Error component', () => {
       <Error
         message={(
           <span>
-            Votre compte est suspendu.{' '}
+            Votre compte est suspendu.
+            {' '}
             <a href="mailto:contact@plany.tn">contact@plany.tn</a>
           </span>
         )}

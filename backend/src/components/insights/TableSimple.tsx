@@ -416,9 +416,8 @@ const TableSimple = <T extends object>({
                 </Box>
               ) : null}
               {visibleEntries.map((entry, rowIndex) => {
-                const row = entry.row
+                const { row, index: originalIndex } = entry
                 const sortedIndex = rowIndex + clampedPage * rowsPerPage
-                const originalIndex = entry.index
                 const rowIdentifier = getRowId ? getRowId(row, sortedIndex) : JSON.stringify(row)
                 const rowKey = typeof rowIdentifier === 'string' || typeof rowIdentifier === 'number'
                   ? rowIdentifier
@@ -499,10 +498,10 @@ const TableSimple = <T extends object>({
                       color="primary"
                       indeterminate={someVisibleSelected}
                       checked={allVisibleSelected}
-                    onChange={(event) => {
-                      const { checked } = event.target as HTMLInputElement
-                      toggleSelectAllVisible(checked)
-                    }}
+                      onChange={(event) => {
+                        const { checked } = event.target as HTMLInputElement
+                        toggleSelectAllVisible(checked)
+                      }}
                       inputProps={{ 'aria-label': resolvedSelectionLabel }}
                     />
                   </TableCell>
@@ -545,9 +544,8 @@ const TableSimple = <T extends object>({
                 </TableRow>
               ) : (
                 visibleEntries.map((entry, rowIndex) => {
-                  const row = entry.row
+                  const { row, index: originalIndex } = entry
                   const sortedIndex = rowIndex + clampedPage * rowsPerPage
-                  const originalIndex = entry.index
                   const resolvedKey = getRowId ? getRowId(row, sortedIndex) : JSON.stringify(row)
                   const rowKey = typeof resolvedKey === 'string' || typeof resolvedKey === 'number'
                     ? resolvedKey

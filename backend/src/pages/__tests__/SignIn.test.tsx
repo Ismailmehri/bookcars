@@ -85,8 +85,10 @@ describe('SignIn page', () => {
     const formElement = container.querySelector('form') as HTMLFormElement
 
     act(() => {
-      Simulate.change(emailInput, { target: { value: 'blocked@agency.tn' } })
-      Simulate.change(passwordInput, { target: { value: 'pass1234' } })
+      emailInput.value = 'blocked@agency.tn'
+      passwordInput.value = 'pass1234'
+      Simulate.change(emailInput)
+      Simulate.change(passwordInput)
     })
 
     await act(async () => {
@@ -140,8 +142,10 @@ describe('SignIn page', () => {
     const form = container.querySelector('form') as HTMLFormElement
 
     act(() => {
-      Simulate.change(emailInput, { target: { value: 'user@agency.tn' } })
-      Simulate.change(passwordInput, { target: { value: 'wrong' } })
+      emailInput.value = 'user@agency.tn'
+      passwordInput.value = 'wrong'
+      Simulate.change(emailInput)
+      Simulate.change(passwordInput)
     })
 
     await act(async () => {

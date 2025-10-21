@@ -85,33 +85,58 @@ type QueryContext = {
   populate?: { path: string; select?: string }
 }
 
-class MockQuery<T> {
-  private ctx: QueryContext = { lean: false }
+interface MockQueryResult<T> {
+  lean: () => MockQueryResult<T>
+  sort: (sortArg: Record<string, 1 | -1>) => MockQueryResult<T>
+  populate: (path: string, select?: string) => MockQueryResult<T>
+  exec: () => Promise<T>
+  then: <TResult1 = T, TResult2 = never>(
+    onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null,
+    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+  ) => Promise<TResult1 | TResult2>
+}
 
-  constructor(private readonly resolver: (context: QueryContext) => T | Promise<T>) {}
+type AgencyCommissionStateInstance = {
+  _id: string
+  agency: mongoose.Types.ObjectId
+  blocked: boolean
+  blockedAt?: Date
+  blockedBy?: mongoose.Types.ObjectId
+  disabledCars: mongoose.Types.ObjectId[]
+  save: () => Promise<AgencyCommissionStateInstance>
+}
 
-  lean() {
-    this.ctx.lean = true
-    return this
+type AgencyCommissionStateStatic = {
+  new (payload: Partial<CommissionStateDoc> & { agency: mongoose.Types.ObjectId | string }): AgencyCommissionStateInstance
+  findOne: (filter: Record<string, unknown>) => MockQueryResult<AgencyCommissionStateInstance | null>
+  deleteMany: (filter: Record<string, unknown>) => Promise<{ acknowledged: true; deletedCount: number }>
+  prototype: AgencyCommissionStateInstance
+}
+
+const createMockQuery = <T>(resolver: (context: QueryContext) => T | Promise<T>): MockQueryResult<T> => {
+  const ctx: QueryContext = { lean: false }
+
+  const query: MockQueryResult<T> = {
+    lean: () => {
+      ctx.lean = true
+      return query
+    },
+    sort: (sortArg: Record<string, 1 | -1>) => {
+      ctx.sort = sortArg
+      return query
+    },
+    populate: (path: string, select?: string) => {
+      ctx.populate = { path, select }
+      return query
+    },
+    exec: () => Promise.resolve(resolver(ctx)),
+    then: <TResult1 = T, TResult2 = never>(
+      onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null,
+      onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+    ): Promise<TResult1 | TResult2> => query.exec().then(onfulfilled, onrejected),
   }
 
-  sort(sortArg: Record<string, 1 | -1>) {
-    this.ctx.sort = sortArg
-    return this
-  }
-
-  populate(path: string, select?: string) {
-    this.ctx.populate = { path, select }
-    return this
-  }
-
-  async exec() {
-    return this.resolver(this.ctx)
-  }
-
-  then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null, onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null) {
-    return this.exec().then(onfulfilled, onrejected)
-  }
+  return query
 }
 
 const applyProjection = <T extends Record<string, unknown>>(doc: T, projection?: Record<string, number>) => {
@@ -163,25 +188,23 @@ const filterUsers = (filter: Record<string, unknown>) => {
   })
 }
 
-await jest.unstable_mockModule('../src/models/User', () => ({
-  default: class UserModel {
-    static find(filter: Record<string, unknown>, projection?: Record<string, number>) {
+await jest.unstable_mockModule('../src/models/User', () => {
+  const userModel = {
+    find(filter: Record<string, unknown>, projection?: Record<string, number>) {
       const docs = filterUsers(filter)
-      return new MockQuery(({ lean }) => {
+      return createMockQuery(({ lean }) => {
         const result = docs.map((doc) => applyProjection(doc, projection))
         return lean ? cloneDeep(result) : cloneDeep(result)
       })
-    }
-
-    static findById(id: unknown, projection?: Record<string, number>) {
+    },
+    findById(id: unknown, projection?: Record<string, number>) {
       const doc = db.users.get(normalizeId(id))
-      return new MockQuery(({ lean }) => {
+      return createMockQuery(({ lean }) => {
         const value = doc ? applyProjection(doc, projection) : null
         return lean ? cloneDeep(value) : cloneDeep(value)
       })
-    }
-
-    static updateOne(filter: Record<string, unknown>, update: Record<string, unknown>) {
+    },
+    updateOne(filter: Record<string, unknown>, update: Record<string, unknown>) {
       return {
         exec: async () => {
           const [doc] = filterUsers(filter)
@@ -197,22 +220,23 @@ await jest.unstable_mockModule('../src/models/User', () => ({
           return { acknowledged: true, matchedCount: 1, modifiedCount: 1 }
         },
       }
-    }
-  },
-}))
+    },
+  }
 
-await jest.unstable_mockModule('../src/models/Car', () => ({
-  default: class CarModel {
-    static find(filter: Record<string, unknown>, projection?: Record<string, number>) {
+  return { default: userModel }
+})
+
+await jest.unstable_mockModule('../src/models/Car', () => {
+  const carModel = {
+    find(filter: Record<string, unknown>, projection?: Record<string, number>) {
       const supplierId = normalizeId(filter.supplier)
       const cars = Array.from(db.cars.values()).filter((car) => car.supplier === supplierId)
-      return new MockQuery(({ lean }) => {
+      return createMockQuery(({ lean }) => {
         const mapped = cars.map((car) => applyProjection(car, projection))
         return lean ? cloneDeep(mapped) : cloneDeep(mapped)
       })
-    }
-
-    static updateMany(filter: Record<string, unknown>, update: Record<string, unknown>) {
+    },
+    updateMany(filter: Record<string, unknown>, update: Record<string, unknown>) {
       return {
         exec: async () => {
           const ids = (filter?._id as { $in: unknown[] }).$in.map((value) => normalizeId(value))
@@ -228,14 +252,12 @@ await jest.unstable_mockModule('../src/models/Car', () => ({
           return { acknowledged: true, modifiedCount }
         },
       }
-    }
-
-    static findById(id: unknown) {
+    },
+    findById(id: unknown) {
       const car = db.cars.get(normalizeId(id))
-      return new MockQuery(() => cloneDeep(car))
-    }
-
-    static async deleteMany(filter: Record<string, unknown>) {
+      return createMockQuery(() => cloneDeep(car))
+    },
+    async deleteMany(filter: Record<string, unknown>) {
       const ids = (filter?._id as { $in: unknown[] }).$in.map((value) => normalizeId(value))
       let deletedCount = 0
       ids.forEach((value) => {
@@ -244,13 +266,15 @@ await jest.unstable_mockModule('../src/models/Car', () => ({
         }
       })
       return { acknowledged: true, deletedCount }
-    }
-  },
-}))
+    },
+  }
 
-await jest.unstable_mockModule('../src/models/AgencyNote', () => ({
-  default: class AgencyNoteModel {
-    static async create(payload: Omit<AgencyNoteDoc, '_id' | 'createdAt'>) {
+  return { default: carModel }
+})
+
+await jest.unstable_mockModule('../src/models/AgencyNote', () => {
+  const agencyNoteModel = {
+    async create(payload: Omit<AgencyNoteDoc, '_id' | 'createdAt'>) {
       const _id = createObjectId()
       const note: AgencyNoteDoc = {
         _id,
@@ -261,18 +285,16 @@ await jest.unstable_mockModule('../src/models/AgencyNote', () => ({
       }
       db.notes.set(_id, note)
       return cloneDeep(note)
-    }
-
-    static async findOne(filter: Record<string, unknown>) {
+    },
+    async findOne(filter: Record<string, unknown>) {
       const agencyId = normalizeId(filter.agency)
       const note = Array.from(db.notes.values()).find((entry) => entry.agency === agencyId)
       return note ? cloneDeep(note) : null
-    }
-
-    static find(filter: Record<string, unknown>) {
+    },
+    find(filter: Record<string, unknown>) {
       const agencyId = normalizeId(filter.agency)
       const notes = Array.from(db.notes.values()).filter((entry) => entry.agency === agencyId)
-      return new MockQuery(({ lean, sort, populate }) => {
+      return createMockQuery(({ lean, sort, populate }) => {
         let result = [...notes]
         if (sort) {
           const [[field, direction]] = Object.entries(sort)
@@ -305,9 +327,8 @@ await jest.unstable_mockModule('../src/models/AgencyNote', () => ({
 
         return lean ? cloneDeep(result) : cloneDeep(result)
       })
-    }
-
-    static async deleteMany(filter: Record<string, unknown>) {
+    },
+    async deleteMany(filter: Record<string, unknown>) {
       const ids = (filter.agency as { $in: unknown[] }).$in.map((value) => normalizeId(value))
       let deletedCount = 0
       Array.from(db.notes.values()).forEach((note) => {
@@ -317,71 +338,81 @@ await jest.unstable_mockModule('../src/models/AgencyNote', () => ({
         }
       })
       return { acknowledged: true, deletedCount }
+    },
+  }
+
+  return { default: agencyNoteModel }
+})
+
+await jest.unstable_mockModule('../src/models/AgencyCommissionState', () => {
+  function AgencyCommissionStateModel(this: AgencyCommissionStateInstance, payload: Partial<CommissionStateDoc> & {
+    agency: mongoose.Types.ObjectId | string
+  }) {
+    this._id = createObjectId()
+    this.agency = typeof payload.agency === 'string'
+      ? new mongoose.Types.ObjectId(payload.agency)
+      : payload.agency
+    this.blocked = payload.blocked ?? false
+    this.blockedAt = payload.blockedAt
+    if (payload.blockedBy) {
+      this.blockedBy = typeof payload.blockedBy === 'string'
+        ? new mongoose.Types.ObjectId(payload.blockedBy)
+        : payload.blockedBy
+    } else {
+      this.blockedBy = undefined
     }
-  },
-}))
+    this.disabledCars = (payload.disabledCars ?? []).map((value) => new mongoose.Types.ObjectId(value))
+  }
 
-await jest.unstable_mockModule('../src/models/AgencyCommissionState', () => ({
-  default: class AgencyCommissionStateModel {
-    _id: string
-    agency: mongoose.Types.ObjectId
-    blocked: boolean
-    blockedAt?: Date
-    blockedBy?: mongoose.Types.ObjectId
-    disabledCars: mongoose.Types.ObjectId[]
+  const AgencyCommissionStateModelCtor = AgencyCommissionStateModel as unknown as AgencyCommissionStateStatic
 
-    constructor(payload: Partial<CommissionStateDoc> & { agency: mongoose.Types.ObjectId | string }) {
-      this._id = createObjectId()
-      this.agency = typeof payload.agency === 'string'
-        ? new mongoose.Types.ObjectId(payload.agency)
-        : payload.agency
-      this.blocked = payload.blocked ?? false
-      this.disabledCars = (payload.disabledCars ?? []).map((value) => new mongoose.Types.ObjectId(value))
-    }
+  AgencyCommissionStateModelCtor.prototype.save = async function save(this: AgencyCommissionStateInstance) {
+    db.commissionStates.set(this.agency.toString(), {
+      _id: this._id,
+      agency: this.agency.toString(),
+      blocked: this.blocked,
+      blockedAt: this.blockedAt,
+      blockedBy: this.blockedBy?.toString(),
+      disabledCars: this.disabledCars.map((value) => value.toString()),
+    })
+    return this
+  }
 
-    async save() {
-      db.commissionStates.set(this.agency.toString(), {
-        _id: this._id,
-        agency: this.agency.toString(),
-        blocked: this.blocked,
-        blockedAt: this.blockedAt,
-        blockedBy: this.blockedBy?.toString(),
-        disabledCars: this.disabledCars.map((value) => value.toString()),
+  AgencyCommissionStateModelCtor.findOne = (filter: Record<string, unknown>) => {
+    const agencyId = normalizeId(filter.agency)
+    const doc = db.commissionStates.get(agencyId)
+    return createMockQuery(() => {
+      if (!doc) {
+        return null
+      }
+      const state = new AgencyCommissionStateModelCtor({
+        agency: doc.agency,
+        blocked: doc.blocked,
+        blockedAt: doc.blockedAt,
+        blockedBy: doc.blockedBy,
+        disabledCars: doc.disabledCars,
       })
-      return this
-    }
+      state._id = doc._id
+      state.blockedAt = doc.blockedAt
+      state.blockedBy = doc.blockedBy ? new mongoose.Types.ObjectId(doc.blockedBy) : undefined
+      state.disabledCars = doc.disabledCars.map((value) => new mongoose.Types.ObjectId(value))
+      return state
+    })
+  }
 
-    static findOne(filter: Record<string, unknown>) {
-      const agencyId = normalizeId(filter.agency)
-      const doc = db.commissionStates.get(agencyId)
-      return new MockQuery(() => {
-        if (!doc) {
-          return null
-        }
-        const state = new AgencyCommissionStateModel({
-          agency: doc.agency,
-          blocked: doc.blocked,
-        })
-        state._id = doc._id
-        state.blockedAt = doc.blockedAt
-        state.blockedBy = doc.blockedBy ? new mongoose.Types.ObjectId(doc.blockedBy) : undefined
-        state.disabledCars = doc.disabledCars.map((value) => new mongoose.Types.ObjectId(value))
-        return state
-      })
-    }
+  AgencyCommissionStateModelCtor.deleteMany = async (filter: Record<string, unknown>) => {
+    const ids = (filter.agency as { $in: unknown[] }).$in.map((value) => normalizeId(value))
+    let deletedCount = 0
+    ids.forEach((value) => {
+      if (db.commissionStates.delete(value)) {
+        deletedCount += 1
+      }
+    })
+    return { acknowledged: true, deletedCount }
+  }
 
-    static async deleteMany(filter: Record<string, unknown>) {
-      const ids = (filter.agency as { $in: unknown[] }).$in.map((value) => normalizeId(value))
-      let deletedCount = 0
-      ids.forEach((value) => {
-        if (db.commissionStates.delete(value)) {
-          deletedCount += 1
-        }
-      })
-      return { acknowledged: true, deletedCount }
-    }
-  },
-}))
+  return { default: AgencyCommissionStateModelCtor }
+})
 
 await jest.unstable_mockModule('../src/common/authHelper', () => ({
   getSessionData: jest.fn(),

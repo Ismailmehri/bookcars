@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "./.test-dist",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "rootDir": "../",
+    "allowImportingTsExtensions": false
+  },
+  "include": [
+    "src/common/analytics.types.ts",
+    "src/common/facebookPixel.ts",
+    "src/common/gtm.ts",
+    "src/config/env.config.ts",
+    "src/config/const.ts",
+    "src/types/**/*.d.ts"
+  ]
+}

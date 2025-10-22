@@ -16,6 +16,7 @@ import * as UserService from '@/services/UserService'
 import * as LocationService from '@/services/LocationService'
 import LocationSelectList from '@/components/LocationSelectList'
 import DateTimePicker from '@/components/DateTimePicker'
+import { sendSearchEvent } from '@/common/gtm'
 
 import '@/assets/css/search-form.css'
 
@@ -224,6 +225,18 @@ const SearchForm = ({
     if (!pickupLocation || !dropOffLocation || !from || !to || fromError || toError) {
       return
     }
+
+    const searchTerm = selectedPickupLocation?.name || selectedDropOffLocation?.name || commonStrings.PICK_UP_LOCATION
+
+    sendSearchEvent({
+      searchTerm,
+      pickupLocationId: pickupLocation,
+      dropOffLocationId: dropOffLocation,
+      startDate: from,
+      endDate: to,
+      sameLocation,
+      filters: ranges.length ? { ranges } : undefined,
+    })
 
     setTimeout(navigate, 0, '/search', {
       state: {

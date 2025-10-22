@@ -1,10 +1,101 @@
 /* Error */
 
-.error {
-  color: #ec5555;
-  text-align: center;
+.msg {
+  width: 100%;
 }
 
-.message {
-  padding: 5px;
+.error-alert {
+  width: 100%;
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-weight: 500;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.45;
+  box-shadow: none;
+  border: none;
+}
+
+.error-alert .MuiAlert-message {
+  width: 100%;
+  padding: 0;
+}
+
+.error-alert .MuiAlert-icon {
+  margin-top: 4px;
+}
+
+.error-alert--error {
+  background: linear-gradient(135deg, rgba(255, 77, 79, 0.08), rgba(255, 77, 79, 0.16));
+  border-left: 4px solid #ff4d4f;
+  color: #7f1d1d;
+  box-shadow: 0 6px 18px rgba(255, 77, 79, 0.18);
+}
+
+.error-alert--error .MuiAlert-icon {
+  color: #ff4d4f;
+}
+
+.error-alert--warning {
+  background: linear-gradient(135deg, rgba(255, 192, 120, 0.08), rgba(255, 122, 0, 0.16));
+  border-left: 4px solid #ff7a00;
+  color: #7a4100;
+  box-shadow: 0 6px 18px rgba(255, 122, 0, 0.15);
+}
+
+.error-alert--warning .MuiAlert-icon {
+  color: #ff7a00;
+}
+
+.error-alert--warning .alert-notice__title,
+.error-alert--warning .alert-notice__description {
+  color: #7a4100;
+}
+
+.error-alert--error .alert-notice__title,
+.error-alert--error .alert-notice__description {
+  color: #7f1d1d;
+}
+
+.error-alert--warning .alert-notice__link {
+  color: #d85f00;
+}
+
+.error-alert--error .alert-notice__link {
+  color: #b71c1c;
+}
+
+.error-alert--warning .alert-notice__link:focus-visible {
+  outline: 2px solid rgba(216, 95, 0, 0.45);
+  outline-offset: 2px;
+}
+
+.error-alert--error .alert-notice__link:focus-visible {
+  outline: 2px solid rgba(183, 28, 28, 0.45);
+  outline-offset: 2px;
+}
+
+.alert-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.alert-notice__title {
+  font-weight: 700;
+  font-size: 15px;
+  margin: 0;
+}
+
+.alert-notice__description {
+  margin: 0;
+  font-size: 14px;
+}
+
+.alert-notice__link {
+  font-weight: 600;
+  text-decoration: underline;
 }

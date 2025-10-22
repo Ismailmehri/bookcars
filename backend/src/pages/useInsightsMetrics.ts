@@ -481,6 +481,33 @@ export const useInsightsMetrics = () => {
     downloadCsv('insights-admin.csv', rows)
   }, [adminMetrics])
 
+  const refreshAdminOverview = useCallback(async () => {
+    if (!isAdmin) {
+      return
+    }
+
+    try {
+      const [overview, suppliers] = await Promise.all([
+        CarStatsService.getAdminOverview(),
+        CarStatsService.getUniqueSuppliers(),
+      ])
+      setAdminOverview(overview)
+      setAdminMetrics((prev) => ({
+        ...prev,
+        ranking: overview.ranking,
+      }))
+      const nextOptions = buildAgencyOptions(suppliers, overview.ranking)
+      setAgencyOptions(nextOptions)
+      if (selectedAgency && !nextOptions.some((option) => option.id === selectedAgency)) {
+        if (nextOptions.length > 0) {
+          setSelectedAgency(nextOptions[0].id)
+        }
+      }
+    } catch (err) {
+      helper.error(err, strings.ERROR)
+    }
+  }, [isAdmin, selectedAgency])
+
   return {
     user,
     isAdmin,
@@ -504,5 +531,6 @@ export const useInsightsMetrics = () => {
     handleUserLoaded,
     handleExportAgency,
     handleExportAdmin,
+    refreshAdminOverview,
   }
 }

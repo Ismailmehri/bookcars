@@ -120,9 +120,47 @@ const SignIn = () => {
       <Header />
       {visible && (
         <div className="signin">
-          <Paper className="signin-form" elevation={10}>
+          <Paper className="signin-form" elevation={0}>
+            <h1 className="signin-form-title">{strings.SIGN_IN_HEADING}</h1>
+            {(error || blacklisted) && (
+              <div className="signin-alerts" aria-live="assertive">
+                {error && (
+                  <Error
+                    severity="error"
+                    className="signin-alert"
+                    message={(
+                      <div className="alert-notice alert-notice--credentials">
+                        <p className="alert-notice__title">{strings.ERROR_IN_SIGN_IN_TITLE}</p>
+                        <p className="alert-notice__description">
+                          {strings.ERROR_IN_SIGN_IN_HELP}
+                        </p>
+                      </div>
+                    )}
+                  />
+                )}
+                {blacklisted && (
+                  <Error
+                    severity="warning"
+                    className="signin-alert"
+                    message={(
+                      <div className="alert-notice alert-notice--blacklist">
+                        <p className="alert-notice__title">{strings.IS_BLACKLISTED_TITLE}</p>
+                        <p className="alert-notice__description">
+                          {strings.IS_BLACKLISTED_HELP}
+                          {' '}
+                          <a className="alert-notice__link" href={`mailto:${strings.SUPPORT_EMAIL}`}>
+                            {strings.SUPPORT_EMAIL}
+                          </a>
+                          .
+                        </p>
+                      </div>
+                    )}
+                  />
+                )}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit}>
-              <h1 className="signin-form-title">{strings.SIGN_IN_HEADING}</h1>
               <FormControl fullWidth margin="dense">
                 <InputLabel htmlFor="email">{commonStrings.EMAIL}</InputLabel>
                 <Input id="email" type="text" name="Email" onChange={handleEmailChange} autoComplete="email" required />
@@ -158,10 +196,6 @@ const SignIn = () => {
                 <Button type="submit" variant="contained" size="small" className="btn-primary">
                   {strings.SIGN_IN}
                 </Button>
-              </div>
-              <div className="form-error">
-                {error && <Error message={strings.ERROR_IN_SIGN_IN} />}
-                {blacklisted && <Error message={strings.IS_BLACKLISTED} />}
               </div>
             </form>
           </Paper>

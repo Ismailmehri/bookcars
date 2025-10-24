@@ -110,6 +110,14 @@ You can also install the Android App by directly downloading the APK and install
 13. [Unit Tests and Coverage](https://github.com/aelassas/bookcars/wiki/Unit-Tests-and-Coverage)
 14. [Logs](https://github.com/aelassas/bookcars/wiki/Logs)
 
+## Analytics & Tracking
+
+The frontend pushes booking events to Google Tag Manager. Configure the following environment variables in your `.env` files:
+
+- `VITE_BC_GOOGLE_ANALYTICS_ENABLED` / `VITE_BC_GOOGLE_ANALYTICS_ID` (use your GTM container ID, e.g. `GTM-PVSVL2LT`)
+
+Meta Pixel can be managed directly inside your GTM workspace. The application only needs the GTM container ID to emit the required dataLayer events.
+
 ## License
 
 BookCars is [MIT licensed](https://github.com/aelassas/bookcars/blob/main/LICENSE).

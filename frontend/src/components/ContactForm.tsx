@@ -18,6 +18,7 @@ import { strings } from '@/lang/contact-form'
 import * as UserService from '@/services/UserService'
 import ReCaptchaProvider from '@/components/ReCaptchaProvider'
 import * as helper from '@/common/helper'
+import { sendLeadEvent } from '@/common/gtm'
 
 import '@/assets/css/contact-form.css'
 
@@ -102,6 +103,14 @@ const ContactForm = ({ user, className }: ContactFormProps) => {
       const status = await UserService.sendEmail(payload)
 
       if (status === 200) {
+        sendLeadEvent({
+          source: 'contact-form',
+          hasEmail: Boolean(email),
+          subject,
+          messageLength: message.trim().length,
+          isAuthenticated,
+        })
+
         if (!isAuthenticated) {
           setEmail('')
         }

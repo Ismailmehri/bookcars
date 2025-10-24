@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "./.test-dist",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "rootDir": "../",
+    "allowImportingTsExtensions": false
+  },
+  "include": [
+    "src/common/analytics.types.ts",
+    "src/common/gtm.ts",
+    "src/config/**/*.ts",
+    "src/types/**/*.d.ts"
+  ]
+}

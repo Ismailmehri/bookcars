@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "fix": "eslint --fix .",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test:build": "tsc -p tsconfig.test.json",
+    "test": "npm run test:build && node tests/setupTestDist.mjs && NODE_PATH=.test-dist/node_modules node --experimental-specifier-resolution=node --test tests/*.test.mjs",
     "ncu": "ncu -u -x typescript,date-fns,eslint,eslint-plugin-react-hooks,eslint-plugin-react-refresh",
     "stylelint": "stylelint \"src/**/*.css\"",
     "stylelint:fix": "stylelint \"src/**/*.css\" --fix"

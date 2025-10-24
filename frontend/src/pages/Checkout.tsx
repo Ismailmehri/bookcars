@@ -57,7 +57,7 @@ import NoMatch from './NoMatch'
 import Info from './Info'
 
 import '@/assets/css/checkout.css'
-import { sendPurchaseEvent } from '@/common/gtm'
+import { getDefaultAnalyticsCurrency, sendPurchaseEvent } from '@/common/gtm'
 
 const stripePromise = loadStripe(env.STRIPE_PUBLISHABLE_KEY)
 
@@ -339,11 +339,26 @@ const Checkout = () => {
       setLoading(false)
 
       if (status === 200) {
-        if (payLater) {
-          sendPurchaseEvent(_bookingId, price, 'TND', [{ id: car?._id,
-            name: car?.name,
-            quantity: days,
-            price: car?.dailyPrice }])
+        if (payLater && car?._id && car?.name) {
+          const rentalDays = Math.max(days, 1)
+          const safePrice = Number.isFinite(finalPrice) && finalPrice > 0 ? finalPrice : 0
+          const unitPrice = car.dailyPrice && car.dailyPrice > 0 ? car.dailyPrice : safePrice / rentalDays
+
+          sendPurchaseEvent({
+            transactionId: _bookingId,
+            value: safePrice,
+            currency: getDefaultAnalyticsCurrency(),
+            items: [
+              {
+                id: car._id,
+                name: car.name,
+                quantity: rentalDays,
+                price: unitPrice,
+                category: car.range,
+              },
+            ],
+            contentType: car.range,
+          })
           setVisible(false)
           setSuccess(true)
         }

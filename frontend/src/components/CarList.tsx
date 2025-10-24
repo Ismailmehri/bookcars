@@ -16,7 +16,7 @@ import Badge from './Badge'
 import DoorsIcon from '@/assets/img/car-door.png'
 import DistanceIcon from '@/assets/img/distance-icon.png'
 import '@/assets/css/car-list.css'
-import { sendCheckoutEvent } from '@/common/gtm'
+import { getDefaultAnalyticsCurrency, sendCheckoutEvent } from '@/common/gtm'
 import ProfileAlert from './ProfileAlert'
 
 interface CarListProps {
@@ -566,7 +566,26 @@ const CarList = ({
               variant="contained"
               className="btn-book btn-margin-bottom"
               onClick={() => {
-                sendCheckoutEvent(totalPrice, [{ id: car.id, name: car.name, quantity: days, price: totalPrice / days }])
+                if (car._id) {
+                  const rentalDays = Math.max(days, 1)
+                  const safeTotal = Number.isFinite(totalPrice) && totalPrice > 0 ? totalPrice : 0
+                  const unitPrice = rentalDays > 0 ? safeTotal / rentalDays : safeTotal
+
+                  sendCheckoutEvent({
+                    value: safeTotal,
+                    currency: getDefaultAnalyticsCurrency(),
+                    items: [
+                      {
+                        id: car._id,
+                        name: car.name,
+                        quantity: rentalDays,
+                        price: unitPrice,
+                        category: car.range,
+                      },
+                    ],
+                    contentType: car.range,
+                  })
+                }
                 navigate('/checkout', {
                   state: {
                     carId: car._id,

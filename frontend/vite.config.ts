@@ -27,21 +27,5 @@ export default ({ mode }: { mode: string }) => {
       outDir: 'build',
       target: 'esnext'
     },
-
-    test: {
-      globals: true,
-      environment: 'jsdom',
-      setupFiles: './src/setupTests.ts',
-      coverage: {
-        provider: 'v8',
-        reporter: ['text', 'lcov'],
-        reportsDirectory: 'coverage',
-        include: [
-          'src/common/**/*.{ts,tsx}',
-          'src/components/**/*.{ts,tsx}',
-          'src/pages/**/*.{ts,tsx}',
-        ],
-      },
-    },
   })
 }

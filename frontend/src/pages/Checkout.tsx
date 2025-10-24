@@ -57,7 +57,7 @@ import NoMatch from './NoMatch'
 import Info from './Info'
 
 import '@/assets/css/checkout.css'
-import { sendPurchaseEvent } from '@/common/gtm'
+import { getDefaultAnalyticsCurrency, sendPurchaseEvent } from '@/common/gtm'
 
 const stripePromise = loadStripe(env.STRIPE_PUBLISHABLE_KEY)
 
@@ -347,7 +347,7 @@ const Checkout = () => {
           sendPurchaseEvent({
             transactionId: _bookingId,
             value: safePrice,
-            currency: env.FACEBOOK_PIXEL_CURRENCY,
+            currency: getDefaultAnalyticsCurrency(),
             items: [
               {
                 id: car._id,

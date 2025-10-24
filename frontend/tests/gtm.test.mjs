@@ -21,6 +21,8 @@ const gtm = await loadModule(path.join(commonDist, 'gtm.js'))
 
 const originalGtmId = env.GOOGLE_ANALYTICS_ID
 const originalGaEnabled = env.GOOGLE_ANALYTICS_ENABLED
+const originalStripeCurrency = env.STRIPE_CURRENCY_CODE
+const originalDisplayCurrency = env.CURRENCY
 
 const dataLayerCalls = []
 
@@ -33,11 +35,36 @@ beforeEach(() => {
 
   env.GOOGLE_ANALYTICS_ID = 'GTM-TEST'
   env.GOOGLE_ANALYTICS_ENABLED = true
+  env.STRIPE_CURRENCY_CODE = originalStripeCurrency
+  env.CURRENCY = originalDisplayCurrency
 })
 
 afterEach(() => {
   env.GOOGLE_ANALYTICS_ID = originalGtmId
   env.GOOGLE_ANALYTICS_ENABLED = originalGaEnabled
+  env.STRIPE_CURRENCY_CODE = originalStripeCurrency
+  env.CURRENCY = originalDisplayCurrency
+})
+
+test('getDefaultAnalyticsCurrency prefers Stripe currency when set', () => {
+  env.STRIPE_CURRENCY_CODE = 'eur'
+  env.CURRENCY = 'tnd'
+
+  assert.equal(gtm.getDefaultAnalyticsCurrency(), 'EUR')
+})
+
+test('getDefaultAnalyticsCurrency falls back to display currency when Stripe is empty', () => {
+  env.STRIPE_CURRENCY_CODE = ''
+  env.CURRENCY = 'tnd'
+
+  assert.equal(gtm.getDefaultAnalyticsCurrency(), 'TND')
+})
+
+test('getDefaultAnalyticsCurrency returns USD when no configuration is available', () => {
+  env.STRIPE_CURRENCY_CODE = ''
+  env.CURRENCY = ' '
+
+  assert.equal(gtm.getDefaultAnalyticsCurrency(), 'USD')
 })
 
 test('pushEvent pushes data when tracking ID exists', () => {
@@ -64,7 +91,7 @@ test('pushEvent skips when tracking ID missing', () => {
 test('sendCheckoutEvent normalizes payload before pushing to data layer', () => {
   gtm.sendCheckoutEvent({
     value: 100.459,
-    currency: 'TND',
+    currency: 'tnd',
     items: [
       { id: 'car-1', name: 'Economy', quantity: 2, price: 50.229 },
       { id: '', name: 'Invalid', quantity: 1, price: 10 },
@@ -84,6 +111,7 @@ test('sendCheckoutEvent normalizes payload before pushing to data layer', () => 
   ])
 
   assert.equal(payload.num_items, 2)
+  assert.equal(payload.currency, 'TND')
   assert.deepEqual(payload.content_ids, ['car-1'])
 })
 
@@ -91,7 +119,7 @@ test('sendPurchaseEvent sends transaction metadata', () => {
   gtm.sendPurchaseEvent({
     transactionId: 'booking-123',
     value: 200,
-    currency: 'TND',
+    currency: 'tnd',
     items: [
       { id: 'car-9', name: 'SUV', quantity: 1, price: 200 },
     ],
@@ -99,6 +127,7 @@ test('sendPurchaseEvent sends transaction metadata', () => {
 
   assert.equal(dataLayerCalls[0].dataLayer.transaction_id, 'booking-123')
   assert.equal(dataLayerCalls[0].dataLayer.num_items, 1)
+  assert.equal(dataLayerCalls[0].dataLayer.currency, 'TND')
 })
 
 test('sendSearchEvent forwards filters and dates', () => {
@@ -127,13 +156,14 @@ test('sendViewContentEvent tracks item details', () => {
     id: 'car-3',
     name: 'Compact',
     price: 35,
-    currency: 'TND',
+    currency: 'tnd',
   })
 
   const payload = dataLayerCalls[0].dataLayer
   assert.equal(payload.content_ids[0], 'car-3')
   assert.equal(payload.num_items, 1)
   assert.equal(payload.contents[0].item_price, 35)
+  assert.equal(payload.currency, 'TND')
 })
 
 test('sendLeadEvent forwards metadata to data layer', () => {

@@ -16,7 +16,7 @@ import Badge from './Badge'
 import DoorsIcon from '@/assets/img/car-door.png'
 import DistanceIcon from '@/assets/img/distance-icon.png'
 import '@/assets/css/car-list.css'
-import { sendCheckoutEvent } from '@/common/gtm'
+import { getDefaultAnalyticsCurrency, sendCheckoutEvent } from '@/common/gtm'
 import ProfileAlert from './ProfileAlert'
 
 interface CarListProps {
@@ -573,7 +573,7 @@ const CarList = ({
 
                   sendCheckoutEvent({
                     value: safeTotal,
-                    currency: env.FACEBOOK_PIXEL_CURRENCY,
+                    currency: getDefaultAnalyticsCurrency(),
                     items: [
                       {
                         id: car._id,

@@ -115,7 +115,6 @@ You can also install the Android App by directly downloading the APK and install
 The frontend pushes booking events to Google Tag Manager. Configure the following environment variables in your `.env` files:
 
 - `VITE_BC_GOOGLE_ANALYTICS_ENABLED` / `VITE_BC_GOOGLE_ANALYTICS_ID` (use your GTM container ID, e.g. `GTM-PVSVL2LT`)
-- `VITE_BC_FACEBOOK_PIXEL_CURRENCY` (optional, used as the currency value in the analytics payloads)
 
 Meta Pixel can be managed directly inside your GTM workspace. The application only needs the GTM container ID to emit the required dataLayer events.
 

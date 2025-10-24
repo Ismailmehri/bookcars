@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import TagManager from 'react-gtm-module'
 import env from '@/config/env.config'
 import {
+  getDefaultAnalyticsCurrency,
   pushEvent,
   sendCheckoutEvent,
   sendLeadEvent,
@@ -20,6 +21,8 @@ vi.mock('react-gtm-module', () => ({
 
 const originalGtmId = env.GOOGLE_ANALYTICS_ID
 const originalGaEnabled = env.GOOGLE_ANALYTICS_ENABLED
+const originalStripeCurrency = env.STRIPE_CURRENCY_CODE
+const originalDisplayCurrency = env.CURRENCY
 
 const dataLayerMock = TagManager.dataLayer as unknown as vi.Mock
 
@@ -32,6 +35,31 @@ beforeEach(() => {
 afterEach(() => {
   env.GOOGLE_ANALYTICS_ID = originalGtmId
   env.GOOGLE_ANALYTICS_ENABLED = originalGaEnabled
+  env.STRIPE_CURRENCY_CODE = originalStripeCurrency
+  env.CURRENCY = originalDisplayCurrency
+})
+
+describe('getDefaultAnalyticsCurrency', () => {
+  it('prefers the Stripe currency when available', () => {
+    env.STRIPE_CURRENCY_CODE = 'eur'
+    env.CURRENCY = 'tnd'
+
+    expect(getDefaultAnalyticsCurrency()).toBe('EUR')
+  })
+
+  it('falls back to the display currency when Stripe currency is blank', () => {
+    env.STRIPE_CURRENCY_CODE = ''
+    env.CURRENCY = 'tnd'
+
+    expect(getDefaultAnalyticsCurrency()).toBe('TND')
+  })
+
+  it('returns USD when no configuration is available', () => {
+    env.STRIPE_CURRENCY_CODE = ''
+    env.CURRENCY = ' '
+
+    expect(getDefaultAnalyticsCurrency()).toBe('USD')
+  })
 })
 
 describe('gtm events', () => {
@@ -57,7 +85,7 @@ describe('gtm events', () => {
   it('sends checkout events with normalized payloads', () => {
     sendCheckoutEvent({
       value: 100.459,
-      currency: 'TND',
+      currency: 'tnd',
       items: [
         { id: 'car-1', name: 'Economy Car', quantity: 2, price: 50.229 },
         { id: '', name: 'invalid', quantity: 1, price: 10 },
@@ -89,7 +117,7 @@ describe('gtm events', () => {
     sendPurchaseEvent({
       transactionId: 'booking-123',
       value: 200,
-      currency: 'TND',
+      currency: 'tnd',
       items: [
         { id: 'car-9', name: 'SUV', quantity: 1, price: 200 },
       ],
@@ -139,7 +167,7 @@ describe('gtm events', () => {
       id: 'car-1',
       name: 'Economy Car',
       price: 35,
-      currency: 'TND',
+      currency: 'tnd',
     })
 
     expect(dataLayerMock).toHaveBeenCalledWith(

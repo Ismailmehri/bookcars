@@ -18,6 +18,23 @@ const getTrackingId = () => env.GOOGLE_ANALYTICS_ID?.trim()
 
 const isAnalyticsEnabled = () => Boolean(env.GOOGLE_ANALYTICS_ENABLED && getTrackingId())
 
+const FALLBACK_ANALYTICS_CURRENCY = 'USD'
+
+const sanitizeCurrency = (value?: string) => {
+  const trimmed = value?.trim()
+
+  if (!trimmed) {
+    return undefined
+  }
+
+  return trimmed.toUpperCase()
+}
+
+export const getDefaultAnalyticsCurrency = () =>
+  sanitizeCurrency(env.STRIPE_CURRENCY_CODE) ?? sanitizeCurrency(env.CURRENCY) ?? FALLBACK_ANALYTICS_CURRENCY
+
+const normalizeCurrency = (value?: string) => sanitizeCurrency(value) ?? getDefaultAnalyticsCurrency()
+
 const normalizeAmount = (value: number) => {
   if (!Number.isFinite(value)) {
     return 0
@@ -72,7 +89,7 @@ const createCommercePayload = (
 
   return {
     value: normalizeAmount(input.value),
-    currency: input.currency,
+    currency: normalizeCurrency(input.currency),
     contents,
     content_ids: contentIds,
     num_items: numItems,
@@ -184,7 +201,7 @@ export const sendSearchEvent = (input: SearchEventInput) => {
 export const sendViewContentEvent = (item: ViewContentEventInput) => {
   const payload: AnalyticsCommercePayload = {
     value: normalizeAmount(item.price),
-    currency: item.currency,
+    currency: normalizeCurrency(item.currency),
     contents: mapItemsForAnalytics([
       {
         id: item.id,

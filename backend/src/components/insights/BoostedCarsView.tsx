@@ -38,8 +38,13 @@ interface BoostFormState {
   endDate: string
 }
 
+type BoostedCarRow = Omit<bookcarsTypes.Car, 'supplier'> & {
+  supplier?: bookcarsTypes.User | null
+  supplierId?: string | null
+}
+
 interface DialogState {
-  car: bookcarsTypes.Car
+  car: BoostedCarRow
   form: BoostFormState
   error: string | null
   saving: boolean
@@ -73,7 +78,7 @@ const formatInputDate = (value?: Date | string | null) => {
   return date.toISOString().split('T')[0]
 }
 
-const buildBoostForm = (car: bookcarsTypes.Car): BoostFormState => {
+const buildBoostForm = (car: BoostedCarRow): BoostFormState => {
   const now = new Date()
   const defaultEnd = new Date(now)
   defaultEnd.setMonth(defaultEnd.getMonth() + 1)
@@ -111,8 +116,31 @@ const getBoostStatusLabel = (boost?: bookcarsTypes.CarBoost | null) => {
   return strings.BOOSTED_STATUS_ACTIVE
 }
 
+const resolveSupplier = (car?: Partial<BoostedCarRow> | null) => {
+  if (!car || typeof car !== 'object') {
+    return null
+  }
+
+  const supplier = car.supplier as unknown
+  if (!supplier || typeof supplier !== 'object') {
+    return null
+  }
+
+  const maybeUser = supplier as Partial<bookcarsTypes.User>
+  return maybeUser._id ? maybeUser as bookcarsTypes.User : null
+}
+
+const isBoostedCarRow = (value: unknown): value is BoostedCarRow => {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const candidate = value as Partial<BoostedCarRow>
+  return typeof candidate._id === 'string' && typeof candidate.name === 'string'
+}
+
 const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filtersVersion, defaultAgencyId }) => {
-  const [cars, setCars] = useState<bookcarsTypes.Car[]>([])
+  const [cars, setCars] = useState<BoostedCarRow[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -163,7 +191,21 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
         })
       }
 
-      setCars(allCars)
+      const sanitizedCars = (allCars as unknown[])
+        .filter(isBoostedCarRow)
+        .map((item) => {
+          const supplier = resolveSupplier(item)
+          const rawSupplier = (item as { supplier?: unknown }).supplier
+          const supplierId = supplier?._id ?? (typeof rawSupplier === 'string' ? rawSupplier : null)
+
+          return {
+            ...item,
+            supplier,
+            supplierId,
+          }
+        })
+
+      setCars(sanitizedCars)
       setLastUpdated(new Date())
     } catch (err) {
       helper.error(err, strings.BOOSTED_ERROR)
@@ -191,12 +233,13 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
     const keyword = search.trim().toLowerCase()
 
     return cars.filter((car) => {
-      const supplier = car.supplier as bookcarsTypes.User | undefined
+      const supplier = resolveSupplier(car)
+      const supplierId = car.supplierId ?? supplier?._id ?? null
       const matchesSearch = keyword.length === 0
         || car.name.toLowerCase().includes(keyword)
         || (supplier?.fullName ? supplier.fullName.toLowerCase().includes(keyword) : false)
 
-      const matchesAgency = agencyFilter === '' || (supplier?._id === agencyFilter)
+      const matchesAgency = agencyFilter === '' || supplierId === agencyFilter
 
       const boost = car.boost
       let matchesStatus = true
@@ -218,7 +261,7 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
     })
   }, [agencyFilter, cars, search, statusFilter])
 
-  const handleOpenDialog = (car: bookcarsTypes.Car) => {
+  const handleOpenDialog = (car: BoostedCarRow) => {
     setDialog({
       car,
       form: buildBoostForm(car),
@@ -308,7 +351,7 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
     }
   }
 
-  const columns: GridColDef<bookcarsTypes.Car>[] = [
+  const columns: GridColDef<BoostedCarRow>[] = [
     {
       field: 'name',
       headerName: strings.BOOSTED_TABLE_CAR,
@@ -321,7 +364,7 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       flex: 1,
       minWidth: 160,
       valueGetter: (params) => {
-        const supplier = (params.row.supplier ?? null) as bookcarsTypes.User | null
+        const supplier = resolveSupplier(params.row)
         return supplier?.fullName ?? '—'
       },
     },
@@ -330,33 +373,33 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       headerName: strings.BOOSTED_TABLE_STATUS,
       flex: 0.8,
       minWidth: 140,
-      valueGetter: (params) => getBoostStatusLabel(params.row.boost),
+      valueGetter: (params) => getBoostStatusLabel(params.row?.boost),
     },
     {
       field: 'purchasedViews',
       headerName: strings.BOOSTED_TABLE_PURCHASED,
       type: 'number',
       width: 150,
-      valueGetter: (params) => params.row.boost?.purchasedViews ?? 0,
+      valueGetter: (params) => params.row?.boost?.purchasedViews ?? 0,
     },
     {
       field: 'consumedViews',
       headerName: strings.BOOSTED_TABLE_CONSUMED,
       type: 'number',
       width: 150,
-      valueGetter: (params) => params.row.boost?.consumedViews ?? 0,
+      valueGetter: (params) => params.row?.boost?.consumedViews ?? 0,
     },
     {
       field: 'startDate',
       headerName: strings.BOOSTED_TABLE_START,
       width: 140,
-      valueGetter: (params) => formatDate(params.row.boost?.startDate ?? null),
+      valueGetter: (params) => formatDate(params.row?.boost?.startDate ?? null),
     },
     {
       field: 'endDate',
       headerName: strings.BOOSTED_TABLE_END,
       width: 140,
-      valueGetter: (params) => formatDate(params.row.boost?.endDate ?? null),
+      valueGetter: (params) => formatDate(params.row?.boost?.endDate ?? null),
     },
     {
       field: 'actions',

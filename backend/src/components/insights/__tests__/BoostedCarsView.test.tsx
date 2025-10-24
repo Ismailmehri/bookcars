@@ -180,4 +180,25 @@ describe('BoostedCarsView', () => {
 
     expect(await findByText(strings.BOOSTED_EMPTY)).toBeTruthy()
   })
+
+  it('displays placeholder data when supplier info is missing', async () => {
+    const malformedCar = {
+      ...buildCar(),
+      supplier: null,
+    } as unknown as bookcarsTypes.Car
+
+    getCarsMock.mockResolvedValueOnce([
+      { pageInfo: { totalRecords: 1 }, resultData: [malformedCar] },
+    ])
+
+    const { findByText, findAllByRole } = render(
+      <ThemeProvider theme={createTheme()}>
+        <BoostedCarsView agencyOptions={[{ id: 'agency-1', name: 'Agence Alpha' }]} filtersVersion={1} />
+      </ThemeProvider>,
+    )
+
+    expect(await findByText('Peugeot 208')).toBeTruthy()
+    const placeholderCells = await findAllByRole('cell', { name: '—' })
+    expect(placeholderCells.length).toBeGreaterThan(0)
+  })
 })

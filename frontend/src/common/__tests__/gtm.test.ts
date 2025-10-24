@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import TagManager from 'react-gtm-module'
 import env from '@/config/env.config'
 import {
+  __testing,
   getDefaultAnalyticsCurrency,
+  initGTM,
   pushEvent,
   sendCheckoutEvent,
   sendLeadEvent,
@@ -25,9 +27,11 @@ const originalStripeCurrency = env.STRIPE_CURRENCY_CODE
 const originalDisplayCurrency = env.CURRENCY
 
 const dataLayerMock = TagManager.dataLayer as unknown as vi.Mock
+const initializeMock = TagManager.initialize as unknown as vi.Mock
 
 beforeEach(() => {
   vi.clearAllMocks()
+  __testing.resetInternalState()
   env.GOOGLE_ANALYTICS_ID = 'GTM-TEST'
   env.GOOGLE_ANALYTICS_ENABLED = true
 })
@@ -222,5 +226,84 @@ describe('gtm events', () => {
         }),
       }),
     )
+  })
+})
+
+describe('initGTM', () => {
+  const removeExistingScripts = () => {
+    document.querySelectorAll('[data-test-gtm-script]').forEach((node) => node.remove())
+  }
+
+  beforeEach(() => {
+    removeExistingScripts()
+    Object.defineProperty(window, 'fbq', {
+      configurable: true,
+      value: undefined,
+      writable: true,
+    })
+  })
+
+  afterEach(() => {
+    removeExistingScripts()
+    Object.defineProperty(window, 'fbq', {
+      configurable: true,
+      value: undefined,
+      writable: true,
+    })
+  })
+
+  it('skips initialization when analytics are disabled', () => {
+    env.GOOGLE_ANALYTICS_ENABLED = false
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    initGTM()
+
+    expect(initializeMock).not.toHaveBeenCalled()
+    expect(warnSpy).toHaveBeenCalledWith('GTM is not enabled or GTM ID is missing.')
+
+    warnSpy.mockRestore()
+  })
+
+  it('initializes GTM once and patches non-standard Pixel events', () => {
+    const fbqCallMethod = vi.fn()
+    type TestFbqFunction = ((...args: unknown[]) => unknown) & {
+      callMethod?: (...args: unknown[]) => unknown
+    }
+
+    const fbqFunction: TestFbqFunction = ((...args: unknown[]) => {
+      fbqCallMethod(...args)
+    }) as TestFbqFunction
+
+    fbqFunction.callMethod = fbqCallMethod
+
+    Object.defineProperty(window, 'fbq', {
+      configurable: true,
+      value: fbqFunction,
+      writable: true,
+    })
+
+    initGTM()
+    initGTM()
+
+    expect(initializeMock).toHaveBeenCalledTimes(1)
+
+    const patchedFbq = window.fbq as (...args: unknown[]) => unknown
+    patchedFbq('track', 'scroll', { depth: 50 })
+    patchedFbq('track', 'Purchase', { value: 42 })
+
+    expect(fbqCallMethod).toHaveBeenCalledWith('trackCustom', 'scroll', { depth: 50 })
+    expect(fbqCallMethod).toHaveBeenCalledWith('track', 'Purchase', { value: 42 })
+  })
+
+  it('avoids reinitializing when the GTM script already exists', () => {
+    const script = document.createElement('script')
+    script.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-TEST'
+    script.dataset.testGtmScript = 'true'
+    script.setAttribute('data-test-gtm-script', 'true')
+    document.head.appendChild(script)
+
+    initGTM()
+
+    expect(initializeMock).not.toHaveBeenCalled()
   })
 })

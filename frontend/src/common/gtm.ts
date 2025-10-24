@@ -14,11 +14,159 @@ import {
   ViewContentEventInput,
 } from './analytics.types'
 
+type FbqCommand = 'track' | 'trackCustom' | 'init' | 'set' | string
+type FbqArguments = [FbqCommand, ...unknown[]]
+type FbqCallable = (...args: FbqArguments) => unknown
+
+interface FacebookPixelFunction extends FbqCallable {
+  callMethod?: FbqCallable
+  queue?: FbqArguments[]
+  push?: (args: FbqArguments) => unknown
+  loaded?: boolean
+  version?: string
+  __planyPatched?: boolean
+}
+
+declare global {
+  interface Window {
+    fbq?: FacebookPixelFunction
+    _fbq?: FacebookPixelFunction
+  }
+}
+
+const FACEBOOK_STANDARD_EVENTS = new Set<string>([
+  'AddPaymentInfo',
+  'AddToCart',
+  'AddToWishlist',
+  'CompleteRegistration',
+  'Contact',
+  'CustomizeProduct',
+  'Donate',
+  'FindLocation',
+  'InitiateCheckout',
+  'Lead',
+  'PageView',
+  'Purchase',
+  'Schedule',
+  'Search',
+  'StartTrial',
+  'SubmitApplication',
+  'Subscribe',
+  'ViewContent',
+])
+
+const FACEBOOK_PATCH_INTERVAL = 250
+const FACEBOOK_PATCH_MAX_ATTEMPTS = 20
+
+let isGtmInitialized = false
+let hasScheduledFacebookPatch = false
+let isFacebookPixelPatched = false
+let facebookPatchAttempts = 0
+
 const getTrackingId = () => env.GOOGLE_ANALYTICS_ID?.trim()
 
 const isAnalyticsEnabled = () => Boolean(env.GOOGLE_ANALYTICS_ENABLED && getTrackingId())
 
+const isBrowserEnvironment = typeof window !== 'undefined' && typeof document !== 'undefined'
+
 const FALLBACK_ANALYTICS_CURRENCY = 'USD'
+
+const GTM_SCRIPT_SRC = 'https://www.googletagmanager.com/gtm.js'
+
+const hasExistingGtmScript = (trackingId: string | undefined) => {
+  if (!trackingId || !isBrowserEnvironment) {
+    return false
+  }
+
+  const scriptSelector = `script[src^="${GTM_SCRIPT_SRC}"]`
+  const scripts = document.querySelectorAll<HTMLScriptElement>(scriptSelector)
+
+  return Array.from(scripts).some((script) => script.src.includes(`id=${trackingId}`))
+}
+
+const normalizeFacebookArguments = (args: FbqArguments): FbqArguments => {
+  const [command, eventName, ...rest] = args
+
+  if (command === 'track' && typeof eventName === 'string' && !FACEBOOK_STANDARD_EVENTS.has(eventName)) {
+    return ['trackCustom', eventName, ...rest]
+  }
+
+  return args
+}
+
+const patchFacebookPixel = (): boolean => {
+  if (!isBrowserEnvironment || isFacebookPixelPatched) {
+    return isFacebookPixelPatched
+  }
+
+  const fbWindow = window as Window & { fbq?: FacebookPixelFunction }
+  const { fbq } = fbWindow
+
+  if (!fbq || typeof fbq !== 'function' || fbq.__planyPatched) {
+    if (fbq?.__planyPatched) {
+      isFacebookPixelPatched = true
+    }
+    return isFacebookPixelPatched
+  }
+
+  const originalCallMethod = fbq.callMethod?.bind(fbq)
+  const originalPush = fbq.push?.bind(fbq)
+
+  const patched: FacebookPixelFunction = ((...args: FbqArguments) => {
+    const patchedArgs = normalizeFacebookArguments(args)
+
+    if (fbq.callMethod) {
+      return fbq.callMethod(...patchedArgs)
+    }
+
+    fbq.queue = fbq.queue ?? []
+    fbq.queue.push(patchedArgs)
+
+    return undefined
+  }) as FacebookPixelFunction
+
+  patched.queue = fbq.queue
+  patched.loaded = fbq.loaded
+  patched.version = fbq.version
+
+  if (originalCallMethod) {
+    patched.callMethod = ((...args: FbqArguments) => originalCallMethod(...normalizeFacebookArguments(args))) as FbqCallable
+  }
+
+  if (originalPush) {
+    patched.push = ((args: FbqArguments) => originalPush(normalizeFacebookArguments(args)))
+  }
+
+  patched.__planyPatched = true
+  fbWindow.fbq = patched
+  fbWindow._fbq = patched
+  isFacebookPixelPatched = true
+
+  return true
+}
+
+const scheduleFacebookPixelPatch = () => {
+  if (!isBrowserEnvironment || hasScheduledFacebookPatch) {
+    return
+  }
+
+  hasScheduledFacebookPatch = true
+  facebookPatchAttempts = 0
+
+  const attemptPatch = () => {
+    if (patchFacebookPixel()) {
+      return
+    }
+
+    facebookPatchAttempts += 1
+
+    if (facebookPatchAttempts < FACEBOOK_PATCH_MAX_ATTEMPTS) {
+      window.setTimeout(attemptPatch, FACEBOOK_PATCH_INTERVAL)
+    }
+  }
+
+  attemptPatch()
+}
 
 const sanitizeCurrency = (value?: string) => {
   const trimmed = value?.trim()
@@ -102,11 +250,20 @@ const createCommercePayload = (
 export const initGTM = () => {
   const trackingId = getTrackingId()
 
-  if (isAnalyticsEnabled()) {
-    TagManager.initialize({ gtmId: trackingId })
-  } else {
+  if (!isAnalyticsEnabled()) {
     console.warn('GTM is not enabled or GTM ID is missing.')
+    return
   }
+
+  if (!isGtmInitialized) {
+    if (!hasExistingGtmScript(trackingId)) {
+      TagManager.initialize({ gtmId: trackingId })
+    }
+
+    isGtmInitialized = true
+  }
+
+  scheduleFacebookPixelPatch()
 }
 
 // Fonction générique pour envoyer des événements
@@ -237,4 +394,14 @@ export const sendLeadEvent = (input: LeadEventInput) => {
   }
 
   pushEvent('Lead', data)
+}
+
+export const __testing = {
+  resetInternalState: () => {
+    isGtmInitialized = false
+    hasScheduledFacebookPatch = false
+    isFacebookPixelPatched = false
+    facebookPatchAttempts = 0
+  },
+  isFacebookPixelPatched: () => isFacebookPixelPatched,
 }

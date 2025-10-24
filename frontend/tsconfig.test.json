@@ -11,8 +11,7 @@
   "include": [
     "src/common/analytics.types.ts",
     "src/common/gtm.ts",
-    "src/config/env.config.ts",
-    "src/config/const.ts",
+    "src/config/**/*.ts",
     "src/types/**/*.d.ts"
   ]
 }

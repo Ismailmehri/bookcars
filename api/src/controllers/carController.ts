@@ -818,17 +818,13 @@ export const getFrontendCars = async (req: Request, res: Response) => {
           from: 'User',
           let: { userId: '$supplier' },
           pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ['$_id', '$$userId'] },
-              },
-            },
+            { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
             {
               $match: {
                 $expr: {
                   $or: [
                     { $gte: ['$score', 65] },
-                    { $eq: [{ $ifNull: ['$score', '__NO_SCORE__'] }, '__NO_SCORE__'] }, // null ou manquant
+                    { $eq: [{ $ifNull: ['$score', '__NO_SCORE__'] }, '__NO_SCORE__'] },
                   ],
                 },
               },
@@ -1038,7 +1034,10 @@ export const getFrontendCars = async (req: Request, res: Response) => {
         },
       },
 
-      // ── Limites par fournisseur (abonnement / ou fallback)
+      // ✅ AJOUT ICI : trier avant de grouper pour ne pas couper les voitures au hasard
+      { $sort: { dailyPriceWithDiscount: 1, trips: 1, _id: 1 } },
+
+      // ── Limites par fournisseur
       {
         $group: {
           _id: '$supplier._id',
@@ -1061,11 +1060,11 @@ export const getFrontendCars = async (req: Request, res: Response) => {
       // ── Pagination + tri
       {
         $facet: {
-            resultData: [
-              { $sort: { dailyPriceWithDiscount: 1, trips: 1 } },
-              { $skip: (page - 1) * size },
-              { $limit: size },
-            ],
+          resultData: [
+            { $sort: { dailyPriceWithDiscount: 1, trips: 1 } },
+            { $skip: (page - 1) * size },
+            { $limit: size },
+          ],
           pageInfo: [{ $count: 'totalRecords' }],
         },
       },
@@ -1084,7 +1083,7 @@ export const getFrontendCars = async (req: Request, res: Response) => {
           fullName: car.supplier.fullName,
           avatar: car.supplier.avatar,
           agencyVerified: car.supplier.agencyVerified,
-          score: car.supplier.score, // peut être undefined/null (nouvelles agences)
+          score: car.supplier.score,
           slug: car.supplier.slug,
         },
       })),

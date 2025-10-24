@@ -436,7 +436,11 @@ export const getCars = async (req: Request, res: Response) => {
     const { body }: { body: bookcarsTypes.GetCarsPayload } = req
     const page = Number.parseInt(req.params.page, 10)
     const size = Number.parseInt(req.params.size, 10)
-    const suppliers = body.suppliers!.map((id) => new mongoose.Types.ObjectId(id))
+    const supplierIds = Array.isArray(body.suppliers)
+      ? body.suppliers
+        .filter((id): id is string => Boolean(id))
+        .map((id) => new mongoose.Types.ObjectId(id))
+      : []
     const {
       carType,
       gearbox,
@@ -449,134 +453,153 @@ export const getCars = async (req: Request, res: Response) => {
       multimedia,
       rating,
       seats,
+      boostStatus,
     } = body
     const keyword = escapeStringRegexp(String(req.query.s || ''))
     const options = 'i'
 
-    const $match: mongoose.FilterQuery<bookcarsTypes.Car> = {
-      $and: [
-        { name: { $regex: keyword, $options: options } },
-        { supplier: { $in: suppliers } },
-      ],
+    const matchAnd: mongoose.FilterQuery<bookcarsTypes.Car>[] = []
+
+    if (supplierIds.length > 0) {
+      matchAnd.push({ supplier: { $in: supplierIds } })
     }
 
     if (fuelPolicy) {
-      $match.$and!.push({ fuelPolicy: { $in: fuelPolicy } })
+      matchAnd.push({ fuelPolicy: { $in: fuelPolicy } })
     }
 
     if (carSpecs) {
       if (carSpecs.aircon) {
-        $match.$and!.push({ aircon: true })
+        matchAnd.push({ aircon: true })
       }
       if (carSpecs.moreThanFourDoors) {
-        $match.$and!.push({ doors: { $gt: 4 } })
+        matchAnd.push({ doors: { $gt: 4 } })
       }
       if (carSpecs.moreThanFiveSeats) {
-        $match.$and!.push({ seats: { $gt: 5 } })
+        matchAnd.push({ seats: { $gt: 5 } })
       }
     }
 
     if (carType) {
-      $match.$and!.push({ type: { $in: carType } })
+      matchAnd.push({ type: { $in: carType } })
     }
 
     if (gearbox) {
-      $match.$and!.push({ gearbox: { $in: gearbox } })
+      matchAnd.push({ gearbox: { $in: gearbox } })
     }
 
     if (mileage) {
       if (mileage.length === 1 && mileage[0] === bookcarsTypes.Mileage.Limited) {
-        $match.$and!.push({ mileage: { $gt: -1 } })
+        matchAnd.push({ mileage: { $gt: -1 } })
       } else if (mileage.length === 1 && mileage[0] === bookcarsTypes.Mileage.Unlimited) {
-        $match.$and!.push({ mileage: -1 })
+        matchAnd.push({ mileage: -1 })
       } else if (mileage.length === 0) {
         return res.json([{ resultData: [], pageInfo: [] }])
       }
     }
 
     if (deposit && deposit > -1) {
-      $match.$and!.push({ deposit: { $lte: deposit } })
+      matchAnd.push({ deposit: { $lte: deposit } })
     }
 
     if (Array.isArray(availability)) {
       if (availability.length === 1 && availability[0] === bookcarsTypes.Availablity.Available) {
-        $match.$and!.push({ available: true })
+        matchAnd.push({ available: true })
       } else if (availability.length === 1
         && availability[0] === bookcarsTypes.Availablity.Unavailable) {
-        $match.$and!.push({ available: false })
+        matchAnd.push({ available: false })
       } else if (availability.length === 0) {
         return res.json([{ resultData: [], pageInfo: [] }])
       }
     }
 
     if (ranges) {
-      $match.$and!.push({ range: { $in: ranges } })
+      matchAnd.push({ range: { $in: ranges } })
     }
 
     if (multimedia && multimedia.length > 0) {
       for (const multimediaOption of multimedia) {
-        $match.$and!.push({ multimedia: multimediaOption })
+        matchAnd.push({ multimedia: multimediaOption })
       }
     }
 
     if (rating && rating > -1) {
-      $match.$and!.push({ rating: { $gte: rating } })
+      matchAnd.push({ rating: { $gte: rating } })
     }
 
     if (seats) {
       if (seats > -1) {
         if (seats === 6) {
-          $match.$and!.push({ seats: { $gt: 5 } })
+          matchAnd.push({ seats: { $gt: 5 } })
         } else {
-          $match.$and!.push({ seats })
+          matchAnd.push({ seats })
         }
       }
     }
 
+    if (boostStatus) {
+      if (boostStatus === 'active') {
+        matchAnd.push({ 'boost.active': true, 'boost.paused': false })
+      } else if (boostStatus === 'paused') {
+        matchAnd.push({ 'boost.active': true, 'boost.paused': true })
+      } else if (boostStatus === 'inactive') {
+        matchAnd.push({
+          $or: [
+            { boost: { $exists: false } },
+            { boost: null },
+            { 'boost.active': { $ne: true } },
+          ],
+        })
+      }
+    }
+
+    const pipeline: mongoose.PipelineStage[] = []
+
+    if (matchAnd.length > 0) {
+      pipeline.push({ $match: { $and: matchAnd } })
+    }
+
+    pipeline.push({
+      $lookup: {
+        from: 'User',
+        let: { userId: '$supplier' },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ['$_id', '$$userId'] },
+            },
+          },
+        ],
+        as: 'supplier',
+      },
+    })
+
+    pipeline.push({ $unwind: { path: '$supplier', preserveNullAndEmptyArrays: false } })
+
+    if (keyword) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { name: { $regex: keyword, $options: options } },
+            { 'supplier.fullName': { $regex: keyword, $options: options } },
+          ],
+        },
+      })
+    }
+
+    pipeline.push({
+      $facet: {
+        resultData: [{ $sort: { updatedAt: -1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
+        pageInfo: [
+          {
+            $count: 'totalRecords',
+          },
+        ],
+      },
+    })
+
     const data = await Car.aggregate(
-      [
-        { $match },
-        {
-          $lookup: {
-            from: 'User',
-            let: { userId: '$supplier' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: { $eq: ['$_id', '$$userId'] },
-                },
-              },
-            ],
-            as: 'supplier',
-          },
-        },
-        { $unwind: { path: '$supplier', preserveNullAndEmptyArrays: false } },
-        // {
-        //   $lookup: {
-        //     from: 'Location',
-        //     let: { locations: '$locations' },
-        //     pipeline: [
-        //       {
-        //         $match: {
-        //           $expr: { $in: ['$_id', '$$locations'] },
-        //         },
-        //       },
-        //     ],
-        //     as: 'locations',
-        //   },
-        // },
-        {
-          $facet: {
-            resultData: [{ $sort: { updatedAt: -1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
-            // resultData: [{ $sort: { price: 1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
-            pageInfo: [
-              {
-                $count: 'totalRecords',
-              },
-            ],
-          },
-        },
-      ],
+      pipeline,
       { collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 } },
     )
 

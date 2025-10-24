@@ -1,6 +1,6 @@
 import React from 'react'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
-import { act, fireEvent, render } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi, type MockedFunction } from 'vitest'
 import * as bookcarsTypes from ':bookcars-types'
 import BoostedCarsView from '../BoostedCarsView'
@@ -113,7 +113,7 @@ describe('BoostedCarsView', () => {
   it('loads boosted cars and renders rows', async () => {
     const car = buildCar({ name: 'Renault Clio' })
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: { totalRecords: 1 }, resultData: [car] },
+      { pageInfo: [{ totalRecords: 1 }], resultData: [car] },
     ])
 
     const { findByText } = render(
@@ -125,16 +125,16 @@ describe('BoostedCarsView', () => {
     expect(await findByText('Renault Clio')).toBeTruthy()
     expect(getCarsMock).toHaveBeenCalledWith(
       '',
-      { suppliers: ['agency-1'] },
+      { suppliers: ['agency-1'], boostStatus: undefined },
       1,
-      200,
+      20,
     )
   })
 
   it('opens the edit dialog and saves boost updates', async () => {
     const car = buildCar()
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: { totalRecords: 1 }, resultData: [car] },
+      { pageInfo: [{ totalRecords: 1 }], resultData: [car] },
     ])
     updateBoostMock.mockResolvedValueOnce({
       ...car.boost!,
@@ -169,7 +169,7 @@ describe('BoostedCarsView', () => {
 
   it('falls back to empty state when no data returned', async () => {
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: { totalRecords: 0 }, resultData: [] },
+      { pageInfo: [{ totalRecords: 0 }], resultData: [] },
     ])
 
     const { findByText } = render(
@@ -188,7 +188,7 @@ describe('BoostedCarsView', () => {
     } as unknown as bookcarsTypes.Car
 
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: { totalRecords: 1 }, resultData: [malformedCar] },
+      { pageInfo: [{ totalRecords: 1 }], resultData: [malformedCar] },
     ])
 
     const { findByText, findAllByRole } = render(
@@ -200,5 +200,44 @@ describe('BoostedCarsView', () => {
     expect(await findByText('Peugeot 208')).toBeTruthy()
     const placeholderCells = await findAllByRole('cell', { name: '—' })
     expect(placeholderCells.length).toBeGreaterThan(0)
+  })
+
+  it('requests filtered data when status changes', async () => {
+    const baseCar = buildCar()
+    const car = {
+      ...baseCar,
+      boost: {
+        ...baseCar.boost!,
+        paused: false,
+      },
+    }
+    getCarsMock.mockResolvedValue([
+      { pageInfo: [{ totalRecords: 1 }], resultData: [car] },
+    ])
+
+    const { findByRole } = render(
+      <ThemeProvider theme={createTheme()}>
+        <BoostedCarsView agencyOptions={[{ id: 'agency-1', name: 'Agence Alpha' }]} filtersVersion={1} />
+      </ThemeProvider>,
+    )
+
+    const statusSelect = await findByRole('combobox', { name: strings.BOOSTED_STATUS_LABEL })
+
+    await act(async () => {
+      fireEvent.mouseDown(statusSelect)
+    })
+
+    const pausedOption = await screen.findByRole('option', { name: strings.BOOSTED_STATUS_INACTIVE })
+
+    await act(async () => {
+      fireEvent.click(pausedOption)
+    })
+
+    await waitFor(() => {
+      expect(getCarsMock).toHaveBeenCalledTimes(2)
+    })
+
+    const [, secondPayload] = getCarsMock.mock.calls[1]
+    expect(secondPayload).toMatchObject({ boostStatus: 'inactive' })
   })
 })

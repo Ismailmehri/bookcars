@@ -16,7 +16,11 @@ import {
   Typography,
 } from '@mui/material'
 import { LoadingButton } from '@mui/lab'
-import { DataGrid, type GridColDef } from '@mui/x-data-grid'
+import {
+  DataGrid,
+  type GridColDef,
+  type GridPaginationModel,
+} from '@mui/x-data-grid'
 import * as bookcarsTypes from ':bookcars-types'
 import { strings } from '@/lang/insights'
 import * as helper from '@/common/helper'
@@ -50,7 +54,7 @@ interface DialogState {
   saving: boolean
 }
 
-const BOOSTED_FETCH_SIZE = 200
+const DEFAULT_PAGE_SIZE = 20
 
 const formatDate = (value?: Date | string | null) => {
   if (!value) {
@@ -141,57 +145,45 @@ const isBoostedCarRow = (value: unknown): value is BoostedCarRow => {
 
 const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filtersVersion, defaultAgencyId }) => {
   const [cars, setCars] = useState<BoostedCarRow[]>([])
+  const [rowCount, setRowCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'paused' | 'inactive'>('all')
   const [agencyFilter, setAgencyFilter] = useState('')
   const [dialog, setDialog] = useState<DialogState | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: DEFAULT_PAGE_SIZE })
+  const language = strings.getLanguage()
 
-  const fetchPage = useCallback(async (page: number, suppliers: string[]) => {
-    const payload: bookcarsTypes.GetCarsPayload = {
-      suppliers,
-    }
-
-    const data = await CarService.getCars('', payload, page, BOOSTED_FETCH_SIZE)
-    const pageData = data && data.length > 0 ? data[0] : undefined
-
-    if (!pageData) {
-      return { resultData: [] as bookcarsTypes.Car[], totalRecords: 0 }
-    }
-
-    const totalRecords = pageData.pageInfo?.totalRecords ?? 0
-    return { resultData: pageData.resultData, totalRecords }
-  }, [])
-
-  const loadCars = useCallback(async () => {
+  const loadCars = useCallback(async (model: GridPaginationModel) => {
     if (agencyOptions.length === 0) {
       setCars([])
+      setRowCount(0)
       return
     }
 
-    const supplierIds = agencyOptions.map((option) => option.id)
+    const keyword = searchQuery
+    const supplierIds = agencyFilter
+      ? [agencyFilter]
+      : agencyOptions.map((option) => option.id)
+    const payload: bookcarsTypes.GetCarsPayload = {
+      suppliers: supplierIds,
+      boostStatus: statusFilter === 'all' ? undefined : statusFilter,
+    }
 
     try {
       setLoading(true)
       setError(null)
 
-      const firstPage = await fetchPage(1, supplierIds)
-      let allCars = firstPage.resultData
-      const totalRecords = firstPage.totalRecords
-      const totalPages = Math.ceil(totalRecords / BOOSTED_FETCH_SIZE)
+      const data = await CarService.getCars(keyword, payload, model.page + 1, model.pageSize)
+      const pageData = Array.isArray(data) && data.length > 0 ? data[0] : undefined
+      const totalRecords = Array.isArray(pageData?.pageInfo)
+        ? pageData?.pageInfo?.[0]?.totalRecords ?? 0
+        : pageData?.pageInfo?.totalRecords ?? 0
 
-      if (totalPages > 1) {
-        const remainingPages = await Promise.all(
-          Array.from({ length: totalPages - 1 }, (_, index) => fetchPage(index + 2, supplierIds)),
-        )
-        remainingPages.forEach((pageData) => {
-          allCars = allCars.concat(pageData.resultData)
-        })
-      }
-
-      const sanitizedCars = (allCars as unknown[])
+      const sanitizedCars = ((pageData?.resultData ?? []) as unknown[])
         .filter(isBoostedCarRow)
         .map((item) => {
           const supplier = resolveSupplier(item)
@@ -206,6 +198,7 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
         })
 
       setCars(sanitizedCars)
+      setRowCount(totalRecords)
       setLastUpdated(new Date())
     } catch (err) {
       helper.error(err, strings.BOOSTED_ERROR)
@@ -213,62 +206,46 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
     } finally {
       setLoading(false)
     }
-  }, [agencyOptions, fetchPage])
+  }, [agencyFilter, agencyOptions, searchQuery, statusFilter])
 
   useEffect(() => {
     if (agencyOptions.length === 0) {
       return
     }
 
-    loadCars().catch((err) => {
+    loadCars(paginationModel).catch((err) => {
       helper.error(err, strings.BOOSTED_ERROR)
     })
-  }, [agencyOptions, filtersVersion, loadCars])
+  }, [agencyOptions, filtersVersion, loadCars, paginationModel])
 
   useEffect(() => {
     setAgencyFilter(defaultAgencyId ?? '')
   }, [defaultAgencyId, filtersVersion])
 
-  const filteredCars = useMemo(() => {
-    const keyword = search.trim().toLowerCase()
+  useEffect(() => {
+    setPaginationModel((prev) => (prev.page === 0
+      ? prev
+      : { ...prev, page: 0 }))
+  }, [agencyFilter, searchQuery, statusFilter])
 
-    return cars.filter((car) => {
-      const supplier = resolveSupplier(car)
-      const supplierId = car.supplierId ?? supplier?._id ?? null
-      const matchesSearch = keyword.length === 0
-        || car.name.toLowerCase().includes(keyword)
-        || (supplier?.fullName ? supplier.fullName.toLowerCase().includes(keyword) : false)
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setSearchQuery(searchInput.trim())
+    }, 300)
 
-      const matchesAgency = agencyFilter === '' || supplierId === agencyFilter
+    return () => {
+      window.clearTimeout(handle)
+    }
+  }, [searchInput])
 
-      const boost = car.boost
-      let matchesStatus = true
-      switch (statusFilter) {
-        case 'active':
-          matchesStatus = Boolean(boost && boost.active && !boost.paused)
-          break
-        case 'paused':
-          matchesStatus = Boolean(boost && boost.active && boost.paused)
-          break
-        case 'inactive':
-          matchesStatus = !boost || !boost.active
-          break
-        default:
-          matchesStatus = true
-      }
-
-      return matchesSearch && matchesAgency && matchesStatus
-    })
-  }, [agencyFilter, cars, search, statusFilter])
-
-  const handleOpenDialog = (car: BoostedCarRow) => {
+  const handleOpenDialog = useCallback((car: BoostedCarRow) => {
     setDialog({
       car,
       form: buildBoostForm(car),
       error: null,
       saving: false,
     })
-  }
+  }, [])
 
   const handleCloseDialog = () => {
     setDialog(null)
@@ -351,7 +328,7 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
     }
   }
 
-  const columns: GridColDef<BoostedCarRow>[] = [
+  const columns: GridColDef<BoostedCarRow>[] = useMemo(() => [
     {
       field: 'name',
       headerName: strings.BOOSTED_TABLE_CAR,
@@ -364,7 +341,7 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       flex: 1,
       minWidth: 160,
       valueGetter: (params) => {
-        const supplier = resolveSupplier(params.row)
+        const supplier = resolveSupplier(params?.row)
         return supplier?.fullName ?? '—'
       },
     },
@@ -373,40 +350,40 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       headerName: strings.BOOSTED_TABLE_STATUS,
       flex: 0.8,
       minWidth: 140,
-      valueGetter: (params) => getBoostStatusLabel(params.row?.boost),
+      valueGetter: (params) => getBoostStatusLabel(params?.row?.boost),
     },
     {
       field: 'purchasedViews',
       headerName: strings.BOOSTED_TABLE_PURCHASED,
       type: 'number',
       width: 150,
-      valueGetter: (params) => params.row?.boost?.purchasedViews ?? 0,
+      valueGetter: (params) => params?.row?.boost?.purchasedViews ?? 0,
     },
     {
       field: 'consumedViews',
       headerName: strings.BOOSTED_TABLE_CONSUMED,
       type: 'number',
       width: 150,
-      valueGetter: (params) => params.row?.boost?.consumedViews ?? 0,
+      valueGetter: (params) => params?.row?.boost?.consumedViews ?? 0,
     },
     {
       field: 'startDate',
       headerName: strings.BOOSTED_TABLE_START,
       width: 140,
-      valueGetter: (params) => formatDate(params.row?.boost?.startDate ?? null),
+      valueGetter: (params) => formatDate(params?.row?.boost?.startDate ?? null),
     },
     {
       field: 'endDate',
       headerName: strings.BOOSTED_TABLE_END,
       width: 140,
-      valueGetter: (params) => formatDate(params.row?.boost?.endDate ?? null),
+      valueGetter: (params) => formatDate(params?.row?.boost?.endDate ?? null),
     },
     {
       field: 'actions',
       headerName: strings.BOOSTED_TABLE_ACTIONS,
       sortable: false,
       width: 140,
-      renderCell: ({ row }) => (
+      renderCell: ({ row }) => (row ? (
         <LoadingButton
           variant="outlined"
           size="small"
@@ -414,9 +391,9 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
         >
           {row.boost ? strings.BOOSTED_ACTION_MANAGE : strings.BOOSTED_ACTION_ACTIVATE}
         </LoadingButton>
-      ),
+      ) : null),
     },
-  ]
+  ], [handleOpenDialog, language])
 
   return (
     <Stack spacing={3} sx={{ width: '100%' }}>
@@ -437,7 +414,7 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
         <LoadingButton
           variant="contained"
           color="primary"
-          onClick={() => loadCars().catch((err) => helper.error(err, strings.BOOSTED_ERROR))}
+          onClick={() => loadCars(paginationModel).catch((err) => helper.error(err, strings.BOOSTED_ERROR))}
           loading={loading}
         >
           {strings.BOOSTED_REFRESH}
@@ -450,8 +427,8 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
             fullWidth
             label={strings.BOOSTED_SEARCH_PLACEHOLDER}
             placeholder={strings.BOOSTED_SEARCH_PLACEHOLDER}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             inputProps={{ 'aria-label': strings.BOOSTED_SEARCH_PLACEHOLDER }}
           />
         </Grid>
@@ -497,12 +474,17 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
           disableColumnMenu
           autoHeight={false}
           getRowId={(row) => row._id}
-          rows={filteredCars}
+          rows={cars}
           columns={columns}
           loading={loading}
-          pagination
-          initialState={{ pagination: { paginationModel: { pageSize: 20 } } }}
+          paginationMode="server"
+          rowCount={rowCount}
+          paginationModel={paginationModel}
+          onPaginationModelChange={(model) => {
+            setPaginationModel(model)
+          }}
           pageSizeOptions={[10, 20, 50]}
+          disableRowSelectionOnClick
           sx={{
             '&.MuiDataGrid-root': {
               border: 'none',

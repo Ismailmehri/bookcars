@@ -512,6 +512,8 @@ export interface CarSpecs {
   moreThanFiveSeats?: boolean,
 }
 
+export type CarBoostStatusFilter = 'active' | 'paused' | 'inactive'
+
 export interface GetCarsPayload {
   maxPrice?: number
   minPrice?: number
@@ -528,8 +530,9 @@ export interface GetCarsPayload {
   multimedia?: string[];
   rating?: number;
   seats?: number;
-  startDate?: Date; 
+  startDate?: Date;
   endDate?: Date;
+  boostStatus?: CarBoostStatusFilter;
 }
 
 export interface SignUpPayload {

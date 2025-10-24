@@ -645,10 +645,10 @@ export const updateCarBoost = async (req: Request, res: Response) => {
       return res.sendStatus(403)
     }
 
-    const { carId, boostData } = req.body
+    const { carId, boostData }: { carId?: string; boostData?: Partial<bookcarsTypes.CarBoost> } = req.body
 
-    if (carId === undefined || boostData === undefined) {
-      return res.status(400).send('Missing parameters: carId and paused status are required')
+    if (!carId || !boostData) {
+      return res.status(400).send('Missing parameters: carId and boostData are required')
     }
 
     const car = await Car.findById(carId)
@@ -661,14 +661,64 @@ export const updateCarBoost = async (req: Request, res: Response) => {
       return res.status(404).send('No boost found for this car')
     }
 
-    // Mise à jour uniquement du champ paused
-    car.boost.paused = boostData.paused
+    const nextBoost = car.boost
 
+    if (typeof boostData.active === 'boolean') {
+      nextBoost.active = boostData.active
+      if (!boostData.active) {
+        nextBoost.paused = false
+      }
+    }
+
+    if (typeof boostData.paused === 'boolean') {
+      nextBoost.paused = boostData.paused
+    }
+
+    if (typeof boostData.purchasedViews === 'number') {
+      if (boostData.purchasedViews < 0) {
+        return res.status(400).send('Purchased views must be positive')
+      }
+      nextBoost.purchasedViews = boostData.purchasedViews
+    }
+
+    if (typeof boostData.consumedViews === 'number') {
+      if (boostData.consumedViews < 0) {
+        return res.status(400).send('Consumed views must be positive')
+      }
+      nextBoost.consumedViews = boostData.consumedViews
+    }
+
+    if (typeof boostData.purchasedViews === 'number' && typeof boostData.consumedViews === 'number'
+      && boostData.consumedViews > boostData.purchasedViews) {
+      return res.status(400).send('Consumed views cannot exceed purchased views')
+    }
+
+    if (boostData.startDate) {
+      const startDate = new Date(boostData.startDate)
+      if (Number.isNaN(startDate.getTime())) {
+        return res.status(400).send('Invalid start date')
+      }
+      nextBoost.startDate = startDate
+    }
+
+    if (boostData.endDate) {
+      const endDate = new Date(boostData.endDate)
+      if (Number.isNaN(endDate.getTime())) {
+        return res.status(400).send('Invalid end date')
+      }
+      nextBoost.endDate = endDate
+    }
+
+    if (nextBoost.startDate && nextBoost.endDate && nextBoost.endDate.getTime() < nextBoost.startDate.getTime()) {
+      return res.status(400).send('End date must be greater than start date')
+    }
+
+    car.boost = nextBoost
     await car.save()
 
     return res.status(200).json(car.boost)
   } catch (err) {
-    logger.error(`[car.updateCarBoostPause] ${i18n.t('DB_ERROR')}`, err)
+    logger.error(`[car.updateCarBoost] ${i18n.t('DB_ERROR')}`, err)
     return res.status(500).send(i18n.t('DB_ERROR') + err)
   }
 }

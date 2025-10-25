@@ -660,7 +660,11 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       headerName: strings.BOOSTED_TABLE_STATUS,
       flex: 0.8,
       minWidth: 140,
-      valueFormatter: (params) => statusLabels[(params?.value as BoostStatusKey) ?? 'inactive'],
+      valueFormatter: (params) => {
+        const row = params?.row as BoostedCarGridRow | undefined
+        const key: BoostStatusKey = row?.boostStatusKey ?? 'inactive'
+        return statusLabels[key]
+      },
     },
     {
       field: 'purchasedViewsValue',

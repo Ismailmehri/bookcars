@@ -20,6 +20,7 @@ import {
   DataGrid,
   type GridColDef,
   type GridPaginationModel,
+  type GridSortModel,
 } from '@mui/x-data-grid'
 import * as bookcarsTypes from ':bookcars-types'
 import { strings } from '@/lang/insights'
@@ -59,6 +60,39 @@ interface BoostedCarGridRow extends BoostedCarRow {
 }
 
 type AnyRecord = Record<string, unknown>
+
+const GRID_SORT_FIELD_MAP: Record<string, bookcarsTypes.CarSortField> = {
+  name: 'name',
+  supplierName: 'supplierName',
+  boostStatusKey: 'boostStatus',
+  purchasedViewsValue: 'boostPurchasedViews',
+  consumedViewsValue: 'boostConsumedViews',
+  startDateLabel: 'boostStartDate',
+  endDateLabel: 'boostEndDate',
+}
+
+const resolveSortFromModel = (model: GridSortModel): bookcarsTypes.CarSortOptions | undefined => {
+  if (!model || model.length === 0) {
+    return undefined
+  }
+
+  const [{ field, sort }] = model
+
+  if (!sort) {
+    return undefined
+  }
+
+  const mappedField = GRID_SORT_FIELD_MAP[field]
+
+  if (!mappedField) {
+    return undefined
+  }
+
+  return {
+    field: mappedField,
+    order: sort === 'desc' ? 'desc' : 'asc',
+  }
+}
 
 const toPlainObject = (value: unknown): AnyRecord | null => {
   if (!value || typeof value !== 'object') {
@@ -318,6 +352,7 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
   const [dialog, setDialog] = useState<DialogState | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: DEFAULT_PAGE_SIZE })
+  const [sortModel, setSortModel] = useState<GridSortModel>([])
   const language = strings.getLanguage()
 
   const agencyNameMap = useMemo(() => {
@@ -381,6 +416,12 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       boostStatus: statusFilter === 'all' ? undefined : statusFilter,
     }
 
+    const sortOptions = resolveSortFromModel(sortModel)
+
+    if (sortOptions) {
+      payload.sort = sortOptions
+    }
+
     try {
       setLoading(true)
       setError(null)
@@ -421,7 +462,7 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
     } finally {
       setLoading(false)
     }
-  }, [agencyFilter, agencyOptions, decorateBoostedRow, searchQuery, statusFilter])
+  }, [agencyFilter, agencyOptions, decorateBoostedRow, searchQuery, sortModel, statusFilter])
 
   useEffect(() => {
     if (agencyOptions.length === 0) {
@@ -590,21 +631,11 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       field: 'startDateLabel',
       headerName: strings.BOOSTED_TABLE_START,
       width: 140,
-      sortComparator: (_v1, _v2, param1, param2) => {
-        const first = param1?.row?.boost?.startDate ? new Date(param1.row.boost.startDate).getTime() : 0
-        const second = param2?.row?.boost?.startDate ? new Date(param2.row.boost.startDate).getTime() : 0
-        return first - second
-      },
     },
     {
       field: 'endDateLabel',
       headerName: strings.BOOSTED_TABLE_END,
       width: 140,
-      sortComparator: (_v1, _v2, param1, param2) => {
-        const first = param1?.row?.boost?.endDate ? new Date(param1.row.boost.endDate).getTime() : 0
-        const second = param2?.row?.boost?.endDate ? new Date(param2.row.boost.endDate).getTime() : 0
-        return first - second
-      },
     },
     {
       field: 'actions',
@@ -713,10 +744,16 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
           columns={columns}
           loading={loading}
           paginationMode="server"
+          sortingMode="server"
           rowCount={rowCount}
           paginationModel={paginationModel}
+          sortModel={sortModel}
           onPaginationModelChange={(model) => {
             setPaginationModel(model)
+          }}
+          onSortModelChange={(model) => {
+            setSortModel(model)
+            setPaginationModel((prev) => (prev.page === 0 ? prev : { ...prev, page: 0 }))
           }}
           pageSizeOptions={[10, 20, 50]}
           disableRowSelectionOnClick

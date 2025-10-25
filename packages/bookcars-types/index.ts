@@ -514,6 +514,23 @@ export interface CarSpecs {
 
 export type CarBoostStatusFilter = 'active' | 'paused' | 'inactive'
 
+export type SortOrder = 'asc' | 'desc'
+
+export type CarSortField =
+  | 'name'
+  | 'supplierName'
+  | 'boostStatus'
+  | 'boostPurchasedViews'
+  | 'boostConsumedViews'
+  | 'boostStartDate'
+  | 'boostEndDate'
+  | 'updatedAt'
+
+export interface CarSortOptions {
+  field: CarSortField
+  order: SortOrder
+}
+
 export interface GetCarsPayload {
   maxPrice?: number
   minPrice?: number
@@ -533,6 +550,7 @@ export interface GetCarsPayload {
   startDate?: Date;
   endDate?: Date;
   boostStatus?: CarBoostStatusFilter;
+  sort?: CarSortOptions;
 }
 
 export interface SignUpPayload {

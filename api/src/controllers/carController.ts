@@ -438,7 +438,7 @@ export const getCars = async (req: Request, res: Response) => {
     const size = Number.parseInt(req.params.size, 10)
     const supplierIds = Array.isArray(body.suppliers)
       ? body.suppliers
-        .filter((id): id is string => Boolean(id))
+        .filter((id): id is string => Boolean(id) && helper.isValidObjectId(id))
         .map((id) => new mongoose.Types.ObjectId(id))
       : []
     const {
@@ -454,6 +454,7 @@ export const getCars = async (req: Request, res: Response) => {
       rating,
       seats,
       boostStatus,
+      sort,
     } = body
     const keyword = escapeStringRegexp(String(req.query.s || ''))
     const options = 'i'
@@ -587,9 +588,138 @@ export const getCars = async (req: Request, res: Response) => {
       })
     }
 
+    const cleanupFields: string[] = []
+
+    const getExistsStage = (fieldPath: string) => ({
+      $cond: [
+        {
+          $and: [
+            { $ne: ['$boost', null] },
+            { $ne: [fieldPath, null] },
+          ],
+        },
+        1,
+        0,
+      ],
+    })
+
+    let sortStage: Record<string, 1 | -1> = { updatedAt: -1, _id: 1 }
+
+    if (sort) {
+      const sortOrder: 1 | -1 = sort.order === 'asc' ? 1 : -1
+
+      switch (sort.field) {
+        case 'name':
+          sortStage = { name: sortOrder, _id: sortOrder }
+          break
+        case 'supplierName':
+          sortStage = { 'supplier.fullName': sortOrder, _id: sortOrder }
+          break
+        case 'boostStatus': {
+          const statusField = '__boostStatusOrder'
+          pipeline.push({
+            $addFields: {
+              [statusField]: {
+                $switch: {
+                  branches: [
+                    {
+                      case: {
+                        $and: [
+                          { $eq: ['$boost.active', true] },
+                          { $ne: ['$boost.paused', true] },
+                        ],
+                      },
+                      then: 0,
+                    },
+                    {
+                      case: {
+                        $and: [
+                          { $eq: ['$boost.active', true] },
+                          { $eq: ['$boost.paused', true] },
+                        ],
+                      },
+                      then: 1,
+                    },
+                  ],
+                  default: 2,
+                },
+              },
+            },
+          })
+          cleanupFields.push(statusField)
+          sortStage = { [statusField]: sortOrder, _id: sortOrder }
+          break
+        }
+        case 'boostPurchasedViews': {
+          const existsField = '__hasBoostPurchasedViews'
+          const valueField = '__boostPurchasedViewsValue'
+          pipeline.push({
+            $addFields: {
+              [existsField]: getExistsStage('$boost.purchasedViews'),
+              [valueField]: { $ifNull: ['$boost.purchasedViews', 0] },
+            },
+          })
+          cleanupFields.push(existsField, valueField)
+          sortStage = { [existsField]: -1, [valueField]: sortOrder, _id: sortOrder }
+          break
+        }
+        case 'boostConsumedViews': {
+          const existsField = '__hasBoostConsumedViews'
+          const valueField = '__boostConsumedViewsValue'
+          pipeline.push({
+            $addFields: {
+              [existsField]: getExistsStage('$boost.consumedViews'),
+              [valueField]: { $ifNull: ['$boost.consumedViews', 0] },
+            },
+          })
+          cleanupFields.push(existsField, valueField)
+          sortStage = { [existsField]: -1, [valueField]: sortOrder, _id: sortOrder }
+          break
+        }
+        case 'boostStartDate': {
+          const existsField = '__hasBoostStartDate'
+          pipeline.push({
+            $addFields: {
+              [existsField]: getExistsStage('$boost.startDate'),
+            },
+          })
+          cleanupFields.push(existsField)
+          sortStage = { [existsField]: -1, 'boost.startDate': sortOrder, _id: sortOrder }
+          break
+        }
+        case 'boostEndDate': {
+          const existsField = '__hasBoostEndDate'
+          pipeline.push({
+            $addFields: {
+              [existsField]: getExistsStage('$boost.endDate'),
+            },
+          })
+          cleanupFields.push(existsField)
+          sortStage = { [existsField]: -1, 'boost.endDate': sortOrder, _id: sortOrder }
+          break
+        }
+        case 'updatedAt':
+          sortStage = { updatedAt: sortOrder, _id: sortOrder }
+          break
+        default:
+          sortStage = { updatedAt: -1, _id: 1 }
+          break
+      }
+    }
+
+    const resultDataStages: mongoose.PipelineStage[] = [
+      { $sort: sortStage },
+      { $skip: (page - 1) * size },
+      { $limit: size },
+    ]
+
+    if (cleanupFields.length > 0) {
+      resultDataStages.push({ $unset: cleanupFields })
+    }
+
     pipeline.push({
       $facet: {
-        resultData: [{ $sort: { updatedAt: -1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
+        resultData: resultDataStages,
         pageInfo: [
           {
             $count: 'totalRecords',

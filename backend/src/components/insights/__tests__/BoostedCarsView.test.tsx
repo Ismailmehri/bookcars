@@ -131,6 +131,47 @@ describe('BoostedCarsView', () => {
     )
   })
 
+  it('requests backend sorting when the user sorts a column', async () => {
+    const car = buildCar()
+    getCarsMock.mockResolvedValueOnce([
+      { pageInfo: [{ totalRecords: 1 }], resultData: [car] },
+    ])
+
+    render(
+      <ThemeProvider theme={createTheme()}>
+        <BoostedCarsView agencyOptions={[{ id: 'agency-1', name: 'Agence Alpha' }]} filtersVersion={1} />
+      </ThemeProvider>,
+    )
+
+    expect(await screen.findByText('Peugeot 208')).toBeTruthy()
+
+    getCarsMock.mockClear()
+    getCarsMock.mockResolvedValueOnce([
+      { pageInfo: [{ totalRecords: 1 }], resultData: [car] },
+    ])
+
+    const agencyHeader = await screen.findByRole('columnheader', { name: new RegExp(strings.BOOSTED_TABLE_AGENCY, 'i') })
+
+    await act(async () => {
+      fireEvent.click(agencyHeader)
+    })
+
+    await waitFor(() => {
+      expect(getCarsMock).toHaveBeenCalled()
+    })
+
+    expect(getCarsMock).toHaveBeenLastCalledWith(
+      '',
+      {
+        suppliers: ['agency-1'],
+        boostStatus: undefined,
+        sort: { field: 'supplierName', order: 'asc' },
+      },
+      1,
+      20,
+    )
+  })
+
   it('opens the edit dialog and saves boost updates', async () => {
     const car = buildCar()
     getCarsMock.mockResolvedValueOnce([

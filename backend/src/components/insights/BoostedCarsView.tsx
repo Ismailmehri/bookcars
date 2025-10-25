@@ -396,7 +396,6 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: DEFAULT_PAGE_SIZE })
   const [sortModel, setSortModel] = useState<GridSortModel>([])
-  const language = strings.getLanguage()
 
   const agencyNameMap = useMemo(() => {
     const map = new Map<string, string>()
@@ -640,7 +639,11 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
     active: strings.BOOSTED_STATUS_ACTIVE,
     paused: strings.BOOSTED_STATUS_PAUSED,
     inactive: strings.BOOSTED_STATUS_INACTIVE,
-  }), [language, strings])
+  }), [
+    strings.BOOSTED_STATUS_ACTIVE,
+    strings.BOOSTED_STATUS_PAUSED,
+    strings.BOOSTED_STATUS_INACTIVE,
+  ])
 
   const columns: GridColDef<BoostedCarGridRow>[] = useMemo(() => [
     {
@@ -710,7 +713,20 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
         )
       },
     },
-  ], [handleOpenDialog, language, statusLabels, strings])
+  ], [
+    handleOpenDialog,
+    statusLabels,
+    strings.BOOSTED_TABLE_CAR,
+    strings.BOOSTED_TABLE_AGENCY,
+    strings.BOOSTED_TABLE_STATUS,
+    strings.BOOSTED_TABLE_PURCHASED,
+    strings.BOOSTED_TABLE_CONSUMED,
+    strings.BOOSTED_TABLE_START,
+    strings.BOOSTED_TABLE_END,
+    strings.BOOSTED_TABLE_ACTIONS,
+    strings.BOOSTED_ACTION_MANAGE,
+    strings.BOOSTED_ACTION_ACTIVATE,
+  ])
 
   return (
     <Stack spacing={3} sx={{ width: '100%' }}>

@@ -237,6 +237,28 @@ describe('BoostedCarsView', () => {
     expect(placeholderCells.length).toBeGreaterThan(0)
   })
 
+  it('falls back to agency option label when supplier metadata is missing', async () => {
+    const missingSupplier = {
+      ...buildCar(),
+      supplier: 'agency-1',
+    } as unknown as bookcarsTypes.Car
+
+    getCarsMock.mockResolvedValueOnce([
+      { pageInfo: [{ totalRecords: 1 }], resultData: [missingSupplier] },
+    ])
+
+    render(
+      <ThemeProvider theme={createTheme()}>
+        <BoostedCarsView agencyOptions={[{ id: 'agency-1', name: 'Agence Alpha' }]} filtersVersion={1} />
+      </ThemeProvider>,
+    )
+
+    expect(await screen.findByText('Peugeot 208')).toBeTruthy()
+    await waitFor(() => {
+      expect(screen.getByRole('cell', { name: 'Agence Alpha' })).toBeInTheDocument()
+    })
+  })
+
   it('requests filtered data when status changes', async () => {
     const baseCar = buildCar()
     const car = {

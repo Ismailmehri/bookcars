@@ -42,9 +42,20 @@ interface BoostFormState {
   endDate: string
 }
 
+type BoostStatusKey = 'active' | 'paused' | 'inactive'
+
 type BoostedCarRow = Omit<bookcarsTypes.Car, 'supplier'> & {
   supplier?: bookcarsTypes.User | null
   supplierId?: string | null
+}
+
+interface BoostedCarGridRow extends BoostedCarRow {
+  supplierName: string
+  boostStatusKey: BoostStatusKey
+  purchasedViewsValue: number
+  consumedViewsValue: number
+  startDateLabel: string
+  endDateLabel: string
 }
 
 type AnyRecord = Record<string, unknown>
@@ -158,7 +169,7 @@ const normalizeBoost = (value: unknown): bookcarsTypes.CarBoost | null => {
 }
 
 interface DialogState {
-  car: BoostedCarRow
+  car: BoostedCarGridRow
   form: BoostFormState
   error: string | null
   saving: boolean
@@ -192,7 +203,7 @@ const formatInputDate = (value?: Date | string | null) => {
   return date.toISOString().split('T')[0]
 }
 
-const buildBoostForm = (car: BoostedCarRow): BoostFormState => {
+const buildBoostForm = (car: BoostedCarGridRow): BoostFormState => {
   const now = new Date()
   const defaultEnd = new Date(now)
   defaultEnd.setMonth(defaultEnd.getMonth() + 1)
@@ -218,16 +229,16 @@ const buildBoostForm = (car: BoostedCarRow): BoostFormState => {
   }
 }
 
-const getBoostStatusLabel = (boost?: bookcarsTypes.CarBoost | null) => {
+const getBoostStatusKey = (boost?: bookcarsTypes.CarBoost | null): BoostStatusKey => {
   if (!boost || !boost.active) {
-    return strings.BOOSTED_STATUS_INACTIVE
+    return 'inactive'
   }
 
   if (boost.paused) {
-    return strings.BOOSTED_STATUS_PAUSED
+    return 'paused'
   }
 
-  return strings.BOOSTED_STATUS_ACTIVE
+  return 'active'
 }
 
 const resolveSupplier = (car?: Partial<BoostedCarRow> | null) => {
@@ -254,7 +265,7 @@ const isBoostedCarRow = (value: unknown): value is BoostedCarRow => {
 }
 
 const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filtersVersion, defaultAgencyId }) => {
-  const [cars, setCars] = useState<BoostedCarRow[]>([])
+  const [cars, setCars] = useState<BoostedCarGridRow[]>([])
   const [rowCount, setRowCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -266,6 +277,37 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: DEFAULT_PAGE_SIZE })
   const language = strings.getLanguage()
+
+  const agencyNameMap = useMemo(() => {
+    const map = new Map<string, string>()
+    agencyOptions.forEach((option) => {
+      map.set(option.id, option.name)
+    })
+    return map
+  }, [agencyOptions])
+
+  const decorateBoostedRow = useCallback((car: BoostedCarRow): BoostedCarGridRow => {
+    const supplier = resolveSupplier(car)
+    const supplierId = car.supplierId ?? supplier?._id ?? null
+    const boost = car.boost
+    const boostStatusKey = getBoostStatusKey(boost)
+
+    const supplierName = supplier?.fullName?.trim()
+      || (supplierId ? agencyNameMap.get(supplierId) ?? '' : '')
+
+    return {
+      ...car,
+      supplier,
+      supplierId: supplierId ?? null,
+      boost,
+      supplierName: supplierName || '—',
+      boostStatusKey,
+      purchasedViewsValue: boost?.purchasedViews ?? 0,
+      consumedViewsValue: boost?.consumedViews ?? 0,
+      startDateLabel: formatDate(boost?.startDate ?? null),
+      endDateLabel: formatDate(boost?.endDate ?? null),
+    }
+  }, [agencyNameMap])
 
   const loadCars = useCallback(async (model: GridPaginationModel) => {
     if (agencyOptions.length === 0) {
@@ -300,14 +342,14 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
           const supplier = resolveSupplier(item)
           const rawSupplier = (item as { supplier?: unknown }).supplier
           const supplierId = supplier?._id ?? (typeof rawSupplier === 'string' ? rawSupplier : null)
-          const boost = normalizeBoost((item as { boost?: unknown }).boost)
+          const boost = normalizeBoost((item as { boost?: unknown }).boost) ?? undefined
 
-          return {
+          return decorateBoostedRow({
             ...(plainCar as BoostedCarRow),
             supplier,
             supplierId,
             boost,
-          }
+          })
         })
 
       setCars(sanitizedCars)
@@ -319,7 +361,7 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
     } finally {
       setLoading(false)
     }
-  }, [agencyFilter, agencyOptions, searchQuery, statusFilter])
+  }, [agencyFilter, agencyOptions, decorateBoostedRow, searchQuery, statusFilter])
 
   useEffect(() => {
     if (agencyOptions.length === 0) {
@@ -351,7 +393,7 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
     }
   }, [searchInput])
 
-  const handleOpenDialog = useCallback((car: BoostedCarRow) => {
+  const handleOpenDialog = useCallback((car: BoostedCarGridRow) => {
     setDialog({
       car,
       form: buildBoostForm(car),
@@ -386,10 +428,10 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
         return item
       }
 
-      return {
+      return decorateBoostedRow({
         ...item,
         boost: boost ?? undefined,
-      }
+      })
     }))
   }
 
@@ -446,7 +488,13 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
     }
   }
 
-  const columns: GridColDef<BoostedCarRow>[] = useMemo(() => [
+  const statusLabels = useMemo(() => ({
+    active: strings.BOOSTED_STATUS_ACTIVE,
+    paused: strings.BOOSTED_STATUS_PAUSED,
+    inactive: strings.BOOSTED_STATUS_INACTIVE,
+  }), [language])
+
+  const columns: GridColDef<BoostedCarGridRow>[] = useMemo(() => [
     {
       field: 'name',
       headerName: strings.BOOSTED_TABLE_CAR,
@@ -454,80 +502,49 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       minWidth: 180,
     },
     {
-      field: 'supplier',
+      field: 'supplierName',
       headerName: strings.BOOSTED_TABLE_AGENCY,
       flex: 1,
       minWidth: 160,
-      valueGetter: (params) => {
-        if (!params || !params.row) {
-          return '—'
-        }
-
-        const supplier = resolveSupplier(params.row)
-        return supplier?.fullName ?? '—'
-      },
+      valueGetter: (params) => params?.row?.supplierName ?? '—',
     },
     {
-      field: 'status',
+      field: 'boostStatusKey',
       headerName: strings.BOOSTED_TABLE_STATUS,
       flex: 0.8,
       minWidth: 140,
-      valueGetter: (params) => {
-        if (!params || !params.row) {
-          return strings.BOOSTED_STATUS_INACTIVE
-        }
-
-        return getBoostStatusLabel(params.row.boost)
-      },
+      valueFormatter: (params) => statusLabels[(params?.value as BoostStatusKey) ?? 'inactive'],
     },
     {
-      field: 'purchasedViews',
+      field: 'purchasedViewsValue',
       headerName: strings.BOOSTED_TABLE_PURCHASED,
       type: 'number',
       width: 150,
-      valueGetter: (params) => {
-        if (!params || !params.row) {
-          return 0
-        }
-
-        return params.row.boost?.purchasedViews ?? 0
-      },
     },
     {
-      field: 'consumedViews',
+      field: 'consumedViewsValue',
       headerName: strings.BOOSTED_TABLE_CONSUMED,
       type: 'number',
       width: 150,
-      valueGetter: (params) => {
-        if (!params || !params.row) {
-          return 0
-        }
-
-        return params.row.boost?.consumedViews ?? 0
-      },
     },
     {
-      field: 'startDate',
+      field: 'startDateLabel',
       headerName: strings.BOOSTED_TABLE_START,
       width: 140,
-      valueGetter: (params) => {
-        if (!params || !params.row) {
-          return '—'
-        }
-
-        return formatDate(params.row.boost?.startDate ?? null)
+      sortComparator: (_v1, _v2, param1, param2) => {
+        const first = param1?.row?.boost?.startDate ? new Date(param1.row.boost.startDate).getTime() : 0
+        const second = param2?.row?.boost?.startDate ? new Date(param2.row.boost.startDate).getTime() : 0
+        return first - second
       },
     },
     {
-      field: 'endDate',
+      field: 'endDateLabel',
       headerName: strings.BOOSTED_TABLE_END,
       width: 140,
-      valueGetter: (params) => {
-        if (!params || !params.row) {
-          return '—'
-        }
-
-        return formatDate(params.row.boost?.endDate ?? null)
+      sortComparator: (_v1, _v2, param1, param2) => {
+        const first = param1?.row?.boost?.endDate ? new Date(param1.row.boost.endDate).getTime() : 0
+        const second = param2?.row?.boost?.endDate ? new Date(param2.row.boost.endDate).getTime() : 0
+        return first - second
       },
     },
     {
@@ -535,17 +552,24 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       headerName: strings.BOOSTED_TABLE_ACTIONS,
       sortable: false,
       width: 140,
-      renderCell: ({ row }) => (row ? (
-        <LoadingButton
-          variant="outlined"
-          size="small"
-          onClick={() => handleOpenDialog(row)}
-        >
-          {row.boost ? strings.BOOSTED_ACTION_MANAGE : strings.BOOSTED_ACTION_ACTIVATE}
-        </LoadingButton>
-      ) : null),
+      renderCell: (params) => {
+        const row = params?.row as BoostedCarGridRow | undefined
+        if (!row) {
+          return null
+        }
+
+        return (
+          <LoadingButton
+            variant="outlined"
+            size="small"
+            onClick={() => handleOpenDialog(row)}
+          >
+            {row.boost ? strings.BOOSTED_ACTION_MANAGE : strings.BOOSTED_ACTION_ACTIVATE}
+          </LoadingButton>
+        )
+      },
     },
-  ], [handleOpenDialog, language])
+  ], [handleOpenDialog, language, statusLabels])
 
   return (
     <Stack spacing={3} sx={{ width: '100%' }}>

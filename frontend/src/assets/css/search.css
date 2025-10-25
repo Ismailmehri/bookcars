@@ -1,57 +1,59 @@
 div.search {
-  display: flex;
-  flex: 1 0 auto;
-  transform: translate3d(0, 0, 0);
+  display: grid;
+  gap: 24px;
+  width: 100%;
 }
 
 div.search div.col-1 {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding-top: 5px;
+  gap: 16px;
+  position: relative;
 }
 
 div.search div.col-1 .map {
-  margin-top: 20px;
-  min-height: 0;
-  height: 180px;
-  margin-bottom: 3px;
+  border-radius: 18px;
+  overflow: hidden;
+  min-height: 220px;
+  box-shadow: 0 16px 40px rgba(11, 107, 211, 0.12);
 }
 
 div.search div.col-1 .map .view-on-map {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 10000;
-  background-color: #062638;
-  color: #fff;
+  align-items: center;
+  background: rgba(11, 107, 211, 0.92);
   border: 0;
-  padding: 5px 10px;
-  display: flex;
-  flex-direction: row;
-  border-radius: 5px;
+  border-radius: 999px;
+  color: #fff;
   cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+  padding: 8px 14px;
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  transition: background 0.2s ease;
+}
+
+div.search div.col-1 .map .view-on-map:hover {
+  background: rgba(0, 81, 168, 0.95);
 }
 
 div.search div.col-1 .map .view-on-map img {
-  max-width: 20px;
-  max-height: 20px;
-  margin-right: 2px;
-}
-
-div.search div.col-1 .map .view-on-map span {
-  margin-top: 2px;
+  height: 20px;
+  width: 20px;
 }
 
 div.search div.col-1 .filter {
-  margin: 5px 0;
-  width: 100%;
-  max-width: 480px;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 18px 45px rgba(17, 34, 64, 0.08);
+  padding: 20px;
 }
 
-.map-dialog {
-  width: 80%;
-  height: 800px;
+div.search div.col-2 {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .map-dialog-content {
@@ -62,40 +64,29 @@ div.search div.col-1 .filter {
   justify-content: center;
 }
 
-/* Device width is less than or equal to 960px */
-
-@media only screen and (width <=960px) {
+@media (min-width: 1024px) {
   div.search {
-    flex: 0 1 auto;
-    flex-direction: column;
+    grid-template-columns: 320px 1fr;
+    align-items: start;
   }
 
   div.search div.col-1 {
-    padding: 5px;
-    margin-bottom: 5px;
-  }
-
-  div.search div.col-2 {
-    padding: 1px;
+    position: sticky;
+    top: 120px;
+    height: fit-content;
   }
 }
 
-/* Device width is greater than or equal to 960px */
-
-@media only screen and (width >=960px) {
+@media (max-width: 1023px) {
   div.search {
-    flex-direction: row;
+    grid-template-columns: 1fr;
   }
 
   div.search div.col-1 {
-    width: 300px;
-    margin-left: 20px;
+    order: 2;
   }
 
   div.search div.col-2 {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1 0 auto;
+    order: 1;
   }
 }

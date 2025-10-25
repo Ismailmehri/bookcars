@@ -506,30 +506,33 @@ const Search = () => {
             // distance={distance}
             />
             <Paper
-              elevation={3}
+              elevation={0}
               sx={{
-                padding: 3,
-                marginBottom: 4,
-                borderRadius: 2,
+                px: { xs: 2.5, md: 4 },
+                py: { xs: 3, md: 4 },
+                mb: 4,
+                borderRadius: 4,
                 width: '100%',
-                maxWidth: '800px',
+                maxWidth: '920px',
                 mx: 'auto',
+                background: 'linear-gradient(135deg, rgba(11,107,211,0.12), rgba(255,122,0,0.1))',
+                boxShadow: '0 18px 45px rgba(17, 34, 64, 0.08)',
               }}
             >
               <Typography
-                variant="h2"
+                variant="h3"
                 sx={{
-                  fontWeight: 'bold',
-                  fontSize: '20px',
-                  color: '#333',
+                  fontWeight: 700,
+                  fontSize: { xs: '1.25rem', md: '1.5rem' },
+                  color: '#0b3d91',
                   textAlign: 'center',
-                  mb: 2,
+                  mb: 3,
                 }}
               >
                 Filtrer par prix par jour
               </Typography>
 
-              <Box sx={{ width: '90%', mx: 'auto', mb: 2 }}>
+              <Box sx={{ width: '100%', maxWidth: 640, mx: 'auto', mb: 2 }}>
                 <Slider
                   getAriaLabel={() => 'Prix par jour'}
                   value={minMax}
@@ -542,17 +545,30 @@ const Search = () => {
                   max={1000}
                   marks={marks}
                   valueLabelDisplay="on"
+                  sx={{
+                    color: '#0B6BD3',
+                    '& .MuiSlider-thumb': {
+                      bgcolor: '#FF7A00',
+                      width: 22,
+                      height: 22,
+                    },
+                    '& .MuiSlider-valueLabel': {
+                      backgroundColor: '#0B6BD3',
+                      borderRadius: 2,
+                    },
+                  }}
                 />
               </Box>
 
-              <Box
+              <Typography
+                variant="body2"
                 sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  mt: 2,
-                  px: 2,
+                  textAlign: 'center',
+                  color: '#475569',
                 }}
-              />
+              >
+                Ajustez la fourchette pour découvrir les offres correspondant à votre budget quotidien.
+              </Typography>
             </Paper>
             <CarList
               carSpecs={carSpecs}

@@ -22,8 +22,8 @@ section.car-list .empty-list {
 
 section.car-list div.bc-title {
   text-align: left;
+  margin: 0 auto;
   width: 100%;
-  margin-bottom: 5px;
 }
 
 section.car-list div.bc-title div.bookcars {
@@ -45,16 +45,45 @@ section.car-list div.bc-title div.car-count {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 24px;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.car-list-wrapper {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.car-card-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
   padding: 0 16px;
   box-sizing: border-box;
-  margin-bottom: 24px;
+}
+
+.car-list-container .bc-title,
+.car-list-container .car-location-header,
+.car-list-wrapper {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 16px;
+  box-sizing: border-box;
 }
 
 .car-location-header {
   width: 100%;
-  max-width: 960px;
-  padding: 12px 0 16px;
+  padding: 12px 16px 16px;
   border-bottom: 1px solid #e7ecf3;
   display: flex;
   justify-content: space-between;
@@ -87,7 +116,8 @@ section.car-list div.bc-title div.car-count {
 
 .car-card {
   width: 100%;
-  max-width: 960px;
+  max-width: 900px;
+  margin: 0 auto;
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 24px 48px -32px rgba(11, 107, 211, 0.45);
@@ -376,10 +406,16 @@ section.car-list div.bc-title div.car-count {
 @media only screen and (max-width: 960px) {
   .car-list-container {
     padding: 0 12px;
+    gap: 20px;
+  }
+
+  .car-card-container {
+    max-width: 100%;
+    padding: 0 12px;
   }
 
   .car-location-header {
-    max-width: 100%;
+    max-width: 920px;
     padding: 8px 0 12px;
   }
 

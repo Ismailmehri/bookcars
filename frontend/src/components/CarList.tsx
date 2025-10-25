@@ -306,272 +306,291 @@ const CarList = ({
           : ((from && to && pickupLocation && dropOffLocation) || hidePrice) // || (hidePrice && booking))
           && (
             <>
-              <div>
+              <div className="car-list-container">
                 {totalRecords > 0 && !boost && (
-                <div className="bc-title">
-                  <div className="bookcars">
-                    <span>{strings.TITLE_1}</span>
-                    <span className="title-bookcars">{commonStrings.BOOKCARS}</span>
-                    <span>{strings.TITLE_2}</span>
+                  <div className="bc-title">
+                    <div className="bookcars">
+                      <span>{strings.TITLE_1}</span>
+                      <span className="title-bookcars">{commonStrings.BOOKCARS}</span>
+                      <span>{strings.TITLE_2}</span>
+                    </div>
+                    <div className="car-count">
+                      {`(${totalRecords} ${totalRecords === 1 ? strings.TITLE_CAR_AVAILABLE : strings.TITLE_CARS_AVAILABLE})`}
+                    </div>
                   </div>
-                  <div className="car-count">
-                    {`(${totalRecords} ${totalRecords === 1 ? strings.TITLE_CAR_AVAILABLE : strings.TITLE_CARS_AVAILABLE})`}
-                  </div>
-                </div>
-              )}
+                )}
 
-                {rows.map((car) => {
-                  const totalPrice = bookcarsHelper.calculateTotalPrice(car, from as Date, to as Date)
-                  const hasDays = days > 0
-                  const hasTotalPrice = Number.isFinite(totalPrice)
-                  const cardClassName = hidePrice ? 'car-card no-price' : 'car-card'
-                  const unitPrice = hasDays && hasTotalPrice && days > 0 ? totalPrice / days : undefined
-                  const pricePerDayText = unitPrice !== undefined && Number.isFinite(unitPrice)
-                    ? `${bookcarsHelper.formatPrice(unitPrice, commonStrings.CURRENCY, language)}/${strings.PRICE_DAYS_PART_2}`
-                    : undefined
-                  const totalPriceText = hasDays && hasTotalPrice
-                    ? `${helper.getDays(days)}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(totalPrice, commonStrings.CURRENCY, language)}`
-                    : undefined
-                  const supplierClassName = sizeAuto ? 'supplier size-auto' : 'supplier'
+                <div className="car-list-wrapper">
+                  {rows.map((car) => {
+                    const totalPrice = bookcarsHelper.calculateTotalPrice(car, from as Date, to as Date)
+                    const hasDays = days > 0
+                    const hasTotalPrice = Number.isFinite(totalPrice)
+                    const cardClassName = hidePrice ? 'car-card no-price' : 'car-card'
+                    const unitPrice = hasDays && hasTotalPrice && days > 0 ? totalPrice / days : undefined
+                    const pricePerDayText = unitPrice !== undefined && Number.isFinite(unitPrice)
+                      ? `${bookcarsHelper.formatPrice(unitPrice, commonStrings.CURRENCY, language)}/${strings.PRICE_DAYS_PART_2}`
+                      : undefined
+                    const totalPriceText = hasDays && hasTotalPrice
+                      ? `${helper.getDays(days)}${fr ? ' : ' : ': '}${bookcarsHelper.formatPrice(totalPrice, commonStrings.CURRENCY, language)}`
+                      : undefined
+                    const supplierClassName = sizeAuto ? 'supplier size-auto' : 'supplier'
 
-                  const productData = {
-                    '@context': 'https://schema.org',
-                    '@type': 'Product',
-                    name: car.name,
-                    image: bookcarsHelper.joinURL(env.CDN_CARS, car.image),
-                    offers: {
-                      '@type': 'Offer',
-                      price: car.dailyPrice,
-                      priceCurrency: 'TND',
-                      availability: 'https://schema.org/InStock',
-                    },
-                  }
+                    const productData = {
+                      '@context': 'https://schema.org',
+                      '@type': 'Product',
+                      name: car.name,
+                      image: bookcarsHelper.joinURL(env.CDN_CARS, car.image),
+                      offers: {
+                        '@type': 'Offer',
+                        price: car.dailyPrice,
+                        priceCurrency: 'TND',
+                        availability: 'https://schema.org/InStock',
+                      },
+                    }
 
-                  return (
-                    <div key={car._id} className="car-list-container">
-                      <script type="application/ld+json">
-                        {JSON.stringify(productData)}
-                      </script>
+                    return (
+                      <div key={car._id} className="car-card-container">
+                        <script type="application/ld+json">
+                          {JSON.stringify(productData)}
+                        </script>
 
-                      {pickupLocationName && (
-                        <div className="car-location-header">
-                          <div className="location">
-                            <LocationIcon />
-                            <span className="location-name">{pickupLocationName}</span>
-                          </div>
-                          {distance && (
-                            <div className="distance">
-                              <img alt="Distance" src={DistanceIcon} />
-                              <Badge backgroundColor="#D8EDF9" color="#000" text={`${distance} ${strings.FROM_YOU}`} />
+                        {pickupLocationName && (
+                          <div className="car-location-header">
+                            <div className="location">
+                              <LocationIcon />
+                              <span className="location-name">{pickupLocationName}</span>
                             </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className={cardClassName}>
-                        <div className="car-media">
-                          {boost && car.boost && (
-                            <span className="badge-boosted">Boosté</span>
-                          )}
-                          {car
-                            && car.discounts
-                            && car.discounts.percentage
-                            && days >= car.discounts.threshold && (
-                              <Avatar className="discount-badge">
-                                -
-                                {car?.discounts?.percentage}
-                                {' '}
-                                <span className="discount-badge-percent">%</span>
-                              </Avatar>
-                          )}
-                          <img src={bookcarsHelper.joinURL(env.CDN_CARS, car.image)} alt={car.name} className="car-img" loading="lazy" />
-                        </div>
-
-                        <div className="car-main">
-                          <div className="car-header">
-                            <h2>{car.name}</h2>
-                            {!hideSupplier && (
-                              <a
-                                href={`/search/agence/${car.supplier.slug}`}
-                                className={supplierClassName}
-                                title={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
-                                aria-label={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
-                                itemScope
-                                itemType="https://schema.org/AutoRental"
-                              >
-                                <span className="supplier-logo">
-                                  <img
-                                    loading="lazy"
-                                    src={bookcarsHelper.joinURL(env.CDN_USERS, car.supplier.avatar)}
-                                    alt={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
-                                  />
-                                </span>
-                                <span className="supplier-name">
-                                  {car.supplier.agencyVerified && (
-                                    <VerifiedIcon className="agency-verified-badge" />
-                                  )}
-                                  {car.supplier.fullName}
-                                </span>
-                              </a>
-                            )}
-                          </div>
-
-                          <div className="car-rating">
-                            {car?.supplier?.score && (
-                              <Tooltip title={'Le score est basé sur la réactivité de l\'agence, le taux d\'acceptation des réservations selon leurs conditions et d\'autres critères.'} placement="top">
-                                <div className="rating-value">
-                                  <Rating size="small" value={transformScore(car.supplier.score)} precision={0.1} readOnly />
-                                </div>
-                              </Tooltip>
-                            )}
-                            {car.trips > 0 && <span className="rating-count">{`(${car.trips} ${strings.TRIPS})`}</span>}
-                          </div>
-
-                          <div className="car-specs">
-                            {car.type !== bookcarsTypes.CarType.Unknown && (
-                              <Tooltip title={helper.getCarTypeTooltip(car.type)} placement="top">
-                                <div className="spec-chip">
-                                  <CarTypeIcon />
-                                  <span>{helper.getCarTypeShort(car.type)}</span>
-                                </div>
-                              </Tooltip>
-                            )}
-                            <Tooltip title={helper.getGearboxTooltip(car.gearbox)} placement="top">
-                              <div className="spec-chip">
-                                <GearboxIcon />
-                                <span>{helper.getGearboxTypeShort(car.gearbox)}</span>
+                            {distance && (
+                              <div className="distance">
+                                <img alt="Distance" src={DistanceIcon} />
+                                <Badge backgroundColor="#D8EDF9" color="#000" text={`${distance} ${strings.FROM_YOU}`} />
                               </div>
-                            </Tooltip>
-                            {car.seats > 0 && (
-                              <Tooltip title={helper.getSeatsTooltip(car.seats)} placement="top">
-                                <div className="spec-chip">
-                                  <SeatsIcon />
-                                  <span>{car.seats}</span>
-                                </div>
-                              </Tooltip>
                             )}
-                            {car.doors > 0 && (
-                              <Tooltip title={helper.getDoorsTooltip(car.doors)} placement="top">
-                                <div className="spec-chip">
-                                  <img src={DoorsIcon} alt="" className="car-doors" />
-                                  <span>{car.doors}</span>
-                                </div>
-                              </Tooltip>
-                            )}
-                            {car.aircon && (
-                              <Tooltip title={strings.AIRCON_TOOLTIP} placement="top">
-                                <div className="spec-chip">
-                                  <AirconIcon />
-                                  <span>AC</span>
-                                </div>
-                              </Tooltip>
-                            )}
-                          </div>
-
-                          <div className="car-lines">
-                            {car.mileage !== 0 && (
-                              <Tooltip title={helper.getMileageTooltip(car.mileage, language)} placement="left">
-                                <div className="line mileage">
-                                  <span className="line-icon">
-                                    <MileageIcon />
-                                  </span>
-                                  <span className="line-text">{`${strings.MILEAGE}${fr ? ' : ' : ': '}${helper.getMileage(car.mileage, language)}`}</span>
-                                </div>
-                              </Tooltip>
-                            )}
-                            <Tooltip title={helper.getFuelPolicyTooltip(car.fuelPolicy)} placement="left">
-                              <div className="line fuel-policy">
-                                <span className="line-icon">
-                                  <CarTypeIcon />
-                                </span>
-                                <span className="line-text">{`${strings.FUEL_POLICY}${fr ? ' : ' : ': '}${helper.getFuelPolicy(car.fuelPolicy)}`}</span>
-                              </div>
-                            </Tooltip>
-                            {car.deposit > -1 && (
-                              <Tooltip title={booking ? '' : car.deposit > -1 ? strings.DEPOSIT_TOOLTIP : helper.getDeposit(car.cancellation, language)} placement="left">
-                                <div className="line deposit">
-                                  <span className="line-icon">{getExtraIcon('deposit', car.deposit)}</span>
-                                  <span className="line-text">{helper.getDeposit(car.deposit, language)}</span>
-                                </div>
-                              </Tooltip>
-                            )}
-                            {car.minimumDrivingLicenseYears !== undefined && car.minimumDrivingLicenseYears > 0 && (
-                              <Tooltip title={booking ? '' : strings.DRIVER_LICENSE_TOOLTIP} placement="left">
-                                <div className="line license">
-                                  <span className="line-icon">{getExtraIcon('license', car.minimumDrivingLicenseYears)}</span>
-                                  <span className="line-text">{helper.getLicense(car.minimumDrivingLicenseYears, language)}</span>
-                                </div>
-                              </Tooltip>
-                            )}
-                            {car.cancellation > -1 && (
-                              <Tooltip title={booking ? '' : car.cancellation > -1 ? strings.CANCELLATION_TOOLTIP : helper.getCancellation(car.cancellation, language)} placement="left">
-                                <div className="line cancellation">
-                                  <span className="line-icon">{getExtraIcon('cancellation', car.cancellation)}</span>
-                                  <span className="line-text">{helper.getCancellation(car.cancellation, language)}</span>
-                                </div>
-                              </Tooltip>
-                            )}
-                            {car.amendments > -1 && (
-                              <Tooltip title={booking ? '' : car.amendments > -1 ? strings.AMENDMENTS_TOOLTIP : helper.getAmendments(car.amendments, language)} placement="left">
-                                <div className="line amendments">
-                                  <span className="line-icon">{getExtraIcon('amendments', car.amendments)}</span>
-                                  <span className="line-text">{helper.getAmendments(car.amendments, language)}</span>
-                                </div>
-                              </Tooltip>
-                            )}
-                          </div>
-                        </div>
-
-                        {!hidePrice && (
-                          <div className="car-price">
-                            {pricePerDayText && <div className="price-day">{pricePerDayText}</div>}
-                            {totalPriceText && <div className="price-total">{totalPriceText}</div>}
-                            <div className="car-actions">
-                              <Button
-                                disabled={!!(car.minimumRentalDays && days < car.minimumRentalDays)}
-                                variant="contained"
-                                className="btn-book btn-margin-bottom"
-                                onClick={() => {
-                                  if (car._id) {
-                                    const rentalDays = Math.max(days, 1)
-                                    const safeTotal = Number.isFinite(totalPrice) && totalPrice > 0 ? totalPrice : 0
-                                    const pricePerUnit = rentalDays > 0 ? safeTotal / rentalDays : safeTotal
-
-                                    sendCheckoutEvent({
-                                      value: safeTotal,
-                                      currency: getDefaultAnalyticsCurrency(),
-                                      items: [
-                                        {
-                                          id: car._id,
-                                          name: car.name,
-                                          quantity: rentalDays,
-                                          price: pricePerUnit,
-                                          category: car.range,
-                                        },
-                                      ],
-                                      contentType: car.range,
-                                    })
-                                  }
-                                  navigate('/checkout', {
-                                    state: {
-                                      carId: car._id,
-                                      pickupLocationId: pickupLocation,
-                                      dropOffLocationId: dropOffLocation,
-                                      from,
-                                      to
-                                    }
-                                  })
-                                }}
-                              >
-                                {car.minimumRentalDays && days < car.minimumRentalDays ? ` ${car.minimumRentalDays} jours minimum` : strings.BOOK}
-                              </Button>
-                            </div>
                           </div>
                         )}
+
+                        <div className={cardClassName}>
+                          <div className="car-media">
+                            {boost && car.boost && (
+                              <span className="badge-boosted">Boosté</span>
+                            )}
+                            {car
+                              && car.discounts
+                              && car.discounts.percentage
+                              && days >= car.discounts.threshold && (
+                                <Avatar className="discount-badge">
+                                  -
+                                  {car?.discounts?.percentage}
+                                  {' '}
+                                  <span className="discount-badge-percent">%</span>
+                                </Avatar>
+                            )}
+                            <img
+                              src={bookcarsHelper.joinURL(env.CDN_CARS, car.image)}
+                              alt={car.name}
+                              className="car-img"
+                              loading="lazy"
+                            />
+                          </div>
+
+                          <div className="car-main">
+                            <div className="car-header">
+                              <h2>{car.name}</h2>
+                              {!hideSupplier && (
+                                <a
+                                  href={`/search/agence/${car.supplier.slug}`}
+                                  className={supplierClassName}
+                                  title={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
+                                  aria-label={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
+                                  itemScope
+                                  itemType="https://schema.org/AutoRental"
+                                >
+                                  <span className="supplier-logo">
+                                    <img
+                                      loading="lazy"
+                                      src={bookcarsHelper.joinURL(env.CDN_USERS, car.supplier.avatar)}
+                                      alt={`Louler une voiture chez ${car.supplier.fullName} à partir de ${car.dailyPrice}DT/Jour`}
+                                    />
+                                  </span>
+                                  <span className="supplier-name">
+                                    {car.supplier.agencyVerified && (
+                                      <VerifiedIcon className="agency-verified-badge" />
+                                    )}
+                                    {car.supplier.fullName}
+                                  </span>
+                                </a>
+                              )}
+                            </div>
+
+                            <div className="car-rating">
+                              {car?.supplier?.score && (
+                                <Tooltip
+                                  title={'Le score est basé sur la réactivité de l\'agence, le taux d\'acceptation des réservations selon leurs conditions et d\'autres critères.'}
+                                  placement="top"
+                                >
+                                  <div className="rating-value">
+                                    <Rating size="small" value={transformScore(car.supplier.score)} precision={0.1} readOnly />
+                                  </div>
+                                </Tooltip>
+                              )}
+                              {car.trips > 0 && <span className="rating-count">{`(${car.trips} ${strings.TRIPS})`}</span>}
+                            </div>
+
+                            <div className="car-specs">
+                              {car.type !== bookcarsTypes.CarType.Unknown && (
+                                <Tooltip title={helper.getCarTypeTooltip(car.type)} placement="top">
+                                  <div className="spec-chip">
+                                    <CarTypeIcon />
+                                    <span>{helper.getCarTypeShort(car.type)}</span>
+                                  </div>
+                                </Tooltip>
+                              )}
+                              <Tooltip title={helper.getGearboxTooltip(car.gearbox)} placement="top">
+                                <div className="spec-chip">
+                                  <GearboxIcon />
+                                  <span>{helper.getGearboxTypeShort(car.gearbox)}</span>
+                                </div>
+                              </Tooltip>
+                              {car.seats > 0 && (
+                                <Tooltip title={helper.getSeatsTooltip(car.seats)} placement="top">
+                                  <div className="spec-chip">
+                                    <SeatsIcon />
+                                    <span>{car.seats}</span>
+                                  </div>
+                                </Tooltip>
+                              )}
+                              {car.doors > 0 && (
+                                <Tooltip title={helper.getDoorsTooltip(car.doors)} placement="top">
+                                  <div className="spec-chip">
+                                    <img src={DoorsIcon} alt="" className="car-doors" />
+                                    <span>{car.doors}</span>
+                                  </div>
+                                </Tooltip>
+                              )}
+                              {car.aircon && (
+                                <Tooltip title={strings.AIRCON_TOOLTIP} placement="top">
+                                  <div className="spec-chip">
+                                    <AirconIcon />
+                                    <span>AC</span>
+                                  </div>
+                                </Tooltip>
+                              )}
+                            </div>
+
+                            <div className="car-lines">
+                              {car.mileage !== 0 && (
+                                <Tooltip title={helper.getMileageTooltip(car.mileage, language)} placement="left">
+                                  <div className="line mileage">
+                                    <span className="line-icon">
+                                      <MileageIcon />
+                                    </span>
+                                    <span className="line-text">{`${strings.MILEAGE}${fr ? ' : ' : ': '}${helper.getMileage(car.mileage, language)}`}</span>
+                                  </div>
+                                </Tooltip>
+                              )}
+                              <Tooltip title={helper.getFuelPolicyTooltip(car.fuelPolicy)} placement="left">
+                                <div className="line fuel-policy">
+                                  <span className="line-icon">
+                                    <CarTypeIcon />
+                                  </span>
+                                  <span className="line-text">{`${strings.FUEL_POLICY}${fr ? ' : ' : ': '}${helper.getFuelPolicy(car.fuelPolicy)}`}</span>
+                                </div>
+                              </Tooltip>
+                              {car.deposit > -1 && (
+                                <Tooltip
+                                  title={booking ? '' : car.deposit > -1 ? strings.DEPOSIT_TOOLTIP : helper.getDeposit(car.cancellation, language)}
+                                  placement="left"
+                                >
+                                  <div className="line deposit">
+                                    <span className="line-icon">{getExtraIcon('deposit', car.deposit)}</span>
+                                    <span className="line-text">{helper.getDeposit(car.deposit, language)}</span>
+                                  </div>
+                                </Tooltip>
+                              )}
+                              {car.minimumDrivingLicenseYears !== undefined && car.minimumDrivingLicenseYears > 0 && (
+                                <Tooltip title={booking ? '' : strings.DRIVER_LICENSE_TOOLTIP} placement="left">
+                                  <div className="line license">
+                                    <span className="line-icon">{getExtraIcon('license', car.minimumDrivingLicenseYears)}</span>
+                                    <span className="line-text">{helper.getLicense(car.minimumDrivingLicenseYears, language)}</span>
+                                  </div>
+                                </Tooltip>
+                              )}
+                              {car.cancellation > -1 && (
+                                <Tooltip
+                                  title={booking ? '' : car.cancellation > -1 ? strings.CANCELLATION_TOOLTIP : helper.getCancellation(car.cancellation, language)}
+                                  placement="left"
+                                >
+                                  <div className="line cancellation">
+                                    <span className="line-icon">{getExtraIcon('cancellation', car.cancellation)}</span>
+                                    <span className="line-text">{helper.getCancellation(car.cancellation, language)}</span>
+                                  </div>
+                                </Tooltip>
+                              )}
+                              {car.amendments > -1 && (
+                                <Tooltip
+                                  title={booking ? '' : car.amendments > -1 ? strings.AMENDMENTS_TOOLTIP : helper.getAmendments(car.amendments, language)}
+                                  placement="left"
+                                >
+                                  <div className="line amendments">
+                                    <span className="line-icon">{getExtraIcon('amendments', car.amendments)}</span>
+                                    <span className="line-text">{helper.getAmendments(car.amendments, language)}</span>
+                                  </div>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </div>
+
+                          {!hidePrice && (
+                            <div className="car-price">
+                              {pricePerDayText && <div className="price-day">{pricePerDayText}</div>}
+                              {totalPriceText && <div className="price-total">{totalPriceText}</div>}
+                              <div className="car-actions">
+                                <Button
+                                  disabled={!!(car.minimumRentalDays && days < car.minimumRentalDays)}
+                                  variant="contained"
+                                  className="btn-book btn-margin-bottom"
+                                  onClick={() => {
+                                    if (car._id) {
+                                      const rentalDays = Math.max(days, 1)
+                                      const safeTotal = Number.isFinite(totalPrice) && totalPrice > 0 ? totalPrice : 0
+                                      const pricePerUnit = rentalDays > 0 ? safeTotal / rentalDays : safeTotal
+
+                                      sendCheckoutEvent({
+                                        value: safeTotal,
+                                        currency: getDefaultAnalyticsCurrency(),
+                                        items: [
+                                          {
+                                            id: car._id,
+                                            name: car.name,
+                                            quantity: rentalDays,
+                                            price: pricePerUnit,
+                                            category: car.range,
+                                          },
+                                        ],
+                                        contentType: car.range,
+                                      })
+                                    }
+                                    navigate('/checkout', {
+                                      state: {
+                                        carId: car._id,
+                                        pickupLocationId: pickupLocation,
+                                        dropOffLocationId: dropOffLocation,
+                                        from,
+                                        to
+                                      }
+                                    })
+                                  }}
+                                >
+                                  {car.minimumRentalDays && days < car.minimumRentalDays ? ` ${car.minimumRentalDays} jours minimum` : strings.BOOK}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </>
           )}

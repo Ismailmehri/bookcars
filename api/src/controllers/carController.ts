@@ -821,7 +821,9 @@ export const updateCarBoost = async (req: Request, res: Response) => {
       return res.status(404).send('No boost found for this car')
     }
 
-    const nextBoost = car.boost
+    const nextBoost: bookcarsTypes.CarBoost = {
+      ...car.boost,
+    }
 
     if (typeof boostData.active === 'boolean') {
       nextBoost.active = boostData.active
@@ -848,8 +850,8 @@ export const updateCarBoost = async (req: Request, res: Response) => {
       nextBoost.consumedViews = boostData.consumedViews
     }
 
-    if (typeof boostData.purchasedViews === 'number' && typeof boostData.consumedViews === 'number'
-      && boostData.consumedViews > boostData.purchasedViews) {
+    if (typeof nextBoost.purchasedViews === 'number' && typeof nextBoost.consumedViews === 'number'
+      && nextBoost.consumedViews > nextBoost.purchasedViews) {
       return res.status(400).send('Consumed views cannot exceed purchased views')
     }
 

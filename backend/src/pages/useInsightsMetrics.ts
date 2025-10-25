@@ -24,7 +24,7 @@ interface StoredFilters {
   startDate: string
   endDate: string
   agencyId?: string
-  tab?: 'agency' | 'admin'
+  tab?: 'agency' | 'admin' | 'boosted'
 }
 
 const createInitialAgencySummary = (): bookcarsTypes.AgencyStatsSummary => ({
@@ -189,14 +189,15 @@ export const useInsightsMetrics = () => {
   const [loading, setLoading] = useState(false)
   const [buttonLoading, setButtonLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [tab, setTab] = useState<'agency' | 'admin'>('agency')
+  const [tab, setTab] = useState<'agency' | 'admin' | 'boosted'>('agency')
   const [adminOverview, setAdminOverview] = useState<bookcarsTypes.AdminStatisticsOverview | null>(null)
   const [adminTabLoaded, setAdminTabLoaded] = useState(false)
   const [filtersHydrated, setFiltersHydrated] = useState(false)
   const storedFilters = useMemo(loadStoredFilters, [])
   const storedAgencyRef = useRef<string | null>(storedFilters?.agencyId ?? null)
-  const storedTabRef = useRef<'agency' | 'admin' | null>(storedFilters?.tab ?? null)
+  const storedTabRef = useRef<'agency' | 'admin' | 'boosted' | null>(storedFilters?.tab ?? null)
   const initialFetchPending = useRef(true)
+  const [filtersVersion, setFiltersVersion] = useState(0)
 
   useEffect(() => {
     if (storedFilters?.startDate) {
@@ -323,11 +324,11 @@ export const useInsightsMetrics = () => {
       setButtonLoading(true)
       setError(null)
 
-      try {
-        const [overview, stats] = await Promise.all([
-          CarStatsService.getAgencyOverview(selectedAgency),
-          StatsService.getAgencyStats(selectedAgency, startDate, endDate),
-        ])
+    try {
+      const [overview, stats] = await Promise.all([
+        CarStatsService.getAgencyOverview(selectedAgency),
+        StatsService.getAgencyStats(selectedAgency, startDate, endDate),
+      ])
 
         const rankingItem = adminOverview?.ranking.find((item) => item.agencyId === selectedAgency)
         updateAgencyMetrics(stats, overview, rankingItem)
@@ -346,6 +347,7 @@ export const useInsightsMetrics = () => {
           agencyId: selectedAgency,
           tab,
         })
+        setFiltersVersion((prev) => prev + 1)
       } catch (err) {
         helper.error(err, strings.ERROR)
         setError(strings.ERROR)
@@ -528,6 +530,7 @@ export const useInsightsMetrics = () => {
     adminTabLoaded,
     setAdminTabLoaded,
     applyFilters,
+    filtersVersion,
     handleUserLoaded,
     handleExportAgency,
     handleExportAdmin,

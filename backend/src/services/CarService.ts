@@ -32,25 +32,27 @@ export const update = (data: bookcarsTypes.UpdateCarPayload): Promise<number> =>
     )
     .then((res) => res.status)
 
-    export const updateCarBoost = async (carId: string, boostData: bookcarsTypes.CarBoost): Promise<number> => {
-      const data = { carId, boostData }
+export const updateCarBoost = async (
+  carId: string,
+  boostData: Partial<bookcarsTypes.CarBoost>,
+): Promise<bookcarsTypes.CarBoost> => {
+  const data = { carId, boostData }
 
-      return axiosInstance.put('/api/boost-car', data, { withCredentials: true })
-        .then((res) => res.status)
-        .catch((err) => {
-          throw err
-        })
-    }
+  return axiosInstance
+    .put('/api/boost-car', data, { withCredentials: true })
+    .then((res) => res.data)
+}
 
-    export const createCarBoost = async (carId: string, boostData: bookcarsTypes.CarBoost): Promise<number> => {
-      const data = { carId, boostData }
+export const createCarBoost = async (
+  carId: string,
+  boostData: bookcarsTypes.CarBoost,
+): Promise<bookcarsTypes.CarBoost> => {
+  const data = { carId, boostData }
 
-      return axiosInstance.post('/api/boost-car', data, { withCredentials: true })
-        .then((res) => res.status)
-        .catch((err) => {
-          throw err
-        })
-    }
+  return axiosInstance
+    .post('/api/boost-car', data, { withCredentials: true })
+    .then((res) => res.data)
+}
 
 /**
  * Check if a Car is related to a booking.

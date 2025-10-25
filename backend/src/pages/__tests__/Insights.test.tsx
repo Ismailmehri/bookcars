@@ -124,6 +124,7 @@ vi.mock('../useInsightsMetrics', () => ({
     handleExportAgency: vi.fn(),
     handleExportAdmin: vi.fn(),
     refreshAdminOverview: vi.fn(),
+    filtersVersion: 1,
   }),
 }))
 
@@ -179,5 +180,8 @@ describe('Insights page', () => {
 
     expect(setSelectedAgencyMock).toHaveBeenCalledWith('agency-2')
     expect(setAdminTabLoadedMock).toHaveBeenCalledWith(false)
+
+    const tabButtons = Array.from(container.querySelectorAll('button[role="tab"]')) as HTMLButtonElement[]
+    expect(tabButtons.map((button) => button.textContent)).toContain(strings.TAB_BOOSTED)
   })
 })

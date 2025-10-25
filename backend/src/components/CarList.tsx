@@ -408,7 +408,9 @@ const CarList = ({
         status = await CarService.createCarBoost(currentBoostCar._id, boostData)
       }
 
-      if (status === 200) {
+      // Les méthodes CarService.createCarBoost et updateCarBoost retournent un objet (ex: CarBoost) et non un code de statut HTTP.
+      // Pour vérifier le succès, on considère que la présence d'un objet (non null/undefined) indique une réussite.
+      if (status) {
         // Mise à jour de la voiture dans l'état local
         const updatedRows = [...rows]
         const currentCarIndex = updatedRows.findIndex((c) => c._id === currentBoostCar._id)

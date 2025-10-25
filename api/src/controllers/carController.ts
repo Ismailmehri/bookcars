@@ -14,6 +14,7 @@ import * as helper from '../common/helper'
 import * as logger from '../common/logger'
 import * as authHelper from '../common/authHelper'
 import { CarStats } from '../models/CarStats'
+import { buildProjectionFromFields } from './carController.helpers'
 
 /**
  * Create a Car.
@@ -707,26 +708,32 @@ export const getCars = async (req: Request, res: Response) => {
       }
     }
 
-    const resultDataStages: mongoose.PipelineStage[] = [
+    const resultDataStages: mongoose.PipelineStage.FacetPipelineStage[] = [
       { $sort: sortStage },
       { $skip: (page - 1) * size },
       { $limit: size },
     ]
 
     if (cleanupFields.length > 0) {
-      resultDataStages.push({ $unset: cleanupFields })
+      resultDataStages.push({
+        $project: buildProjectionFromFields(cleanupFields),
+      })
     }
 
-    pipeline.push({
+    const pageInfoStages: mongoose.PipelineStage.FacetPipelineStage[] = [
+      {
+        $count: 'totalRecords',
+      },
+    ]
+
+    const facetStage = {
       $facet: {
         resultData: resultDataStages,
-        pageInfo: [
-          {
-            $count: 'totalRecords',
-          },
-        ],
+        pageInfo: pageInfoStages,
       },
-    })
+    } satisfies mongoose.PipelineStage
+
+    pipeline.push(facetStage)
 
     const data = await Car.aggregate(
       pipeline,

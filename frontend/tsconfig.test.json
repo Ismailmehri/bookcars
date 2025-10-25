@@ -10,6 +10,7 @@
   },
   "include": [
     "src/common/analytics.types.ts",
+    "src/common/carSorting.ts",
     "src/common/gtm.ts",
     "src/config/**/*.ts",
     "src/types/**/*.d.ts"

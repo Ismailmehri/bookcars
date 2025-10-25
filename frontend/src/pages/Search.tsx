@@ -1,7 +1,20 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
-import { Box, Dialog, DialogContent, DialogTitle, IconButton, Paper, Slider, Typography } from '@mui/material'
-import { Close as CloseIcon } from '@mui/icons-material'
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Drawer,
+  Grid,
+  IconButton,
+  Stack,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material'
+import { FilterList as FilterListIcon, Close as CloseIcon } from '@mui/icons-material'
 import { Helmet } from 'react-helmet'
 import Seo from '@/components/Seo'
 import { buildDescription, stripQuery, isParamSearch } from '@/common/seo'
@@ -12,26 +25,26 @@ import { strings } from '@/lang/search'
 import * as helper from '@/common/helper'
 import * as LocationService from '@/services/LocationService'
 import * as SupplierService from '@/services/SupplierService'
-// import * as UserService from '@/services/UserService'
 import Layout from '@/components/Layout'
 import NoMatch from './NoMatch'
-import CarFilter from '@/components/CarFilter'
-import SupplierFilter from '@/components/SupplierFilter'
-import CarType from '@/components/CarTypeFilter'
-import GearboxFilter from '@/components/GearboxFilter'
-import MileageFilter from '@/components/MileageFilter'
-import DepositFilter from '@/components/DepositFilter'
 import CarList from '@/components/CarList'
 import Map from '@/components/Map'
+import LocationHeader from '@/components/LocationHeader'
+import SearchSummary from '@/components/SearchSummary'
+import FiltersPanel from '@/components/FiltersPanel'
+import ResultsToolbar, { type ViewMode } from '@/components/ResultsToolbar'
+import SponsoredCarCard from '@/components/SponsoredCarCard'
+import type { CarSortOption } from '@/common/carSorting'
 
 import ViewOnMap from '@/assets/img/view-on-map.png'
 
-import '@/assets/css/search.css'
-import LocationHeader from '@/components/LocationHeader'
+const PRICE_BOUNDS: [number, number] = [40, 1000]
 
 const Search = () => {
   const location = useLocation()
   const { pickupLocationSlug, supplierSlug } = useParams()
+  const theme = useTheme()
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'))
 
   const [visible, setVisible] = useState(false)
   const [noMatch, setNoMatch] = useState(false)
@@ -56,9 +69,12 @@ const Search = () => {
   const [rating] = useState(-1)
   const [seats] = useState(-1)
   const [openMapDialog, setOpenMapDialog] = useState(false)
-  const [minMax, setMinMAx] = useState<number[]>([40, 1000])
-
-  // const [distance, setDistance] = useState('')
+  const [minMax, setMinMax] = useState<number[]>(PRICE_BOUNDS)
+  const [filtersDrawerOpen, setFiltersDrawerOpen] = useState(false)
+  const [sortBy, setSortBy] = useState<CarSortOption>('priceAsc')
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [resultsMeta, setResultsMeta] = useState<bookcarsTypes.Data<bookcarsTypes.Car>>({ rows: [], rowCount: 0 })
+  const [filtersVersion, setFiltersVersion] = useState(0)
 
   useEffect(() => {
     const fetchSuppliers = async () => {
@@ -93,7 +109,7 @@ const Search = () => {
           rating,
           seats,
           startDate: from,
-          endDate: to
+          endDate: to,
         }
         let _suppliers = await SupplierService.getFrontendSuppliers(payload)
         if (supplierSlug) {
@@ -105,6 +121,12 @@ const Search = () => {
 
     updateSuppliers()
   }, [pickupLocation, carSpecs, carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats, from, to, supplierSlug])
+
+  useEffect(() => {
+    if (isDesktop) {
+      setFiltersDrawerOpen(false)
+    }
+  }, [isDesktop])
 
   const supplier = supplierSlug ? suppliers.find((s) => s.slug === supplierSlug) : undefined
 
@@ -134,6 +156,9 @@ const Search = () => {
     setDropOffLocation(filter.dropOffLocation)
     setFrom(filter.from)
     setTo(filter.to)
+    if (!isDesktop) {
+      setFiltersDrawerOpen(false)
+    }
   }
 
   const handleSupplierFilterChange = (newSuppliers: string[]) => {
@@ -142,41 +167,9 @@ const Search = () => {
     setSelectedSupplier(filteredSuppliers.length === suppliers.length ? [] : filteredSuppliers)
   }
 
-  const handleChange = (_event: Event, newValue: number | number[]) => {
-    setMinMAx(newValue as number[])
+  const handlePriceChange = (_event: Event, newValue: number | number[]) => {
+    setMinMax(newValue as number[])
   }
-
-  const handleCarFilterMinMax = () => {
-    // Vérifier que les valeurs obligatoires sont définies
-    if (!pickupLocation || !dropOffLocation || !from || !to) {
-      console.error('Certains filtres obligatoires sont manquants.')
-      return
-    }
-
-    // Créer un objet avec tous les filtres actuels
-    const updatedFilter = {
-      pickupLocation, // Assuré d'être défini
-      dropOffLocation, // Assuré d'être défini
-      from, // Assuré d'être défini
-      to, // Assuré d'être défini
-      selectedSupplier: selectedSupplier || [], // Valeur par défaut si undefined
-    }
-
-    // Appeler la fonction de soumission avec tous les filtres
-    handleCarFilterSubmit(updatedFilter)
-  }
-
-  const marks = [
-    {
-      value: 40,
-      label: '40DT',
-    },
-    {
-      value: 1000,
-      label: '1000DT',
-    }]
-
-  const valuetext = (value: number) => `${value}DT`
 
   const handleCarTypeFilterChange = (values: bookcarsTypes.CarType[]) => {
     setCarType(values)
@@ -192,6 +185,24 @@ const Search = () => {
 
   const handleDepositFilterChange = (value: number) => {
     setDeposit(value)
+  }
+
+  const handleResetFilters = () => {
+    setCarType(bookcarsHelper.getAllCarTypes())
+    setGearbox([bookcarsTypes.GearboxType.Automatic, bookcarsTypes.GearboxType.Manual])
+    setMileage([bookcarsTypes.Mileage.Limited, bookcarsTypes.Mileage.Unlimited])
+    setDeposit(-1)
+    setRanges(bookcarsHelper.getAllRanges())
+    setSelectedSupplier([])
+    setSupplierIds(bookcarsHelper.clone(allSuppliersIds))
+    setMinMax(PRICE_BOUNDS)
+    setSortBy('priceAsc')
+    setViewMode('list')
+    setFiltersVersion((prev) => prev + 1)
+  }
+
+  const handleResultsLoad = (data: bookcarsTypes.Data<bookcarsTypes.Car>) => {
+    setResultsMeta(data)
   }
 
   const onLoad = async (user?: bookcarsTypes.User) => {
@@ -311,7 +322,7 @@ const Search = () => {
         seats,
         startDate,
         endDate,
-        suppliers: suppliersFromUrl
+        suppliers: suppliersFromUrl,
       }
 
       let _suppliers = await SupplierService.getFrontendSuppliers(payload)
@@ -358,7 +369,7 @@ const Search = () => {
         '@type': 'ImageObject',
         url: 'https://plany.tn/logo.png',
         width: 1200,
-        height: 630
+        height: 630,
       },
       telephone: '+216 21 170 468',
       email: 'contact@plany.tn',
@@ -367,59 +378,85 @@ const Search = () => {
         streetAddress: 'Rue de la Liberté',
         addressLocality: 'Tunis',
         postalCode: '1000',
-        addressCountry: 'TN'
+        addressCountry: 'TN',
       },
       priceRange: '65DT - 200DT',
       openingHours: 'Mo-Su 08:00-18:00',
       sameAs: [
         'https://www.facebook.com/plany.tn',
-        'https://www.instagram.com/plany.tn'
+        'https://www.instagram.com/plany.tn',
       ],
       areaServed: [
         {
           '@type': 'City',
           name: 'Tunis',
-          url: 'https://plany.tn/search?pickupLocation=67547fef27ee3d7b476bc64d'
+          url: 'https://plany.tn/search?pickupLocation=67547fef27ee3d7b476bc64d',
         },
         {
           '@type': 'Airport',
           name: 'Aéroport International de Tunis-Carthage',
-          url: 'https://plany.tn/search?pickupLocation=675e8576f2a6e5a87913cfed'
+          url: 'https://plany.tn/search?pickupLocation=675e8576f2a6e5a87913cfed',
         },
         {
           '@type': 'City',
           name: 'Sousse',
-          url: 'https://plany.tn/search?pickupLocation=675e8b7ef2a6e5a87913d103'
+          url: 'https://plany.tn/search?pickupLocation=675e8b7ef2a6e5a87913d103',
         },
         {
           '@type': 'City',
           name: 'Monastir',
-          url: 'https://plany.tn/search?pickupLocation=675e8d65f2a6e5a87913d199'
+          url: 'https://plany.tn/search?pickupLocation=675e8d65f2a6e5a87913d199',
         },
         {
           '@type': 'City',
           name: 'Nabeul',
-          url: 'https://plany.tn/search?pickupLocation=675e896bf2a6e5a87913d061'
+          url: 'https://plany.tn/search?pickupLocation=675e896bf2a6e5a87913d061',
         },
         {
           '@type': 'City',
           name: 'Mahdia',
-          url: 'https://plany.tn/search?pickupLocation=675e9201f2a6e5a87913d212'
+          url: 'https://plany.tn/search?pickupLocation=675e9201f2a6e5a87913d212',
         },
         {
           '@type': 'Airport',
           name: 'Aéroport International de Monastir Habib-Bourguiba',
-          url: 'https://plany.tn/search?pickupLocation=675e85aef2a6e5a87913cffc'
+          url: 'https://plany.tn/search?pickupLocation=675e85aef2a6e5a87913cffc',
         },
         {
           '@type': 'Airport',
           name: 'Aéroport International de Djerba-Zarzis',
-          url: 'https://plany.tn/search?pickupLocation=675e8612f2a6e5a87913d01e'
-        }
-        // Ajoutez d'autres villes et aéroports ici dynamiquement
-      ]
-    }
+          url: 'https://plany.tn/search?pickupLocation=675e8612f2a6e5a87913d01e',
+        },
+      ],
+    },
   }
+
+  const carsPayload = useMemo(() => {
+    if (!pickupLocation || !from || !to) {
+      return undefined
+    }
+
+    return {
+      pickupLocation: pickupLocation._id,
+      carSpecs,
+      carType,
+      gearbox,
+      mileage,
+      fuelPolicy,
+      deposit,
+      ranges,
+      multimedia,
+      rating,
+      seats,
+      startDate: from,
+      endDate: to,
+      suppliers: supplierIds ?? [],
+      minPrice: minMax[0],
+      maxPrice: minMax[1],
+    } satisfies bookcarsTypes.GetCarsPayload
+  }, [pickupLocation, from, to, carSpecs, carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats, supplierIds, minMax])
+
+  const disableMapView = !(pickupLocation?.latitude && pickupLocation.longitude)
 
   return (
     <Layout onLoad={onLoad} strict={false}>
@@ -430,155 +467,187 @@ const Search = () => {
         </script>
       </Helmet>
       {visible && supplierIds && pickupLocation && dropOffLocation && from && to && (
-        <div className="search">
-          <div className="col-1">
-            {!loading && (
-              <>
-                {pickupLocation.latitude && pickupLocation.longitude && (
-                  <Map
-                    position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
-                    initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
-                    parkingSpots={pickupLocation.parkingSpots}
-                    className="map"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOpenMapDialog(true)
-                      }}
-                      className="view-on-map"
-                    >
-                      <img alt="View On Map" src={ViewOnMap} />
-                      <span>{strings.VIEW_ON_MAP}</span>
-                    </button>
-                  </Map>
-                )}
-                <CarFilter
-                  className="filter"
+        <Box sx={{ backgroundColor: '#f5f7fb', py: { xs: 2, md: 4 } }}>
+          <Grid container spacing={3} px={{ xs: 2, md: 6 }}>
+            {isDesktop && (
+              <Grid item xs={12} md={4} lg={3}>
+                <FiltersPanel
+                  key={`filters-desktop-${filtersVersion}`}
                   pickupLocation={pickupLocation}
                   dropOffLocation={dropOffLocation}
                   from={from}
                   to={to}
-                  suppliers={selectedSupplier}
-                  accordion
-                  collapse
+                  selectedSupplier={selectedSupplier}
+                  suppliers={suppliers}
+                  loading={loading}
+                  priceRange={minMax}
+                  priceBounds={{ min: PRICE_BOUNDS[0], max: PRICE_BOUNDS[1] }}
                   onSubmit={handleCarFilterSubmit}
+                  onSupplierChange={handleSupplierFilterChange}
+                  onCarTypeChange={handleCarTypeFilterChange}
+                  onGearboxChange={handleGearboxFilterChange}
+                  onMileageChange={handleMileageFilterChange}
+                  onDepositChange={handleDepositFilterChange}
+                  onPriceChange={handlePriceChange}
+                  onReset={handleResetFilters}
+                  collapseFilters={!isDesktop}
+                  versionKey={filtersVersion}
                 />
-                <SupplierFilter className="filter" suppliers={suppliers} onChange={handleSupplierFilterChange} />
-                { /* <CarRatingFilter className="filter" onChange={handleRatingFilterChange} />
-                <CarRangeFilter className="filter" onChange={handleRangeFilterChange} />
-                <CarMultimediaFilter className="filter" onChange={handleMultimediaFilterChange} />
-                <CarSeatsFilter className="filter" onChange={handleSeatsFilterChange} />
-                <FuelPolicyFilter className="filter" onChange={handleFuelPolicyFilterChange} />
-                <CarSpecsFilter className="filter" onChange={handleCarSpecsFilterChange} /> */}
-                <CarType className="filter" onChange={handleCarTypeFilterChange} />
-                <GearboxFilter className="filter" onChange={handleGearboxFilterChange} />
-                <MileageFilter className="filter" onChange={handleMileageFilterChange} />
-                <DepositFilter className="filter" onChange={handleDepositFilterChange} />
-              </>
+              </Grid>
             )}
-          </div>
-          <div className="col-2">
-            <LocationHeader
-              location={pickupLocation}
-            />
-            <CarList
-              carSpecs={carSpecs}
-              suppliers={supplierIds}
-              carType={carType}
-              gearbox={gearbox}
-              mileage={mileage}
-              fuelPolicy={fuelPolicy}
-              deposit={deposit}
-              pickupLocation={pickupLocation._id}
-              dropOffLocation={dropOffLocation._id}
-              // pickupLocationName={pickupLocation.name}
-              loading={loading}
-              from={from}
-              to={to}
-              ranges={ranges}
-              multimedia={multimedia}
-              rating={rating}
-              seats={seats}
-              minPrice={minMax[0]}
-              maxPrice={minMax[1]}
-              boost
-            // distance={distance}
-            />
-            <Paper
-              elevation={3}
-              sx={{
-                padding: 3,
-                marginBottom: 4,
-                borderRadius: 2,
-                width: '100%',
-                maxWidth: '800px',
-                mx: 'auto',
-              }}
-            >
-              <Typography
-                variant="h2"
-                sx={{
-                  fontWeight: 'bold',
-                  fontSize: '20px',
-                  color: '#333',
-                  textAlign: 'center',
-                  mb: 2,
-                }}
-              >
-                Filtrer par prix par jour
-              </Typography>
-
-              <Box sx={{ width: '90%', mx: 'auto', mb: 2 }}>
-                <Slider
-                  getAriaLabel={() => 'Prix par jour'}
-                  value={minMax}
-                  onChange={handleChange}
-                  onChangeCommitted={handleCarFilterMinMax}
-                  getAriaValueText={valuetext}
-                  valueLabelFormat={valuetext}
-                  step={10}
-                  min={40}
-                  max={1000}
-                  marks={marks}
-                  valueLabelDisplay="on"
+            <Grid item xs={12} md={isDesktop ? 8 : 12} lg={isDesktop ? 9 : 12}>
+              <Stack spacing={3}>
+                <SearchSummary
+                  pickupLocation={pickupLocation}
+                  dropOffLocation={dropOffLocation}
+                  from={from}
+                  to={to}
+                  loading={loading}
+                  onEdit={() => {
+                    if (isDesktop) {
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    } else {
+                      setFiltersDrawerOpen(true)
+                    }
+                  }}
+                  onOpenMap={() => setOpenMapDialog(true)}
                 />
-              </Box>
-
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  mt: 2,
-                  px: 2,
-                }}
-              />
-            </Paper>
-            <CarList
-              carSpecs={carSpecs}
-              suppliers={supplierIds}
-              carType={carType}
-              gearbox={gearbox}
-              mileage={mileage}
-              fuelPolicy={fuelPolicy}
-              deposit={deposit}
-              pickupLocation={pickupLocation._id}
-              dropOffLocation={dropOffLocation._id}
-              // pickupLocationName={pickupLocation.name}
-              loading={loading}
-              from={from}
-              to={to}
-              ranges={ranges}
-              multimedia={multimedia}
-              rating={rating}
-              seats={seats}
-              minPrice={minMax[0]}
-              maxPrice={minMax[1]}
-              boost={false}
-            />
-          </div>
-        </div>
+                <LocationHeader location={pickupLocation} />
+                <SponsoredCarCard
+                  payload={carsPayload}
+                  from={from}
+                  to={to}
+                  pickupLocationId={pickupLocation._id}
+                  dropOffLocationId={dropOffLocation._id}
+                  loading={loading}
+                />
+                <ResultsToolbar
+                  sortBy={sortBy}
+                  onSortChange={setSortBy}
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  totalResults={resultsMeta.rowCount}
+                  disableMap={disableMapView}
+                />
+                {viewMode === 'list' ? (
+                  <CarList
+                    carSpecs={carSpecs}
+                    suppliers={supplierIds}
+                    carType={carType}
+                    gearbox={gearbox}
+                    mileage={mileage}
+                    fuelPolicy={fuelPolicy}
+                    deposit={deposit}
+                    pickupLocation={pickupLocation._id}
+                    dropOffLocation={dropOffLocation._id}
+                    loading={loading}
+                    from={from}
+                    to={to}
+                    ranges={ranges}
+                    multimedia={multimedia}
+                    rating={rating}
+                    seats={seats}
+                    minPrice={minMax[0]}
+                    maxPrice={minMax[1]}
+                    boost={false}
+                    sortBy={sortBy}
+                    onLoad={handleResultsLoad}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      p: { xs: 2, md: 3 },
+                      borderRadius: 2,
+                      backgroundColor: 'common.white',
+                      boxShadow: 1,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                      {strings.MAP_VIEW_TITLE}
+                    </Typography>
+                    {disableMapView ? (
+                      <Typography color="text.secondary">
+                        {strings.MAP_VIEW_UNAVAILABLE}
+                      </Typography>
+                    ) : (
+                      <Map
+                        position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
+                        initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
+                        parkingSpots={pickupLocation.parkingSpots}
+                        className="map"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setOpenMapDialog(true)}
+                          className="view-on-map"
+                          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                        >
+                          <img alt="View On Map" src={ViewOnMap} />
+                          <span>{strings.VIEW_ON_MAP}</span>
+                        </button>
+                      </Map>
+                    )}
+                  </Box>
+                )}
+                {!isDesktop && (
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<FilterListIcon />}
+                    onClick={() => setFiltersDrawerOpen(true)}
+                  >
+                    {strings.OPEN_FILTERS}
+                  </Button>
+                )}
+              </Stack>
+            </Grid>
+          </Grid>
+        </Box>
       )}
+
+      <Drawer
+        anchor="left"
+        open={filtersDrawerOpen}
+        onClose={() => setFiltersDrawerOpen(false)}
+        PaperProps={{ sx: { width: '100%', maxWidth: 420, p: 2 } }}
+      >
+        {pickupLocation && dropOffLocation && from && to && (
+          <FiltersPanel
+            key={`filters-mobile-${filtersVersion}`}
+            pickupLocation={pickupLocation}
+            dropOffLocation={dropOffLocation}
+            from={from}
+            to={to}
+            selectedSupplier={selectedSupplier}
+            suppliers={suppliers}
+            loading={loading}
+            priceRange={minMax}
+            priceBounds={{ min: PRICE_BOUNDS[0], max: PRICE_BOUNDS[1] }}
+            onSubmit={handleCarFilterSubmit}
+            onSupplierChange={handleSupplierFilterChange}
+            onCarTypeChange={handleCarTypeFilterChange}
+            onGearboxChange={handleGearboxFilterChange}
+            onMileageChange={handleMileageFilterChange}
+            onDepositChange={handleDepositFilterChange}
+            onPriceChange={handlePriceChange}
+            onReset={() => {
+              handleResetFilters()
+              setFiltersDrawerOpen(false)
+            }}
+            collapseFilters
+            versionKey={filtersVersion}
+          />
+        )}
+        <Button
+          variant="text"
+          color="primary"
+          startIcon={<CloseIcon />}
+          onClick={() => setFiltersDrawerOpen(false)}
+          sx={{ mt: 2 }}
+        >
+          {strings.CLOSE_FILTERS}
+        </Button>
+      </Drawer>
 
       <Dialog
         fullWidth={env.isMobile()}
@@ -598,15 +667,13 @@ const Search = () => {
       >
         <DialogTitle>
           <Box display="flex" justifyContent="flex-end">
-            <Box>
-              <IconButton
-                onClick={() => {
-                  setOpenMapDialog(false)
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </Box>
+            <IconButton
+              onClick={() => {
+                setOpenMapDialog(false)
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
           </Box>
         </DialogTitle>
         <DialogContent className="map-dialog-content">

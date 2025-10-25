@@ -18,6 +18,7 @@ import DistanceIcon from '@/assets/img/distance-icon.png'
 import '@/assets/css/car-list.css'
 import { getDefaultAnalyticsCurrency, sendCheckoutEvent } from '@/common/gtm'
 import ProfileAlert from './ProfileAlert'
+import { sortCars, type CarSortOption } from '@/common/carSorting'
 
 interface CarListProps {
   from?: Date;
@@ -48,6 +49,7 @@ interface CarListProps {
   minPrice?: number;
   maxPrice?: number;
   boost?: boolean;
+  sortBy?: CarSortOption;
   onLoad?: bookcarsTypes.DataEvent<bookcarsTypes.Car>;
 }
 
@@ -80,6 +82,7 @@ const CarList = ({
   minPrice: _minPrice,
   maxPrice: _maxPrice,
   boost = false, // Default value set to false if not provided
+  sortBy = 'priceAsc',
   onLoad,
 }: CarListProps) => {
   const navigate = useNavigate()
@@ -174,8 +177,9 @@ const CarList = ({
         _rows = _data.resultData
       }
 
-      setRows(_rows)
-      setRowCount((_page - 1) * env.CARS_PAGE_SIZE + _rows.length)
+      const sortedRows = sortCars(_rows, sortBy)
+      setRows(sortedRows)
+      setRowCount((_page - 1) * env.CARS_PAGE_SIZE + sortedRows.length)
       setTotalRecords(_totalRecords)
       setFetch(_data.resultData.length > 0)
 
@@ -184,7 +188,7 @@ const CarList = ({
       }
 
       if (onLoad) {
-        onLoad({ rows: _data.resultData, rowCount: _totalRecords })
+        onLoad({ rows: sortedRows, rowCount: _totalRecords })
       }
     } catch (err) {
       helper.error(err)
@@ -208,14 +212,15 @@ const CarList = ({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, suppliers, pickupLocation, carSpecs, _carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats, from, to])
+  }, [page, suppliers, pickupLocation, carSpecs, _carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats, from, to, _minPrice, _maxPrice])
 
   useEffect(() => {
     if (cars) {
-      setRows(cars)
+      const sortedCars = sortCars(cars, sortBy)
+      setRows(sortedCars)
       setFetch(false)
       if (onLoad) {
-        onLoad({ rows: cars, rowCount: cars.length })
+        onLoad({ rows: sortedCars, rowCount: cars.length })
       }
       setLoading(false)
     }
@@ -223,7 +228,7 @@ const CarList = ({
 
   useEffect(() => {
     setPage(1)
-  }, [suppliers, pickupLocation, carSpecs, _carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats, from, to])
+  }, [suppliers, pickupLocation, carSpecs, _carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats, from, to, _minPrice, _maxPrice])
 
   useEffect(() => {
     if (reload) {
@@ -231,6 +236,16 @@ const CarList = ({
       fetchData(1, suppliers, pickupLocation, carSpecs, _carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats)
     } // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reload, suppliers, pickupLocation, carSpecs, _carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats, _minPrice, _maxPrice])
+
+  useEffect(() => {
+    setRows((currentRows) => {
+      const nextRows = sortCars(currentRows, sortBy)
+      if (onLoad) {
+        onLoad({ rows: nextRows, rowCount: totalRecords })
+      }
+      return nextRows
+    })
+  }, [sortBy, totalRecords, onLoad])
 
   const getExtraIcon = (option: string, extra: number) => {
     let available = false

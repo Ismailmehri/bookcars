@@ -5,14 +5,13 @@ import { beforeEach, describe, expect, it, vi, type MockedFunction } from 'vites
 import * as bookcarsTypes from ':bookcars-types'
 import BoostedCarsView from '../BoostedCarsView'
 import { strings } from '@/lang/insights'
+import * as CarService from '@/services/CarService'
 
 vi.mock('@/services/CarService', () => ({
   getCars: vi.fn(),
   updateCarBoost: vi.fn(),
   createCarBoost: vi.fn(),
 }))
-
-import * as CarService from '@/services/CarService'
 
 const getCarsMock = CarService.getCars as MockedFunction<typeof CarService.getCars>
 const updateBoostMock = CarService.updateCarBoost as MockedFunction<typeof CarService.updateCarBoost>

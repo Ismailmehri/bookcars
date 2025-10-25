@@ -12,6 +12,7 @@
     "src/common/analytics.types.ts",
     "src/common/gtm.ts",
     "src/config/**/*.ts",
-    "src/types/**/*.d.ts"
+    "src/types/**/*.d.ts",
+    "src/components/car-card.utils.ts"
   ]
 }

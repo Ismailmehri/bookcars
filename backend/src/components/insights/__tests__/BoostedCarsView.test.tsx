@@ -1,6 +1,7 @@
 import React from 'react'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import '@testing-library/jest-dom/vitest'
 import { beforeEach, describe, expect, it, vi, type MockedFunction } from 'vitest'
 import * as bookcarsTypes from ':bookcars-types'
 import BoostedCarsView from '../BoostedCarsView'
@@ -28,19 +29,10 @@ const buildSupplier = (overrides?: Partial<bookcarsTypes.User>): bookcarsTypes.U
   avatar: '',
   active: true,
   verified: true,
-  userVerified: true,
   enableEmailNotifications: true,
-  enableSmsNotifications: true,
-  notificationCount: 0,
-  type: bookcarsTypes.RecordType.Supplier,
-  access: bookcarsTypes.UserAccess.Admin,
+  type: bookcarsTypes.UserType.Supplier,
   blacklisted: false,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  ratings: [],
   reviews: [],
-  agencies: [],
-  suppliers: [],
   ...overrides,
 })
 
@@ -65,7 +57,7 @@ const buildCar = (overrides?: Partial<bookcarsTypes.Car>): bookcarsTypes.Car => 
   doors: 4,
   aircon: true,
   gearbox: bookcarsTypes.GearboxType.Automatic,
-  fuelPolicy: bookcarsTypes.FuelPolicy.FullToFull,
+  fuelPolicy: bookcarsTypes.FuelPolicy.LikeForLike,
   mileage: -1,
   cancellation: 0,
   amendments: 0,
@@ -93,7 +85,7 @@ const buildCar = (overrides?: Partial<bookcarsTypes.Car>): bookcarsTypes.Car => 
   extraImages: [],
   featured: false,
   available: true,
-  type: bookcarsTypes.CarType.City,
+  type: bookcarsTypes.CarType.Gasoline,
   multimediaSpecs: undefined,
   images: [],
   slug: 'peugeot-208',
@@ -112,7 +104,7 @@ describe('BoostedCarsView', () => {
   it('loads boosted cars and renders rows', async () => {
     const car = buildCar({ name: 'Renault Clio' })
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: [{ totalRecords: 1 }], resultData: [car] },
+      { pageInfo: { totalRecords: 1 }, resultData: [car] },
     ])
 
     const { findByText } = render(
@@ -133,7 +125,7 @@ describe('BoostedCarsView', () => {
   it('requests backend sorting when the user sorts a column', async () => {
     const car = buildCar()
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: [{ totalRecords: 1 }], resultData: [car] },
+      { pageInfo: { totalRecords: 1 }, resultData: [car] },
     ])
 
     render(
@@ -146,7 +138,7 @@ describe('BoostedCarsView', () => {
 
     getCarsMock.mockClear()
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: [{ totalRecords: 1 }], resultData: [car] },
+      { pageInfo: { totalRecords: 1 }, resultData: [car] },
     ])
 
     const agencyHeader = await screen.findByRole('columnheader', { name: new RegExp(strings.BOOSTED_TABLE_AGENCY, 'i') })
@@ -174,7 +166,7 @@ describe('BoostedCarsView', () => {
   it('opens the edit dialog and saves boost updates', async () => {
     const car = buildCar()
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: [{ totalRecords: 1 }], resultData: [car] },
+      { pageInfo: { totalRecords: 1 }, resultData: [car] },
     ])
     updateBoostMock.mockResolvedValueOnce({
       ...car.boost!,
@@ -223,7 +215,7 @@ describe('BoostedCarsView', () => {
     } as unknown as bookcarsTypes.Car
 
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: [{ totalRecords: 1 }], resultData: [rawCar] },
+      { pageInfo: { totalRecords: 1 }, resultData: [rawCar] },
     ])
 
     render(
@@ -244,7 +236,7 @@ describe('BoostedCarsView', () => {
 
   it('falls back to empty state when no data returned', async () => {
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: [{ totalRecords: 0 }], resultData: [] },
+      { pageInfo: { totalRecords: 0 }, resultData: [] },
     ])
 
     const { findByText } = render(
@@ -263,7 +255,7 @@ describe('BoostedCarsView', () => {
     } as unknown as bookcarsTypes.Car
 
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: [{ totalRecords: 1 }], resultData: [malformedCar] },
+      { pageInfo: { totalRecords: 1 }, resultData: [malformedCar] },
     ])
 
     const { findByText, findAllByRole } = render(
@@ -284,7 +276,7 @@ describe('BoostedCarsView', () => {
     } as unknown as bookcarsTypes.Car
 
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: [{ totalRecords: 1 }], resultData: [missingSupplier] },
+      { pageInfo: { totalRecords: 1 }, resultData: [missingSupplier] },
     ])
 
     render(
@@ -326,7 +318,7 @@ describe('BoostedCarsView', () => {
     } as unknown as bookcarsTypes.Car
 
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: [{ totalRecords: 1 }], resultData: [carWithObjectIds] },
+      { pageInfo: { totalRecords: 1 }, resultData: [carWithObjectIds] },
     ])
 
     render(
@@ -366,7 +358,7 @@ describe('BoostedCarsView', () => {
     } as unknown as bookcarsTypes.Car
 
     getCarsMock.mockResolvedValueOnce([
-      { pageInfo: [{ totalRecords: 1 }], resultData: [carWithStatusOnly] },
+      { pageInfo: { totalRecords: 1 }, resultData: [carWithStatusOnly] },
     ])
 
     render(
@@ -392,7 +384,7 @@ describe('BoostedCarsView', () => {
       },
     }
     getCarsMock.mockResolvedValue([
-      { pageInfo: [{ totalRecords: 1 }], resultData: [car] },
+      { pageInfo: { totalRecords: 1 }, resultData: [car] },
     ])
 
     const { findByRole } = render(

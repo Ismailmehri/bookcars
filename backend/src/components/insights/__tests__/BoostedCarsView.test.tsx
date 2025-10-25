@@ -352,6 +352,37 @@ describe('BoostedCarsView', () => {
     expect(screen.getByRole('cell', { name: '123' })).toBeInTheDocument()
   })
 
+  it('falls back to backend status metadata when boost flags are missing', async () => {
+    const carWithStatusOnly = {
+      ...buildCar({
+        boost: undefined,
+      }),
+      boostStatus: 'paused',
+      boost: {
+        active: false,
+        paused: false,
+        purchasedViews: 0,
+        consumedViews: 0,
+      },
+    } as unknown as bookcarsTypes.Car
+
+    getCarsMock.mockResolvedValueOnce([
+      { pageInfo: [{ totalRecords: 1 }], resultData: [carWithStatusOnly] },
+    ])
+
+    render(
+      <ThemeProvider theme={createTheme()}>
+        <BoostedCarsView agencyOptions={[{ id: 'agency-1', name: 'Agence Alpha' }]} filtersVersion={1} />
+      </ThemeProvider>,
+    )
+
+    expect(await screen.findByText('Peugeot 208')).toBeTruthy()
+
+    await waitFor(() => {
+      expect(screen.getByRole('cell', { name: strings.BOOSTED_STATUS_PAUSED })).toBeInTheDocument()
+    })
+  })
+
   it('requests filtered data when status changes', async () => {
     const baseCar = buildCar()
     const car = {

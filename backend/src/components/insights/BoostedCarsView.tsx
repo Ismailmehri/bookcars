@@ -263,8 +263,47 @@ const buildBoostForm = (car: BoostedCarGridRow): BoostFormState => {
   }
 }
 
-const getBoostStatusKey = (boost?: bookcarsTypes.CarBoost | null): BoostStatusKey => {
-  if (!boost || !boost.active) {
+const parseBoostStatusKey = (value: unknown): BoostStatusKey | null => {
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+
+    if (['active', 'actif', 'enabled', 'enable'].includes(normalized)) {
+      return 'active'
+    }
+
+    if (['paused', 'pause', 'en pause'].includes(normalized)) {
+      return 'paused'
+    }
+
+    if (['inactive', 'inactif', 'disabled', 'disable', 'off'].includes(normalized)) {
+      return 'inactive'
+    }
+  }
+
+  if (typeof value === 'number') {
+    if (value === 0) {
+      return 'active'
+    }
+    if (value === 1) {
+      return 'paused'
+    }
+    if (value === 2) {
+      return 'inactive'
+    }
+  }
+
+  return null
+}
+
+const getBoostStatusKey = (
+  boost?: bookcarsTypes.CarBoost | null,
+  explicitStatus?: BoostStatusKey | null,
+): BoostStatusKey => {
+  if (explicitStatus) {
+    return explicitStatus
+  }
+
+  if (!boost) {
     return 'inactive'
   }
 
@@ -272,7 +311,11 @@ const getBoostStatusKey = (boost?: bookcarsTypes.CarBoost | null): BoostStatusKe
     return 'paused'
   }
 
-  return 'active'
+  if (boost.active) {
+    return 'active'
+  }
+
+  return 'inactive'
 }
 
 const parseIdentifier = (value: unknown): string | null => {
@@ -373,8 +416,12 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       ? (car as { supplierName: string }).supplierName
       : ''
 
+    const rawStatusCandidate = (car as { boostStatus?: unknown }).boostStatus
+      ?? (car as { boostStatusKey?: unknown }).boostStatusKey
+      ?? (car as { status?: unknown }).status
+    const explicitStatus = parseBoostStatusKey(rawStatusCandidate)
     const boost = normalizeBoost((car as { boost?: unknown }).boost) ?? undefined
-    const boostStatusKey = getBoostStatusKey(boost)
+    const boostStatusKey = getBoostStatusKey(boost, explicitStatus)
 
     const supplierNameCandidates = [
       supplier?.fullName,

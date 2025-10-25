@@ -639,7 +639,7 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
     active: strings.BOOSTED_STATUS_ACTIVE,
     paused: strings.BOOSTED_STATUS_PAUSED,
     inactive: strings.BOOSTED_STATUS_INACTIVE,
-  }), [strings])
+  }), [])
 
   const columns: GridColDef<BoostedCarGridRow>[] = useMemo(() => [
     {
@@ -712,7 +712,6 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
   ], [
     handleOpenDialog,
     statusLabels,
-    strings,
   ])
 
   return (

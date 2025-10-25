@@ -167,6 +167,41 @@ describe('BoostedCarsView', () => {
     expect(payload.endDate).toBeInstanceOf(Date)
   })
 
+  it('normalizes boost payloads originating from aggregate responses', async () => {
+    const boostMap = new Map<string, unknown>([
+      ['active', 1],
+      ['paused', 0],
+      ['purchasedViews', '345'],
+      ['consumedViews', '12'],
+      ['startDate', '2024-04-01T00:00:00.000Z'],
+      ['endDate', '2024-05-01T00:00:00.000Z'],
+    ])
+
+    const rawCar = {
+      ...buildCar({ name: 'Boosted Map', boost: undefined }),
+      boost: boostMap,
+    } as unknown as bookcarsTypes.Car
+
+    getCarsMock.mockResolvedValueOnce([
+      { pageInfo: [{ totalRecords: 1 }], resultData: [rawCar] },
+    ])
+
+    render(
+      <ThemeProvider theme={createTheme()}>
+        <BoostedCarsView agencyOptions={[{ id: 'agency-1', name: 'Agence Alpha' }]} filtersVersion={1} />
+      </ThemeProvider>,
+    )
+
+    expect(await screen.findByText('Boosted Map')).toBeTruthy()
+
+    await waitFor(() => {
+      expect(screen.getByText(strings.BOOSTED_STATUS_ACTIVE)).toBeInTheDocument()
+    })
+
+    expect(screen.getByText('345')).toBeInTheDocument()
+    expect(screen.getByText('12')).toBeInTheDocument()
+  })
+
   it('falls back to empty state when no data returned', async () => {
     getCarsMock.mockResolvedValueOnce([
       { pageInfo: [{ totalRecords: 0 }], resultData: [] },

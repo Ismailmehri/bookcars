@@ -47,6 +47,116 @@ type BoostedCarRow = Omit<bookcarsTypes.Car, 'supplier'> & {
   supplierId?: string | null
 }
 
+type AnyRecord = Record<string, unknown>
+
+const toPlainObject = (value: unknown): AnyRecord | null => {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  if (value instanceof Map) {
+    return Object.fromEntries(value.entries())
+  }
+
+  if ('toObject' in value && typeof (value as { toObject?: () => unknown }).toObject === 'function') {
+    const plain = (value as { toObject: () => unknown }).toObject()
+    return plain && typeof plain === 'object' ? plain as AnyRecord : null
+  }
+
+  return value as AnyRecord
+}
+
+const parseBoolean = (value: unknown): boolean => {
+  if (typeof value === 'boolean') {
+    return value
+  }
+
+  if (typeof value === 'number') {
+    return value !== 0
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (['true', '1', 'yes', 'on'].includes(normalized)) {
+      return true
+    }
+    if (['false', '0', 'no', 'off'].includes(normalized)) {
+      return false
+    }
+  }
+
+  return false
+}
+
+const parseNumber = (value: unknown, fallback = 0): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number.parseInt(value, 10)
+    if (!Number.isNaN(parsed)) {
+      return parsed
+    }
+  }
+
+  return fallback
+}
+
+const parseDate = (value: unknown): Date | undefined => {
+  if (!value) {
+    return undefined
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? undefined : value
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value)
+    if (!Number.isNaN(date.getTime())) {
+      return date
+    }
+  }
+
+  return undefined
+}
+
+const normalizeBoost = (value: unknown): bookcarsTypes.CarBoost | null => {
+  const plain = toPlainObject(value)
+
+  if (!plain) {
+    return null
+  }
+
+  const boost: bookcarsTypes.CarBoost = {
+    active: parseBoolean(plain.active),
+    paused: parseBoolean(plain.paused),
+    purchasedViews: parseNumber(plain.purchasedViews),
+    consumedViews: parseNumber(plain.consumedViews),
+  }
+
+  const startDate = parseDate(plain.startDate)
+  const endDate = parseDate(plain.endDate)
+  const createdAt = parseDate(plain.createdAt)
+  const lastViewAt = parseDate(plain.lastViewAt)
+
+  if (startDate) {
+    boost.startDate = startDate
+  }
+  if (endDate) {
+    boost.endDate = endDate
+  }
+  if (createdAt) {
+    boost.createdAt = createdAt
+  }
+  if (lastViewAt) {
+    boost.lastViewAt = lastViewAt
+  }
+
+  return boost
+}
+
 interface DialogState {
   car: BoostedCarRow
   form: BoostFormState
@@ -186,14 +296,17 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       const sanitizedCars = ((pageData?.resultData ?? []) as unknown[])
         .filter(isBoostedCarRow)
         .map((item) => {
+          const plainCar = toPlainObject(item) ?? item
           const supplier = resolveSupplier(item)
           const rawSupplier = (item as { supplier?: unknown }).supplier
           const supplierId = supplier?._id ?? (typeof rawSupplier === 'string' ? rawSupplier : null)
+          const boost = normalizeBoost((item as { boost?: unknown }).boost)
 
           return {
-            ...item,
+            ...(plainCar as BoostedCarRow),
             supplier,
             supplierId,
+            boost,
           }
         })
 
@@ -267,12 +380,17 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
     })
   }
 
-  const persistBoostUpdate = (carId: string, boost: bookcarsTypes.CarBoost) => {
-    setCars((prev) => prev.map((item) => (
-      item._id === carId
-        ? { ...item, boost }
-        : item
-    )))
+  const persistBoostUpdate = (carId: string, boost: bookcarsTypes.CarBoost | null) => {
+    setCars((prev) => prev.map((item) => {
+      if (item._id !== carId) {
+        return item
+      }
+
+      return {
+        ...item,
+        boost: boost ?? undefined,
+      }
+    }))
   }
 
   const handleDialogSave = async () => {
@@ -312,12 +430,12 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
         endDate,
       }
 
-      let boost: bookcarsTypes.CarBoost
+      let boost: bookcarsTypes.CarBoost | null
 
       if (car.boost) {
-        boost = await CarService.updateCarBoost(car._id, payload)
+        boost = normalizeBoost(await CarService.updateCarBoost(car._id, payload))
       } else {
-        boost = await CarService.createCarBoost(car._id, payload)
+        boost = normalizeBoost(await CarService.createCarBoost(car._id, payload))
       }
 
       persistBoostUpdate(car._id, boost)
@@ -341,7 +459,11 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       flex: 1,
       minWidth: 160,
       valueGetter: (params) => {
-        const supplier = resolveSupplier(params?.row)
+        if (!params || !params.row) {
+          return '—'
+        }
+
+        const supplier = resolveSupplier(params.row)
         return supplier?.fullName ?? '—'
       },
     },
@@ -350,33 +472,63 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       headerName: strings.BOOSTED_TABLE_STATUS,
       flex: 0.8,
       minWidth: 140,
-      valueGetter: (params) => getBoostStatusLabel(params?.row?.boost),
+      valueGetter: (params) => {
+        if (!params || !params.row) {
+          return strings.BOOSTED_STATUS_INACTIVE
+        }
+
+        return getBoostStatusLabel(params.row.boost)
+      },
     },
     {
       field: 'purchasedViews',
       headerName: strings.BOOSTED_TABLE_PURCHASED,
       type: 'number',
       width: 150,
-      valueGetter: (params) => params?.row?.boost?.purchasedViews ?? 0,
+      valueGetter: (params) => {
+        if (!params || !params.row) {
+          return 0
+        }
+
+        return params.row.boost?.purchasedViews ?? 0
+      },
     },
     {
       field: 'consumedViews',
       headerName: strings.BOOSTED_TABLE_CONSUMED,
       type: 'number',
       width: 150,
-      valueGetter: (params) => params?.row?.boost?.consumedViews ?? 0,
+      valueGetter: (params) => {
+        if (!params || !params.row) {
+          return 0
+        }
+
+        return params.row.boost?.consumedViews ?? 0
+      },
     },
     {
       field: 'startDate',
       headerName: strings.BOOSTED_TABLE_START,
       width: 140,
-      valueGetter: (params) => formatDate(params?.row?.boost?.startDate ?? null),
+      valueGetter: (params) => {
+        if (!params || !params.row) {
+          return '—'
+        }
+
+        return formatDate(params.row.boost?.startDate ?? null)
+      },
     },
     {
       field: 'endDate',
       headerName: strings.BOOSTED_TABLE_END,
       width: 140,
-      valueGetter: (params) => formatDate(params?.row?.boost?.endDate ?? null),
+      valueGetter: (params) => {
+        if (!params || !params.row) {
+          return '—'
+        }
+
+        return formatDate(params.row.boost?.endDate ?? null)
+      },
     },
     {
       field: 'actions',

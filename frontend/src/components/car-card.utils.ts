@@ -1,16 +1,3 @@
-export interface AvailabilityDisplay {
-  label: string
-  tooltip: string
-  color: 'success' | 'default'
-}
-
-export interface AvailabilityLabels {
-  available: string
-  availableTooltip: string
-  unavailable: string
-  unavailableTooltip: string
-}
-
 export const transformScore = (score?: number): number => {
   if (!score || score < 0 || score > 100) {
     return 0
@@ -20,19 +7,22 @@ export const transformScore = (score?: number): number => {
   return Math.round(transformedScore * 10) / 10
 }
 
-export const getAvailabilityDisplay = (
-  available: boolean,
-  labels: AvailabilityLabels,
-): AvailabilityDisplay => (
-  available
-    ? {
-      label: labels.available,
-      tooltip: labels.availableTooltip,
-      color: 'success',
-    }
-    : {
-      label: labels.unavailable,
-      tooltip: labels.unavailableTooltip,
-      color: 'default',
-    }
-)
+export const getSupplierInitials = (name?: string): string => {
+  if (!name) {
+    return ''
+  }
+
+  const cleanName = name.trim()
+  if (!cleanName) {
+    return ''
+  }
+
+  const parts = cleanName.split(/\s+/)
+  if (parts.length === 1) {
+    return parts[0].charAt(0).toUpperCase()
+  }
+
+  const first = parts[0].charAt(0)
+  const last = parts[parts.length - 1].charAt(0)
+  return `${first}${last}`.toUpperCase()
+}

@@ -8,7 +8,7 @@ const distRoot = path.resolve(__dirname, '../.test-dist')
 
 const loadModule = async (relativePath) => import(pathToFileURL(path.join(distRoot, relativePath)))
 
-const { transformScore, getAvailabilityDisplay } = await loadModule('frontend/src/components/car-card.utils.js')
+const { transformScore, getSupplierInitials } = await loadModule('frontend/src/components/car-card.utils.js')
 
 test('transformScore clamps invalid scores to zero', () => {
   assert.equal(transformScore(-10), 0)
@@ -21,21 +21,13 @@ test('transformScore converts percentage into five-star scale with rounding', ()
   assert.equal(transformScore(95), 4.8)
 })
 
-test('getAvailabilityDisplay returns matching labels for each state', () => {
-  const labels = {
-    available: 'Disponible à la location',
-    availableTooltip: 'La voiture peut être réservée',
-    unavailable: 'Indisponible',
-    unavailableTooltip: 'La voiture n\'est pas disponible',
-  }
+test('getSupplierInitials builds compact initials from supplier name', () => {
+  assert.equal(getSupplierInitials('Plany Cars'), 'PC')
+  assert.equal(getSupplierInitials(' agence premium '), 'AP')
+  assert.equal(getSupplierInitials('Mono'), 'M')
+})
 
-  const available = getAvailabilityDisplay(true, labels)
-  assert.equal(available.label, labels.available)
-  assert.equal(available.tooltip, labels.availableTooltip)
-  assert.equal(available.color, 'success')
-
-  const unavailable = getAvailabilityDisplay(false, labels)
-  assert.equal(unavailable.label, labels.unavailable)
-  assert.equal(unavailable.tooltip, labels.unavailableTooltip)
-  assert.equal(unavailable.color, 'default')
+test('getSupplierInitials returns empty string for missing values', () => {
+  assert.equal(getSupplierInitials(''), '')
+  assert.equal(getSupplierInitials(), '')
 })

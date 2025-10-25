@@ -39,7 +39,7 @@ section.car-list .car-list__grid {
   display: grid;
   gap: 24px;
   margin: 0 auto 32px;
-  max-width: 1080px;
+  max-width: 940px;
   width: 100%;
 }
 

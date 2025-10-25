@@ -431,9 +431,9 @@ const Search = () => {
       </Helmet>
       {visible && supplierIds && pickupLocation && dropOffLocation && from && to && (
         <div className="search">
-          <div className="col-1">
+          <div className="col-1" role="complementary" aria-label="Filtres de recherche">
             {!loading && (
-              <>
+              <div className="search__filters-shell">
                 {pickupLocation.latitude && pickupLocation.longitude && (
                   <Map
                     position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
@@ -453,29 +453,31 @@ const Search = () => {
                     </button>
                   </Map>
                 )}
-                <CarFilter
-                  className="filter"
-                  pickupLocation={pickupLocation}
-                  dropOffLocation={dropOffLocation}
-                  from={from}
-                  to={to}
-                  suppliers={selectedSupplier}
-                  accordion
-                  collapse
-                  onSubmit={handleCarFilterSubmit}
-                />
-                <SupplierFilter className="filter" suppliers={suppliers} onChange={handleSupplierFilterChange} />
-                { /* <CarRatingFilter className="filter" onChange={handleRatingFilterChange} />
-                <CarRangeFilter className="filter" onChange={handleRangeFilterChange} />
-                <CarMultimediaFilter className="filter" onChange={handleMultimediaFilterChange} />
-                <CarSeatsFilter className="filter" onChange={handleSeatsFilterChange} />
-                <FuelPolicyFilter className="filter" onChange={handleFuelPolicyFilterChange} />
-                <CarSpecsFilter className="filter" onChange={handleCarSpecsFilterChange} /> */}
-                <CarType className="filter" onChange={handleCarTypeFilterChange} />
-                <GearboxFilter className="filter" onChange={handleGearboxFilterChange} />
-                <MileageFilter className="filter" onChange={handleMileageFilterChange} />
-                <DepositFilter className="filter" onChange={handleDepositFilterChange} />
-              </>
+                <div className="search__filters-scroll">
+                  <CarFilter
+                    className="filter"
+                    pickupLocation={pickupLocation}
+                    dropOffLocation={dropOffLocation}
+                    from={from}
+                    to={to}
+                    suppliers={selectedSupplier}
+                    accordion
+                    collapse
+                    onSubmit={handleCarFilterSubmit}
+                  />
+                  <SupplierFilter className="filter" suppliers={suppliers} onChange={handleSupplierFilterChange} />
+                  { /* <CarRatingFilter className="filter" onChange={handleRatingFilterChange} />
+                  <CarRangeFilter className="filter" onChange={handleRangeFilterChange} />
+                  <CarMultimediaFilter className="filter" onChange={handleMultimediaFilterChange} />
+                  <CarSeatsFilter className="filter" onChange={handleSeatsFilterChange} />
+                  <FuelPolicyFilter className="filter" onChange={handleFuelPolicyFilterChange} />
+                  <CarSpecsFilter className="filter" onChange={handleCarSpecsFilterChange} /> */}
+                  <CarType className="filter" onChange={handleCarTypeFilterChange} />
+                  <GearboxFilter className="filter" onChange={handleGearboxFilterChange} />
+                  <MileageFilter className="filter" onChange={handleMileageFilterChange} />
+                  <DepositFilter className="filter" onChange={handleDepositFilterChange} />
+                </div>
+              </div>
             )}
           </div>
           <div className="col-2">

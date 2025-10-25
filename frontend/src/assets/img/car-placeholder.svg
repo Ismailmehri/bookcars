@@ -1,0 +1,9 @@
+<svg width="320" height="200" viewBox="0 0 320 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="320" height="200" rx="20" fill="#F1F5F9"/>
+  <rect x="20" y="120" width="280" height="36" rx="18" fill="#0B6BD3" opacity="0.15"/>
+  <path d="M68 128C68 120.268 74.268 114 82 114H122L140 96H220C227.732 96 234 102.268 234 110V128H68Z" fill="#0B6BD3" opacity="0.25"/>
+  <path d="M94 126C94 119.373 99.3726 114 106 114C112.627 114 118 119.373 118 126C118 132.627 112.627 138 106 138C99.3726 138 94 132.627 94 126Z" fill="#0B6BD3"/>
+  <path d="M190 126C190 119.373 195.373 114 202 114C208.627 114 214 119.373 214 126C214 132.627 208.627 138 202 138C195.373 138 190 132.627 190 126Z" fill="#0B6BD3"/>
+  <text x="160" y="82" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="24" font-weight="700" fill="#0B6BD3">Plany.tn</text>
+  <text x="160" y="162" text-anchor="middle" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="14" fill="#475569">Visuel indisponible</text>
+</svg>

@@ -259,6 +259,58 @@ describe('BoostedCarsView', () => {
     })
   })
 
+  it('renders active status, metrics, and schedule for serialized supplier identifiers', async () => {
+    const mockIdentifier = { toString: () => 'agency-1' }
+    const carWithObjectIds = {
+      ...buildCar({
+        name: 'Citroën C3',
+        boost: undefined,
+      }),
+      _id: { toString: () => 'car-object-1' },
+      supplierId: mockIdentifier,
+      supplier: {
+        ...buildSupplier({
+          fullName: '',
+        }),
+        _id: mockIdentifier,
+        fullName: '',
+      },
+      boost: {
+        active: 'true',
+        paused: 'false',
+        purchasedViews: '5000',
+        consumedViews: '123',
+        startDate: '2024-04-10T00:00:00.000Z',
+        endDate: '2024-05-20T00:00:00.000Z',
+      },
+    } as unknown as bookcarsTypes.Car
+
+    getCarsMock.mockResolvedValueOnce([
+      { pageInfo: [{ totalRecords: 1 }], resultData: [carWithObjectIds] },
+    ])
+
+    render(
+      <ThemeProvider theme={createTheme()}>
+        <BoostedCarsView agencyOptions={[{ id: 'agency-1', name: 'Agence Alpha' }]} filtersVersion={1} />
+      </ThemeProvider>,
+    )
+
+    const expectedStart = new Date('2024-04-10T00:00:00.000Z').toLocaleDateString()
+    const expectedEnd = new Date('2024-05-20T00:00:00.000Z').toLocaleDateString()
+
+    expect(await screen.findByText('Citroën C3')).toBeTruthy()
+
+    await waitFor(() => {
+      expect(screen.getByRole('cell', { name: strings.BOOSTED_STATUS_ACTIVE })).toBeInTheDocument()
+      expect(screen.getByRole('cell', { name: 'Agence Alpha' })).toBeInTheDocument()
+      expect(screen.getByRole('cell', { name: expectedStart })).toBeInTheDocument()
+      expect(screen.getByRole('cell', { name: expectedEnd })).toBeInTheDocument()
+    })
+
+    expect(screen.getByRole('cell', { name: '5000' })).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: '123' })).toBeInTheDocument()
+  })
+
   it('requests filtered data when status changes', async () => {
     const baseCar = buildCar()
     const car = {

@@ -241,18 +241,58 @@ const getBoostStatusKey = (boost?: bookcarsTypes.CarBoost | null): BoostStatusKe
   return 'active'
 }
 
+const parseIdentifier = (value: unknown): string | null => {
+  if (!value) {
+    return null
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : null
+  }
+
+  if (typeof value === 'object' && 'toString' in value) {
+    const toStringFn = (value as { toString?: () => string }).toString
+    if (typeof toStringFn !== 'function') {
+      return null
+    }
+
+    const stringified = toStringFn.call(value)
+    if (stringified && stringified !== '[object Object]') {
+      return stringified
+    }
+  }
+
+  return null
+}
+
 const resolveSupplier = (car?: Partial<BoostedCarRow> | null) => {
   if (!car || typeof car !== 'object') {
     return null
   }
 
-  const supplier = car.supplier as unknown
-  if (!supplier || typeof supplier !== 'object') {
+  const supplierValue = (car as { supplier?: unknown }).supplier
+  const plainSupplier = toPlainObject(supplierValue)
+
+  if (!plainSupplier) {
     return null
   }
 
-  const maybeUser = supplier as Partial<bookcarsTypes.User>
-  return maybeUser._id ? maybeUser as bookcarsTypes.User : null
+  const supplierCandidate = plainSupplier as Partial<bookcarsTypes.User>
+  const supplierId = parseIdentifier(supplierCandidate._id)
+  const fullName = typeof supplierCandidate.fullName === 'string' ? supplierCandidate.fullName : ''
+
+  if (!supplierId && !fullName.trim()) {
+    return null
+  }
+
+  const supplier: bookcarsTypes.User = {
+    ...supplierCandidate,
+    _id: supplierId ?? undefined,
+    fullName,
+  }
+
+  return supplier
 }
 
 const isBoostedCarRow = (value: unknown): value is BoostedCarRow => {
@@ -260,8 +300,10 @@ const isBoostedCarRow = (value: unknown): value is BoostedCarRow => {
     return false
   }
 
-  const candidate = value as Partial<BoostedCarRow>
-  return typeof candidate._id === 'string' && typeof candidate.name === 'string'
+  const candidate = value as Partial<BoostedCarRow> & { _id?: unknown; name?: unknown }
+  const identifier = parseIdentifier(candidate._id)
+
+  return Boolean(identifier) && typeof candidate.name === 'string'
 }
 
 const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filtersVersion, defaultAgencyId }) => {
@@ -288,19 +330,33 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
 
   const decorateBoostedRow = useCallback((car: BoostedCarRow): BoostedCarGridRow => {
     const supplier = resolveSupplier(car)
-    const supplierId = car.supplierId ?? supplier?._id ?? null
-    const boost = car.boost
+    const rawSupplierId = (car as { supplierId?: unknown }).supplierId
+    const supplierId = parseIdentifier(rawSupplierId)
+      ?? (supplier?._id ? parseIdentifier(supplier._id) : null)
+
+    const rawSupplierName = typeof (car as { supplierName?: unknown }).supplierName === 'string'
+      ? (car as { supplierName: string }).supplierName
+      : ''
+
+    const boost = normalizeBoost((car as { boost?: unknown }).boost) ?? undefined
     const boostStatusKey = getBoostStatusKey(boost)
 
-    const supplierName = supplier?.fullName?.trim()
-      || (supplierId ? agencyNameMap.get(supplierId) ?? '' : '')
+    const supplierNameCandidates = [
+      supplier?.fullName,
+      rawSupplierName,
+      supplierId ? agencyNameMap.get(supplierId) : undefined,
+    ]
+
+    const supplierName = supplierNameCandidates
+      .map((name) => (typeof name === 'string' ? name.trim() : ''))
+      .find((name) => name.length > 0) ?? '—'
 
     return {
       ...car,
       supplier,
       supplierId: supplierId ?? null,
       boost,
-      supplierName: supplierName || '—',
+      supplierName,
       boostStatusKey,
       purchasedViewsValue: boost?.purchasedViews ?? 0,
       consumedViewsValue: boost?.consumedViews ?? 0,
@@ -336,21 +392,25 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
         : pageData?.pageInfo?.totalRecords ?? 0
 
       const sanitizedCars = ((pageData?.resultData ?? []) as unknown[])
-        .filter(isBoostedCarRow)
-        .map((item) => {
-          const plainCar = toPlainObject(item) ?? item
-          const supplier = resolveSupplier(item)
-          const rawSupplier = (item as { supplier?: unknown }).supplier
-          const supplierId = supplier?._id ?? (typeof rawSupplier === 'string' ? rawSupplier : null)
-          const boost = normalizeBoost((item as { boost?: unknown }).boost) ?? undefined
+        .map((item) => toPlainObject(item) ?? item)
+        .reduce<BoostedCarGridRow[]>((rows, plainCar) => {
+          if (!isBoostedCarRow(plainCar)) {
+            return rows
+          }
 
-          return decorateBoostedRow({
+          const normalizedId = parseIdentifier((plainCar as { _id?: unknown })._id)
+          if (!normalizedId) {
+            return rows
+          }
+
+          const normalizedCar: BoostedCarRow = {
             ...(plainCar as BoostedCarRow),
-            supplier,
-            supplierId,
-            boost,
-          })
-        })
+            _id: normalizedId,
+          }
+
+          rows.push(decorateBoostedRow(normalizedCar))
+          return rows
+        }, [])
 
       setCars(sanitizedCars)
       setRowCount(totalRecords)
@@ -506,7 +566,6 @@ const BoostedCarsView: React.FC<BoostedCarsViewProps> = ({ agencyOptions, filter
       headerName: strings.BOOSTED_TABLE_AGENCY,
       flex: 1,
       minWidth: 160,
-      valueGetter: (params) => params?.row?.supplierName ?? '—',
     },
     {
       field: 'boostStatusKey',

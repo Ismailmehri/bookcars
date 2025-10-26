@@ -20,7 +20,8 @@ const LocationHeader = ({ location }: LocationHeaderProps) => {
         marginBottom: '20px',
         marginTop: '20px',
         border: '1px solid #ddd',
-        width: isMobile ? '98%' : '800px', // Pleine largeur sur mobile, largeur fixe sur desktop
+        width: '100%',
+        maxWidth: isMobile ? '100%' : '980px', // Alignement avec la largeur principale sur desktop
         mx: 'auto', // Centrer la boîte horizontalement
       }}
     >

@@ -560,7 +560,6 @@ const CarList = ({
 
         {!hidePrice && (
           <div className="price">
-            <span className="price-label">{strings.PRICE_PER_DAY}</span>
             <span className="price-main">
               {formattedDailyRate}
               <span className="price-unit">

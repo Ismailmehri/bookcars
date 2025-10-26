@@ -48,6 +48,7 @@ await Promise.all([
   ensureCopiedFromFrontend('common/analytics.types.js'),
   ensureCopiedFromFrontend('common/gtm.js'),
   ensureCopiedFromFrontend('common/pricing.js'),
+  ensureCopiedFromFrontend('common/supplier.js'),
 ])
 
 const envFile = path.join(distRoot, 'config/env.config.js')

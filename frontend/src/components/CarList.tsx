@@ -31,6 +31,7 @@ import DistanceIcon from '@/assets/img/distance-icon.png'
 import '@/assets/css/car-list.css'
 import { getDefaultAnalyticsCurrency, sendCheckoutEvent } from '@/common/gtm'
 import ProfileAlert from './ProfileAlert'
+import { buildSupplierLinkMessage, getSupplierProfilePath } from '@/common/supplier'
 
 interface CarListProps {
   from?: Date
@@ -295,6 +296,20 @@ const CarList = ({
                       image: bookcarsHelper.joinURL(env.CDN_CARS, car.image),
                       offers: { '@type': 'Offer', price: car.dailyPrice, priceCurrency: 'TND', availability: 'https://schema.org/InStock' },
                     }
+                    const supplierProfilePath = getSupplierProfilePath(car.supplier.slug)
+                    const hasDailyPrice = typeof car.dailyPrice === 'number' && Number.isFinite(car.dailyPrice)
+                    const supplierDailyPriceLabel = hasDailyPrice
+                      ? bookcarsHelper.formatPrice(
+                        normalizePrice(car.dailyPrice ?? 0),
+                        commonStrings.CURRENCY,
+                        language,
+                      )
+                      : undefined
+                    const supplierLinkDescription = buildSupplierLinkMessage({
+                      supplierName: car.supplier.fullName,
+                      dailyPriceLabel: supplierDailyPriceLabel,
+                      dailySuffix: commonStrings.DAILY,
+                    })
 
                     return (
                       <div key={car._id} className="car-list-container">
@@ -346,7 +361,16 @@ const CarList = ({
                             <div className="car-title-row">
                               <h2 className="car-title" title={car.name}>{car.name}</h2>
                               {!hideSupplier && (
-                                <div className="supplier">
+                                <a
+                                  href={supplierProfilePath}
+                                  className="supplier supplier-link"
+                                  title={supplierLinkDescription}
+                                  aria-label={supplierLinkDescription}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  itemScope
+                                  itemType="https://schema.org/AutoRental"
+                                >
                                   <Avatar
                                     src={bookcarsHelper.joinURL(env.CDN_USERS, car.supplier.avatar)}
                                     alt={car.supplier.fullName}
@@ -354,10 +378,12 @@ const CarList = ({
                                     imgProps={{ style: { objectFit: 'contain' } }}
                                   />
                                   <span className="supplier-name" title={car.supplier.fullName}>
-                                    {car.supplier.agencyVerified && <VerifiedIcon className="agency-verified-badge" />}
+                                    {car.supplier.agencyVerified && (
+                                      <VerifiedIcon className="agency-verified-badge" aria-hidden="true" />
+                                    )}
                                     {car.supplier.fullName}
                                   </span>
-                                </div>
+                                </a>
                               )}
                             </div>
 

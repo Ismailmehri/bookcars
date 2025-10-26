@@ -294,9 +294,14 @@ const CarList = ({
                       '@type': 'Product',
                       name: car.name,
                       image: bookcarsHelper.joinURL(env.CDN_CARS, car.image),
-                      offers: { '@type': 'Offer', price: car.dailyPrice, priceCurrency: 'TND', availability: 'https://schema.org/InStock' },
+                      offers: {
+                        '@type': 'Offer',
+                        price: car.dailyPrice ?? 0,
+                        priceCurrency: 'TND',
+                        availability: 'https://schema.org/InStock',
+                      },
                     }
-                    const supplierProfilePath = getSupplierProfilePath(car.supplier.slug)
+                    const supplierProfilePath = getSupplierProfilePath(car.supplier.slug ?? '')
                     const hasDailyPrice = typeof car.dailyPrice === 'number' && Number.isFinite(car.dailyPrice)
                     const supplierDailyPriceLabel = hasDailyPrice
                       ? bookcarsHelper.formatPrice(

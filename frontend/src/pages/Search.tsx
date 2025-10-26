@@ -512,7 +512,7 @@ const Search = () => {
                 marginBottom: 4,
                 borderRadius: 2,
                 width: '100%',
-                maxWidth: '980px',
+                maxWidth: '800px',
                 mx: 'auto',
               }}
             >

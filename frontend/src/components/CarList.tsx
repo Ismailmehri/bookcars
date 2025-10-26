@@ -7,6 +7,7 @@ import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
 import Const from '@/config/const'
 import * as helper from '@/common/helper'
+import { calculateDailyRate, normalizePrice } from '@/common/pricing'
 import { strings as commonStrings } from '@/lang/common'
 import { strings } from '@/lang/cars'
 import * as CarService from '@/services/CarService'
@@ -322,6 +323,12 @@ const CarList = ({
 
                 {rows.map((car) => {
                 const totalPrice = bookcarsHelper.calculateTotalPrice(car, from as Date, to as Date)
+                const rentalDays = Math.max(days, 1)
+                const safeTotal = normalizePrice(totalPrice)
+                const dailyRate = calculateDailyRate(totalPrice, rentalDays)
+                const formattedDailyRate = bookcarsHelper.formatPrice(dailyRate, commonStrings.CURRENCY, language)
+                const priceSummary = `${helper.getDays(rentalDays)} : ${bookcarsHelper.formatPrice(safeTotal, commonStrings.CURRENCY, language)}`
+                const priceUnitLabel = strings.PRICE_DAYS_PART_2
 
   // Données pour le JSON-LD
   const productData = {
@@ -553,9 +560,15 @@ const CarList = ({
 
         {!hidePrice && (
           <div className="price">
-            <span className="price-days">{helper.getDays(days)}</span>
-            <span className="price-main">{bookcarsHelper.formatPrice(totalPrice, commonStrings.CURRENCY, language)}</span>
-            <span className="price-day">{`${strings.PRICE_PER_DAY} ${bookcarsHelper.formatPrice(totalPrice / days, commonStrings.CURRENCY, language)}`}</span>
+            <span className="price-label">{strings.PRICE_PER_DAY}</span>
+            <span className="price-main">
+              {formattedDailyRate}
+              <span className="price-unit">
+                /
+                {priceUnitLabel}
+              </span>
+            </span>
+            <span className="price-total">{priceSummary}</span>
           </div>
         )}
 
@@ -567,10 +580,6 @@ const CarList = ({
               className="btn-book btn-margin-bottom"
               onClick={() => {
                 if (car._id) {
-                  const rentalDays = Math.max(days, 1)
-                  const safeTotal = Number.isFinite(totalPrice) && totalPrice > 0 ? totalPrice : 0
-                  const unitPrice = rentalDays > 0 ? safeTotal / rentalDays : safeTotal
-
                   sendCheckoutEvent({
                     value: safeTotal,
                     currency: getDefaultAnalyticsCurrency(),
@@ -579,7 +588,7 @@ const CarList = ({
                         id: car._id,
                         name: car.name,
                         quantity: rentalDays,
-                        price: unitPrice,
+                        price: dailyRate,
                         category: car.range,
                       },
                     ],

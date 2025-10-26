@@ -358,7 +358,7 @@ section.car-list article .btn-book[aria-disabled="true"] {
   }
 
   section.car-list article span.price-main {
-    color: #383838;
+    color: #1976d2;
     font-size: 2em;
     font-weight: 700;
     line-height: 1em;
@@ -367,12 +367,24 @@ section.car-list article .btn-book[aria-disabled="true"] {
     text-align: right;
   }
 
-  section.car-list article span.price-days,
-  section.car-list article span.price-day {
+  section.car-list article span.price-main .price-unit {
+    font-size: 0.5em;
+    font-weight: 600;
+    margin-left: 4px;
+    color: inherit;
+  }
+
+  section.car-list article span.price-label,
+  section.car-list article span.price-total {
     font-size: 13px;
     color: #4e4c4c;
     display: table-row;
     text-align: right;
+  }
+
+  section.car-list article span.price-label {
+    font-weight: 600;
+    letter-spacing: 0.04em;
   }
 
   section.car-list article div.car-info {
@@ -641,7 +653,7 @@ section.car-list article .btn-book[aria-disabled="true"] {
   }
 
   section.car-list article span.price-main {
-    color: #383838;
+    color: #1976d2;
     font-size: 2.5em;
     font-weight: 700;
     line-height: 1em;
@@ -650,12 +662,24 @@ section.car-list article .btn-book[aria-disabled="true"] {
     text-align: right;
   }
 
-  section.car-list article span.price-days,
-  section.car-list article span.price-day {
+  section.car-list article span.price-main .price-unit {
+    font-size: 0.5em;
+    font-weight: 600;
+    margin-left: 4px;
+    color: inherit;
+  }
+
+  section.car-list article span.price-label,
+  section.car-list article span.price-total {
     font-size: 13px;
     color: #4e4c4c;
     display: table-row;
     text-align: right;
+  }
+
+  section.car-list article span.price-label {
+    font-weight: 600;
+    letter-spacing: 0.04em;
   }
 
   section.car-list article div.car-info {

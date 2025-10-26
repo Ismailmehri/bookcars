@@ -32,6 +32,7 @@ import '@/assets/css/car-list.css'
 import { getDefaultAnalyticsCurrency, sendCheckoutEvent } from '@/common/gtm'
 import ProfileAlert from './ProfileAlert'
 import { buildSupplierLinkMessage, getSupplierProfilePath } from '@/common/supplier'
+import { buildCarListSectionClassName } from './car-list.utils'
 
 interface CarListProps {
   from?: Date
@@ -251,9 +252,12 @@ const CarList = ({
   const fr = language === 'fr'
   const transformScore = (score?: number) => (!score || score < 0 || score > 100 ? 0 : Math.round(((score / 100) * 5) * 10) / 10)
 
+  const isMobileLayout = env.isMobile()
+  const sectionClassName = buildCarListSectionClassName({ className, isMobile: isMobileLayout })
+
   return (
     <>
-      <section className={`${className ? `${className} ` : ''}car-list`}>
+      <section className={sectionClassName}>
         <ProfileAlert />
 
         {rows.length === 0

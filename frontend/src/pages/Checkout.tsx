@@ -574,7 +574,6 @@ const Checkout = () => {
                     cars={[car]}
                     pickupLocationName={pickupLocation.name}
                     hidePrice
-                    sizeAuto
                   />
 
                   <div className="booking-options-container">

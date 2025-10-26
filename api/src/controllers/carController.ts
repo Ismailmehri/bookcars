@@ -14,6 +14,7 @@ import * as helper from '../common/helper'
 import * as logger from '../common/logger'
 import * as authHelper from '../common/authHelper'
 import { CarStats } from '../models/CarStats'
+import { buildProjectionFromFields } from './carController.helpers'
 
 /**
  * Create a Car.
@@ -436,7 +437,11 @@ export const getCars = async (req: Request, res: Response) => {
     const { body }: { body: bookcarsTypes.GetCarsPayload } = req
     const page = Number.parseInt(req.params.page, 10)
     const size = Number.parseInt(req.params.size, 10)
-    const suppliers = body.suppliers!.map((id) => new mongoose.Types.ObjectId(id))
+    const supplierIds = Array.isArray(body.suppliers)
+      ? body.suppliers
+        .filter((id): id is string => Boolean(id) && helper.isValidObjectId(id))
+        .map((id) => new mongoose.Types.ObjectId(id))
+      : []
     const {
       carType,
       gearbox,
@@ -449,134 +454,289 @@ export const getCars = async (req: Request, res: Response) => {
       multimedia,
       rating,
       seats,
+      boostStatus,
+      sort,
     } = body
     const keyword = escapeStringRegexp(String(req.query.s || ''))
     const options = 'i'
 
-    const $match: mongoose.FilterQuery<bookcarsTypes.Car> = {
-      $and: [
-        { name: { $regex: keyword, $options: options } },
-        { supplier: { $in: suppliers } },
-      ],
+    const matchAnd: mongoose.FilterQuery<bookcarsTypes.Car>[] = []
+
+    if (supplierIds.length > 0) {
+      matchAnd.push({ supplier: { $in: supplierIds } })
     }
 
     if (fuelPolicy) {
-      $match.$and!.push({ fuelPolicy: { $in: fuelPolicy } })
+      matchAnd.push({ fuelPolicy: { $in: fuelPolicy } })
     }
 
     if (carSpecs) {
       if (carSpecs.aircon) {
-        $match.$and!.push({ aircon: true })
+        matchAnd.push({ aircon: true })
       }
       if (carSpecs.moreThanFourDoors) {
-        $match.$and!.push({ doors: { $gt: 4 } })
+        matchAnd.push({ doors: { $gt: 4 } })
       }
       if (carSpecs.moreThanFiveSeats) {
-        $match.$and!.push({ seats: { $gt: 5 } })
+        matchAnd.push({ seats: { $gt: 5 } })
       }
     }
 
     if (carType) {
-      $match.$and!.push({ type: { $in: carType } })
+      matchAnd.push({ type: { $in: carType } })
     }
 
     if (gearbox) {
-      $match.$and!.push({ gearbox: { $in: gearbox } })
+      matchAnd.push({ gearbox: { $in: gearbox } })
     }
 
     if (mileage) {
       if (mileage.length === 1 && mileage[0] === bookcarsTypes.Mileage.Limited) {
-        $match.$and!.push({ mileage: { $gt: -1 } })
+        matchAnd.push({ mileage: { $gt: -1 } })
       } else if (mileage.length === 1 && mileage[0] === bookcarsTypes.Mileage.Unlimited) {
-        $match.$and!.push({ mileage: -1 })
+        matchAnd.push({ mileage: -1 })
       } else if (mileage.length === 0) {
         return res.json([{ resultData: [], pageInfo: [] }])
       }
     }
 
     if (deposit && deposit > -1) {
-      $match.$and!.push({ deposit: { $lte: deposit } })
+      matchAnd.push({ deposit: { $lte: deposit } })
     }
 
     if (Array.isArray(availability)) {
       if (availability.length === 1 && availability[0] === bookcarsTypes.Availablity.Available) {
-        $match.$and!.push({ available: true })
+        matchAnd.push({ available: true })
       } else if (availability.length === 1
         && availability[0] === bookcarsTypes.Availablity.Unavailable) {
-        $match.$and!.push({ available: false })
+        matchAnd.push({ available: false })
       } else if (availability.length === 0) {
         return res.json([{ resultData: [], pageInfo: [] }])
       }
     }
 
     if (ranges) {
-      $match.$and!.push({ range: { $in: ranges } })
+      matchAnd.push({ range: { $in: ranges } })
     }
 
     if (multimedia && multimedia.length > 0) {
       for (const multimediaOption of multimedia) {
-        $match.$and!.push({ multimedia: multimediaOption })
+        matchAnd.push({ multimedia: multimediaOption })
       }
     }
 
     if (rating && rating > -1) {
-      $match.$and!.push({ rating: { $gte: rating } })
+      matchAnd.push({ rating: { $gte: rating } })
     }
 
     if (seats) {
       if (seats > -1) {
         if (seats === 6) {
-          $match.$and!.push({ seats: { $gt: 5 } })
+          matchAnd.push({ seats: { $gt: 5 } })
         } else {
-          $match.$and!.push({ seats })
+          matchAnd.push({ seats })
         }
       }
     }
 
-    const data = await Car.aggregate(
-      [
-        { $match },
+    if (boostStatus) {
+      if (boostStatus === 'active') {
+        matchAnd.push({ 'boost.active': true, 'boost.paused': false })
+      } else if (boostStatus === 'paused') {
+        matchAnd.push({ 'boost.active': true, 'boost.paused': true })
+      } else if (boostStatus === 'inactive') {
+        matchAnd.push({
+          $or: [
+            { boost: { $exists: false } },
+            { boost: null },
+            { 'boost.active': { $ne: true } },
+          ],
+        })
+      }
+    }
+
+    const pipeline: mongoose.PipelineStage[] = []
+
+    if (matchAnd.length > 0) {
+      pipeline.push({ $match: { $and: matchAnd } })
+    }
+
+    pipeline.push({
+      $lookup: {
+        from: 'User',
+        let: { userId: '$supplier' },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ['$_id', '$$userId'] },
+            },
+          },
+        ],
+        as: 'supplier',
+      },
+    })
+
+    pipeline.push({ $unwind: { path: '$supplier', preserveNullAndEmptyArrays: false } })
+
+    if (keyword) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { name: { $regex: keyword, $options: options } },
+            { 'supplier.fullName': { $regex: keyword, $options: options } },
+          ],
+        },
+      })
+    }
+
+    const cleanupFields: string[] = []
+
+    const getExistsStage = (fieldPath: string) => ({
+      $cond: [
         {
-          $lookup: {
-            from: 'User',
-            let: { userId: '$supplier' },
-            pipeline: [
-              {
-                $match: {
-                  $expr: { $eq: ['$_id', '$$userId'] },
+          $and: [
+            { $ne: ['$boost', null] },
+            { $ne: [fieldPath, null] },
+          ],
+        },
+        1,
+        0,
+      ],
+    })
+
+    let sortStage: Record<string, 1 | -1> = { updatedAt: -1, _id: 1 }
+
+    if (sort) {
+      const sortOrder: 1 | -1 = sort.order === 'asc' ? 1 : -1
+
+      switch (sort.field) {
+        case 'name':
+          sortStage = { name: sortOrder, _id: sortOrder }
+          break
+        case 'supplierName':
+          sortStage = { 'supplier.fullName': sortOrder, _id: sortOrder }
+          break
+        case 'boostStatus': {
+          const statusField = '__boostStatusOrder'
+          pipeline.push({
+            $addFields: {
+              [statusField]: {
+                $switch: {
+                  branches: [
+                    {
+                      case: {
+                        $and: [
+                          { $eq: ['$boost.active', true] },
+                          { $ne: ['$boost.paused', true] },
+                        ],
+                      },
+                      then: 0,
+                    },
+                    {
+                      case: {
+                        $and: [
+                          { $eq: ['$boost.active', true] },
+                          { $eq: ['$boost.paused', true] },
+                        ],
+                      },
+                      then: 1,
+                    },
+                  ],
+                  default: 2,
                 },
               },
-            ],
-            as: 'supplier',
-          },
-        },
-        { $unwind: { path: '$supplier', preserveNullAndEmptyArrays: false } },
-        // {
-        //   $lookup: {
-        //     from: 'Location',
-        //     let: { locations: '$locations' },
-        //     pipeline: [
-        //       {
-        //         $match: {
-        //           $expr: { $in: ['$_id', '$$locations'] },
-        //         },
-        //       },
-        //     ],
-        //     as: 'locations',
-        //   },
-        // },
-        {
-          $facet: {
-            resultData: [{ $sort: { updatedAt: -1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
-            // resultData: [{ $sort: { price: 1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
-            pageInfo: [
-              {
-                $count: 'totalRecords',
-              },
-            ],
-          },
-        },
-      ],
+            },
+          })
+          cleanupFields.push(statusField)
+          sortStage = { [statusField]: sortOrder, _id: sortOrder }
+          break
+        }
+        case 'boostPurchasedViews': {
+          const existsField = '__hasBoostPurchasedViews'
+          const valueField = '__boostPurchasedViewsValue'
+          pipeline.push({
+            $addFields: {
+              [existsField]: getExistsStage('$boost.purchasedViews'),
+              [valueField]: { $ifNull: ['$boost.purchasedViews', 0] },
+            },
+          })
+          cleanupFields.push(existsField, valueField)
+          sortStage = { [existsField]: -1, [valueField]: sortOrder, _id: sortOrder }
+          break
+        }
+        case 'boostConsumedViews': {
+          const existsField = '__hasBoostConsumedViews'
+          const valueField = '__boostConsumedViewsValue'
+          pipeline.push({
+            $addFields: {
+              [existsField]: getExistsStage('$boost.consumedViews'),
+              [valueField]: { $ifNull: ['$boost.consumedViews', 0] },
+            },
+          })
+          cleanupFields.push(existsField, valueField)
+          sortStage = { [existsField]: -1, [valueField]: sortOrder, _id: sortOrder }
+          break
+        }
+        case 'boostStartDate': {
+          const existsField = '__hasBoostStartDate'
+          pipeline.push({
+            $addFields: {
+              [existsField]: getExistsStage('$boost.startDate'),
+            },
+          })
+          cleanupFields.push(existsField)
+          sortStage = { [existsField]: -1, 'boost.startDate': sortOrder, _id: sortOrder }
+          break
+        }
+        case 'boostEndDate': {
+          const existsField = '__hasBoostEndDate'
+          pipeline.push({
+            $addFields: {
+              [existsField]: getExistsStage('$boost.endDate'),
+            },
+          })
+          cleanupFields.push(existsField)
+          sortStage = { [existsField]: -1, 'boost.endDate': sortOrder, _id: sortOrder }
+          break
+        }
+        case 'updatedAt':
+          sortStage = { updatedAt: sortOrder, _id: sortOrder }
+          break
+        default:
+          sortStage = { updatedAt: -1, _id: 1 }
+          break
+      }
+    }
+
+    const resultDataStages: mongoose.PipelineStage.FacetPipelineStage[] = [
+      { $sort: sortStage },
+      { $skip: (page - 1) * size },
+      { $limit: size },
+    ]
+
+    if (cleanupFields.length > 0) {
+      resultDataStages.push({
+        $project: buildProjectionFromFields(cleanupFields),
+      })
+    }
+
+    const pageInfoStages: mongoose.PipelineStage.FacetPipelineStage[] = [
+      {
+        $count: 'totalRecords',
+      },
+    ]
+
+    const facetStage = {
+      $facet: {
+        resultData: resultDataStages,
+        pageInfo: pageInfoStages,
+      },
+    } satisfies mongoose.PipelineStage
+
+    pipeline.push(facetStage)
+
+    const data = await Car.aggregate(
+      pipeline,
       { collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 } },
     )
 
@@ -645,10 +805,10 @@ export const updateCarBoost = async (req: Request, res: Response) => {
       return res.sendStatus(403)
     }
 
-    const { carId, boostData } = req.body
+    const { carId, boostData }: { carId?: string; boostData?: Partial<bookcarsTypes.CarBoost> } = req.body
 
-    if (carId === undefined || boostData === undefined) {
-      return res.status(400).send('Missing parameters: carId and paused status are required')
+    if (!carId || !boostData) {
+      return res.status(400).send('Missing parameters: carId and boostData are required')
     }
 
     const car = await Car.findById(carId)
@@ -661,14 +821,66 @@ export const updateCarBoost = async (req: Request, res: Response) => {
       return res.status(404).send('No boost found for this car')
     }
 
-    // Mise à jour uniquement du champ paused
-    car.boost.paused = boostData.paused
+    const nextBoost: bookcarsTypes.CarBoost = {
+      ...car.boost,
+    }
 
+    if (typeof boostData.active === 'boolean') {
+      nextBoost.active = boostData.active
+      if (!boostData.active) {
+        nextBoost.paused = false
+      }
+    }
+
+    if (typeof boostData.paused === 'boolean') {
+      nextBoost.paused = boostData.paused
+    }
+
+    if (typeof boostData.purchasedViews === 'number') {
+      if (boostData.purchasedViews < 0) {
+        return res.status(400).send('Purchased views must be positive')
+      }
+      nextBoost.purchasedViews = boostData.purchasedViews
+    }
+
+    if (typeof boostData.consumedViews === 'number') {
+      if (boostData.consumedViews < 0) {
+        return res.status(400).send('Consumed views must be positive')
+      }
+      nextBoost.consumedViews = boostData.consumedViews
+    }
+
+    if (typeof nextBoost.purchasedViews === 'number' && typeof nextBoost.consumedViews === 'number'
+      && nextBoost.consumedViews > nextBoost.purchasedViews) {
+      return res.status(400).send('Consumed views cannot exceed purchased views')
+    }
+
+    if (boostData.startDate) {
+      const startDate = new Date(boostData.startDate)
+      if (Number.isNaN(startDate.getTime())) {
+        return res.status(400).send('Invalid start date')
+      }
+      nextBoost.startDate = startDate
+    }
+
+    if (boostData.endDate) {
+      const endDate = new Date(boostData.endDate)
+      if (Number.isNaN(endDate.getTime())) {
+        return res.status(400).send('Invalid end date')
+      }
+      nextBoost.endDate = endDate
+    }
+
+    if (nextBoost.startDate && nextBoost.endDate && nextBoost.endDate.getTime() < nextBoost.startDate.getTime()) {
+      return res.status(400).send('End date must be greater than start date')
+    }
+
+    car.boost = nextBoost
     await car.save()
 
     return res.status(200).json(car.boost)
   } catch (err) {
-    logger.error(`[car.updateCarBoostPause] ${i18n.t('DB_ERROR')}`, err)
+    logger.error(`[car.updateCarBoost] ${i18n.t('DB_ERROR')}`, err)
     return res.status(500).send(i18n.t('DB_ERROR') + err)
   }
 }

@@ -16,6 +16,7 @@ import DateTimePicker from '@/components/DateTimePicker'
 import Layout from '@/components/Layout'
 import AgencyView from '@/components/insights/AgencyView'
 import AdminView from '@/components/insights/AdminView'
+import BoostedCarsView from '@/components/insights/BoostedCarsView'
 import env from '@/config/env.config'
 import { strings } from '@/lang/insights'
 import { insightsPageContainerSx } from './insights.styles'
@@ -46,6 +47,7 @@ const Insights: React.FC = () => {
     handleExportAgency,
     handleExportAdmin,
     refreshAdminOverview,
+    filtersVersion,
   } = useInsightsMetrics()
 
   const handleStartDateChange = (date: Date | null) => {
@@ -166,18 +168,19 @@ const Insights: React.FC = () => {
       {isAdmin ? (
         <Tabs
           value={tab}
-          onChange={(_event, value: 'agency' | 'admin') => {
-              setTab(value)
-              if (value === 'admin' && !adminTabLoaded) {
-                applyFilters({ includeAdmin: true }).catch((err) => {
-                  console.error(err)
-                })
-              }
-            }}
+          onChange={(_event, value: 'agency' | 'admin' | 'boosted') => {
+            setTab(value)
+            if (value === 'admin' && !adminTabLoaded) {
+              applyFilters({ includeAdmin: true }).catch((err) => {
+                console.error(err)
+              })
+            }
+          }}
           sx={{ alignSelf: 'flex-start' }}
         >
           <Tab value="agency" label={strings.TAB_AGENCY} />
           <Tab value="admin" label={strings.TAB_ADMIN} />
+          <Tab value="boosted" label={strings.TAB_BOOSTED} />
         </Tabs>
       ) : null}
 
@@ -196,6 +199,14 @@ const Insights: React.FC = () => {
           metrics={adminMetrics}
           onExport={handleExportAdmin}
           onRankingRefresh={refreshAdminOverview}
+        />
+      ) : null}
+
+      {isAdmin && tab === 'boosted' ? (
+        <BoostedCarsView
+          agencyOptions={agencyOptions}
+          filtersVersion={filtersVersion}
+          defaultAgencyId={selectedAgency}
         />
       ) : null}
     </Stack>

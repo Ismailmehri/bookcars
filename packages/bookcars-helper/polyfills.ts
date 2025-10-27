@@ -29,7 +29,7 @@ const applyArrayIncludesPolyfill = () => {
           throw new TypeError('Array.prototype.includes called on null or undefined')
         }
 
-        const o = Object(this) as Record<number, T>
+        const o = Object(this) as ArrayLike<T>
         const len = Number(o.length) || 0
 
         if (len === 0) {

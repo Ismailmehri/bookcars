@@ -28,6 +28,7 @@ import ViewOnMap from '@/assets/img/view-on-map.png'
 
 import '@/assets/css/search.css'
 import LocationHeader from '@/components/LocationHeader'
+import { SEARCH_CONTENT_MAX_WIDTH } from '@/constants/layout'
 
 const Search = () => {
   const location = useLocation()
@@ -508,12 +509,13 @@ const Search = () => {
             <Paper
               elevation={3}
               sx={{
-                padding: 3,
-                marginBottom: 4,
-                borderRadius: 2,
                 width: '100%',
-                maxWidth: '888px',
+                maxWidth: { xs: '100%', md: SEARCH_CONTENT_MAX_WIDTH },
                 mx: 'auto',
+                boxSizing: 'border-box',
+                borderRadius: 2,
+                padding: { xs: 2, md: 3 },
+                marginBottom: 4,
               }}
             >
               <Typography

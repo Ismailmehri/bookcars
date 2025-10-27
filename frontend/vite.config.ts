@@ -15,7 +15,6 @@ export default ({ mode }: { mode: string }) => {
         ':bookcars-types': path.resolve(__dirname, '../packages/bookcars-types'),
         ':bookcars-helper': path.resolve(__dirname, '../packages/bookcars-helper/index.ts'),
         ':disable-react-devtools': path.resolve(__dirname, '../packages/disable-react-devtools'),
-        ':bookcars-polyfills': path.resolve(__dirname, '../packages/bookcars-helper/polyfills.ts'),
       },
     },
 

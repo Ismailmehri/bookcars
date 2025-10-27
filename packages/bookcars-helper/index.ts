@@ -1,5 +1,7 @@
 import * as bookcarsTypes from '../bookcars-types/index.js'
 
+export { initializeLegacyPolyfills } from './polyfills'
+
 export interface CommissionConfig {
   enabled: boolean
   rate: number

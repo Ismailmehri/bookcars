@@ -3,8 +3,18 @@ section.car-list {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 0 16px;
-  width: 800px;
+  width: 100%;
+  max-width: 980px;
+  padding: 8px 24px 24px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  gap: 12px;
+}
+
+section.car-list.car-list-mobile {
+  align-items: stretch;
+  max-width: 100%;
+  padding: 8px 16px 24px;
 }
 
 .car-list-wrapper {
@@ -14,6 +24,11 @@ section.car-list {
   display: flex;
   flex-direction: column;
   gap: 16px;                   /* espacement uniforme entre cartes */
+}
+
+section.car-list.car-list-mobile .car-list-wrapper {
+  max-width: 100%;
+  margin: 0;
 }
 
 /* ===== ÉTAT VIDE ===== */
@@ -44,6 +59,7 @@ section.car-list .car-header {
   padding: 6px 0 10px;
   border-bottom: 2px solid #eef0f3;
   margin: 6px 0 10px;
+  gap: 12px;
 }
 section.car-list .car-header .location { display:flex; align-items:center; gap:6px; color:#232323; font-size:16px; }
 section.car-list .car-header .distance { display:flex; align-items:center; gap:6px; }
@@ -152,6 +168,57 @@ article.car-card .btn-book:disabled{ background:#cbd5e1 !important; color:#66708
     border-left:0; border-top:1px solid #eef0f3; padding-left:0; padding-top:10px; align-items:stretch;
   }
   article.car-card .btn-book{ width:100%; }
+}
+
+@media (max-width: 600px){
+  section.car-list {
+    padding: 8px 12px 24px;
+    gap: 16px;
+  }
+
+  section.car-list .bc-title {
+    text-align: left;
+  }
+
+  section.car-list .car-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0 8px;
+  }
+
+  section.car-list .car-header .distance {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  article.car-card {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  article.car-card .car-media{
+    height: 160px;
+  }
+
+  article.car-card .car-title-row{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  article.car-card .car-title{
+    font-size: 16px;
+    white-space: normal;
+  }
+
+  article.car-card .supplier-name{
+    max-width: none;
+  }
+
+  article.car-card .price-top{
+    align-items: flex-start;
+  }
 }
 
 /* ===== Anciennes classes conservées (utilisées ailleurs) ===== */

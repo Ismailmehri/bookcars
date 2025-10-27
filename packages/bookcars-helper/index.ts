@@ -1,7 +1,7 @@
 import * as bookcarsTypes from '../bookcars-types/index.js'
 
-export { initializeLegacyPolyfills } from './polyfills'
-export { normalizeLanguage } from './language'
+export { initializeLegacyPolyfills } from './polyfills.js'
+export { normalizeLanguage } from './language.js'
 
 export interface CommissionConfig {
   enabled: boolean

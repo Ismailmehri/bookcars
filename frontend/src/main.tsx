@@ -10,6 +10,7 @@ import { frFR as corefrFR, enUS as coreenUS, elGR as coreelGR } from '@mui/mater
 import { frFR, enUS, elGR } from '@mui/x-date-pickers/locales'
 import { frFR as dataGridfrFR, enUS as dataGridenUS, elGR as dataGridelGR } from '@mui/x-data-grid/locales'
 import { disableDevTools } from ':disable-react-devtools'
+import { initializeLegacyPolyfills } from ':bookcars-polyfills'
 import { setCommissionConfig } from ':bookcars-helper'
 import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
@@ -53,6 +54,8 @@ import 'github-fork-ribbon-css/gh-fork-ribbon.css'
 import 'react-toastify/dist/ReactToastify.min.css'
 import '@/assets/css/common.css'
 import '@/assets/css/index.css'
+
+initializeLegacyPolyfills()
 
 if (env.isProduction) {
   disableDevTools()

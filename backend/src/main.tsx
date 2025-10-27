@@ -8,6 +8,7 @@ import { frFR as corefrFR, enUS as coreenUS } from '@mui/material/locale'
 import { frFR, enUS } from '@mui/x-date-pickers/locales'
 import { frFR as dataGridfrFR, enUS as dataGridenUS } from '@mui/x-data-grid/locales'
 import { disableDevTools } from ':disable-react-devtools'
+import { initializeLegacyPolyfills } from ':bookcars-polyfills'
 import { setCommissionConfig } from ':bookcars-helper'
 import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
@@ -18,6 +19,8 @@ import App from '@/App'
 import 'react-toastify/dist/ReactToastify.min.css'
 import '@/assets/css/common.css'
 import '@/assets/css/index.css'
+
+initializeLegacyPolyfills()
 
 if (import.meta.env.VITE_NODE_ENV === 'production') {
   disableDevTools()

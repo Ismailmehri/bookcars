@@ -18,6 +18,7 @@ export default ({ mode }: ConfigEnv) => {
         ':bookcars-types': path.resolve(__dirname, '../packages/bookcars-types'),
         ':bookcars-helper': path.resolve(__dirname, '../packages/bookcars-helper/index.ts'),
         ':disable-react-devtools': path.resolve(__dirname, '../packages/disable-react-devtools'),
+        ':bookcars-polyfills': path.resolve(__dirname, '../packages/bookcars-helper/polyfills.ts'),
       },
     },
 
@@ -28,7 +29,11 @@ export default ({ mode }: ConfigEnv) => {
 
     build: {
       outDir: 'build',
-      target: 'esnext',
+      target: 'es2015',
+      cssTarget: 'chrome61',
+      modulePreload: {
+        polyfill: true,
+      },
     },
 
     test: {

@@ -1,6 +1,7 @@
 import React from 'react'
 import { Box, Typography, useTheme, useMediaQuery } from '@mui/material'
 import * as bookcarsTypes from ':bookcars-types'
+import { getSearchContentMaxWidth } from '@/constants/layout'
 
 interface LocationHeaderProps {
     location: bookcarsTypes.Location; // Définissez le type de la prop location
@@ -21,8 +22,9 @@ const LocationHeader = ({ location }: LocationHeaderProps) => {
         marginTop: '20px',
         border: '1px solid #ddd',
         width: '100%',
-        maxWidth: isMobile ? '100%' : '888px', // Alignement avec la largeur principale sur desktop
+        maxWidth: getSearchContentMaxWidth(isMobile), // Alignement cohérent avec la liste des voitures
         mx: 'auto', // Centrer la boîte horizontalement
+        boxSizing: 'border-box',
       }}
     >
       <Typography

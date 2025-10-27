@@ -66,5 +66,21 @@
     "stylelint": "^16.10.0",
     "stylelint-config-standard": "^36.0.1",
     "vitest": "^1.5.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all",
+      "chrome >= 61",
+      "firefox >= 60",
+      "safari >= 12",
+      "edge >= 79"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

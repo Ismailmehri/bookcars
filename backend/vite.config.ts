@@ -28,7 +28,11 @@ export default ({ mode }: ConfigEnv) => {
 
     build: {
       outDir: 'build',
-      target: 'esnext',
+      target: 'es2015',
+      cssTarget: 'chrome61',
+      modulePreload: {
+        polyfill: true,
+      },
     },
 
     test: {

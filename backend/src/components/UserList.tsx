@@ -68,6 +68,19 @@ const defaultAgencyRoles = [
   bookcarsTypes.UserType.User,
 ]
 
+export const formatLastLoginValue = (value?: string | Date | null | undefined) => {
+  if (!value) {
+    return strings.NEVER_LOGGED_IN
+  }
+
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return strings.NEVER_LOGGED_IN
+  }
+
+  return date.toLocaleString()
+}
+
 const UserList = ({
   user,
   keyword,
@@ -399,7 +412,7 @@ const UserList = ({
         headerName: strings.LAST_LOGIN_COLUMN,
         flex: 0.7,
         minWidth: 180,
-        valueFormatter: ({ value }) => (value ? new Date(value).toLocaleString() : strings.NEVER_LOGGED_IN),
+        valueFormatter: (params) => formatLastLoginValue(params?.value as string | Date | null | undefined),
       },
       {
         field: 'reviewCount',

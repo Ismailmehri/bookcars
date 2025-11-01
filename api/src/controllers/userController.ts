@@ -18,6 +18,7 @@ import Booking from '../models/Booking'
 import Token from '../models/Token'
 import PushToken from '../models/PushToken'
 import * as helper from '../common/helper'
+import * as numberHelper from '../common/numberHelper'
 import * as authHelper from '../common/authHelper'
 import * as mailHelper from '../common/mailHelper'
 import Notification from '../models/Notification'
@@ -1826,6 +1827,143 @@ export const deleteUsers = async (req: Request, res: Response) => {
   }
 }
 
+export const bulkActivateUsers = async (req: Request, res: Response) => {
+  try {
+    const { ids, active }: { ids?: string[]; active?: unknown } = req.body || {}
+
+    if (!Array.isArray(ids) || ids.length === 0 || typeof active !== 'boolean') {
+      return res.status(400).send('Invalid bulk activation payload')
+    }
+
+    if (ids.some((id) => !mongoose.Types.ObjectId.isValid(id))) {
+      return res.status(400).send('Invalid user identifier')
+    }
+
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser = await User.findById(sessionData.id)
+
+    if (!connectedUser) {
+      return res.sendStatus(403)
+    }
+
+    const isAdmin = connectedUser?.type === bookcarsTypes.UserType.Admin
+    const isSupplier = connectedUser?.type === bookcarsTypes.UserType.Supplier
+
+    if (!isAdmin && !isSupplier) {
+      return res.sendStatus(403)
+    }
+
+    const objectIds = ids.map((id) => new mongoose.Types.ObjectId(id))
+
+    if (isSupplier) {
+      const ownedCount = await User.countDocuments({
+        _id: { $in: objectIds },
+        supplier: connectedUser._id,
+      })
+
+      if (ownedCount !== ids.length) {
+        return res.sendStatus(403)
+      }
+    }
+
+    await User.updateMany({ _id: { $in: objectIds } }, { $set: { active } })
+
+    return res.sendStatus(200)
+  } catch (err) {
+    logger.error(`[user.bulkActivateUsers] ${i18n.t('DB_ERROR')} ${JSON.stringify(req.body)}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const bulkChangeRole = async (req: Request, res: Response) => {
+  try {
+    const { ids, type }: { ids?: string[]; type?: bookcarsTypes.UserType } = req.body || {}
+
+    if (!Array.isArray(ids) || ids.length === 0 || !type) {
+      return res.status(400).send('Invalid bulk change role payload')
+    }
+
+    if (![bookcarsTypes.UserType.Supplier, bookcarsTypes.UserType.User].includes(type)) {
+      return res.status(400).send('Unsupported role change target')
+    }
+
+    if (ids.some((id) => !mongoose.Types.ObjectId.isValid(id))) {
+      return res.status(400).send('Invalid user identifier')
+    }
+
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser = await User.findById(sessionData.id)
+
+    if (!connectedUser || connectedUser.type !== bookcarsTypes.UserType.Admin) {
+      return res.sendStatus(403)
+    }
+
+    const objectIds = ids.map((id) => new mongoose.Types.ObjectId(id))
+
+    const adminTargets = await User.countDocuments({
+      _id: { $in: objectIds },
+      type: bookcarsTypes.UserType.Admin,
+    })
+
+    if (adminTargets > 0) {
+      return res.status(403).send('Cannot change role for admin users')
+    }
+
+    const updateOperations: Record<string, unknown> = {
+      $set: {
+        type,
+      },
+    }
+
+    if (type === bookcarsTypes.UserType.Supplier) {
+      updateOperations.$unset = { supplier: '' }
+    }
+
+    await User.updateMany({ _id: { $in: objectIds } }, updateOperations)
+
+    return res.sendStatus(200)
+  } catch (err) {
+    logger.error(`[user.bulkChangeRole] ${i18n.t('DB_ERROR')} ${JSON.stringify(req.body)}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+export const bulkAssignAgency = async (req: Request, res: Response) => {
+  try {
+    const { ids, agencyId }: { ids?: string[]; agencyId?: string } = req.body || {}
+
+    if (!Array.isArray(ids) || ids.length === 0 || !agencyId || !mongoose.Types.ObjectId.isValid(agencyId)) {
+      return res.status(400).send('Invalid bulk assign agency payload')
+    }
+
+    if (ids.some((id) => !mongoose.Types.ObjectId.isValid(id))) {
+      return res.status(400).send('Invalid user identifier')
+    }
+
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser = await User.findById(sessionData.id)
+
+    if (!connectedUser || connectedUser.type !== bookcarsTypes.UserType.Admin) {
+      return res.sendStatus(403)
+    }
+
+    const agency = await User.findById(agencyId)
+
+    if (!agency || agency.type !== bookcarsTypes.UserType.Supplier) {
+      return res.status(404).send('Agency not found')
+    }
+
+    const objectIds = ids.map((id) => new mongoose.Types.ObjectId(id))
+
+    await User.updateMany({ _id: { $in: objectIds } }, { $set: { supplier: agency._id } })
+
+    return res.sendStatus(200)
+  } catch (err) {
+    logger.error(`[user.bulkAssignAgency] ${i18n.t('DB_ERROR')} ${JSON.stringify(req.body)}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
 /**
  * Validate Google reCAPTCHA v3 token.
  *
@@ -1968,8 +2106,8 @@ export const getUsersReviews = async (req: Request, res: Response) => {
     }
 
     // Pagination
-    const pageNumber = parseInt(page as string, 10)
-    const pageSize = parseInt(limit as string, 10)
+    const pageNumber = numberHelper.parsePositiveInt(page, 1)
+    const pageSize = numberHelper.parsePositiveInt(limit, 10)
     const offset = (pageNumber - 1) * pageSize
 
     // Pipeline d'agrégation de base

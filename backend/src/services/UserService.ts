@@ -385,6 +385,21 @@ export const getUsers = (
     )
     .then((res) => res.data)
 
+export const getUsersKpi = (
+  params: bookcarsTypes.UsersKpiRequest
+): Promise<bookcarsTypes.UsersKpiResponse> => {
+  const searchParams = new URLSearchParams({ scope: params.scope })
+  if (params.agencyId) {
+    searchParams.set('agencyId', params.agencyId)
+  }
+  return axiosInstance
+    .get(
+      `/api/users/kpi?${searchParams.toString()}`,
+      { withCredentials: true }
+    )
+    .then((res) => res.data)
+}
+
 /**
  * Update a User.
  *
@@ -560,6 +575,37 @@ export const deleteUsers = (ids: string[]): Promise<number> => (
     )
     .then((res) => res.status)
 )
+
+export const bulkActivateUsers = (ids: string[], active: boolean): Promise<number> => (
+  axiosInstance
+    .post(
+      '/api/users/bulk/activate',
+      { ids, active },
+      { withCredentials: true }
+    )
+    .then((res) => res.status)
+)
+
+export const bulkChangeRole = (ids: string[], type: bookcarsTypes.UserType): Promise<number> => (
+  axiosInstance
+    .post(
+      '/api/users/bulk/change-role',
+      { ids, type },
+      { withCredentials: true }
+    )
+    .then((res) => res.status)
+)
+
+export const bulkAssignAgency = (ids: string[], agencyId: string): Promise<number> => (
+  axiosInstance
+    .post(
+      '/api/users/bulk/assign-agency',
+      { ids, agencyId },
+      { withCredentials: true }
+    )
+    .then((res) => res.status)
+)
+
 export const getUsersReviews = async (params: { type?: string; search?: string; page?: number; limit?: number }): Promise<any> => {
   const { type, search, page = 1, limit = 1 } = params
   const response = await axiosInstance.get('/api/get-users-reviews', {
@@ -573,3 +619,18 @@ export const getUsersReviews = async (params: { type?: string; search?: string; 
   })
   return response.data
 }
+
+export const getUserReviewsById = (
+  userId: string,
+  page: number,
+  limit: number
+): Promise<bookcarsTypes.UserReviewsResponse> =>
+  axiosInstance
+    .get(
+      `/api/users/${userId}/reviews`,
+      {
+        params: { page, limit },
+        withCredentials: true,
+      }
+    )
+    .then((res) => res.data)

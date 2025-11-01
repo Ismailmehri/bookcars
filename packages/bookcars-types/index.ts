@@ -900,9 +900,63 @@ export interface PaginatedResult<T> {
   }
 }
 
+export type UsersSortField = 'lastLoginAt' | 'reviewsCount' | 'name' | 'fullName'
+
+export type SortDirection = 'asc' | 'desc'
+
+export interface UsersSort {
+  field: UsersSortField
+  direction: SortDirection
+}
+
+export interface DateRangeFilter {
+  from?: string
+  to?: string
+}
+
 export interface GetUsersBody {
   user: string
   types: UserType[]
+  status?: ('active' | 'inactive')[]
+  verified?: string[]
+  agencyId?: string
+  withReviews?: boolean
+  dateLastLogin?: DateRangeFilter
+  sort?: UsersSort
+}
+
+export interface UsersKpiResponse {
+  totalUsers: number
+  admins: number
+  agencies: number
+  drivers: number
+  inactive: number
+  withNoReviews: number
+  newUsers7d: number
+  newUsers30d: number
+}
+
+export interface UsersKpiRequest {
+  scope: 'platform' | 'agency'
+  agencyId?: string
+}
+
+export interface UserReview {
+  id: string
+  rating: number
+  title: string
+  content: string
+  createdAt: string
+  vehicle?: {
+    id: string
+    title: string
+  }
+  reservationId?: string
+}
+
+export interface UserReviewsResponse {
+  total: number
+  items: UserReview[]
 }
 
 export interface CreatePaymentPayload {

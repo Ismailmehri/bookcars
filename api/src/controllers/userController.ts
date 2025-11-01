@@ -1094,6 +1094,7 @@ export const update = async (req: Request, res: Response) => {
       enableEmailNotifications,
       payLater,
       active,
+      blacklisted,
     } = body
 
     if (fullName) {
@@ -1116,6 +1117,9 @@ export const update = async (req: Request, res: Response) => {
 
     if (isAdmin) {
       user.active = active
+      if (typeof blacklisted !== 'undefined') {
+        user.blacklisted = blacklisted
+      }
     }
 
     await user.save()

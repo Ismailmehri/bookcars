@@ -37,6 +37,18 @@ import { formatDateTime } from '@/common/format'
 
 import '@/assets/css/users.css'
 
+export const formatLastLoginValue = (value: unknown) => {
+  if (!value) {
+    return usersStrings.UNKNOWN
+  }
+
+  if (value instanceof Date || typeof value === 'string') {
+    return formatDateTime(value)
+  }
+
+  return usersStrings.UNKNOWN
+}
+
 const Users = () => {
   const navigate = useNavigate()
   const [currentUser, setCurrentUser] = useState<bookcarsTypes.User>()
@@ -326,7 +338,7 @@ const Users = () => {
         headerName: usersStrings.LAST_LOGIN_COLUMN,
         flex: 0.9,
         minWidth: 160,
-        valueGetter: ({ value }) => (value ? formatDateTime(value) : usersStrings.UNKNOWN),
+        valueFormatter: ({ value }) => formatLastLoginValue(value),
       },
       {
         field: 'reviewsCount',

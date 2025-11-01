@@ -4,6 +4,7 @@ import routeNames from '../config/userRoutes.config'
 import authJwt from '../middlewares/authJwt'
 import apiKeyValidator from '../middlewares/apiKey'
 import * as userController from '../controllers/userController'
+import * as userAnalyticsController from '../controllers/userAnalyticsController'
 
 const routes = express.Router()
 
@@ -36,6 +37,10 @@ routes.route(routeNames.deleteTempAvatar).post(authJwt.verifyToken, userControll
 routes.route(routeNames.changePassword).post(authJwt.verifyToken, userController.changePassword)
 routes.route(routeNames.checkPassword).get(authJwt.verifyToken, userController.checkPassword)
 routes.route(routeNames.getUsers).post(authJwt.verifyToken, userController.getUsers)
+routes.route(routeNames.getUsersKpi).get(authJwt.verifyToken, userAnalyticsController.getUsersKpi)
+routes.route(routeNames.bulkActivate).post(authJwt.verifyToken, userController.bulkActivateUsers)
+routes.route(routeNames.bulkChangeRole).post(authJwt.verifyToken, userController.bulkChangeRole)
+routes.route(routeNames.bulkAssignAgency).post(authJwt.verifyToken, userController.bulkAssignAgency)
 routes.route(routeNames.getVerifiedUsers).get(apiKeyValidator, userController.getVerifiedUsers)
 routes.route(routeNames.delete).post(authJwt.verifyToken, userController.deleteUsers)
 routes.route(routeNames.addReview).post(authJwt.verifyToken, userController.addReview)

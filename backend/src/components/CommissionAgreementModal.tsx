@@ -63,7 +63,7 @@ const CommissionAgreementModal = ({
       keepMounted
     >
       <DialogTitle id="commission-agreement-title">
-        <Typography component="h2" variant="h6">
+        <Typography component="span" variant="h6">
           {strings.TITLE}
         </Typography>
       </DialogTitle>

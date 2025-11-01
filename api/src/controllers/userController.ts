@@ -25,6 +25,7 @@ import NotificationCounter from '../models/NotificationCounter'
 import Car from '../models/Car'
 import AdditionalDriver from '../models/AdditionalDriver'
 import * as logger from '../common/logger'
+import * as userStatsService from '../services/userStatsService'
 
 /**
  * Get status message as HTML.
@@ -1548,6 +1549,39 @@ export const checkPassword = async (req: Request, res: Response) => {
   } catch (err) {
     logger.error(`[user.checkPassword] ${i18n.t('DB_ERROR')} ${id}`, err)
     return res.status(400).send(i18n.t('ERROR') + err)
+  }
+}
+
+/**
+ * Get monthly users statistics.
+ *
+ * @export
+ * @async
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {unknown}
+ */
+export const getUsersStats = async (req: Request, res: Response) => {
+  try {
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser: bookcarsTypes.User | null = sessionData.id ? await User.findById(sessionData.id) : null
+
+    if (!connectedUser) {
+      return res.sendStatus(401)
+    }
+
+    const isAdmin = helper.admin(connectedUser)
+
+    if (!isAdmin) {
+      return res.sendStatus(403)
+    }
+
+    const stats = await userStatsService.getUsersStats()
+
+    return res.status(200).json(stats)
+  } catch (err) {
+    logger.error(`[user.getUsersStats] ${i18n.t('DB_ERROR')}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
   }
 }
 

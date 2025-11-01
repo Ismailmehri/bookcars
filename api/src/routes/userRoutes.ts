@@ -36,6 +36,7 @@ routes.route(routeNames.deleteTempAvatar).post(authJwt.verifyToken, userControll
 routes.route(routeNames.changePassword).post(authJwt.verifyToken, userController.changePassword)
 routes.route(routeNames.checkPassword).get(authJwt.verifyToken, userController.checkPassword)
 routes.route(routeNames.getUsers).post(authJwt.verifyToken, userController.getUsers)
+routes.route(routeNames.getUsersStats).get(authJwt.verifyToken, userController.getUsersStats)
 routes.route(routeNames.getVerifiedUsers).get(apiKeyValidator, userController.getVerifiedUsers)
 routes.route(routeNames.delete).post(authJwt.verifyToken, userController.deleteUsers)
 routes.route(routeNames.addReview).post(authJwt.verifyToken, userController.addReview)

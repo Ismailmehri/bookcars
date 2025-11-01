@@ -1,60 +1,118 @@
-div.us-list {
+.us-list {
   width: 100%;
   height: 100%;
   margin: 0;
   padding: 0;
 }
 
-div.us-list a.cell-supplier {
-  display: flex;
-  align-items: center;
+.us-user-link {
+  color: #0d47a1;
+  text-decoration: none;
 }
 
-div.us-list span.bs {
-  padding: 3px;
-  width: 80px;
-  text-align: center;
-  color: #fff;
-  display: inline-flex;
-  height: 26px;
-  justify-content: center;
-  align-items: center;
+.us-user-link:hover {
+  text-decoration: underline;
 }
 
-div.us-list span.us-admin {
-  background: #121212;
-}
-
-div.us-list span.us-supplier {
-  background: #e98003;
-}
-
-div.us-list span.us-user {
-  background: #22bba7;
-}
-
-div.us-list span.bp {
+.us-avatar-small {
+  width: 40px;
+  height: 40px;
   font-weight: 600;
+  background-color: #1976d2;
 }
 
-div.us-list a.us-user {
-  display: inline-flex;
+.us-status-icon {
+  width: 18px;
+  height: 18px;
 }
 
-div.us-list span.us-avatar {
-  margin-right: 5px;
-  width: 60px;
-  height: 30px;
+.us-status-icon--verified {
+  color: #b2ff59;
 }
 
-div.us-list span.us-avatar img {
-  max-width: 100%;
-  max-height: 100%;
-  position: relative;
-  vertical-align: middle;
+.us-status-icon--pending {
+  color: #ffb300;
 }
 
-div.us-list .us-blacklisted,
-div.us-list .us-blacklisted:hover {
-  background: #f0f0f0;
+.us-status-icon--active {
+  color: #2e7d32;
+}
+
+.us-status-icon--inactive {
+  color: #c62828;
+}
+
+.us-status-icon--blacklisted {
+  color: #d32f2f;
+}
+
+.us-role-chip {
+  font-weight: 600;
+  color: #fff;
+}
+
+.us-role-chip--admin {
+  background-color: #0d47a1 !important;
+}
+
+.us-role-chip--supplier {
+  background-color: #ff6b35 !important;
+}
+
+.us-role-chip--client {
+  background-color: #2e7d32 !important;
+}
+
+.us-flag-chip {
+  font-weight: 600;
+  color: #fff !important;
+}
+
+.us-flag-chip--verified {
+  background-color: #2e7d32 !important;
+}
+
+.us-flag-chip--unverified {
+  background-color: #c62828 !important;
+}
+
+.us-flag-chip--active {
+  background-color: #2e7d32 !important;
+}
+
+.us-flag-chip--inactive {
+  background-color: #c62828 !important;
+}
+
+.us-flag-chip--blacklisted {
+  background-color: #d32f2f !important;
+}
+
+.us-flag-chip--neutral {
+  background-color: #607d8b !important;
+}
+
+.us-list .MuiDataGrid-root {
+  border-radius: 16px;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+}
+
+.us-list .MuiDataGrid-cell:focus {
+  outline: none;
+}
+
+.us-list .MuiDataGrid-columnHeaders {
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.us-list .MuiDataGrid-row:hover {
+  background-color: rgba(25, 118, 210, 0.04);
+}
+
+@media (max-width: 600px) {
+  .us-list .MuiDataGrid-root {
+    border: none;
+    border-radius: 0;
+  }
 }

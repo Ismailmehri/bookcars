@@ -728,6 +728,7 @@ export interface User {
   contracts?: Contract[]
   emailLogs?: EmailLog[]
   reviews?: Review[]
+  reviewCount?: number
   score?: number
   slug?: string
   commissionAgreementAccepted?: boolean
@@ -900,9 +901,31 @@ export interface PaginatedResult<T> {
   }
 }
 
+export interface UsersFiltersPayload {
+  verification?: boolean[]
+  active?: boolean[]
+  blacklisted?: boolean | null
+  agencyId?: string | null
+  lastLoginFrom?: string | null
+  lastLoginTo?: string | null
+}
+
+export interface UsersGrowthMetric {
+  current: number
+  previous: number
+  growth: number
+}
+
+export interface UsersStatsResponse {
+  totalUsers: UsersGrowthMetric
+  suppliers: UsersGrowthMetric
+  clients: UsersGrowthMetric
+}
+
 export interface GetUsersBody {
   user: string
   types: UserType[]
+  filters?: UsersFiltersPayload
 }
 
 export interface CreatePaymentPayload {

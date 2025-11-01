@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { IconButton, TextField } from '@mui/material'
 import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material'
 import { strings as commonStrings } from '@/lang/common'
@@ -8,14 +8,20 @@ import '@/assets/css/search.css'
 interface SearchProps {
   className?: string
   onSubmit?: (value: string) => void
+  initialValue?: string
 }
 
 const Search = ({
   className,
-  onSubmit
+  onSubmit,
+  initialValue,
 }: SearchProps) => {
-  const [keyword, setKeyword] = useState('')
+  const [keyword, setKeyword] = useState(initialValue ?? '')
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setKeyword(initialValue ?? '')
+  }, [initialValue])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setKeyword(e.target.value)

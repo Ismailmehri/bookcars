@@ -18,6 +18,7 @@ import {
   GridColDef,
   GridRenderCellParams,
   GridSortModel,
+  GridValueFormatterParams,
 } from '@mui/x-data-grid'
 import { Visibility as VisibilityIcon } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
@@ -338,7 +339,9 @@ const Users = () => {
         headerName: usersStrings.LAST_LOGIN_COLUMN,
         flex: 0.9,
         minWidth: 160,
-        valueFormatter: ({ value }) => formatLastLoginValue(value),
+        valueFormatter: (params: GridValueFormatterParams<bookcarsTypes.User, unknown>) => (
+          formatLastLoginValue(params?.value)
+        ),
       },
       {
         field: 'reviewsCount',
@@ -388,7 +391,7 @@ const Users = () => {
               onDelete={handleDeleteUser}
               onToggleActive={handleToggleActive}
               onChangeRole={handleChangeRole}
-              availableRoles={[bookcarsTypes.UserType.Admin, bookcarsTypes.UserType.Supplier, bookcarsTypes.UserType.User]}
+              availableRoles={[bookcarsTypes.UserType.Supplier, bookcarsTypes.UserType.User]}
             />
           )
         },

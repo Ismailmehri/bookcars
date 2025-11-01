@@ -1561,8 +1561,9 @@ export const getUsers2 = async (req: Request, res: Response) => {
   try {
     const keyword = escapeStringRegexp(String(req.query.s || ''))
     const options = 'i'
-    const page = Number.parseInt(req.params.page, 10)
-    const size = Number.parseInt(req.params.size, 10)
+    const page = numberHelper.parsePositiveInt(req.params.page, 1)
+    const size = numberHelper.parsePositiveInt(req.params.size, 25)
+    const skip = (page - 1) * size
     const { body }: { body: bookcarsTypes.GetUsersBody } = req
     const { user: userId } = body
 
@@ -1625,7 +1626,7 @@ export const getUsers2 = async (req: Request, res: Response) => {
         },
         {
           $facet: {
-            resultData: [{ $sort: { fullName: 1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
+            resultData: [{ $sort: { fullName: 1, _id: 1 } }, { $skip: skip }, { $limit: size }],
             pageInfo: [
               {
                 $count: 'totalRecords',
@@ -1648,8 +1649,9 @@ export const getUsers = async (req: Request, res: Response) => {
   try {
     const keyword = escapeStringRegexp(String(req.query.s || ''))
     const options = 'i'
-    const page = Number.parseInt(req.params.page, 10)
-    const size = Number.parseInt(req.params.size, 10)
+    const page = numberHelper.parsePositiveInt(req.params.page, 1)
+    const size = numberHelper.parsePositiveInt(req.params.size, 25)
+    const skip = (page - 1) * size
     const { body }: { body: bookcarsTypes.GetUsersBody } = req
     const { user: userId } = body
 
@@ -1739,7 +1741,7 @@ export const getUsers = async (req: Request, res: Response) => {
         },
         {
           $facet: {
-            resultData: [{ $sort: { fullName: 1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
+            resultData: [{ $sort: { fullName: 1, _id: 1 } }, { $skip: skip }, { $limit: size }],
             pageInfo: [
               {
                 $count: 'totalRecords',

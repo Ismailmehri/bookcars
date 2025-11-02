@@ -6,10 +6,11 @@
 }
 
 .us-data-grid {
-  border-radius: 18px;
-  border: 1px solid #e8eef4;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
   background: #fff;
   overflow: hidden;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
 }
 
 .us-user-link {
@@ -126,8 +127,28 @@
   opacity: 1;
 }
 
+.us-pagination {
+  margin-top: 20px;
+  padding: 16px 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.us-pagination .MuiButton-root {
+  min-width: 120px;
+}
+
+.us-pagination .MuiButton-root.Mui-disabled {
+  opacity: 0.5;
+}
+
 @media (max-width: 600px) {
   .us-data-grid {
     border-radius: 12px;
+  }
+
+  .us-pagination {
+    padding: 12px 0 0;
   }
 }

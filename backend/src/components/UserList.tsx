@@ -25,6 +25,8 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import {
   CheckCircleOutline,
   HighlightOff,
@@ -42,6 +44,7 @@ import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
 import { strings as commonStrings } from '@/lang/common'
 import { strings } from '@/lang/user-list'
+import { strings as usersPageStrings } from '@/lang/users'
 import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
 import { UsersFiltersState } from '@/pages/users.types'
@@ -65,6 +68,7 @@ interface UserListProps {
   onReviewsClick: (user: bookcarsTypes.User) => void
   onTotalChange?: (total: number) => void
   onLoadingChange?: (loading: boolean) => void
+  onPageSummaryChange?: (summary: { from: number; to: number; total: number; pageSize: number }) => void
 }
 
 const defaultAdminRoles = [
@@ -152,6 +156,7 @@ const UserList = ({
   onReviewsClick,
   onTotalChange,
   onLoadingChange,
+  onPageSummaryChange,
 }: UserListProps) => {
   const [rows, setRows] = useState<bookcarsTypes.User[]>([])
   const [rowCount, setRowCount] = useState(0)
@@ -173,6 +178,29 @@ const UserList = ({
     columnVisibilityModel,
   )
   const [internalDensity, setInternalDensity] = useState<GridDensity>(density)
+  const theme = useTheme()
+  const isTablet = useMediaQuery(theme.breakpoints.down('lg'))
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const updateSummary = useCallback(
+    (totalRecords: number, rowsLength: number) => {
+      if (!onPageSummaryChange) {
+        return
+      }
+
+      const { page, pageSize } = paginationModel
+
+      if (totalRecords === 0 || rowsLength === 0) {
+        onPageSummaryChange({ from: 0, to: 0, total: totalRecords, pageSize })
+        return
+      }
+
+      const from = page * pageSize + 1
+      const to = Math.min(totalRecords, from + rowsLength - 1)
+
+      onPageSummaryChange({ from, to, total: totalRecords, pageSize })
+    },
+    [onPageSummaryChange, paginationModel.page, paginationModel.pageSize],
+  )
 
   useEffect(() => {
     setInternalSortModel(sortModel)
@@ -265,6 +293,7 @@ const UserList = ({
       setRows(sortedRows)
       setRowCount(totalRecords)
       onTotalChange?.(totalRecords)
+      updateSummary(totalRecords, sortedRows.length)
 
       if (selectionModel.length > 0) {
         setSelectedUsersMap((previous) => {
@@ -280,6 +309,7 @@ const UserList = ({
     } catch (err) {
       setError(strings.ERROR_LOADING_USERS)
       helper.error(err)
+      updateSummary(0, 0)
     } finally {
       setLoading(false)
       onLoadingChange?.(false)
@@ -295,11 +325,16 @@ const UserList = ({
     selectionModel,
     onTotalChange,
     onLoadingChange,
+    updateSummary,
   ])
 
   useEffect(() => {
     fetchUsers()
   }, [fetchUsers, refreshToken])
+
+  useEffect(() => {
+    updateSummary(rowCount, rows.length)
+  }, [rowCount, rows.length, paginationModel.page, paginationModel.pageSize, updateSummary])
 
   useEffect(() => {
     setPaginationModel((prev) => ({ ...prev, page: 0 }))
@@ -355,12 +390,18 @@ const UserList = ({
 
     try {
       setLoading(true)
+      onLoadingChange?.(true)
       const status = await UserService.deleteUsers([deleteTarget._id])
 
       if (status === 200) {
         helper.info(strings.USER_DELETED_SUCCESS)
-        setRows((current) => current.filter((row) => row._id !== deleteTarget._id))
-        setRowCount((current) => Math.max(current - 1, 0))
+        const nextTotal = Math.max(rowCount - 1, 0)
+        setRows((current) => {
+          const updatedRows = current.filter((row) => row._id !== deleteTarget._id)
+          updateSummary(nextTotal, updatedRows.length)
+          return updatedRows
+        })
+        setRowCount(nextTotal)
         setSelectionModel((current) => current.filter((id) => id !== deleteTarget._id))
         setSelectedUsersMap((current) => {
           const updated = { ...current }
@@ -375,6 +416,7 @@ const UserList = ({
     } finally {
       setDeleteTarget(undefined)
       setLoading(false)
+      onLoadingChange?.(false)
     }
   }
 
@@ -512,6 +554,23 @@ const UserList = ({
       {condition ? truthyLabel : falsyLabel}
     </Box>
   )
+
+  const computedVisibilityModel = useMemo<GridColumnVisibilityModel>(() => {
+    const model: GridColumnVisibilityModel = { ...internalVisibilityModel }
+
+    if (isTablet) {
+      model.lastLoginAt = false
+      if (admin) {
+        model.blacklisted = false
+      }
+    }
+
+    if (isMobile) {
+      model.phone = false
+    }
+
+    return model
+  }, [admin, internalVisibilityModel, isMobile, isTablet])
 
   const columns = useMemo<GridColDef<bookcarsTypes.User>[]>(() => {
     const baseColumns: GridColDef<bookcarsTypes.User>[] = [
@@ -659,6 +718,35 @@ const UserList = ({
     }
   }
 
+  const displayedCount = rows.length
+  const totalPages = Math.max(1, Math.ceil(rowCount / paginationModel.pageSize))
+  const summaryLabel = useMemo(
+    () =>
+      usersPageStrings.formatString(
+        usersPageStrings.RESULTS_PAGE_SUMMARY,
+        displayedCount.toLocaleString(),
+        rowCount.toLocaleString(),
+      ) as string,
+    [displayedCount, rowCount],
+  )
+
+  const isFirstPage = paginationModel.page === 0
+  const isLastPage = paginationModel.page >= totalPages - 1
+
+  const handlePrevPageClick = () => {
+    if (isFirstPage) {
+      return
+    }
+    setPaginationModel((prev) => ({ ...prev, page: Math.max(prev.page - 1, 0) }))
+  }
+
+  const handleNextPageClick = () => {
+    if (isLastPage) {
+      return
+    }
+    setPaginationModel((prev) => ({ ...prev, page: prev.page + 1 }))
+  }
+
   return (
     <Box className="us-list">
       {error && (
@@ -685,19 +773,27 @@ const UserList = ({
         keepNonExistentRowsSelected
         sortModel={internalSortModel}
         onSortModelChange={handleSortModelChange}
-        columnVisibilityModel={internalVisibilityModel}
+        columnVisibilityModel={computedVisibilityModel}
         onColumnVisibilityModelChange={handleVisibilityChange}
         density={internalDensity}
         className="us-data-grid"
         disableColumnFilter
+        hideFooter
+        hideFooterSelectedRowCount
         sx={{
           '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#EFF3FA',
-            borderBottom: '1px solid #E8EEF4',
+            backgroundColor: '#F5F7FB',
+            borderBottom: '1px solid #E0E6ED',
             fontWeight: 600,
+            fontSize: '0.72rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
           },
           '& .MuiDataGrid-row:hover': {
-            backgroundColor: '#F5F7FB',
+            backgroundColor: '#F8FAFC',
+          },
+          '& .MuiDataGrid-withBorderColor': {
+            borderColor: 'rgba(226, 232, 240, 0.9)',
           },
           '& .MuiDataGrid-cell:focus-within, & .MuiDataGrid-columnHeader:focus': {
             outline: 'none',
@@ -723,6 +819,42 @@ const UserList = ({
           ),
         }}
       />
+
+      <Box className="us-pagination">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }}>
+          <Box>
+            <Typography variant="body2" color="text.secondary">
+              {summaryLabel}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {strings.formatString(
+                strings.PAGINATION_LABEL,
+                (paginationModel.page + 1).toLocaleString(),
+                totalPages.toLocaleString(),
+              ) as string}
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={1.5} alignItems="center" ml={{ xs: 0, sm: 'auto' }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handlePrevPageClick}
+              disabled={isFirstPage || loading}
+            >
+              {usersPageStrings.PAGINATION_PREVIOUS}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              color="primary"
+              onClick={handleNextPageClick}
+              disabled={isLastPage || loading}
+            >
+              {usersPageStrings.PAGINATION_NEXT}
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
 
       <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <MenuItem component={Link} href={`/user?u=${menuRow?._id}`} onClick={closeMenu}>

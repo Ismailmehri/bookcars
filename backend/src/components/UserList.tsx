@@ -139,6 +139,37 @@ const sortRows = (rows: bookcarsTypes.User[], model: GridSortModel) => {
   return sorted
 }
 
+export const normalizeUsersResult = (
+  response: bookcarsTypes.Result<bookcarsTypes.User>,
+): { rows: bookcarsTypes.User[]; totalRecords: number } => {
+  if (Array.isArray(response) && response.length > 0 && response[0]) {
+    const [rawResult] = response as [bookcarsTypes.ResultData<bookcarsTypes.User>]
+
+    const rows = Array.isArray(rawResult.resultData) ? rawResult.resultData : []
+    const pageInfo = rawResult.pageInfo as
+      | { totalRecords?: number }
+      | Array<{ totalRecords?: number }>
+      | undefined
+
+    if (Array.isArray(pageInfo)) {
+      const firstEntry = pageInfo[0]
+      return {
+        rows,
+        totalRecords:
+          firstEntry && typeof firstEntry.totalRecords === 'number' ? firstEntry.totalRecords : 0,
+      }
+    }
+
+    return {
+      rows,
+      totalRecords:
+        pageInfo && typeof pageInfo.totalRecords === 'number' ? pageInfo.totalRecords : 0,
+    }
+  }
+
+  return { rows: [], totalRecords: 0 }
+}
+
 const UserList = ({
   user,
   keyword,
@@ -280,14 +311,7 @@ const UserList = ({
         paginationModel.pageSize,
       )
 
-      const fallback = { pageInfo: { totalRecords: 0 }, resultData: [] as bookcarsTypes.User[] }
-      const result = response && response.length > 0 ? response[0] : fallback
-
-      const totalRecords = Array.isArray(result.pageInfo)
-        ? (result.pageInfo[0]?.totalRecords ?? 0)
-        : (result.pageInfo?.totalRecords ?? 0)
-
-      const dataRows = result.resultData ?? []
+      const { rows: dataRows, totalRecords } = normalizeUsersResult(response)
       const sortedRows = sortRows(dataRows, internalSortModel)
 
       setRows(sortedRows)

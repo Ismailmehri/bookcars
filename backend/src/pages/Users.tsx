@@ -73,6 +73,25 @@ const defaultSortModel: GridSortModel = [
 const defaultVisibilityModel: GridColumnVisibilityModel = {}
 const defaultDensity: GridDensity = 'comfortable'
 
+const sanitizeSortModel = (model: GridSortModel): GridSortModel => {
+  const filtered = model.filter((item) => item.sort)
+  if (filtered.length === 0) {
+    return [...defaultSortModel]
+  }
+
+  const hasLastLogin = filtered.some((item) => item.field === 'lastLoginAt')
+  const hasFullName = filtered.some((item) => item.field === 'fullName')
+
+  if (hasLastLogin && !hasFullName) {
+    return [...filtered, { field: 'fullName', sort: 'asc' }]
+  }
+
+  return filtered
+}
+
+const sortModelsEqual = (a: GridSortModel, b: GridSortModel) =>
+  a.length === b.length && a.every((item, index) => item.field === b[index]?.field && item.sort === b[index]?.sort)
+
 const sanitizeRoles = (roles: bookcarsTypes.UserType[], isAdmin: boolean) => {
   const allowed = isAdmin ? adminDefaultRoles : agencyDefaultRoles
   const sanitized = roles.filter((role) => allowed.includes(role))
@@ -134,7 +153,7 @@ const Users = () => {
   const [reviewsOpen, setReviewsOpen] = useState(false)
   const [reviewsUser, setReviewsUser] = useState<bookcarsTypes.User>()
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const [sortModel, setSortModel] = useState<GridSortModel>(defaultSortModel)
+  const [sortModel, setSortModel] = useState<GridSortModel>(() => [...defaultSortModel])
   const [columnVisibilityModel, setColumnVisibilityModel] = useState<GridColumnVisibilityModel>(defaultVisibilityModel)
   const [density, setDensity] = useState<GridDensity>(defaultDensity)
   const [unsavedChanges, setUnsavedChanges] = useState(false)
@@ -151,7 +170,7 @@ const Users = () => {
           setFilters(persisted.filters)
         }
         if (persisted.sortModel) {
-          setSortModel(persisted.sortModel)
+          setSortModel(sanitizeSortModel(persisted.sortModel))
         }
         if (persisted.columnVisibilityModel) {
           setColumnVisibilityModel(persisted.columnVisibilityModel)
@@ -434,7 +453,7 @@ const Users = () => {
       ...defaultUsersFiltersState,
       roles: admin ? adminDefaultRoles : agencyDefaultRoles,
     })
-    setSortModel(defaultSortModel)
+    setSortModel([...defaultSortModel])
     setColumnVisibilityModel(defaultVisibilityModel)
     setDensity(defaultDensity)
     setSelectionResetKey((prev) => prev + 1)
@@ -445,8 +464,11 @@ const Users = () => {
   }
 
   const handleSortModelChange = (model: GridSortModel) => {
-    setSortModel(model)
-    setUnsavedChanges(true)
+    const effective = sanitizeSortModel(model.length > 0 ? model : defaultSortModel)
+    if (!sortModelsEqual(sortModel, effective)) {
+      setSortModel(effective)
+      setUnsavedChanges(true)
+    }
   }
 
   const handleVisibilityChange = (model: GridColumnVisibilityModel) => {

@@ -1,7 +1,18 @@
 import * as bookcarsTypes from ':bookcars-types'
 
-const toDate = (value?: Date | string | null) => {
-  if (!value) {
+type NullableDate = Date | string | number | null | undefined
+
+export const safeGet = <T,>(...values: Array<T | null | undefined>): T | undefined => {
+  for (const value of values) {
+    if (value !== null && typeof value !== 'undefined') {
+      return value
+    }
+  }
+  return undefined
+}
+
+const toDate = (value: NullableDate): Date | null => {
+  if (!value && value !== 0) {
     return null
   }
 
@@ -13,39 +24,51 @@ const toDate = (value?: Date | string | null) => {
   return date
 }
 
-export const formatDateTime = (value?: Date | string | null) => {
-  const date = toDate(value)
+export const formatDateTime = (value?: NullableDate) => {
+  const date = toDate(value ?? null)
   if (!date) {
     return '—'
   }
 
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
+  return date.toLocaleString('fr-FR')
 }
 
-const mapUserRecord = (user: bookcarsTypes.User): bookcarsTypes.User => {
-  const rawLastLogin =
-    user.lastLoginAt ?? (user as { lastLogin?: Date | string | null }).lastLogin ??
-    (user as { lastLoginDate?: Date | string | null }).lastLoginDate ?? null
-
-  const rawCreatedAt =
-    user.createdAt ??
-    (user as { creationDate?: Date | string }).creationDate ??
-    (user as { created_at?: Date | string }).created_at ??
-    (user as { created?: Date | string }).created ??
-    undefined
-
-  return {
-    ...user,
-    lastLoginAt: rawLastLogin,
-    createdAt: rawCreatedAt,
-  }
+type UserLike = bookcarsTypes.User & {
+  lastLogin?: NullableDate
+  lastLoginDate?: NullableDate
+  auth?: { lastLoginAt?: NullableDate } | null
+  stats?: { lastLoginAt?: NullableDate } | null
+  created?: NullableDate
+  creationDate?: NullableDate
+  created_at?: NullableDate
+  audit?: { createdAt?: NullableDate } | null
+  meta?: { createdAt?: NullableDate } | null
 }
+
+export const getLastLoginValue = (user: UserLike) =>
+  safeGet<NullableDate>(
+    user?.lastLoginAt,
+    user?.lastLogin,
+    user?.lastLoginDate,
+    user?.auth?.lastLoginAt,
+    user?.stats?.lastLoginAt,
+  ) ?? null
+
+export const getCreatedAtValue = (user: UserLike) =>
+  safeGet<NullableDate>(
+    user?.createdAt,
+    user?.creationDate,
+    user?.created_at,
+    user?.created,
+    user?.audit?.createdAt,
+    user?.meta?.createdAt,
+  ) ?? null
+
+const mapUserRecord = (user: UserLike): bookcarsTypes.User => ({
+  ...user,
+  lastLoginAt: getLastLoginValue(user),
+  createdAt: getCreatedAtValue(user),
+})
 
 export const normalizeUsersResult = (
   response: bookcarsTypes.Result<bookcarsTypes.User>,
@@ -54,7 +77,7 @@ export const normalizeUsersResult = (
     const [rawResult] = response as [bookcarsTypes.ResultData<bookcarsTypes.User>]
 
     const rows = Array.isArray(rawResult.resultData)
-      ? rawResult.resultData.map((user) => mapUserRecord(user))
+      ? rawResult.resultData.map((user) => mapUserRecord(user as UserLike))
       : []
 
     const pageInfo = rawResult.pageInfo as
@@ -81,35 +104,10 @@ export const normalizeUsersResult = (
   return { rows: [], totalRecords: 0 }
 }
 
-export const getDateTimestamp = (value?: Date | string | null) => {
-  const date = toDate(value)
+export const getDateTimestamp = (value?: NullableDate) => {
+  const date = toDate(value ?? null)
   if (!date) {
     return 0
   }
   return date.getTime()
-}
-
-export const getLastLoginValue = (user: bookcarsTypes.User) =>
-  user.lastLoginAt ??
-  (user as { lastLogin?: Date | string | null }).lastLogin ??
-  (user as { lastLoginDate?: Date | string | null }).lastLoginDate ??
-  null
-
-export const getCreatedAtValue = (user: bookcarsTypes.User) =>
-  user.createdAt ??
-  (user as { creationDate?: Date | string }).creationDate ??
-  (user as { created_at?: Date | string }).created_at ??
-  (user as { created?: Date | string }).created ??
-  null
-
-export const applyListIndex = (
-  rows: bookcarsTypes.User[],
-  page: number,
-  pageSize: number,
-): bookcarsTypes.User[] => {
-  const offset = page * pageSize
-  return rows.map((row, index) => ({
-    ...row,
-    listIndex: offset + index + 1,
-  }))
 }

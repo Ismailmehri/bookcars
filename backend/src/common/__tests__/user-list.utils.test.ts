@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import * as bookcarsTypes from ':bookcars-types'
-import { applyListIndex, formatDateTime, normalizeUsersResult } from '../user-list.utils'
+import {
+  formatDateTime,
+  getCreatedAtValue,
+  getLastLoginValue,
+  normalizeUsersResult,
+  safeGet,
+} from '../user-list.utils'
 
 describe('formatDateTime', () => {
   it('returns fallback for undefined or invalid values', () => {
@@ -11,29 +17,41 @@ describe('formatDateTime', () => {
 
   it('formats valid ISO strings using fr-FR locale', () => {
     const value = '2024-01-20T15:45:00Z'
-    const expected = new Intl.DateTimeFormat('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(value))
+    const expected = new Date(value).toLocaleString('fr-FR')
 
     expect(formatDateTime(value)).toBe(expected)
   })
 })
 
-describe('applyListIndex', () => {
-  it('assigns sequential indexes based on page and size', () => {
-    const rows: bookcarsTypes.User[] = [
-      { _id: 'a', fullName: 'Alpha' },
-      { _id: 'b', fullName: 'Beta' },
-      { _id: 'c', fullName: 'Gamma' },
-    ]
+describe('safeGet', () => {
+  it('returns the first defined value', () => {
+    expect(safeGet(undefined, null, 'value', 'other')).toBe('value')
+  })
 
-    const result = applyListIndex(rows, 1, 3)
+  it('returns undefined when all values are empty', () => {
+    expect(safeGet(null, undefined)).toBeUndefined()
+  })
+})
 
-    expect(result.map((row) => row.listIndex)).toEqual([4, 5, 6])
+describe('date getters', () => {
+  it('extracts createdAt variants safely', () => {
+    const user = {
+      _id: 'user-1',
+      fullName: 'Test',
+      audit: { createdAt: '2024-02-01T09:00:00Z' },
+    } as bookcarsTypes.User
+
+    expect(getCreatedAtValue(user)).toBe('2024-02-01T09:00:00Z')
+  })
+
+  it('extracts lastLogin variants safely', () => {
+    const user = {
+      _id: 'user-2',
+      fullName: 'Test',
+      stats: { lastLoginAt: '2024-02-10T09:00:00Z' },
+    } as bookcarsTypes.User
+
+    expect(getLastLoginValue(user)).toBe('2024-02-10T09:00:00Z')
   })
 })
 

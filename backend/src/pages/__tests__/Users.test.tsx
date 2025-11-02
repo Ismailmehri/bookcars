@@ -133,15 +133,24 @@ describe('Users page', () => {
     const addButton = container.querySelector('.users-add') as HTMLButtonElement
     expect(addButton.disabled).toBe(false)
 
+    const searchInput = container.querySelector('.users-toolbar__search input') as HTMLInputElement
+    expect(searchInput.value).toBe('')
+
+    const actionButtons = Array.from(container.querySelectorAll('.users-toolbar__actions .MuiButton-root'))
+    expect(actionButtons[0]?.textContent).toContain(usersStrings.SEARCH_BUTTON)
+
     expect(userListPropsMock).toHaveBeenCalled()
     const firstCallProps = userListPropsMock.mock.calls[0][0]
     const lastCallProps = userListPropsMock.mock.calls[userListPropsMock.mock.calls.length - 1][0]
     const { admin: listAdmin, sortModel } = firstCallProps
     expect(listAdmin).toBe(true)
     expect(sortModel?.[0]?.field).toBe('lastLoginAt')
+    expect(sortModel?.[0]?.sort).toBe('desc')
+    expect(sortModel?.[1]?.field).toBe('fullName')
+    expect(sortModel?.[1]?.sort).toBe('asc')
     expect(lastCallProps.onSelectionChange).toBe(firstCallProps.onSelectionChange)
 
-    const summaryBlock = container.querySelector('.users-meta')
+    const summaryBlock = container.querySelector('.users-table-card__header')
     const expectedSummary = usersStrings.formatString(
       usersStrings.RESULTS_PAGE_SUMMARY,
       (10).toLocaleString(),

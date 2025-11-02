@@ -11,17 +11,19 @@ import {
   DialogContent,
   DialogTitle,
   Stack,
+  TextField,
   Tooltip,
   Typography,
+  InputAdornment,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined'
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
 import RotateLeftRoundedIcon from '@mui/icons-material/RotateLeftRounded'
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
 import { GridColumnVisibilityModel, GridDensity, GridSortModel } from '@mui/x-data-grid'
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
-import Search from '@/components/Search'
 import UsersFilters from '@/components/UsersFilters'
 import UsersStatsCards from '@/components/UsersStatsCards'
 import UserList from '@/components/UserList'
@@ -64,7 +66,10 @@ const agencyDefaultRoles = [
   bookcarsTypes.UserType.User,
 ]
 
-const defaultSortModel: GridSortModel = [{ field: 'lastLoginAt', sort: 'desc' }]
+const defaultSortModel: GridSortModel = [
+  { field: 'lastLoginAt', sort: 'desc' },
+  { field: 'fullName', sort: 'asc' },
+]
 const defaultVisibilityModel: GridColumnVisibilityModel = {}
 const defaultDensity: GridDensity = 'comfortable'
 
@@ -113,6 +118,7 @@ const Users = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [admin, setAdmin] = useState(false)
   const [keyword, setKeyword] = useState('')
+  const [keywordDraft, setKeywordDraft] = useState('')
   const [filters, setFilters] = useState<UsersFiltersState>(defaultUsersFiltersState)
   const [agencies, setAgencies] = useState<bookcarsTypes.User[]>([])
   const [stats, setStats] = useState<bookcarsTypes.UsersStatsResponse>()
@@ -140,6 +146,7 @@ const Users = () => {
       if (persistedRaw) {
         const persisted = JSON.parse(persistedRaw) as UsersPersistedState
         setKeyword(persisted.keyword || '')
+        setKeywordDraft(persisted.keyword || '')
         if (persisted.filters) {
           setFilters(persisted.filters)
         }
@@ -231,10 +238,23 @@ const Users = () => {
     }
   }
 
-  const handleSearch = (value: string) => {
-    setKeyword(value)
+  const handleKeywordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setKeywordDraft(event.target.value)
+  }
+
+  const executeSearch = useCallback(() => {
+    const trimmed = keywordDraft.trim()
+    setKeyword(trimmed)
     setSelectionResetKey((prev) => prev + 1)
+    setRefreshToken((prev) => prev + 1)
     setUnsavedChanges(true)
+  }, [keywordDraft])
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      executeSearch()
+    }
   }
 
   const handleFiltersApply = (nextFilters: UsersFiltersState) => {
@@ -409,6 +429,7 @@ const Users = () => {
 
   const handleResetView = () => {
     setKeyword('')
+    setKeywordDraft('')
     setFilters({
       ...defaultUsersFiltersState,
       roles: admin ? adminDefaultRoles : agencyDefaultRoles,
@@ -484,116 +505,141 @@ const Users = () => {
             )}
 
             <Box className="users-toolbar-container">
-              <Stack
-                direction={{ xs: 'column', md: 'row' }}
-                spacing={{ xs: 2, md: 3 }}
-                alignItems={{ xs: 'stretch', md: 'center' }}
-                className="users-toolbar"
-              >
-                <Box className="users-toolbar__search">
-                  <Search
-                    onSubmit={handleSearch}
-                    className="users-search"
-                    initialValue={keyword}
-                    placeholder={strings.SEARCH_PLACEHOLDER}
+              <Box className="users-toolbar">
+                <Stack
+                  direction={{ xs: 'column', lg: 'row' }}
+                  spacing={{ xs: 2, lg: 3 }}
+                  alignItems={{ xs: 'stretch', lg: 'center' }}
+                >
+                  <Box className="users-toolbar__search">
+                    <TextField
+                      value={keywordDraft}
+                      onChange={handleKeywordChange}
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder={strings.SEARCH_PLACEHOLDER}
+                      fullWidth
+                      size="small"
+                      variant="outlined"
+                      inputProps={{ 'aria-label': strings.SEARCH_PLACEHOLDER }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchRoundedIcon fontSize="small" />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Box>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={{ xs: 1.2, sm: 1.2, md: 1.5 }}
+                    alignItems={{ xs: 'stretch', sm: 'center' }}
+                    justifyContent="flex-end"
+                    className="users-toolbar__actions"
+                  >
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<SearchRoundedIcon />}
+                      onClick={executeSearch}
+                    >
+                      {strings.SEARCH_BUTTON}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<FilterAltOutlinedIcon />}
+                      onClick={() => setFiltersOpen(true)}
+                      color="primary"
+                    >
+                      {filtersLabel}
+                    </Button>
+                    <Button variant="text" startIcon={<RotateLeftRoundedIcon />} onClick={handleResetView}>
+                      {strings.RESET_VIEW}
+                    </Button>
+                    <Tooltip title={strings.SAVE_VIEW} disableHoverListener={!unsavedChanges}>
+                      <span>
+                        <Badge color="secondary" variant="dot" invisible={!unsavedChanges} overlap="circular">
+                          <Button
+                            variant="outlined"
+                            startIcon={<SaveOutlinedIcon />}
+                            onClick={handleSaveView}
+                            disabled={!unsavedChanges}
+                          >
+                            {strings.SAVE_VIEW}
+                          </Button>
+                        </Badge>
+                      </span>
+                    </Tooltip>
+                    <Tooltip
+                      title={strings.ADMIN_ONLY_ACTION}
+                      placement="top"
+                      arrow
+                      disableFocusListener={admin}
+                      disableHoverListener={admin}
+                      disableTouchListener={admin}
+                    >
+                      <span>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="medium"
+                          className="users-add"
+                          href="/create-user"
+                          startIcon={<AddIcon />}
+                          disabled={!admin}
+                        >
+                          {strings.NEW_USER}
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  </Stack>
+                </Stack>
+              </Box>
+            </Box>
+
+            <Box className="users-content">
+              <Box className="users-table-card">
+                <Box className="users-table-card__header">
+                  <Box>
+                    <Typography variant="body2" color="text.primary">
+                      {resultsLabel}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {summaryLabel}
+                    </Typography>
+                  </Box>
+                  {(listLoading || actionLoading) && (
+                    <Stack direction="row" spacing={1} alignItems="center" className="users-table-card__loading">
+                      <CircularProgress size={16} />
+                      <Typography variant="caption" color="text.secondary">
+                        {commonStrings.PLEASE_WAIT}
+                      </Typography>
+                    </Stack>
+                  )}
+                </Box>
+                <Box className="users-table-card__body">
+                  <UserList
+                    user={user}
+                    keyword={keyword}
+                    filters={filters}
+                    admin={admin}
+                    refreshToken={refreshToken}
+                    selectionResetKey={selectionResetKey}
+                    sortModel={sortModel}
+                    onSortModelChange={handleSortModelChange}
+                    columnVisibilityModel={columnVisibilityModel}
+                    onColumnVisibilityModelChange={handleVisibilityChange}
+                    density={density}
+                    onDensityChange={handleDensityChange}
+                    onSelectionChange={handleSelectionChange}
+                    onReviewsClick={handleReviewsClick}
+                    onTotalChange={setTotalUsers}
+                    onLoadingChange={handleListLoadingChange}
+                    onPageSummaryChange={handlePageSummaryChange}
                   />
                 </Box>
-                <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  spacing={{ xs: 1.5, sm: 1.5 }}
-                  alignItems={{ xs: 'stretch', sm: 'center' }}
-                  justifyContent="flex-end"
-                  className="users-toolbar__actions"
-                >
-                  <Button
-                    variant="outlined"
-                    startIcon={<FilterAltOutlinedIcon />}
-                    onClick={() => setFiltersOpen(true)}
-                    color="primary"
-                  >
-                    {filtersLabel}
-                  </Button>
-                  <Tooltip title={strings.SAVE_VIEW} disableHoverListener={!unsavedChanges}>
-                    <span>
-                      <Badge color="secondary" variant="dot" invisible={!unsavedChanges} overlap="circular">
-                        <Button
-                          variant="outlined"
-                          startIcon={<SaveOutlinedIcon />}
-                          onClick={handleSaveView}
-                          disabled={!unsavedChanges}
-                        >
-                          {strings.SAVE_VIEW}
-                        </Button>
-                      </Badge>
-                    </span>
-                  </Tooltip>
-                  <Button variant="text" startIcon={<RotateLeftRoundedIcon />} onClick={handleResetView}>
-                    {strings.RESET_VIEW}
-                  </Button>
-                  <Tooltip
-                    title={strings.ADMIN_ONLY_ACTION}
-                    placement="top"
-                    arrow
-                    disableFocusListener={admin}
-                    disableHoverListener={admin}
-                    disableTouchListener={admin}
-                  >
-                    <span>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        size="medium"
-                        className="users-add"
-                        href="/create-user"
-                        startIcon={<AddIcon />}
-                        disabled={!admin}
-                      >
-                        {strings.NEW_USER}
-                      </Button>
-                    </span>
-                  </Tooltip>
-                </Stack>
-              </Stack>
-            </Box>
-
-            <Box className="users-meta">
-              <Box>
-                <Typography variant="body2" color="text.primary">
-                  {resultsLabel}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {summaryLabel}
-                </Typography>
               </Box>
-              {(listLoading || actionLoading) && (
-                <Stack direction="row" spacing={1} alignItems="center" className="users-meta__loading">
-                  <CircularProgress size={16} />
-                  <Typography variant="caption" color="text.secondary">
-                    {commonStrings.PLEASE_WAIT}
-                  </Typography>
-                </Stack>
-              )}
             </Box>
-
-            <UserList
-              user={user}
-              keyword={keyword}
-              filters={filters}
-              admin={admin}
-              refreshToken={refreshToken}
-              selectionResetKey={selectionResetKey}
-              sortModel={sortModel}
-              onSortModelChange={handleSortModelChange}
-              columnVisibilityModel={columnVisibilityModel}
-              onColumnVisibilityModelChange={handleVisibilityChange}
-              density={density}
-              onDensityChange={handleDensityChange}
-              onSelectionChange={handleSelectionChange}
-              onReviewsClick={handleReviewsClick}
-              onTotalChange={setTotalUsers}
-              onLoadingChange={handleListLoadingChange}
-              onPageSummaryChange={handlePageSummaryChange}
-            />
           </Container>
 
           {admin && selection.ids.length > 0 && (

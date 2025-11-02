@@ -25,6 +25,8 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import {
   CheckCircleOutline,
   HighlightOff,
@@ -42,11 +44,13 @@ import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
 import { strings as commonStrings } from '@/lang/common'
 import { strings } from '@/lang/user-list'
+import { strings as usersPageStrings } from '@/lang/users'
 import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
 import { UsersFiltersState } from '@/pages/users.types'
 
 import '@/assets/css/user-list.css'
+import { formatLastLoginValue, normalizeUsersResult } from '@/common/user-list.utils'
 
 interface UserListProps {
   user?: bookcarsTypes.User
@@ -65,6 +69,7 @@ interface UserListProps {
   onReviewsClick: (user: bookcarsTypes.User) => void
   onTotalChange?: (total: number) => void
   onLoadingChange?: (loading: boolean) => void
+  onPageSummaryChange?: (summary: { from: number; to: number; total: number; pageSize: number }) => void
 }
 
 const defaultAdminRoles = [
@@ -78,62 +83,50 @@ const defaultAgencyRoles = [
   bookcarsTypes.UserType.User,
 ]
 
-export const formatLastLoginValue = (value?: string | Date | null | undefined) => {
-  if (!value) {
-    return strings.NEVER_LOGGED_IN
-  }
-
-  const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return strings.NEVER_LOGGED_IN
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
-}
-
 const sortRows = (rows: bookcarsTypes.User[], model: GridSortModel) => {
-  if (!model || model.length === 0) {
-    return rows
-  }
-
+  if (!model || model.length === 0) return rows
   const [{ field, sort }] = model
-  if (!sort) {
-    return rows
-  }
+  if (!sort) return rows
 
   const sorted = [...rows]
-
   sorted.sort((a, b) => {
-    const direction = sort === 'asc' ? 1 : -1
-
+    const dir = sort === 'asc' ? 1 : -1
     if (field === 'lastLoginAt') {
       const aDate = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0
       const bDate = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0
-      return (aDate - bDate) * direction
+      return (aDate - bDate) * dir
     }
-
     if (field === 'fullName') {
       const aName = (a.fullName || '').toLowerCase()
       const bName = (b.fullName || '').toLowerCase()
-      if (aName < bName) {
-        return -1 * direction
-      }
-      if (aName > bName) {
-        return 1 * direction
-      }
+      if (aName < bName) return -1 * dir
+      if (aName > bName) return 1 * dir
       return 0
     }
-
     return 0
   })
-
   return sorted
 }
+
+// --- Overlays stables ---
+const NoRowsOverlay: React.FC = () => (
+  <Stack alignItems="center" justifyContent="center" height="100%" spacing={1}>
+    <Typography variant="h6" color="text.primary">
+      {strings.EMPTY_STATE_TITLE}
+    </Typography>
+    <Typography variant="body2" color="text.secondary" align="center" px={4}>
+      {strings.EMPTY_STATE}
+    </Typography>
+  </Stack>
+)
+
+const LoadingOverlay: React.FC = () => (
+  <Stack alignItems="center" justifyContent="center" height="100%" spacing={2}>
+    <Typography variant="body2" color="text.secondary">
+      {strings.LOADING_STATE}
+    </Typography>
+  </Stack>
+)
 
 const UserList = ({
   user,
@@ -152,15 +145,13 @@ const UserList = ({
   onReviewsClick,
   onTotalChange,
   onLoadingChange,
+  onPageSummaryChange,
 }: UserListProps) => {
   const [rows, setRows] = useState<bookcarsTypes.User[]>([])
   const [rowCount, setRowCount] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>()
-  const [paginationModel, setPaginationModel] = useState({
-    page: 0,
-    pageSize: env.PAGE_SIZE,
-  })
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: env.PAGE_SIZE })
   const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([])
   const [selectedUsersMap, setSelectedUsersMap] = useState<Record<string, bookcarsTypes.User>>({})
   const [deleteTarget, setDeleteTarget] = useState<bookcarsTypes.User>()
@@ -169,72 +160,59 @@ const UserList = ({
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const copyTimeoutRef = useRef<number>()
   const [internalSortModel, setInternalSortModel] = useState<GridSortModel>(sortModel)
-  const [internalVisibilityModel, setInternalVisibilityModel] = useState<GridColumnVisibilityModel>(
-    columnVisibilityModel,
-  )
+  const [internalVisibilityModel, setInternalVisibilityModel] = useState<GridColumnVisibilityModel>(columnVisibilityModel)
   const [internalDensity, setInternalDensity] = useState<GridDensity>(density)
+  const theme = useTheme()
+  const isTablet = useMediaQuery(theme.breakpoints.down('lg'))
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const { page, pageSize } = paginationModel
 
-  useEffect(() => {
-    setInternalSortModel(sortModel)
-  }, [sortModel])
+  // === Résumé de page: dépend uniquement de page/pageSize/prop callback ===
+  const updateSummary = useCallback(
+    (totalRecords: number, rowsLength: number) => {
+      if (!onPageSummaryChange) return
+      if (totalRecords === 0 || rowsLength === 0) {
+        onPageSummaryChange({ from: 0, to: 0, total: totalRecords, pageSize })
+        return
+      }
+      const from = page * pageSize + 1
+      const to = Math.min(totalRecords, from + rowsLength - 1)
+      onPageSummaryChange({ from, to, total: totalRecords, pageSize })
+    },
+    [onPageSummaryChange, page, pageSize]
+  )
 
-  useEffect(() => {
-    setInternalVisibilityModel(columnVisibilityModel)
-  }, [columnVisibilityModel])
+  useEffect(() => setInternalSortModel(sortModel), [sortModel])
+  useEffect(() => setInternalVisibilityModel(columnVisibilityModel), [columnVisibilityModel])
+  useEffect(() => setInternalDensity(density), [density])
 
-  useEffect(() => {
-    setInternalDensity(density)
-  }, [density])
-
-  useEffect(() => () => {
-    if (copyTimeoutRef.current) {
-      window.clearTimeout(copyTimeoutRef.current)
-    }
-  }, [])
+  useEffect(
+    () => () => {
+      if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current)
+    },
+    []
+  )
 
   const types = useMemo(() => {
-    if (filters.roles.length > 0) {
-      return filters.roles
-    }
+    if (filters.roles.length > 0) return filters.roles
     return admin ? defaultAdminRoles : defaultAgencyRoles
   }, [admin, filters.roles])
 
   const filtersPayload = useMemo(() => {
     const payload: bookcarsTypes.UsersFiltersPayload = {}
-
-    if (filters.verification.length > 0) {
-      payload.verification = filters.verification.map((status) => status === 'verified')
-    }
-
-    if (filters.activity.length > 0) {
-      payload.active = filters.activity.map((status) => status === 'active')
-    }
-
-    if (filters.blacklisted !== 'all') {
-      payload.blacklisted = filters.blacklisted === 'blacklisted'
-    }
-
-    if (filters.agencyId) {
-      payload.agencyId = filters.agencyId
-    }
-
-    if (filters.lastLoginFrom) {
-      payload.lastLoginFrom = filters.lastLoginFrom
-    }
-
-    if (filters.lastLoginTo) {
-      payload.lastLoginTo = filters.lastLoginTo
-    }
-
+    if (filters.verification.length > 0) payload.verification = filters.verification.map((s) => s === 'verified')
+    if (filters.activity.length > 0) payload.active = filters.activity.map((s) => s === 'active')
+    if (filters.blacklisted !== 'all') payload.blacklisted = filters.blacklisted === 'blacklisted'
+    if (filters.agencyId) payload.agencyId = filters.agencyId
+    if (filters.lastLoginFrom) payload.lastLoginFrom = filters.lastLoginFrom
+    if (filters.lastLoginTo) payload.lastLoginTo = filters.lastLoginTo
     return payload
   }, [filters])
 
   const fetchUsers = useCallback(async () => {
-    if (!user) {
-      return
-    }
+    if (!user) return
 
-    const payload: bookcarsTypes.GetUsersBody = {
+    const body: bookcarsTypes.GetUsersBody = {
       user: user._id || '',
       types,
       filters: Object.keys(filtersPayload).length > 0 ? filtersPayload : undefined,
@@ -245,34 +223,20 @@ const UserList = ({
       setError(undefined)
       onLoadingChange?.(true)
 
-      const response = await UserService.getUsers(
-        payload,
-        keyword,
-        paginationModel.page + 1,
-        paginationModel.pageSize,
-      )
-
-      const fallback = { pageInfo: { totalRecords: 0 }, resultData: [] as bookcarsTypes.User[] }
-      const result = response && response.length > 0 ? response[0] : fallback
-
-      const totalRecords = Array.isArray(result.pageInfo)
-        ? (result.pageInfo[0]?.totalRecords ?? 0)
-        : (result.pageInfo?.totalRecords ?? 0)
-
-      const dataRows = result.resultData ?? []
+      const response = await UserService.getUsers(body, keyword, paginationModel.page + 1, paginationModel.pageSize)
+      const { rows: dataRows, totalRecords } = normalizeUsersResult(response)
       const sortedRows = sortRows(dataRows, internalSortModel)
 
       setRows(sortedRows)
       setRowCount(totalRecords)
       onTotalChange?.(totalRecords)
+      updateSummary(totalRecords, sortedRows.length)
 
       if (selectionModel.length > 0) {
-        setSelectedUsersMap((previous) => {
-          const updated = { ...previous }
-          sortedRows.forEach((row) => {
-            if (row._id && selectionModel.includes(row._id)) {
-              updated[row._id] = row
-            }
+        setSelectedUsersMap((prev) => {
+          const updated = { ...prev }
+          sortedRows.forEach((r) => {
+            if (r._id && selectionModel.includes(r._id)) updated[r._id] = r
           })
           return updated
         })
@@ -280,6 +244,7 @@ const UserList = ({
     } catch (err) {
       setError(strings.ERROR_LOADING_USERS)
       helper.error(err)
+      updateSummary(0, 0)
     } finally {
       setLoading(false)
       onLoadingChange?.(false)
@@ -295,15 +260,20 @@ const UserList = ({
     selectionModel,
     onTotalChange,
     onLoadingChange,
+    updateSummary,
   ])
 
   useEffect(() => {
-    fetchUsers()
-  }, [fetchUsers, refreshToken])
+ fetchUsers()
+}, [fetchUsers, refreshToken])
 
   useEffect(() => {
-    setPaginationModel((prev) => ({ ...prev, page: 0 }))
-  }, [keyword, filtersPayload])
+ updateSummary(rowCount, rows.length)
+}, [rowCount, rows.length, paginationModel.page, paginationModel.pageSize, updateSummary])
+
+  useEffect(() => {
+ setPaginationModel((p) => ({ ...p, page: 0 }))
+}, [keyword, filtersPayload])
 
   useEffect(() => {
     setSelectionModel([])
@@ -325,42 +295,37 @@ const UserList = ({
 
     setSelectedUsersMap((previous) => {
       const updated: Record<string, bookcarsTypes.User> = {}
-
       ids.forEach((id) => {
-        if (previous[id]) {
-          updated[id] = previous[id]
-        }
-      })
-
+ if (previous[id]) updated[id] = previous[id]
+})
       rows.forEach((row) => {
-        if (row._id && ids.includes(row._id)) {
-          updated[row._id] = row
-        }
-      })
-
+ if (row._id && ids.includes(row._id)) updated[row._id] = row
+})
       return updated
     })
   }
 
   useEffect(() => {
     const selectedRows = Object.values(selectedUsersMap)
-    const ids = selectedRows.map((selected) => selected._id as string)
+    const ids = selectedRows.map((s) => s._id as string)
     onSelectionChange({ ids, rows: selectedRows })
   }, [selectedUsersMap, onSelectionChange])
 
   const handleConfirmDelete = async () => {
-    if (!deleteTarget?._id) {
-      return
-    }
-
+    if (!deleteTarget?._id) return
     try {
       setLoading(true)
+      onLoadingChange?.(true)
       const status = await UserService.deleteUsers([deleteTarget._id])
-
       if (status === 200) {
         helper.info(strings.USER_DELETED_SUCCESS)
-        setRows((current) => current.filter((row) => row._id !== deleteTarget._id))
-        setRowCount((current) => Math.max(current - 1, 0))
+        const nextTotal = Math.max(rowCount - 1, 0)
+        setRows((current) => {
+          const updatedRows = current.filter((r) => r._id !== deleteTarget._id)
+          updateSummary(nextTotal, updatedRows.length)
+          return updatedRows
+        })
+        setRowCount(nextTotal)
         setSelectionModel((current) => current.filter((id) => id !== deleteTarget._id))
         setSelectedUsersMap((current) => {
           const updated = { ...current }
@@ -375,6 +340,7 @@ const UserList = ({
     } finally {
       setDeleteTarget(undefined)
       setLoading(false)
+      onLoadingChange?.(false)
     }
   }
 
@@ -383,7 +349,15 @@ const UserList = ({
     setMenuRow(undefined)
   }
 
-  const copyToClipboard = async (value: string, fieldId: string) => {
+  // === Stabilisation des renderers ===
+  // 1) ref pour suivre copiedField sans dépendance
+  const copiedFieldRef = useRef<string | null>(null)
+  useEffect(() => {
+ copiedFieldRef.current = copiedField
+}, [copiedField])
+
+  // 2) copyToClipboard stable
+  const copyToClipboard = useCallback(async (value: string, fieldId: string) => {
     try {
       if (!navigator?.clipboard?.writeText) {
         helper.error(undefined, strings.COPY_ERROR)
@@ -391,26 +365,22 @@ const UserList = ({
       }
       await navigator.clipboard.writeText(value)
       setCopiedField(fieldId)
-      if (copyTimeoutRef.current) {
-        window.clearTimeout(copyTimeoutRef.current)
-      }
+      if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current)
       copyTimeoutRef.current = window.setTimeout(() => setCopiedField(null), 1500)
     } catch (err) {
       helper.error(err, strings.COPY_ERROR)
     }
-  }
+  }, [])
 
-  const renderAvatarCell = (params: GridRenderCellParams<bookcarsTypes.User, string>) => {
-    const row = params.row
+  const renderAvatarCell = useCallback((params: GridRenderCellParams<bookcarsTypes.User, string>) => {
+    const { row } = params
     const avatarUrl = row.avatar
       ? (row.avatar.startsWith('http') ? row.avatar : bookcarsHelper.joinURL(env.CDN_USERS, row.avatar))
       : ''
 
-    const avatar = row.avatar ? (
-      <Avatar src={avatarUrl} className="us-avatar-small" alt={row.fullName} />
-    ) : (
-      <Avatar className="us-avatar-small">{row.fullName?.[0]?.toUpperCase()}</Avatar>
-    )
+    const avatar = row.avatar
+      ? <Avatar src={avatarUrl} className="us-avatar-small" alt={row.fullName} />
+      : <Avatar className="us-avatar-small">{row.fullName?.[0]?.toUpperCase()}</Avatar>
 
     return (
       <Stack direction="row" spacing={2} alignItems="center" className="us-user-cell">
@@ -443,25 +413,21 @@ const UserList = ({
         </Box>
       </Stack>
     )
-  }
+  }, [])
 
-  const renderCopyCell = (
+  const renderCopyCell = useCallback((
     params: GridRenderCellParams<bookcarsTypes.User, string>,
     field: 'email' | 'phone',
   ) => {
     const value = params.value || ''
-    if (!value) {
-      return <Typography variant="body2" color="text.secondary">—</Typography>
-    }
+    if (!value) return <Typography variant="body2" color="text.secondary">—</Typography>
 
     const fieldId = `${field}-${params.row._id}`
-    const copied = copiedField === fieldId
+    const copied = copiedFieldRef.current === fieldId
 
     return (
       <Stack direction="row" spacing={1} alignItems="center" className="us-copy-cell">
-        <Typography variant="body2" color="text.primary">
-          {value}
-        </Typography>
+        <Typography variant="body2" color="text.primary">{value}</Typography>
         <Tooltip title={copied ? strings.COPIED_TO_CLIPBOARD : strings.COPY_TO_CLIPBOARD}>
           <span>
             <IconButton
@@ -478,12 +444,11 @@ const UserList = ({
         </Tooltip>
       </Stack>
     )
-  }
+  }, [copyToClipboard])
 
-  const renderRolePill = (params: GridRenderCellParams<bookcarsTypes.User, string>) => {
+  const renderRolePill = useCallback((params: GridRenderCellParams<bookcarsTypes.User, string>) => {
     let label = strings.CLIENT_LABEL
     let className = 'us-pill us-pill--role-client'
-
     if (params.value === bookcarsTypes.UserType.Admin) {
       label = commonStrings.ADMIN
       className = 'us-pill us-pill--role-admin'
@@ -491,16 +456,15 @@ const UserList = ({
       label = commonStrings.SUPPLIER
       className = 'us-pill us-pill--role-supplier'
     }
-
     return (
       <Box className={className} component="span">
         <span className="us-pill__dot" />
         {label}
       </Box>
     )
-  }
+  }, [])
 
-  const renderStatusPill = (
+  const renderStatusPill = useCallback((
     condition: boolean | undefined,
     truthyLabel: string,
     falsyLabel: string,
@@ -511,7 +475,17 @@ const UserList = ({
       <span className="us-pill__dot" />
       {condition ? truthyLabel : falsyLabel}
     </Box>
-  )
+  ), [])
+
+  const computedVisibilityModel = useMemo<GridColumnVisibilityModel>(() => {
+    const model: GridColumnVisibilityModel = { ...internalVisibilityModel }
+    if (isTablet) {
+      model.lastLoginAt = false
+      if (admin) model.blacklisted = false
+    }
+    if (isMobile) model.phone = false
+    return model
+  }, [admin, internalVisibilityModel, isMobile, isTablet])
 
   const columns = useMemo<GridColDef<bookcarsTypes.User>[]>(() => {
     const baseColumns: GridColDef<bookcarsTypes.User>[] = [
@@ -570,7 +544,8 @@ const UserList = ({
         headerName: strings.LAST_LOGIN_COLUMN,
         flex: 0.7,
         minWidth: 180,
-        valueFormatter: ({ value }) => formatLastLoginValue(value as string | Date | null | undefined),
+        valueGetter: (params) => params ?? null,
+        valueFormatter: (params) => formatLastLoginValue(params as any),
         sortable: true,
       },
       {
@@ -580,9 +555,7 @@ const UserList = ({
         minWidth: 140,
         renderCell: ({ row }) => {
           const count = row.reviewCount ?? row.reviews?.length ?? 0
-          if (count === 0) {
-            return <Typography variant="body2">0</Typography>
-          }
+          if (count === 0) return <Typography variant="body2">0</Typography>
           return (
             <Button
               size="small"
@@ -635,7 +608,7 @@ const UserList = ({
     }
 
     return baseColumns
-  }, [admin, onReviewsClick])
+  }, [admin, onReviewsClick, renderAvatarCell, renderCopyCell, renderRolePill, renderStatusPill])
 
   const handleSortModelChange = (model: GridSortModel) => {
     const nextModel = model.length > 0 ? [model[0]] : []
@@ -651,12 +624,36 @@ const UserList = ({
 
   const handlePaginationChange = (model: { page: number; pageSize: number }) => {
     setPaginationModel(model)
-
     const nextDensity: GridDensity = model.pageSize > 50 ? 'compact' : 'comfortable'
     if (nextDensity !== internalDensity) {
       setInternalDensity(nextDensity)
       onDensityChange?.(nextDensity)
     }
+  }
+
+  const displayedCount = rows.length
+  const totalPages = Math.max(1, Math.ceil(rowCount / paginationModel.pageSize))
+  const summaryLabel = useMemo(
+    () =>
+      usersPageStrings.formatString(
+        usersPageStrings.RESULTS_PAGE_SUMMARY,
+        displayedCount.toLocaleString(),
+        rowCount.toLocaleString(),
+      ) as string,
+    [displayedCount, rowCount],
+  )
+
+  const isFirstPage = paginationModel.page === 0
+  const isLastPage = paginationModel.page >= totalPages - 1
+
+  const handlePrevPageClick = () => {
+    if (isFirstPage) return
+    setPaginationModel((prev) => ({ ...prev, page: Math.max(prev.page - 1, 0) }))
+  }
+
+  const handleNextPageClick = () => {
+    if (isLastPage) return
+    setPaginationModel((prev) => ({ ...prev, page: prev.page + 1 }))
   }
 
   return (
@@ -685,44 +682,65 @@ const UserList = ({
         keepNonExistentRowsSelected
         sortModel={internalSortModel}
         onSortModelChange={handleSortModelChange}
-        columnVisibilityModel={internalVisibilityModel}
+        columnVisibilityModel={computedVisibilityModel}
         onColumnVisibilityModelChange={handleVisibilityChange}
         density={internalDensity}
         className="us-data-grid"
         disableColumnFilter
+        hideFooter
+        hideFooterSelectedRowCount
         sx={{
           '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#EFF3FA',
-            borderBottom: '1px solid #E8EEF4',
+            backgroundColor: '#F5F7FB',
+            borderBottom: '1px solid #E0E6ED',
             fontWeight: 600,
+            fontSize: '0.72rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
           },
           '& .MuiDataGrid-row:hover': {
-            backgroundColor: '#F5F7FB',
+            backgroundColor: '#F8FAFC',
+          },
+          '& .MuiDataGrid-withBorderColor': {
+            borderColor: 'rgba(226, 232, 240, 0.9)',
           },
           '& .MuiDataGrid-cell:focus-within, & .MuiDataGrid-columnHeader:focus': {
             outline: 'none',
           },
         }}
-        slots={{
-          noRowsOverlay: () => (
-            <Stack alignItems="center" justifyContent="center" height="100%" spacing={1}>
-              <Typography variant="h6" color="text.primary">
-                {strings.EMPTY_STATE_TITLE}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" align="center" px={4}>
-                {strings.EMPTY_STATE}
-              </Typography>
-            </Stack>
-          ),
-          loadingOverlay: () => (
-            <Stack alignItems="center" justifyContent="center" height="100%" spacing={2}>
-              <Typography variant="body2" color="text.secondary">
-                {strings.LOADING_STATE}
-              </Typography>
-            </Stack>
-          ),
-        }}
+        slots={{ noRowsOverlay: NoRowsOverlay, loadingOverlay: LoadingOverlay }}
       />
+
+      <Box className="us-pagination">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }}>
+          <Box>
+            <Typography variant="body2" color="text.secondary">
+              {summaryLabel}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {strings.formatString(
+                strings.PAGINATION_LABEL,
+                (paginationModel.page + 1).toLocaleString(),
+                totalPages.toLocaleString(),
+              ) as string}
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={1.5} alignItems="center" ml={{ xs: 0, sm: 'auto' }}>
+            <Button variant="outlined" size="small" onClick={handlePrevPageClick} disabled={isFirstPage || loading}>
+              {usersPageStrings.PAGINATION_PREVIOUS}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              color="primary"
+              onClick={handleNextPageClick}
+              disabled={isLastPage || loading}
+            >
+              {usersPageStrings.PAGINATION_NEXT}
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
 
       <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
         <MenuItem component={Link} href={`/user?u=${menuRow?._id}`} onClick={closeMenu}>

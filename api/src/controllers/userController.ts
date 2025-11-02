@@ -1772,6 +1772,7 @@ export const getUsers = async (req: Request, res: Response) => {
             birthDate: 1,
             customerId: 1,
             active: 1,
+            lastLoginAt: { $ifNull: ['$lastLoginAt', null] },
           },
         },
         {

@@ -3,7 +3,6 @@ import {
   Alert,
   Badge,
   Box,
-  Breadcrumbs,
   Button,
   CircularProgress,
   Container,
@@ -11,17 +10,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Grid,
-  IconButton,
-  Link as MuiLink,
   Stack,
   Tooltip,
   Typography,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined'
-import BookmarkBorderOutlinedIcon from '@mui/icons-material/BookmarkBorderOutlined'
-import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined'
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
+import RotateLeftRoundedIcon from '@mui/icons-material/RotateLeftRounded'
 import { GridColumnVisibilityModel, GridDensity, GridSortModel } from '@mui/x-data-grid'
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
@@ -50,6 +46,13 @@ interface ConfirmState {
   onConfirm: () => Promise<void>
 }
 
+interface PageSummaryState {
+  from: number
+  to: number
+  total: number
+  pageSize: number
+}
+
 const adminDefaultRoles = [
   bookcarsTypes.UserType.Admin,
   bookcarsTypes.UserType.Supplier,
@@ -74,9 +77,8 @@ const sanitizeRoles = (roles: bookcarsTypes.UserType[], isAdmin: boolean) => {
 const countActiveFilters = (filters: UsersFiltersState, isAdmin: boolean) => {
   let count = 0
   const defaultRoles = isAdmin ? adminDefaultRoles : agencyDefaultRoles
-  const rolesDiff =
-    filters.roles.length > 0 &&
-    (filters.roles.length !== defaultRoles.length || filters.roles.some((role) => !defaultRoles.includes(role)))
+  const rolesDiff = filters.roles.length > 0
+    && (filters.roles.length !== defaultRoles.length || filters.roles.some((role) => !defaultRoles.includes(role)))
 
   if (rolesDiff) {
     count += 1
@@ -120,6 +122,7 @@ const Users = () => {
   const [refreshToken, setRefreshToken] = useState(0)
   const [selectionResetKey, setSelectionResetKey] = useState(0)
   const [totalUsers, setTotalUsers] = useState(0)
+  const [pageSummary, setPageSummary] = useState<PageSummaryState>({ from: 0, to: 0, total: 0, pageSize: 0 })
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [reviewsOpen, setReviewsOpen] = useState(false)
@@ -129,6 +132,7 @@ const Users = () => {
   const [columnVisibilityModel, setColumnVisibilityModel] = useState<GridColumnVisibilityModel>(defaultVisibilityModel)
   const [density, setDensity] = useState<GridDensity>(defaultDensity)
   const [unsavedChanges, setUnsavedChanges] = useState(false)
+  const [listLoading, setListLoading] = useState(false)
 
   useEffect(() => {
     try {
@@ -252,9 +256,17 @@ const Users = () => {
     setUnsavedChanges(true)
   }
 
-  const handleSelectionChange = (nextSelection: { ids: string[]; rows: bookcarsTypes.User[] }) => {
+  const handleSelectionChange = useCallback((nextSelection: { ids: string[]; rows: bookcarsTypes.User[] }) => {
     setSelection(nextSelection)
-  }
+  }, [])
+
+  const handleListLoadingChange = useCallback((value: boolean) => {
+    setListLoading(value)
+  }, [])
+
+  const handlePageSummaryChange = useCallback((summary: PageSummaryState) => {
+    setPageSummary(summary)
+  }, [])
 
   const handleReviewsClick = (selectedUser: bookcarsTypes.User) => {
     setReviewsUser(selectedUser)
@@ -360,6 +372,28 @@ const Users = () => {
 
   const filtersCount = useMemo(() => countActiveFilters(filters, admin), [filters, admin])
 
+  const filtersLabel = useMemo(
+    () =>
+      (filtersCount > 0
+        ? strings.formatString(strings.FILTERS_BUTTON_COUNT, filtersCount) ?? strings.FILTERS_BUTTON
+        : strings.FILTERS_BUTTON) as string,
+    [filtersCount],
+  )
+
+  const summaryLabel = useMemo(() => {
+    const displayed = pageSummary.to >= pageSummary.from && pageSummary.to > 0
+        ? pageSummary.to - pageSummary.from + 1
+        : pageSummary.total > 0 && pageSummary.pageSize > 0
+          ? Math.min(pageSummary.pageSize, pageSummary.total)
+          : 0
+
+    return strings.formatString(
+      strings.RESULTS_PAGE_SUMMARY,
+      displayed.toLocaleString(),
+      pageSummary.total.toLocaleString(),
+    ) as string
+  }, [pageSummary])
+
   const handleSaveView = () => {
     const state: UsersPersistedState = {
       keyword,
@@ -409,27 +443,25 @@ const Users = () => {
       {user && (
         <Box className="users-page-wrapper">
           <Container maxWidth="xl" className="users-page">
-            <Box className="users-header">
-              <Breadcrumbs className="users-breadcrumbs">
-                <MuiLink color="inherit" href="/">
-                  {strings.BREADCRUMB_HOME}
-                </MuiLink>
-                <Typography color="text.secondary">{strings.BREADCRUMB_ADMIN}</Typography>
-                <Typography color="text.primary">{strings.BREADCRUMB_USERS}</Typography>
-              </Breadcrumbs>
-              <Box>
-                <Typography variant="h4" fontWeight={700} color="text.primary">
-                  {strings.PAGE_TITLE}
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  {strings.PAGE_SUBTITLE}
-                </Typography>
-              </Box>
+            <Box className="users-hero">
+              <Stack direction="row" spacing={2.5} alignItems="center">
+                <Box className="users-hero__icon" aria-hidden>
+                  👥
+                </Box>
+                <Box>
+                  <Typography variant="h3" fontWeight={700} color="text.primary">
+                    {strings.PAGE_TITLE}
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    {strings.PAGE_SUBTITLE}
+                  </Typography>
+                </Box>
+              </Stack>
             </Box>
 
             {admin && (
               <Box className="users-stats-section">
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Stack direction="row" justifyContent="space-between" alignItems="center" className="users-section-header">
                   <Typography variant="h5" fontWeight={700} color="text.primary">
                     {strings.STATS_TITLE}
                   </Typography>
@@ -452,31 +484,41 @@ const Users = () => {
             )}
 
             <Box className="users-toolbar-container">
-              <Box className="users-toolbar">
+              <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                spacing={{ xs: 2, md: 3 }}
+                alignItems={{ xs: 'stretch', md: 'center' }}
+                className="users-toolbar"
+              >
                 <Box className="users-toolbar__search">
-                  <Search onSubmit={handleSearch} className="users-search" initialValue={keyword} />
+                  <Search
+                    onSubmit={handleSearch}
+                    className="users-search"
+                    initialValue={keyword}
+                    placeholder={strings.SEARCH_PLACEHOLDER}
+                  />
                 </Box>
-                <Box className="users-toolbar__actions">
-                  <Badge
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={{ xs: 1.5, sm: 1.5 }}
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                  justifyContent="flex-end"
+                  className="users-toolbar__actions"
+                >
+                  <Button
+                    variant="outlined"
+                    startIcon={<FilterAltOutlinedIcon />}
+                    onClick={() => setFiltersOpen(true)}
                     color="primary"
-                    badgeContent={filtersCount}
-                    overlap="circular"
-                    invisible={filtersCount === 0}
                   >
-                    <Button
-                      variant="outlined"
-                      startIcon={<FilterAltOutlinedIcon />}
-                      onClick={() => setFiltersOpen(true)}
-                    >
-                      {strings.FILTERS_BUTTON}
-                    </Button>
-                  </Badge>
+                    {filtersLabel}
+                  </Button>
                   <Tooltip title={strings.SAVE_VIEW} disableHoverListener={!unsavedChanges}>
                     <span>
                       <Badge color="secondary" variant="dot" invisible={!unsavedChanges} overlap="circular">
                         <Button
                           variant="outlined"
-                          startIcon={<BookmarkBorderOutlinedIcon />}
+                          startIcon={<SaveOutlinedIcon />}
                           onClick={handleSaveView}
                           disabled={!unsavedChanges}
                         >
@@ -485,13 +527,9 @@ const Users = () => {
                       </Badge>
                     </span>
                   </Tooltip>
-                  <Tooltip title={strings.RESET_VIEW}>
-                    <span>
-                      <IconButton onClick={handleResetView}>
-                        <RefreshOutlinedIcon />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
+                  <Button variant="text" startIcon={<RotateLeftRoundedIcon />} onClick={handleResetView}>
+                    {strings.RESET_VIEW}
+                  </Button>
                   <Tooltip
                     title={strings.ADMIN_ONLY_ACTION}
                     placement="top"
@@ -514,27 +552,28 @@ const Users = () => {
                       </Button>
                     </span>
                   </Tooltip>
-                </Box>
-              </Box>
+                </Stack>
+              </Stack>
             </Box>
 
-            <Grid container justifyContent="space-between" alignItems="center" className="users-meta">
-              <Grid item>
-                <Typography variant="body2" color="text.secondary">
+            <Box className="users-meta">
+              <Box>
+                <Typography variant="body2" color="text.primary">
                   {resultsLabel}
                 </Typography>
-              </Grid>
-              {actionLoading && (
-                <Grid item>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <CircularProgress size={16} />
-                    <Typography variant="caption" color="text.secondary">
-                      {commonStrings.PLEASE_WAIT}
-                    </Typography>
-                  </Stack>
-                </Grid>
+                <Typography variant="caption" color="text.secondary">
+                  {summaryLabel}
+                </Typography>
+              </Box>
+              {(listLoading || actionLoading) && (
+                <Stack direction="row" spacing={1} alignItems="center" className="users-meta__loading">
+                  <CircularProgress size={16} />
+                  <Typography variant="caption" color="text.secondary">
+                    {commonStrings.PLEASE_WAIT}
+                  </Typography>
+                </Stack>
               )}
-            </Grid>
+            </Box>
 
             <UserList
               user={user}
@@ -552,6 +591,8 @@ const Users = () => {
               onSelectionChange={handleSelectionChange}
               onReviewsClick={handleReviewsClick}
               onTotalChange={setTotalUsers}
+              onLoadingChange={handleListLoadingChange}
+              onPageSummaryChange={handlePageSummaryChange}
             />
           </Container>
 

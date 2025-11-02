@@ -5,6 +5,13 @@
   padding: 0;
 }
 
+.us-data-grid {
+  border-radius: 18px;
+  border: 1px solid #e8eef4;
+  background: #fff;
+  overflow: hidden;
+}
+
 .us-user-link {
   color: #0d47a1;
   text-decoration: none;
@@ -18,101 +25,109 @@
   width: 40px;
   height: 40px;
   font-weight: 600;
-  background-color: #1976d2;
+  background-color: #e3ebf7;
+  color: #0f2647;
 }
 
-.us-status-icon {
-  width: 18px;
-  height: 18px;
+.us-user-cell {
+  min-width: 0;
 }
 
-.us-status-icon--verified {
-  color: #b2ff59;
+.us-user-statuses {
+  margin-top: 4px;
 }
 
-.us-status-icon--pending {
-  color: #ffb300;
+.us-status-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(99, 112, 131, 0.12);
+  color: #637083;
 }
 
-.us-status-icon--active {
+.us-status-dot--success {
+  background-color: rgba(46, 125, 50, 0.12);
   color: #2e7d32;
 }
 
-.us-status-icon--inactive {
-  color: #c62828;
+.us-status-dot--warning {
+  background-color: rgba(255, 167, 38, 0.12);
+  color: #f57c00;
 }
 
-.us-status-icon--blacklisted {
+.us-status-dot--danger {
+  background-color: rgba(211, 47, 47, 0.12);
   color: #d32f2f;
 }
 
-.us-role-chip {
+.us-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #fff;
+  text-transform: uppercase;
 }
 
-.us-role-chip--admin {
-  background-color: #0d47a1 !important;
+.us-pill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  display: inline-flex;
 }
 
-.us-role-chip--supplier {
-  background-color: #ff6b35 !important;
+.us-pill--success {
+  background-color: rgba(46, 125, 50, 0.12);
+  color: #2e7d32;
 }
 
-.us-role-chip--client {
-  background-color: #2e7d32 !important;
+.us-pill--danger {
+  background-color: rgba(211, 47, 47, 0.12);
+  color: #d32f2f;
 }
 
-.us-flag-chip {
-  font-weight: 600;
-  color: #fff !important;
+.us-pill--neutral {
+  background-color: rgba(99, 112, 131, 0.12);
+  color: #637083;
 }
 
-.us-flag-chip--verified {
-  background-color: #2e7d32 !important;
+.us-pill--role-admin {
+  background-color: rgba(13, 71, 161, 0.12);
+  color: #0d47a1;
 }
 
-.us-flag-chip--unverified {
-  background-color: #c62828 !important;
+.us-pill--role-supplier {
+  background-color: rgba(255, 143, 61, 0.12);
+  color: #ff6b35;
 }
 
-.us-flag-chip--active {
-  background-color: #2e7d32 !important;
+.us-pill--role-client {
+  background-color: rgba(46, 125, 50, 0.12);
+  color: #2e7d32;
 }
 
-.us-flag-chip--inactive {
-  background-color: #c62828 !important;
+.us-copy-cell {
+  opacity: 0.85;
 }
 
-.us-flag-chip--blacklisted {
-  background-color: #d32f2f !important;
+.us-copy-cell .MuiIconButton-root {
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
-.us-flag-chip--neutral {
-  background-color: #607d8b !important;
-}
-
-.us-list .MuiDataGrid-root {
-  border-radius: 16px;
-  border: 1px solid #e0e0e0;
-  overflow: hidden;
-}
-
-.us-list .MuiDataGrid-cell:focus {
-  outline: none;
-}
-
-.us-list .MuiDataGrid-columnHeaders {
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.us-list .MuiDataGrid-row:hover {
-  background-color: rgba(25, 118, 210, 0.04);
+.us-copy-cell:hover .MuiIconButton-root,
+.us-copy-cell:focus-within .MuiIconButton-root {
+  opacity: 1;
 }
 
 @media (max-width: 600px) {
-  .us-list .MuiDataGrid-root {
-    border: none;
-    border-radius: 0;
+  .us-data-grid {
+    border-radius: 12px;
   }
 }

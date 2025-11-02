@@ -1,37 +1,41 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   DataGrid,
   GridColDef,
+  GridColumnVisibilityModel,
+  GridDensity,
   GridRenderCellParams,
   GridRowSelectionModel,
+  GridSortModel,
 } from '@mui/x-data-grid'
 import {
   Alert,
   Avatar,
   Box,
-  Chip,
+  Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   IconButton,
   Link,
+  Menu,
+  MenuItem,
   Stack,
   Tooltip,
   Typography,
-  Button,
 } from '@mui/material'
 import {
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-  Launch as ViewIcon,
-  LockReset as ResetPasswordIcon,
-  Reviews as ReviewsIcon,
-  Verified as VerifiedIcon,
-  HourglassEmpty as PendingIcon,
-  Block as BlockIcon,
-  DoDisturb as InactiveIcon,
-  PlayArrow as ActiveIcon,
+  CheckCircleOutline,
+  HighlightOff,
+  Block,
+  MoreVert,
+  Launch,
+  EditOutlined,
+  LockReset,
+  DeleteOutline,
+  ContentCopy,
+  Reviews,
 } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -51,6 +55,12 @@ interface UserListProps {
   admin: boolean
   refreshToken: number
   selectionResetKey: number
+  sortModel: GridSortModel
+  onSortModelChange: (model: GridSortModel) => void
+  columnVisibilityModel: GridColumnVisibilityModel
+  onColumnVisibilityModelChange: (model: GridColumnVisibilityModel) => void
+  density: GridDensity
+  onDensityChange?: (density: GridDensity) => void
   onSelectionChange: (selection: { ids: string[]; rows: bookcarsTypes.User[] }) => void
   onReviewsClick: (user: bookcarsTypes.User) => void
   onTotalChange?: (total: number) => void
@@ -78,7 +88,51 @@ export const formatLastLoginValue = (value?: string | Date | null | undefined) =
     return strings.NEVER_LOGGED_IN
   }
 
-  return date.toLocaleString()
+  return new Intl.DateTimeFormat(undefined, {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
+const sortRows = (rows: bookcarsTypes.User[], model: GridSortModel) => {
+  if (!model || model.length === 0) {
+    return rows
+  }
+
+  const [{ field, sort }] = model
+  if (!sort) {
+    return rows
+  }
+
+  const sorted = [...rows]
+
+  sorted.sort((a, b) => {
+    const direction = sort === 'asc' ? 1 : -1
+
+    if (field === 'lastLoginAt') {
+      const aDate = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0
+      const bDate = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0
+      return (aDate - bDate) * direction
+    }
+
+    if (field === 'fullName') {
+      const aName = (a.fullName || '').toLowerCase()
+      const bName = (b.fullName || '').toLowerCase()
+      if (aName < bName) {
+        return -1 * direction
+      }
+      if (aName > bName) {
+        return 1 * direction
+      }
+      return 0
+    }
+
+    return 0
+  })
+
+  return sorted
 }
 
 const UserList = ({
@@ -88,6 +142,12 @@ const UserList = ({
   admin,
   refreshToken,
   selectionResetKey,
+  sortModel,
+  onSortModelChange,
+  columnVisibilityModel,
+  onColumnVisibilityModelChange,
+  density,
+  onDensityChange,
   onSelectionChange,
   onReviewsClick,
   onTotalChange,
@@ -104,6 +164,33 @@ const UserList = ({
   const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([])
   const [selectedUsersMap, setSelectedUsersMap] = useState<Record<string, bookcarsTypes.User>>({})
   const [deleteTarget, setDeleteTarget] = useState<bookcarsTypes.User>()
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
+  const [menuRow, setMenuRow] = useState<bookcarsTypes.User>()
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+  const copyTimeoutRef = useRef<number>()
+  const [internalSortModel, setInternalSortModel] = useState<GridSortModel>(sortModel)
+  const [internalVisibilityModel, setInternalVisibilityModel] = useState<GridColumnVisibilityModel>(
+    columnVisibilityModel,
+  )
+  const [internalDensity, setInternalDensity] = useState<GridDensity>(density)
+
+  useEffect(() => {
+    setInternalSortModel(sortModel)
+  }, [sortModel])
+
+  useEffect(() => {
+    setInternalVisibilityModel(columnVisibilityModel)
+  }, [columnVisibilityModel])
+
+  useEffect(() => {
+    setInternalDensity(density)
+  }, [density])
+
+  useEffect(() => () => {
+    if (copyTimeoutRef.current) {
+      window.clearTimeout(copyTimeoutRef.current)
+    }
+  }, [])
 
   const types = useMemo(() => {
     if (filters.roles.length > 0) {
@@ -156,9 +243,7 @@ const UserList = ({
     try {
       setLoading(true)
       setError(undefined)
-      if (onLoadingChange) {
-        onLoadingChange(true)
-      }
+      onLoadingChange?.(true)
 
       const response = await UserService.getUsers(
         payload,
@@ -175,16 +260,16 @@ const UserList = ({
         : (result.pageInfo?.totalRecords ?? 0)
 
       const dataRows = result.resultData ?? []
+      const sortedRows = sortRows(dataRows, internalSortModel)
 
-      setRows(dataRows)
+      setRows(sortedRows)
       setRowCount(totalRecords)
       onTotalChange?.(totalRecords)
 
-      // refresh selected map with latest row data
       if (selectionModel.length > 0) {
         setSelectedUsersMap((previous) => {
           const updated = { ...previous }
-          dataRows.forEach((row) => {
+          sortedRows.forEach((row) => {
             if (row._id && selectionModel.includes(row._id)) {
               updated[row._id] = row
             }
@@ -197,9 +282,7 @@ const UserList = ({
       helper.error(err)
     } finally {
       setLoading(false)
-      if (onLoadingChange) {
-        onLoadingChange(false)
-      }
+      onLoadingChange?.(false)
     }
   }, [
     user,
@@ -208,8 +291,9 @@ const UserList = ({
     keyword,
     paginationModel.page,
     paginationModel.pageSize,
-    onTotalChange,
+    internalSortModel,
     selectionModel,
+    onTotalChange,
     onLoadingChange,
   ])
 
@@ -225,7 +309,15 @@ const UserList = ({
     setSelectionModel([])
     setSelectedUsersMap({})
     onSelectionChange({ ids: [], rows: [] })
-  }, [selectionResetKey])
+  }, [selectionResetKey, onSelectionChange])
+
+  useEffect(() => {
+    if (!admin) {
+      setSelectionModel([])
+      setSelectedUsersMap({})
+      onSelectionChange({ ids: [], rows: [] })
+    }
+  }, [admin, onSelectionChange])
 
   const handleSelectionChange = (newSelection: GridRowSelectionModel) => {
     const ids = newSelection.map((id) => id.toString())
@@ -286,6 +378,28 @@ const UserList = ({
     }
   }
 
+  const closeMenu = () => {
+    setMenuAnchor(null)
+    setMenuRow(undefined)
+  }
+
+  const copyToClipboard = async (value: string, fieldId: string) => {
+    try {
+      if (!navigator?.clipboard?.writeText) {
+        helper.error(undefined, strings.COPY_ERROR)
+        return
+      }
+      await navigator.clipboard.writeText(value)
+      setCopiedField(fieldId)
+      if (copyTimeoutRef.current) {
+        window.clearTimeout(copyTimeoutRef.current)
+      }
+      copyTimeoutRef.current = window.setTimeout(() => setCopiedField(null), 1500)
+    } catch (err) {
+      helper.error(err, strings.COPY_ERROR)
+    }
+  }
+
   const renderAvatarCell = (params: GridRenderCellParams<bookcarsTypes.User, string>) => {
     const row = params.row
     const avatarUrl = row.avatar
@@ -299,7 +413,7 @@ const UserList = ({
     )
 
     return (
-      <Stack direction="row" spacing={1.5} alignItems="center">
+      <Stack direction="row" spacing={2} alignItems="center" className="us-user-cell">
         {avatar}
         <Box>
           <Link href={`/user?u=${row._id}`} className="us-user-link">
@@ -307,28 +421,22 @@ const UserList = ({
               {params.value}
             </Typography>
           </Link>
-          <Stack direction="row" spacing={1} alignItems="center">
-            {row.verified ? (
-              <Tooltip title={commonStrings.VERIFIED}>
-                <VerifiedIcon className="us-status-icon us-status-icon--verified" />
-              </Tooltip>
-            ) : (
-              <Tooltip title={commonStrings.UNVERIFIED}>
-                <PendingIcon className="us-status-icon us-status-icon--pending" />
-              </Tooltip>
-            )}
-            {row.active ? (
-              <Tooltip title={strings.ACCOUNT_ACTIVE}>
-                <ActiveIcon className="us-status-icon us-status-icon--active" />
-              </Tooltip>
-            ) : (
-              <Tooltip title={strings.ACCOUNT_INACTIVE}>
-                <InactiveIcon className="us-status-icon us-status-icon--inactive" />
-              </Tooltip>
-            )}
+          <Stack direction="row" spacing={1} alignItems="center" className="us-user-statuses">
+            <Tooltip title={row.verified ? strings.ACCOUNT_VERIFIED : strings.ACCOUNT_UNVERIFIED}>
+              <span className={`us-status-dot ${row.verified ? 'us-status-dot--success' : 'us-status-dot--warning'}`}>
+                {row.verified ? <CheckCircleOutline fontSize="small" /> : <HighlightOff fontSize="small" />}
+              </span>
+            </Tooltip>
+            <Tooltip title={row.active ? strings.ACCOUNT_ACTIVE : strings.ACCOUNT_INACTIVE}>
+              <span className={`us-status-dot ${row.active ? 'us-status-dot--success' : 'us-status-dot--danger'}`}>
+                {row.active ? <CheckCircleOutline fontSize="small" /> : <HighlightOff fontSize="small" />}
+              </span>
+            </Tooltip>
             {row.blacklisted && (
               <Tooltip title={strings.BLACKLISTED_STATUS}>
-                <BlockIcon className="us-status-icon us-status-icon--blacklisted" />
+                <span className="us-status-dot us-status-dot--danger">
+                  <Block fontSize="small" />
+                </span>
               </Tooltip>
             )}
           </Stack>
@@ -337,74 +445,124 @@ const UserList = ({
     )
   }
 
-  const renderRoleChip = (params: GridRenderCellParams<bookcarsTypes.User, string>) => {
-    switch (params.value) {
-      case bookcarsTypes.UserType.Admin:
-        return <Chip label={commonStrings.ADMIN} size="small" className="us-role-chip us-role-chip--admin" />
-      case bookcarsTypes.UserType.Supplier:
-        return <Chip label={commonStrings.SUPPLIER} size="small" className="us-role-chip us-role-chip--supplier" />
-      case bookcarsTypes.UserType.User:
-      default:
-        return <Chip label={strings.CLIENT_LABEL} size="small" className="us-role-chip us-role-chip--client" />
+  const renderCopyCell = (
+    params: GridRenderCellParams<bookcarsTypes.User, string>,
+    field: 'email' | 'phone',
+  ) => {
+    const value = params.value || ''
+    if (!value) {
+      return <Typography variant="body2" color="text.secondary">—</Typography>
     }
+
+    const fieldId = `${field}-${params.row._id}`
+    const copied = copiedField === fieldId
+
+    return (
+      <Stack direction="row" spacing={1} alignItems="center" className="us-copy-cell">
+        <Typography variant="body2" color="text.primary">
+          {value}
+        </Typography>
+        <Tooltip title={copied ? strings.COPIED_TO_CLIPBOARD : strings.COPY_TO_CLIPBOARD}>
+          <span>
+            <IconButton
+              size="small"
+              onClick={(event) => {
+                event.stopPropagation()
+                copyToClipboard(value, fieldId)
+              }}
+              aria-label={strings.COPY_ACTION_LABEL}
+            >
+              <ContentCopy fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      </Stack>
+    )
   }
 
-  const renderBooleanBadge = (
+  const renderRolePill = (params: GridRenderCellParams<bookcarsTypes.User, string>) => {
+    let label = strings.CLIENT_LABEL
+    let className = 'us-pill us-pill--role-client'
+
+    if (params.value === bookcarsTypes.UserType.Admin) {
+      label = commonStrings.ADMIN
+      className = 'us-pill us-pill--role-admin'
+    } else if (params.value === bookcarsTypes.UserType.Supplier) {
+      label = commonStrings.SUPPLIER
+      className = 'us-pill us-pill--role-supplier'
+    }
+
+    return (
+      <Box className={className} component="span">
+        <span className="us-pill__dot" />
+        {label}
+      </Box>
+    )
+  }
+
+  const renderStatusPill = (
     condition: boolean | undefined,
     truthyLabel: string,
     falsyLabel: string,
     truthyClass: string,
     falsyClass: string,
   ) => (
-    <Chip
-      label={condition ? truthyLabel : falsyLabel}
-      size="small"
-      className={condition ? truthyClass : falsyClass}
-    />
+    <Box className={`${condition ? truthyClass : falsyClass} us-pill`} component="span">
+      <span className="us-pill__dot" />
+      {condition ? truthyLabel : falsyLabel}
+    </Box>
   )
 
   const columns = useMemo<GridColDef<bookcarsTypes.User>[]>(() => {
     const baseColumns: GridColDef<bookcarsTypes.User>[] = [
       {
         field: 'fullName',
-        headerName: commonStrings.USER,
+        headerName: strings.USER_COLUMN,
         flex: 1.2,
-        minWidth: 220,
+        minWidth: 260,
         renderCell: renderAvatarCell,
+        sortable: true,
       },
       {
         field: 'email',
         headerName: commonStrings.EMAIL,
         flex: 1,
-        minWidth: 180,
+        minWidth: 220,
+        renderCell: (params) => renderCopyCell(params, 'email'),
+        sortable: false,
       },
       {
         field: 'phone',
         headerName: commonStrings.PHONE,
         flex: 0.8,
-        minWidth: 150,
+        minWidth: 180,
+        renderCell: (params) => renderCopyCell(params, 'phone'),
+        sortable: false,
       },
       {
         field: 'type',
         headerName: commonStrings.TYPE,
         flex: 0.6,
         minWidth: 150,
-        renderCell: renderRoleChip,
+        renderCell: renderRolePill,
+        sortable: false,
       },
       {
         field: 'verified',
         headerName: strings.VERIFIED_COLUMN,
-        flex: 0.5,
-        minWidth: 150,
-        renderCell: ({ value }) => renderBooleanBadge(Boolean(value), strings.VERIFIED_SHORT, strings.UNVERIFIED_SHORT, 'us-flag-chip us-flag-chip--verified', 'us-flag-chip us-flag-chip--unverified'),
+        flex: 0.6,
+        minWidth: 140,
+        renderCell: ({ value }) =>
+          renderStatusPill(Boolean(value), strings.VERIFIED_SHORT, strings.UNVERIFIED_SHORT, 'us-pill--success', 'us-pill--neutral'),
         sortable: false,
       },
       {
         field: 'active',
         headerName: strings.ACTIVE_COLUMN,
-        flex: 0.5,
-        minWidth: 150,
-        renderCell: ({ value }) => renderBooleanBadge(Boolean(value), strings.ACTIVE_LABEL, strings.INACTIVE_LABEL, 'us-flag-chip us-flag-chip--active', 'us-flag-chip us-flag-chip--inactive'),
+        flex: 0.6,
+        minWidth: 140,
+        renderCell: ({ value }) =>
+          renderStatusPill(Boolean(value), strings.ACTIVE_LABEL, strings.INACTIVE_LABEL, 'us-pill--success', 'us-pill--danger'),
         sortable: false,
       },
       {
@@ -412,7 +570,8 @@ const UserList = ({
         headerName: strings.LAST_LOGIN_COLUMN,
         flex: 0.7,
         minWidth: 180,
-        valueFormatter: (params) => formatLastLoginValue(params?.value as string | Date | null | undefined),
+        valueFormatter: ({ value }) => formatLastLoginValue(value as string | Date | null | undefined),
+        sortable: true,
       },
       {
         field: 'reviewCount',
@@ -427,7 +586,7 @@ const UserList = ({
           return (
             <Button
               size="small"
-              startIcon={<ReviewsIcon fontSize="small" />}
+              startIcon={<Reviews fontSize="small" />}
               onClick={(event) => {
                 event.stopPropagation()
                 onReviewsClick(row)
@@ -445,42 +604,20 @@ const UserList = ({
         sortable: false,
         filterable: false,
         disableColumnMenu: true,
-        minWidth: 220,
+        minWidth: 80,
+        align: 'right',
         renderCell: ({ row }) => (
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Tooltip title={strings.VIEW_PROFILE}>
-              <IconButton href={`/user?u=${row._id}`} size="small">
-                <ViewIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            {admin && (
-              <Tooltip title={strings.EDIT_USER}>
-                <IconButton href={`/update-user?u=${row._id}`} size="small">
-                  <EditIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-            {admin && (
-              <Tooltip title={strings.RESET_PASSWORD}>
-                <IconButton href={`/reset-password?u=${row._id}`} size="small">
-                  <ResetPasswordIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-            {admin && (
-              <Tooltip title={strings.DELETE_USER_SHORT}>
-                <IconButton
-                  size="small"
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    setDeleteTarget(row)
-                  }}
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Stack>
+          <IconButton
+            size="small"
+            onClick={(event) => {
+              event.stopPropagation()
+              setMenuAnchor(event.currentTarget)
+              setMenuRow(row)
+            }}
+            aria-label={strings.ACTIONS_COLUMN}
+          >
+            <MoreVert fontSize="small" />
+          </IconButton>
         ),
       },
     ]
@@ -489,15 +626,38 @@ const UserList = ({
       baseColumns.splice(6, 0, {
         field: 'blacklisted',
         headerName: strings.BLACKLIST_COLUMN,
-        flex: 0.5,
-        minWidth: 150,
-        renderCell: ({ value }) => renderBooleanBadge(Boolean(value), strings.BLACKLISTED_LABEL, strings.NOT_BLACKLISTED_LABEL, 'us-flag-chip us-flag-chip--blacklisted', 'us-flag-chip us-flag-chip--neutral'),
+        flex: 0.6,
+        minWidth: 140,
+        renderCell: ({ value }) =>
+          renderStatusPill(Boolean(value), strings.BLACKLISTED_LABEL, strings.NOT_BLACKLISTED_LABEL, 'us-pill--danger', 'us-pill--neutral'),
         sortable: false,
       })
     }
 
     return baseColumns
   }, [admin, onReviewsClick])
+
+  const handleSortModelChange = (model: GridSortModel) => {
+    const nextModel = model.length > 0 ? [model[0]] : []
+    setInternalSortModel(nextModel)
+    onSortModelChange(nextModel)
+    setRows((current) => sortRows(current, nextModel))
+  }
+
+  const handleVisibilityChange = (model: GridColumnVisibilityModel) => {
+    setInternalVisibilityModel(model)
+    onColumnVisibilityModelChange(model)
+  }
+
+  const handlePaginationChange = (model: { page: number; pageSize: number }) => {
+    setPaginationModel(model)
+
+    const nextDensity: GridDensity = model.pageSize > 50 ? 'compact' : 'comfortable'
+    if (nextDensity !== internalDensity) {
+      setInternalDensity(nextDensity)
+      onDensityChange?.(nextDensity)
+    }
+  }
 
   return (
     <Box className="us-list">
@@ -517,31 +677,45 @@ const UserList = ({
         pagination
         paginationMode="server"
         paginationModel={paginationModel}
-        onPaginationModelChange={setPaginationModel}
+        onPaginationModelChange={handlePaginationChange}
         pageSizeOptions={[env.PAGE_SIZE, 25, 50, 100]}
         loading={loading}
         rowSelectionModel={selectionModel}
         onRowSelectionModelChange={handleSelectionChange}
         keepNonExistentRowsSelected
+        sortModel={internalSortModel}
+        onSortModelChange={handleSortModelChange}
+        columnVisibilityModel={internalVisibilityModel}
+        onColumnVisibilityModelChange={handleVisibilityChange}
+        density={internalDensity}
+        className="us-data-grid"
+        disableColumnFilter
         sx={{
           '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#f5f7fb',
+            backgroundColor: '#EFF3FA',
+            borderBottom: '1px solid #E8EEF4',
             fontWeight: 600,
           },
-          '& .MuiDataGrid-virtualScroller': {
-            backgroundColor: '#fff',
+          '& .MuiDataGrid-row:hover': {
+            backgroundColor: '#F5F7FB',
+          },
+          '& .MuiDataGrid-cell:focus-within, & .MuiDataGrid-columnHeader:focus': {
+            outline: 'none',
           },
         }}
         slots={{
           noRowsOverlay: () => (
-            <Stack alignItems="center" justifyContent="center" height="100%">
-              <Typography variant="body2" color="text.secondary">
+            <Stack alignItems="center" justifyContent="center" height="100%" spacing={1}>
+              <Typography variant="h6" color="text.primary">
+                {strings.EMPTY_STATE_TITLE}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" align="center" px={4}>
                 {strings.EMPTY_STATE}
               </Typography>
             </Stack>
           ),
           loadingOverlay: () => (
-            <Stack alignItems="center" justifyContent="center" height="100%">
+            <Stack alignItems="center" justifyContent="center" height="100%" spacing={2}>
               <Typography variant="body2" color="text.secondary">
                 {strings.LOADING_STATE}
               </Typography>
@@ -550,11 +724,39 @@ const UserList = ({
         }}
       />
 
+      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <MenuItem component={Link} href={`/user?u=${menuRow?._id}`} onClick={closeMenu}>
+          <Launch fontSize="small" sx={{ mr: 1 }} />
+          {strings.VIEW_PROFILE}
+        </MenuItem>
+        {admin && (
+          <MenuItem component={Link} href={`/update-user?u=${menuRow?._id}`} onClick={closeMenu}>
+            <EditOutlined fontSize="small" sx={{ mr: 1 }} />
+            {strings.EDIT_USER}
+          </MenuItem>
+        )}
+        {admin && (
+          <MenuItem component={Link} href={`/reset-password?u=${menuRow?._id}`} onClick={closeMenu}>
+            <LockReset fontSize="small" sx={{ mr: 1 }} />
+            {strings.RESET_PASSWORD}
+          </MenuItem>
+        )}
+        {admin && (
+          <MenuItem
+            onClick={() => {
+              closeMenu()
+              setDeleteTarget(menuRow)
+            }}
+          >
+            <DeleteOutline fontSize="small" sx={{ mr: 1 }} />
+            {strings.DELETE_USER_SHORT}
+          </MenuItem>
+        )}
+      </Menu>
+
       <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(undefined)} maxWidth="xs" fullWidth>
         <DialogTitle className="dialog-header">{commonStrings.CONFIRM_TITLE}</DialogTitle>
-        <DialogContent className="dialog-content">
-          {strings.DELETE_USER}
-        </DialogContent>
+        <DialogContent className="dialog-content">{strings.DELETE_USER}</DialogContent>
         <DialogActions className="dialog-actions">
           <Button onClick={() => setDeleteTarget(undefined)} variant="contained" className="btn-secondary">
             {commonStrings.CANCEL}

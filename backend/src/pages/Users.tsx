@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Alert,
+  Badge,
   Box,
+  Breadcrumbs,
   Button,
   CircularProgress,
   Container,
@@ -10,11 +12,17 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
+  IconButton,
+  Link as MuiLink,
   Stack,
   Tooltip,
   Typography,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
+import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined'
+import BookmarkBorderOutlinedIcon from '@mui/icons-material/BookmarkBorderOutlined'
+import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined'
+import { GridColumnVisibilityModel, GridDensity, GridSortModel } from '@mui/x-data-grid'
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
 import Search from '@/components/Search'
@@ -53,10 +61,50 @@ const agencyDefaultRoles = [
   bookcarsTypes.UserType.User,
 ]
 
+const defaultSortModel: GridSortModel = [{ field: 'lastLoginAt', sort: 'desc' }]
+const defaultVisibilityModel: GridColumnVisibilityModel = {}
+const defaultDensity: GridDensity = 'comfortable'
+
 const sanitizeRoles = (roles: bookcarsTypes.UserType[], isAdmin: boolean) => {
   const allowed = isAdmin ? adminDefaultRoles : agencyDefaultRoles
   const sanitized = roles.filter((role) => allowed.includes(role))
   return sanitized.length > 0 ? sanitized : allowed
+}
+
+const countActiveFilters = (filters: UsersFiltersState, isAdmin: boolean) => {
+  let count = 0
+  const defaultRoles = isAdmin ? adminDefaultRoles : agencyDefaultRoles
+  const rolesDiff =
+    filters.roles.length > 0 &&
+    (filters.roles.length !== defaultRoles.length || filters.roles.some((role) => !defaultRoles.includes(role)))
+
+  if (rolesDiff) {
+    count += 1
+  }
+
+  if (filters.verification.length > 0) {
+    count += 1
+  }
+
+  if (filters.activity.length > 0) {
+    count += 1
+  }
+
+  if (isAdmin) {
+    if (filters.blacklisted !== 'all') {
+      count += 1
+    }
+
+    if (filters.agencyId) {
+      count += 1
+    }
+
+    if (filters.lastLoginFrom || filters.lastLoginTo) {
+      count += 1
+    }
+  }
+
+  return count
 }
 
 const Users = () => {
@@ -76,6 +124,11 @@ const Users = () => {
   const [actionLoading, setActionLoading] = useState(false)
   const [reviewsOpen, setReviewsOpen] = useState(false)
   const [reviewsUser, setReviewsUser] = useState<bookcarsTypes.User>()
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [sortModel, setSortModel] = useState<GridSortModel>(defaultSortModel)
+  const [columnVisibilityModel, setColumnVisibilityModel] = useState<GridColumnVisibilityModel>(defaultVisibilityModel)
+  const [density, setDensity] = useState<GridDensity>(defaultDensity)
+  const [unsavedChanges, setUnsavedChanges] = useState(false)
 
   useEffect(() => {
     try {
@@ -83,7 +136,18 @@ const Users = () => {
       if (persistedRaw) {
         const persisted = JSON.parse(persistedRaw) as UsersPersistedState
         setKeyword(persisted.keyword || '')
-        setFilters(persisted.filters || defaultUsersFiltersState)
+        if (persisted.filters) {
+          setFilters(persisted.filters)
+        }
+        if (persisted.sortModel) {
+          setSortModel(persisted.sortModel)
+        }
+        if (persisted.columnVisibilityModel) {
+          setColumnVisibilityModel(persisted.columnVisibilityModel)
+        }
+        if (persisted.density) {
+          setDensity(persisted.density)
+        }
       }
     } catch (err) {
       helper.error(err)
@@ -92,9 +156,11 @@ const Users = () => {
 
   useEffect(() => {
     if (user) {
+      const isAdmin = helper.admin(user)
+      setAdmin(isAdmin)
       setFilters((prev) => ({
         ...prev,
-        roles: sanitizeRoles(prev.roles, admin),
+        roles: sanitizeRoles(prev.roles, isAdmin),
       }))
     }
   }, [admin, user])
@@ -110,14 +176,6 @@ const Users = () => {
       }))
     }
   }, [admin])
-
-  useEffect(() => {
-    const state: UsersPersistedState = {
-      keyword,
-      filters,
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  }, [keyword, filters])
 
   const reloadStats = useCallback(async () => {
     if (!admin) {
@@ -172,11 +230,17 @@ const Users = () => {
   const handleSearch = (value: string) => {
     setKeyword(value)
     setSelectionResetKey((prev) => prev + 1)
+    setUnsavedChanges(true)
   }
 
-  const handleFiltersChange = (nextFilters: UsersFiltersState) => {
-    setFilters(nextFilters)
+  const handleFiltersApply = (nextFilters: UsersFiltersState) => {
+    setFilters({
+      ...nextFilters,
+      roles: sanitizeRoles(nextFilters.roles, admin),
+    })
     setSelectionResetKey((prev) => prev + 1)
+    setFiltersOpen(false)
+    setUnsavedChanges(true)
   }
 
   const handleResetFilters = () => {
@@ -185,6 +249,7 @@ const Users = () => {
       roles: admin ? adminDefaultRoles : agencyDefaultRoles,
     })
     setSelectionResetKey((prev) => prev + 1)
+    setUnsavedChanges(true)
   }
 
   const handleSelectionChange = (nextSelection: { ids: string[]; rows: bookcarsTypes.User[] }) => {
@@ -293,100 +358,214 @@ const Users = () => {
 
   const resultsLabel = useMemo(() => strings.formatString(strings.RESULTS_COUNT, totalUsers.toLocaleString()) as string, [totalUsers])
 
+  const filtersCount = useMemo(() => countActiveFilters(filters, admin), [filters, admin])
+
+  const handleSaveView = () => {
+    const state: UsersPersistedState = {
+      keyword,
+      filters,
+      sortModel,
+      columnVisibilityModel,
+      density,
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    helper.info(strings.SAVE_VIEW_SUCCESS)
+    setUnsavedChanges(false)
+  }
+
+  const handleResetView = () => {
+    setKeyword('')
+    setFilters({
+      ...defaultUsersFiltersState,
+      roles: admin ? adminDefaultRoles : agencyDefaultRoles,
+    })
+    setSortModel(defaultSortModel)
+    setColumnVisibilityModel(defaultVisibilityModel)
+    setDensity(defaultDensity)
+    setSelectionResetKey((prev) => prev + 1)
+    setRefreshToken((prev) => prev + 1)
+    setUnsavedChanges(false)
+    localStorage.removeItem(STORAGE_KEY)
+    helper.info(strings.RESET_VIEW_SUCCESS)
+  }
+
+  const handleSortModelChange = (model: GridSortModel) => {
+    setSortModel(model)
+    setUnsavedChanges(true)
+  }
+
+  const handleVisibilityChange = (model: GridColumnVisibilityModel) => {
+    setColumnVisibilityModel(model)
+    setUnsavedChanges(true)
+  }
+
+  const handleDensityChange = (value: GridDensity) => {
+    setDensity(value)
+    setUnsavedChanges(true)
+  }
+
   return (
     <Layout onLoad={onLoad} strict>
       {user && (
-        <Container maxWidth="xl" className="users-page">
-          {admin && (
-            <Box className="users-stats">
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h5" fontWeight={700} color="text.primary">
-                  {strings.STATS_TITLE}
+        <Box className="users-page-wrapper">
+          <Container maxWidth="xl" className="users-page">
+            <Box className="users-header">
+              <Breadcrumbs className="users-breadcrumbs">
+                <MuiLink color="inherit" href="/">
+                  {strings.BREADCRUMB_HOME}
+                </MuiLink>
+                <Typography color="text.secondary">{strings.BREADCRUMB_ADMIN}</Typography>
+                <Typography color="text.primary">{strings.BREADCRUMB_USERS}</Typography>
+              </Breadcrumbs>
+              <Box>
+                <Typography variant="h4" fontWeight={700} color="text.primary">
+                  {strings.PAGE_TITLE}
                 </Typography>
-                {statsLoading && <CircularProgress size={20} />}
-              </Stack>
-              {statsError && (
-                <Alert
-                  severity="error"
-                  sx={{ mb: 3 }}
-                  action={(
-                    <Button color="inherit" size="small" onClick={reloadStats}>
-                      {strings.RETRY}
-                    </Button>
-                  )}
-                >
-                  {statsError}
-                </Alert>
-              )}
-              <UsersStatsCards stats={stats} loading={statsLoading} />
+                <Typography variant="body1" color="text.secondary">
+                  {strings.PAGE_SUBTITLE}
+                </Typography>
+              </Box>
             </Box>
-          )}
 
-          <Box className="users-toolbar">
-            <Box className="users-toolbar__search">
-              <Search onSubmit={handleSearch} className="users-search" initialValue={keyword} />
-            </Box>
-            <Tooltip
-              title={strings.ADMIN_ONLY_ACTION}
-              placement="top"
-              arrow
-              disableFocusListener={admin}
-              disableHoverListener={admin}
-              disableTouchListener={admin}
-            >
-              <span>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="medium"
-                  className="users-add"
-                  href="/create-user"
-                  startIcon={<AddIcon />}
-                  disabled={!admin}
-                >
-                  {strings.NEW_USER}
-                </Button>
-              </span>
-            </Tooltip>
-          </Box>
-
-          <UsersFilters
-            admin={admin}
-            filters={filters}
-            agencies={agencies}
-            onChange={handleFiltersChange}
-            onReset={handleResetFilters}
-          />
-
-          <Grid container justifyContent="space-between" alignItems="center" className="users-meta">
-            <Grid item>
-              <Typography variant="body2" color="text.secondary">
-                {resultsLabel}
-              </Typography>
-            </Grid>
-            {actionLoading && (
-              <Grid item>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <CircularProgress size={16} />
-                  <Typography variant="caption" color="text.secondary">
-                    {commonStrings.PLEASE_WAIT}
+            {admin && (
+              <Box className="users-stats-section">
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="h5" fontWeight={700} color="text.primary">
+                    {strings.STATS_TITLE}
                   </Typography>
+                  {statsLoading && <CircularProgress size={20} />}
                 </Stack>
-              </Grid>
+                {statsError && (
+                  <Alert
+                    severity="error"
+                    action={(
+                      <Button color="inherit" size="small" onClick={reloadStats}>
+                        {strings.RETRY}
+                      </Button>
+                    )}
+                  >
+                    {statsError}
+                  </Alert>
+                )}
+                <UsersStatsCards stats={stats} loading={statsLoading} />
+              </Box>
             )}
-          </Grid>
 
-          {admin && (
-            <Box className="users-bulk">
-              <Stack spacing={1.5} mb={2}>
-                <Typography variant="h6" fontWeight={600}>
-                  {strings.BULK_ACTIONS_TITLE}
+            <Box className="users-toolbar-container">
+              <Box className="users-toolbar">
+                <Box className="users-toolbar__search">
+                  <Search onSubmit={handleSearch} className="users-search" initialValue={keyword} />
+                </Box>
+                <Box className="users-toolbar__actions">
+                  <Badge
+                    color="primary"
+                    badgeContent={filtersCount}
+                    overlap="circular"
+                    invisible={filtersCount === 0}
+                  >
+                    <Button
+                      variant="outlined"
+                      startIcon={<FilterAltOutlinedIcon />}
+                      onClick={() => setFiltersOpen(true)}
+                    >
+                      {strings.FILTERS_BUTTON}
+                    </Button>
+                  </Badge>
+                  <Tooltip title={strings.SAVE_VIEW} disableHoverListener={!unsavedChanges}>
+                    <span>
+                      <Badge color="secondary" variant="dot" invisible={!unsavedChanges} overlap="circular">
+                        <Button
+                          variant="outlined"
+                          startIcon={<BookmarkBorderOutlinedIcon />}
+                          onClick={handleSaveView}
+                          disabled={!unsavedChanges}
+                        >
+                          {strings.SAVE_VIEW}
+                        </Button>
+                      </Badge>
+                    </span>
+                  </Tooltip>
+                  <Tooltip title={strings.RESET_VIEW}>
+                    <span>
+                      <IconButton onClick={handleResetView}>
+                        <RefreshOutlinedIcon />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <Tooltip
+                    title={strings.ADMIN_ONLY_ACTION}
+                    placement="top"
+                    arrow
+                    disableFocusListener={admin}
+                    disableHoverListener={admin}
+                    disableTouchListener={admin}
+                  >
+                    <span>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        size="medium"
+                        className="users-add"
+                        href="/create-user"
+                        startIcon={<AddIcon />}
+                        disabled={!admin}
+                      >
+                        {strings.NEW_USER}
+                      </Button>
+                    </span>
+                  </Tooltip>
+                </Box>
+              </Box>
+            </Box>
+
+            <Grid container justifyContent="space-between" alignItems="center" className="users-meta">
+              <Grid item>
+                <Typography variant="body2" color="text.secondary">
+                  {resultsLabel}
+                </Typography>
+              </Grid>
+              {actionLoading && (
+                <Grid item>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <CircularProgress size={16} />
+                    <Typography variant="caption" color="text.secondary">
+                      {commonStrings.PLEASE_WAIT}
+                    </Typography>
+                  </Stack>
+                </Grid>
+              )}
+            </Grid>
+
+            <UserList
+              user={user}
+              keyword={keyword}
+              filters={filters}
+              admin={admin}
+              refreshToken={refreshToken}
+              selectionResetKey={selectionResetKey}
+              sortModel={sortModel}
+              onSortModelChange={handleSortModelChange}
+              columnVisibilityModel={columnVisibilityModel}
+              onColumnVisibilityModelChange={handleVisibilityChange}
+              density={density}
+              onDensityChange={handleDensityChange}
+              onSelectionChange={handleSelectionChange}
+              onReviewsClick={handleReviewsClick}
+              onTotalChange={setTotalUsers}
+            />
+          </Container>
+
+          {admin && selection.ids.length > 0 && (
+            <Box className="users-bulk-bar">
+              <Stack spacing={0.5}>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  {strings.formatString(strings.BULK_SELECTED_COUNT, selection.ids.length) as string}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {strings.BULK_ACTIONS_DESCRIPTION}
                 </Typography>
               </Stack>
-              <Stack direction="row" spacing={1.5} flexWrap="wrap">
+              <Box className="users-bulk-bar__actions">
                 <Button variant="outlined" onClick={handleActivate} disabled={!canBulk}>
                   {strings.BULK_ACTIVATE}
                 </Button>
@@ -405,28 +584,21 @@ const Users = () => {
                 <Button variant="contained" color="error" onClick={handleDelete} disabled={!canBulk}>
                   {strings.BULK_DELETE}
                 </Button>
-              </Stack>
-              {!canBulk && selection.ids.length === 0 && (
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5 }}>
-                  {strings.BULK_BUTTON_DISABLED}
-                </Typography>
-              )}
+              </Box>
             </Box>
           )}
-
-          <UserList
-            user={user}
-            keyword={keyword}
-            filters={filters}
-            admin={admin}
-            refreshToken={refreshToken}
-            selectionResetKey={selectionResetKey}
-            onSelectionChange={handleSelectionChange}
-            onReviewsClick={handleReviewsClick}
-            onTotalChange={setTotalUsers}
-          />
-        </Container>
+        </Box>
       )}
+
+      <UsersFilters
+        open={filtersOpen}
+        admin={admin}
+        filters={filters}
+        agencies={agencies}
+        onApply={handleFiltersApply}
+        onReset={handleResetFilters}
+        onClose={() => setFiltersOpen(false)}
+      />
 
       <UserReviewsDialog open={reviewsOpen} user={reviewsUser} onClose={closeReviewsDialog} />
 

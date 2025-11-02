@@ -1,14 +1,20 @@
 import React from 'react'
 import {
+  Avatar,
   Box,
   Grid,
   Paper,
   Skeleton,
   Stack,
   Typography,
-  useTheme,
 } from '@mui/material'
-import { TrendingDown, TrendingUp } from '@mui/icons-material'
+import {
+  GroupsOutlined,
+  BusinessOutlined,
+  PersonOutlined,
+  NorthEast,
+  SouthEast,
+} from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import { strings } from '@/lang/users'
 
@@ -26,33 +32,31 @@ const formatGrowth = (value: number) => {
 }
 
 const UsersStatsCards = ({ stats, loading }: UsersStatsCardsProps) => {
-  const theme = useTheme()
-
   const metrics: Array<{
     key: keyof bookcarsTypes.UsersStatsResponse
     title: string
-    gradient: string
+    icon: React.ReactElement
   }> = [
     {
       key: 'totalUsers',
       title: strings.TOTAL_USERS_LABEL,
-      gradient: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+      icon: <GroupsOutlined fontSize="medium" />,
     },
     {
       key: 'suppliers',
       title: strings.SUPPLIERS_LABEL,
-      gradient: 'linear-gradient(135deg, #ff6b35 0%, #ff9640 100%)',
+      icon: <BusinessOutlined fontSize="medium" />,
     },
     {
       key: 'clients',
       title: strings.CLIENTS_LABEL,
-      gradient: 'linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%)',
+      icon: <PersonOutlined fontSize="medium" />,
     },
   ]
 
   return (
-    <Grid container spacing={3}>
-      {metrics.map(({ key, title, gradient }) => {
+    <Grid container spacing={3} data-testid="users-stats">
+      {metrics.map(({ key, title, icon }) => {
         const metric = stats ? stats[key] : undefined
         const growthPositive = metric ? metric.growth >= 0 : true
 
@@ -64,47 +68,75 @@ const UsersStatsCards = ({ stats, loading }: UsersStatsCardsProps) => {
                 p: { xs: 2.5, md: 3 },
                 borderRadius: 3,
                 height: '100%',
-                background: gradient,
-                color: '#fff',
-                position: 'relative',
-                overflow: 'hidden',
+                backgroundColor: '#fff',
+                border: '1px solid #E8EEF4',
+                boxShadow: '0 8px 24px rgba(15, 38, 71, 0.06)',
               }}
             >
-              <Stack spacing={1.5}>
-                <Typography variant="subtitle2" sx={{ opacity: 0.9, textTransform: 'uppercase', fontWeight: 600 }}>
-                  {title}
-                </Typography>
+              <Stack spacing={2}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar
+                    variant="rounded"
+                    sx={{
+                      bgcolor: '#F1F4F8',
+                      color: '#637083',
+                      width: 48,
+                      height: 48,
+                    }}
+                  >
+                    {icon}
+                  </Avatar>
+                  <Typography variant="subtitle2" color="text.secondary" fontWeight={600} textTransform="uppercase">
+                    {title}
+                  </Typography>
+                </Stack>
 
                 {loading ? (
-                  <Skeleton variant="text" width="60%" height={48} sx={{ bgcolor: 'rgba(255,255,255,0.4)' }} />
+                  <Skeleton variant="text" width="50%" height={40} />
                 ) : (
-                  <Typography variant="h3" sx={{ fontWeight: 700 }}>
+                  <Typography variant="h3" sx={{ fontWeight: 700, color: '#0F2647' }}>
                     {metric ? metric.current.toLocaleString() : strings.NO_DATA}
                   </Typography>
                 )}
 
-                <Box display="flex" alignItems="center" gap={1}>
+                <Box display="flex" alignItems="center" gap={1.5}>
                   {loading ? (
-                    <Skeleton variant="text" width={120} height={24} sx={{ bgcolor: 'rgba(255,255,255,0.4)' }} />
+                    <Skeleton variant="text" width={140} height={20} />
                   ) : metric ? (
                     <Stack direction="row" spacing={1} alignItems="center">
-                      {growthPositive ? (
-                        <TrendingUp sx={{ color: theme.palette.success.light }} />
-                      ) : (
-                        <TrendingDown sx={{ color: theme.palette.error.light }} />
-                      )}
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      <Box
+                        component="span"
+                        sx={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: '999px',
+                          backgroundColor: growthPositive ? 'rgba(46, 125, 50, 0.12)' : 'rgba(211, 47, 47, 0.12)',
+                          color: growthPositive ? '#2E7D32' : '#D32F2F',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {growthPositive ? <NorthEast fontSize="small" /> : <SouthEast fontSize="small" />}
+                      </Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: growthPositive ? '#2E7D32' : '#D32F2F' }}>
                         {formatGrowth(metric.growth)}
                       </Typography>
-                      <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                      <Typography variant="body2" color="text.secondary">
                         {strings.COMPARED_TO_PREVIOUS_MONTH}
                       </Typography>
                     </Stack>
                   ) : (
-                    <Typography variant="body2" sx={{ opacity: 0.85 }}>
+                    <Typography variant="body2" color="text.secondary">
                       {strings.NO_DATA}
                     </Typography>
                   )}
+                </Box>
+
+                <Box mt={1}>
+                  <Typography variant="caption" color="text.secondary">
+                    {strings.STATS_REFRESH_HINT}
+                  </Typography>
                 </Box>
               </Stack>
             </Paper>

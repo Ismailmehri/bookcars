@@ -1,3 +1,4 @@
+import { GridColumnVisibilityModel, GridDensity, GridSortModel } from '@mui/x-data-grid'
 import * as bookcarsTypes from ':bookcars-types'
 
 export type UserVerificationFilterValue = 'verified' | 'unverified'
@@ -17,8 +18,11 @@ export interface UsersFiltersState {
 }
 
 export interface UsersPersistedState {
-  keyword: string
-  filters: UsersFiltersState
+  keyword?: string
+  filters?: UsersFiltersState
+  sortModel?: GridSortModel
+  columnVisibilityModel?: GridColumnVisibilityModel
+  density?: GridDensity
 }
 
 export const defaultUsersFiltersState: UsersFiltersState = {

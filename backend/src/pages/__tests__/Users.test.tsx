@@ -37,7 +37,9 @@ vi.mock('@/components/Layout', async () => {
 
 vi.mock('@/components/UsersFilters', () => ({
   __esModule: true,
-  default: () => <div data-testid="users-filters" />,
+  default: (props: any) => (
+    <div data-testid="users-filters-mock" data-open={props.open} data-admin={props.admin} />
+  ),
 }))
 
 vi.mock('@/components/UsersStatsCards', () => ({
@@ -117,7 +119,7 @@ describe('Users page', () => {
     document.body.removeChild(container)
   })
 
-  it('renders admin dashboard with stats and bulk actions', async () => {
+  it('renders admin dashboard with stats and admin options', async () => {
     await renderPage(bookcarsTypes.UserType.Admin)
 
     const statsBlock = container.querySelector('[data-testid="users-stats"]')
@@ -128,12 +130,10 @@ describe('Users page', () => {
     const addButton = container.querySelector('.users-add') as HTMLButtonElement
     expect(addButton.disabled).toBe(false)
 
-    const bulkActions = container.querySelector('.users-bulk')
-    expect(bulkActions).not.toBeNull()
-
     expect(userListPropsMock).toHaveBeenCalled()
-    const [{ admin: listAdmin }] = userListPropsMock.mock.calls
+    const [{ admin: listAdmin, sortModel }] = userListPropsMock.mock.calls
     expect(listAdmin).toBe(true)
+    expect(sortModel?.[0]?.field).toBe('lastLoginAt')
   })
 
   it('hides admin-only features for agency users', async () => {
@@ -145,9 +145,6 @@ describe('Users page', () => {
 
     const addButton = container.querySelector('.users-add') as HTMLButtonElement
     expect(addButton.disabled).toBe(true)
-
-    const bulkActions = container.querySelector('.users-bulk')
-    expect(bulkActions).toBeNull()
 
     expect(userListPropsMock).toHaveBeenCalled()
     const [{ admin: listAdmin }] = userListPropsMock.mock.calls

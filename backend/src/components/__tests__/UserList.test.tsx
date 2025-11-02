@@ -2,16 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import { formatLastLoginValue } from '../UserList'
 
-import { strings } from '@/lang/user-list'
-
 describe('formatLastLoginValue', () => {
   it('returns fallback when value is missing', () => {
-    expect(formatLastLoginValue(undefined)).toBe(strings.NEVER_LOGGED_IN)
-    expect(formatLastLoginValue(null)).toBe(strings.NEVER_LOGGED_IN)
+    expect(formatLastLoginValue(undefined)).toBe('—')
+    expect(formatLastLoginValue(null)).toBe('—')
   })
 
   it('returns fallback when value is invalid', () => {
-    expect(formatLastLoginValue('not-a-date')).toBe(strings.NEVER_LOGGED_IN)
+    expect(formatLastLoginValue('not-a-date')).toBe('—')
   })
 
   it('formats valid dates consistently', () => {

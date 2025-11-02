@@ -257,9 +257,9 @@ const Users = () => {
     setUnsavedChanges(true)
   }
 
-  const handleSelectionChange = (nextSelection: { ids: string[]; rows: bookcarsTypes.User[] }) => {
+  const handleSelectionChange = useCallback((nextSelection: { ids: string[]; rows: bookcarsTypes.User[] }) => {
     setSelection(nextSelection)
-  }
+  }, [])
 
   const handleListLoadingChange = useCallback((value: boolean) => {
     setListLoading(value)

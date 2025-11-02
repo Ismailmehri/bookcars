@@ -84,12 +84,12 @@ const defaultAgencyRoles = [
 
 export const formatLastLoginValue = (value?: string | Date | null | undefined) => {
   if (!value) {
-    return strings.NEVER_LOGGED_IN
+    return '—'
   }
 
   const date = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(date.getTime())) {
-    return strings.NEVER_LOGGED_IN
+    return '—'
   }
 
   return new Intl.DateTimeFormat(undefined, {

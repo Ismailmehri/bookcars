@@ -134,9 +134,12 @@ describe('Users page', () => {
     expect(addButton.disabled).toBe(false)
 
     expect(userListPropsMock).toHaveBeenCalled()
-    const [{ admin: listAdmin, sortModel }] = userListPropsMock.mock.calls
+    const firstCallProps = userListPropsMock.mock.calls[0][0]
+    const lastCallProps = userListPropsMock.mock.calls[userListPropsMock.mock.calls.length - 1][0]
+    const { admin: listAdmin, sortModel } = firstCallProps
     expect(listAdmin).toBe(true)
     expect(sortModel?.[0]?.field).toBe('lastLoginAt')
+    expect(lastCallProps.onSelectionChange).toBe(firstCallProps.onSelectionChange)
 
     const summaryBlock = container.querySelector('.users-meta')
     const expectedSummary = usersStrings.formatString(

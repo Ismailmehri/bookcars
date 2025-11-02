@@ -77,9 +77,8 @@ const sanitizeRoles = (roles: bookcarsTypes.UserType[], isAdmin: boolean) => {
 const countActiveFilters = (filters: UsersFiltersState, isAdmin: boolean) => {
   let count = 0
   const defaultRoles = isAdmin ? adminDefaultRoles : agencyDefaultRoles
-  const rolesDiff =
-    filters.roles.length > 0 &&
-    (filters.roles.length !== defaultRoles.length || filters.roles.some((role) => !defaultRoles.includes(role)))
+  const rolesDiff = filters.roles.length > 0
+    && (filters.roles.length !== defaultRoles.length || filters.roles.some((role) => !defaultRoles.includes(role)))
 
   if (rolesDiff) {
     count += 1
@@ -382,8 +381,7 @@ const Users = () => {
   )
 
   const summaryLabel = useMemo(() => {
-    const displayed =
-      pageSummary.to >= pageSummary.from && pageSummary.to > 0
+    const displayed = pageSummary.to >= pageSummary.from && pageSummary.to > 0
         ? pageSummary.to - pageSummary.from + 1
         : pageSummary.total > 0 && pageSummary.pageSize > 0
           ? Math.min(pageSummary.pageSize, pageSummary.total)

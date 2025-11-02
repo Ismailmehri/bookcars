@@ -735,6 +735,7 @@ export interface User {
   commissionAgreementAcceptedAt?: string | Date
   lastLoginAt?: Date | string | null
   createdAt?: Date | string
+  listIndex?: number
 }
 
 export interface CommissionAgreementAcceptanceResponse {

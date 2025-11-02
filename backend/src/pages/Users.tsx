@@ -464,20 +464,13 @@ const Users = () => {
       {user && (
         <Box className="users-page-wrapper">
           <Container maxWidth="xl" className="users-page">
-            <Box className="users-hero">
-              <Stack direction="row" spacing={2.5} alignItems="center">
-                <Box className="users-hero__icon" aria-hidden>
-                  👥
-                </Box>
-                <Box>
-                  <Typography variant="h3" fontWeight={700} color="text.primary">
-                    {strings.PAGE_TITLE}
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    {strings.PAGE_SUBTITLE}
-                  </Typography>
-                </Box>
-              </Stack>
+            <Box component="header" className="users-header">
+              <Typography variant="h3" fontWeight={700} color="text.primary">
+                {strings.PAGE_TITLE}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                {strings.PAGE_SUBTITLE}
+              </Typography>
             </Box>
 
             {admin && (

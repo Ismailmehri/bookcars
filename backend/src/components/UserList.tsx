@@ -54,6 +54,7 @@ import {
   getCreatedAtValue,
   getDateTimestamp,
   getLastLoginValue,
+  applyListIndex,
   normalizeUsersResult,
 } from '@/common/user-list.utils'
 
@@ -219,11 +220,19 @@ const UserList = ({
     [onPageSummaryChange, page, pageSize]
   )
 
+  const applySortAndIndex = useCallback(
+    (sourceRows: bookcarsTypes.User[], model: GridSortModel) => {
+      const sorted = sortRows(sourceRows, model)
+      return applyListIndex(sorted, paginationModel.page, paginationModel.pageSize)
+    },
+    [paginationModel.page, paginationModel.pageSize],
+  )
+
   useEffect(() => {
     const normalized = ensureSortModelWithFallback(sortModel)
     setInternalSortModel(normalized)
-    setRows((current) => sortRows(current, normalized))
-  }, [sortModel])
+    setRows((current) => applySortAndIndex(current, normalized))
+  }, [sortModel, applySortAndIndex])
   useEffect(() => setInternalVisibilityModel(columnVisibilityModel), [columnVisibilityModel])
   useEffect(() => setInternalDensity(density), [density])
 
@@ -266,7 +275,7 @@ const UserList = ({
 
       const response = await UserService.getUsers(body, keyword, paginationModel.page + 1, paginationModel.pageSize)
       const { rows: dataRows, totalRecords } = normalizeUsersResult(response)
-      const sortedRows = sortRows(dataRows, internalSortModel)
+      const sortedRows = applySortAndIndex(dataRows, internalSortModel)
 
       setRows(sortedRows)
       setRowCount(totalRecords)
@@ -298,6 +307,7 @@ const UserList = ({
     paginationModel.page,
     paginationModel.pageSize,
     internalSortModel,
+    applySortAndIndex,
     selectionModel,
     onTotalChange,
     onLoadingChange,
@@ -363,8 +373,9 @@ const UserList = ({
         const nextTotal = Math.max(rowCount - 1, 0)
         setRows((current) => {
           const updatedRows = current.filter((r) => r._id !== deleteTarget._id)
-          updateSummary(nextTotal, updatedRows.length)
-          return updatedRows
+          const reindexed = applySortAndIndex(updatedRows, internalSortModel)
+          updateSummary(nextTotal, reindexed.length)
+          return reindexed
         })
         setRowCount(nextTotal)
         setSelectionModel((current) => current.filter((id) => id !== deleteTarget._id))
@@ -412,6 +423,23 @@ const UserList = ({
     } catch (err) {
       helper.error(err, strings.COPY_ERROR)
     }
+  }, [])
+
+  const renderIndexCell = useCallback((params: GridRenderCellParams<bookcarsTypes.User, number>) => {
+    const position = params.value ?? params.row.listIndex ?? 0
+    if (!position) {
+      return <Typography variant="body2">—</Typography>
+    }
+
+    const label = strings.formatString(strings.INDEX_BADGE_LABEL, position.toLocaleString()) as string
+
+    return (
+      <Tooltip title={label} placement="top" arrow>
+        <Box component="span" className="us-index-badge" aria-label={label}>
+          {position.toLocaleString()}
+        </Box>
+      </Tooltip>
+    )
   }, [])
 
   const renderAvatarCell = useCallback((params: GridRenderCellParams<bookcarsTypes.User, string>) => {
@@ -555,6 +583,17 @@ const UserList = ({
   const columns = useMemo<GridColDef<bookcarsTypes.User>[]>(() => {
     const baseColumns: GridColDef<bookcarsTypes.User>[] = [
       {
+        field: 'listIndex',
+        headerName: strings.INDEX_COLUMN,
+        width: 84,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        align: 'center',
+        headerAlign: 'center',
+        renderCell: renderIndexCell,
+      },
+      {
         field: 'fullName',
         headerName: strings.USER_COLUMN,
         flex: 1.3,
@@ -648,13 +687,13 @@ const UserList = ({
     ]
 
     return baseColumns
-  }, [onReviewsClick, renderAvatarCell, renderCopyCell, renderRolePill])
+  }, [onReviewsClick, renderAvatarCell, renderCopyCell, renderRolePill, renderIndexCell])
 
   const handleSortModelChange = (model: GridSortModel) => {
     const nextModel = ensureSortModelWithFallback(model)
     setInternalSortModel(nextModel)
     onSortModelChange(nextModel)
-    setRows((current) => sortRows(current, nextModel))
+    setRows((current) => applySortAndIndex(current, nextModel))
   }
 
   const handleVisibilityChange = (model: GridColumnVisibilityModel) => {

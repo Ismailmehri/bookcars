@@ -101,3 +101,15 @@ export const getCreatedAtValue = (user: bookcarsTypes.User) =>
   (user as { created_at?: Date | string }).created_at ??
   (user as { created?: Date | string }).created ??
   null
+
+export const applyListIndex = (
+  rows: bookcarsTypes.User[],
+  page: number,
+  pageSize: number,
+): bookcarsTypes.User[] => {
+  const offset = page * pageSize
+  return rows.map((row, index) => ({
+    ...row,
+    listIndex: offset + index + 1,
+  }))
+}

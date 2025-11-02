@@ -28,6 +28,20 @@
   text-decoration: underline;
 }
 
+.us-index-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25);
+}
+
 .us-avatar-small {
   width: 40px;
   height: 40px;
@@ -154,6 +168,12 @@
 @media (max-width: 600px) {
   .us-data-grid {
     border-radius: 12px;
+  }
+
+  .us-index-badge {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
   }
 
   .us-pagination {

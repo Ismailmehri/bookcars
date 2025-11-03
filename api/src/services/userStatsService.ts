@@ -32,7 +32,7 @@ type CountableUserModel = Pick<typeof User, 'countDocuments'>
 const buildFilter = (
   start: Date,
   end: Date,
-  type?: bookcarsTypes.UserType
+  type?: bookcarsTypes.UserType,
 ): mongoose.FilterQuery<env.User> => {
   const filter: mongoose.FilterQuery<env.User> = {
     expireAt: null,
@@ -51,7 +51,7 @@ const buildFilter = (
 
 export const getUsersStats = async (
   userModel: CountableUserModel = User,
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
 ): Promise<bookcarsTypes.UsersStatsResponse> => {
   const currentStart = getUtcMonthStart(referenceDate)
   const nextStart = getUtcNextMonthStart(referenceDate)

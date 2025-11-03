@@ -912,6 +912,13 @@ export interface UsersFiltersPayload {
   lastLoginTo?: string | null
 }
 
+export type UsersSortableField = 'fullName' | 'lastLoginAt' | 'createdAt'
+
+export interface UsersSortDescriptor {
+  field: UsersSortableField
+  direction: 'asc' | 'desc'
+}
+
 export interface UsersGrowthMetric {
   current: number
   previous: number
@@ -928,6 +935,7 @@ export interface GetUsersBody {
   user: string
   types: UserType[]
   filters?: UsersFiltersPayload
+  sort?: UsersSortDescriptor[]
 }
 
 export interface CreatePaymentPayload {

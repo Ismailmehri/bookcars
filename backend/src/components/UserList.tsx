@@ -46,6 +46,7 @@ import { strings as usersPageStrings } from '@/lang/users'
 import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
 import { UsersFiltersState } from '@/pages/users.types'
+import { mapSortModelToApiSort } from '@/common/users-sort.utils'
 
 import '@/assets/css/user-list.css'
 import {
@@ -182,6 +183,8 @@ const UserList = ({
     return payload
   }, [filters])
 
+  const sortPayload = useMemo(() => mapSortModelToApiSort(sortModel), [sortModel])
+
   const fetchUsers = useCallback(async () => {
     if (!user) return
 
@@ -189,6 +192,10 @@ const UserList = ({
       user: user._id || '',
       types,
       filters: Object.keys(filtersPayload).length > 0 ? filtersPayload : undefined,
+    }
+
+    if (sortPayload.length > 0) {
+      body.sort = sortPayload
     }
 
     try {
@@ -232,6 +239,7 @@ const UserList = ({
     onTotalChange,
     onLoadingChange,
     updateSummary,
+    sortPayload,
   ])
 
   useEffect(() => {
@@ -245,6 +253,10 @@ const UserList = ({
   useEffect(() => {
     setPaginationModel((p) => ({ ...p, page: 0 }))
   }, [keyword, filtersPayload])
+
+  useEffect(() => {
+    setPaginationModel((prev) => (prev.page === 0 ? prev : { ...prev, page: 0 }))
+  }, [sortPayload])
 
   useEffect(() => {
     setSelectionModel([])
@@ -618,6 +630,7 @@ const UserList = ({
 
   const handleSortModelChange = (model: GridSortModel) => {
     onSortModelChange(model)
+    setPaginationModel((prev) => ({ ...prev, page: 0 }))
   }
 
   const handleVisibilityChange = (model: GridColumnVisibilityModel) => {
@@ -681,7 +694,7 @@ const UserList = ({
         rowSelectionModel={selectionModel}
         onRowSelectionModelChange={handleSelectionChange}
         keepNonExistentRowsSelected
-        sortingMode="client"
+        sortingMode="server"
         sortModel={sortModel}
         onSortModelChange={handleSortModelChange}
         columnVisibilityModel={computedVisibilityModel}

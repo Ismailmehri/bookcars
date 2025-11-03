@@ -45,5 +45,6 @@ routes.route(routeNames.acceptCommissionAgreement).post(authJwt.verifyToken, use
 routes.route(routeNames.sendEmail).post(userController.sendEmail)
 routes.route(routeNames.hasPassword).get(authJwt.verifyToken, userController.hasPassword)
 routes.route(routeNames.getUsersReviews).get(authJwt.verifyToken, userController.getUsersReviews)
+routes.route(routeNames.getUserReviews).get(authJwt.verifyToken, userController.getUserReviews)
 
 export default routes

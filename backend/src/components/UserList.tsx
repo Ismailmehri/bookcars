@@ -468,7 +468,6 @@ const UserList = ({
     )
   }, [])
 
-
   const computedVisibilityModel = useMemo<GridColumnVisibilityModel>(() => {
     const model: GridColumnVisibilityModel = { ...columnVisibilityModel }
     if (isTablet) {
@@ -510,8 +509,27 @@ const UserList = ({
       headerName: strings.LAST_LOGIN_COLUMN,
       flex: 0.8,
       minWidth: 170,
-      valueGetter: ({ row }) => getLastLoginValue(row),
-      valueFormatter: ({ value }) => formatDateTime(value as Date | string | null),
+      valueGetter: (params: any) => {
+        if (!params) {
+          return null
+        }
+        // Si params est directement une date, la retourner
+        if (params instanceof Date || typeof params === 'string' || typeof params === 'number') {
+          return params
+        }
+        // Sinon, chercher dans params.row
+        if (params.row) {
+          return getLastLoginValue(params.row)
+        }
+        // Sinon, chercher directement dans params (au cas où c'est la valeur directement)
+        return getLastLoginValue(params as bookcarsTypes.User)
+      },
+      valueFormatter: (params: { value?: Date | string | null }) => {
+        if (!params) {
+          return '—'
+        }
+        return formatDateTime(params as Date | string | null)
+      },
       sortComparator: (a, b) =>
         getDateTimestamp(a as Date | string | null) - getDateTimestamp(b as Date | string | null),
       sortable: true,
@@ -521,8 +539,27 @@ const UserList = ({
       headerName: strings.CREATED_AT_COLUMN,
       flex: 0.8,
       minWidth: 170,
-      valueGetter: ({ row }) => getCreatedAtValue(row),
-      valueFormatter: ({ value }) => formatDateTime(value as Date | string | null),
+      valueGetter: (params: any) => {
+        if (!params) {
+          return null
+        }
+        // Si params est directement une date, la retourner
+        if (params instanceof Date || typeof params === 'string' || typeof params === 'number') {
+          return params
+        }
+        // Sinon, chercher dans params.row
+        if (params.row) {
+          return getCreatedAtValue(params.row)
+        }
+        // Sinon, chercher directement dans params (au cas où c'est la valeur directement)
+        return getCreatedAtValue(params as bookcarsTypes.User)
+      },
+      valueFormatter: (params: { value?: Date | string | null }) => {
+        if (!params) {
+          return '—'
+        }
+        return formatDateTime(params as Date | string | null)
+      },
       sortComparator: (a, b) =>
         getDateTimestamp(a as Date | string | null) - getDateTimestamp(b as Date | string | null),
       sortable: true,

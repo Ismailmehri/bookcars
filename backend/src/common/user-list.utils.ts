@@ -2,7 +2,7 @@ import * as bookcarsTypes from ':bookcars-types'
 
 type NullableDate = Date | string | number | null | undefined
 
-export const safeGet = <T,>(...values: Array<T | null | undefined>): T | undefined => {
+export const safeGet = <T, >(...values: Array<T | null | undefined>): T | undefined => {
   for (const value of values) {
     if (value !== null && typeof value !== 'undefined') {
       return value
@@ -30,7 +30,14 @@ export const formatDateTime = (value?: NullableDate) => {
     return '—'
   }
 
-  return date.toLocaleString('fr-FR')
+  // Format: JJ/MM/AAAA HH:MM
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  return `${day}/${month}/${year} ${hours}:${minutes}`
 }
 
 type UserLike = bookcarsTypes.User & {
@@ -64,11 +71,15 @@ export const getCreatedAtValue = (user: UserLike) =>
     user?.meta?.createdAt,
   ) ?? null
 
-const mapUserRecord = (user: UserLike): bookcarsTypes.User => ({
-  ...user,
-  lastLoginAt: getLastLoginValue(user),
-  createdAt: getCreatedAtValue(user),
-})
+const mapUserRecord = (user: UserLike): bookcarsTypes.User => {
+  const lastLogin = getLastLoginValue(user)
+  const createdAt = getCreatedAtValue(user)
+  return {
+    ...user,
+    lastLoginAt: lastLogin ? (lastLogin instanceof Date ? lastLogin : (typeof lastLogin === 'string' ? lastLogin : new Date(lastLogin))) : null,
+    createdAt: createdAt ? (createdAt instanceof Date ? createdAt : (typeof createdAt === 'string' ? createdAt : new Date(createdAt))) : undefined,
+  }
+}
 
 export const normalizeUsersResult = (
   response: bookcarsTypes.Result<bookcarsTypes.User>,

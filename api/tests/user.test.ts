@@ -1372,6 +1372,115 @@ describe('POST /api/users/:page/:size', () => {
 
     await testHelper.signout(token)
   })
+
+  it('should sort users on the server when descriptors are provided', async () => {
+    const token = await testHelper.signinAsAdmin()
+
+    const sortKeyword = `SortTest${nanoid(6)}`
+    const baseEmail = sortKeyword.toLowerCase()
+    const commonFields = {
+      type: bookcarsTypes.UserType.User,
+      verified: true,
+      active: true,
+      language: testHelper.LANGUAGE,
+      blacklisted: false,
+    }
+
+    const payload: bookcarsTypes.GetUsersBody = {
+      user: '',
+      types: [bookcarsTypes.UserType.Admin, bookcarsTypes.UserType.Supplier, bookcarsTypes.UserType.User],
+    }
+
+    const baseRequest = () => request(app)
+      .post(`/api/users/${testHelper.PAGE}/${testHelper.SIZE}/?s=${sortKeyword}`)
+      .set(env.X_ACCESS_TOKEN, token)
+
+    let insertedIds: string[] = []
+
+    try {
+      const users = await User.create([
+        {
+          ...commonFields,
+          email: `${baseEmail}-alpha@test.bookcars.ma`,
+          fullName: `${sortKeyword} Alpha`,
+          lastLoginAt: new Date('2024-03-10T10:00:00.000Z'),
+          createdAt: new Date('2024-01-10T10:00:00.000Z'),
+          slug: `${baseEmail}-alpha`,
+        },
+        {
+          ...commonFields,
+          email: `${baseEmail}-bravo@test.bookcars.ma`,
+          fullName: `${sortKeyword} Bravo`,
+          lastLoginAt: new Date('2024-01-10T10:00:00.000Z'),
+          createdAt: new Date('2024-03-10T10:00:00.000Z'),
+          slug: `${baseEmail}-bravo`,
+        },
+        {
+          ...commonFields,
+          email: `${baseEmail}-charlie@test.bookcars.ma`,
+          fullName: `${sortKeyword} Charlie`,
+          lastLoginAt: new Date('2024-02-10T10:00:00.000Z'),
+          createdAt: new Date('2024-02-10T10:00:00.000Z'),
+          slug: `${baseEmail}-charlie`,
+        },
+      ])
+
+      insertedIds = users.map((user) => user._id.toString())
+
+      const responseLastLogin = await baseRequest()
+        .send({
+          ...payload,
+          sort: [
+            { field: 'lastLoginAt', direction: 'desc' },
+          ],
+        })
+
+      expect(responseLastLogin.statusCode).toBe(200)
+      const lastLoginNames = responseLastLogin.body[0].resultData.map((item: bookcarsTypes.User) => item.fullName)
+      expect(lastLoginNames).toEqual([
+        `${sortKeyword} Alpha`,
+        `${sortKeyword} Charlie`,
+        `${sortKeyword} Bravo`,
+      ])
+
+      const responseCreatedAt = await baseRequest()
+        .send({
+          ...payload,
+          sort: [
+            { field: 'createdAt', direction: 'asc' },
+          ],
+        })
+
+      expect(responseCreatedAt.statusCode).toBe(200)
+      const createdAtNames = responseCreatedAt.body[0].resultData.map((item: bookcarsTypes.User) => item.fullName)
+      expect(createdAtNames).toEqual([
+        `${sortKeyword} Alpha`,
+        `${sortKeyword} Charlie`,
+        `${sortKeyword} Bravo`,
+      ])
+
+      const responseFullName = await baseRequest()
+        .send({
+          ...payload,
+          sort: [
+            { field: 'fullName', direction: 'asc' },
+          ],
+        })
+
+      expect(responseFullName.statusCode).toBe(200)
+      const fullNameNames = responseFullName.body[0].resultData.map((item: bookcarsTypes.User) => item.fullName)
+      expect(fullNameNames).toEqual([
+        `${sortKeyword} Alpha`,
+        `${sortKeyword} Bravo`,
+        `${sortKeyword} Charlie`,
+      ])
+    } finally {
+      if (insertedIds.length > 0) {
+        await User.deleteMany({ _id: { $in: insertedIds } })
+      }
+      await testHelper.signout(token)
+    }
+  })
 })
 
 describe('GET /api/has-password/:id', () => {

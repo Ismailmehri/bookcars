@@ -55,7 +55,9 @@ const UserReviewsDialog = ({ open, user, onClose }: UserReviewsDialogProps) => {
       )
 
       setReviews(response.resultData ?? [])
-      const total = response.pageInfo?.totalRecords ?? 0
+      const total = Array.isArray(response.pageInfo) && response.pageInfo[0]?.totalRecords
+        ? response.pageInfo[0].totalRecords
+        : response.pageInfo?.totalRecords ?? 0
       setTotalRecords(total)
     } catch (err) {
       setError(strings.REVIEWS_ERROR)
@@ -99,9 +101,21 @@ const UserReviewsDialog = ({ open, user, onClose }: UserReviewsDialogProps) => {
           borderRadius: { xs: '24px 24px 0 0', sm: '24px 0 0 24px' },
           borderLeft: '1px solid #E8EEF4',
           backgroundColor: '#fff',
+          zIndex: 1401,
         },
       }}
       ModalProps={{ keepMounted: true }}
+      sx={{
+        zIndex: 1401,
+        '& .MuiBackdrop-root': {
+          zIndex: 1401,
+        },
+        '& .MuiDrawer-paper': {
+          zIndex: 1402,
+          marginTop: { xs: '56px', sm: '64px' },
+          height: { xs: 'calc(100vh - 56px)', sm: 'calc(100vh - 64px)' },
+        },
+      }}
     >
       <Stack height="100%">
         <Box px={3} py={3} display="flex" justifyContent="space-between" alignItems="center">

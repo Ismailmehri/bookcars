@@ -13,6 +13,8 @@ import {
   Avatar,
   Box,
   Button,
+  ButtonBase,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -28,16 +30,12 @@ import {
 import { useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import {
-  CheckCircleOutline,
-  HighlightOff,
-  Block,
   MoreVert,
   Launch,
   EditOutlined,
   LockReset,
   DeleteOutline,
   ContentCopy,
-  Reviews,
 } from '@mui/icons-material'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
@@ -48,9 +46,17 @@ import { strings as usersPageStrings } from '@/lang/users'
 import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
 import { UsersFiltersState } from '@/pages/users.types'
+import { mapSortModelToApiSort } from '@/common/users-sort.utils'
+import { useNavigate } from 'react-router-dom'
 
 import '@/assets/css/user-list.css'
-import { formatLastLoginValue, normalizeUsersResult } from '@/common/user-list.utils'
+import {
+  formatDateTime,
+  getCreatedAtValue,
+  getDateTimestamp,
+  getLastLoginValue,
+  normalizeUsersResult,
+} from '@/common/user-list.utils'
 
 interface UserListProps {
   user?: bookcarsTypes.User
@@ -83,31 +89,6 @@ const defaultAgencyRoles = [
   bookcarsTypes.UserType.User,
 ]
 
-const sortRows = (rows: bookcarsTypes.User[], model: GridSortModel) => {
-  if (!model || model.length === 0) return rows
-  const [{ field, sort }] = model
-  if (!sort) return rows
-
-  const sorted = [...rows]
-  sorted.sort((a, b) => {
-    const dir = sort === 'asc' ? 1 : -1
-    if (field === 'lastLoginAt') {
-      const aDate = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0
-      const bDate = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0
-      return (aDate - bDate) * dir
-    }
-    if (field === 'fullName') {
-      const aName = (a.fullName || '').toLowerCase()
-      const bName = (b.fullName || '').toLowerCase()
-      if (aName < bName) return -1 * dir
-      if (aName > bName) return 1 * dir
-      return 0
-    }
-    return 0
-  })
-  return sorted
-}
-
 // --- Overlays stables ---
 const NoRowsOverlay: React.FC = () => (
   <Stack alignItems="center" justifyContent="center" height="100%" spacing={1}>
@@ -122,6 +103,7 @@ const NoRowsOverlay: React.FC = () => (
 
 const LoadingOverlay: React.FC = () => (
   <Stack alignItems="center" justifyContent="center" height="100%" spacing={2}>
+    <CircularProgress size={28} thickness={5} />
     <Typography variant="body2" color="text.secondary">
       {strings.LOADING_STATE}
     </Typography>
@@ -159,10 +141,8 @@ const UserList = ({
   const [menuRow, setMenuRow] = useState<bookcarsTypes.User>()
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const copyTimeoutRef = useRef<number>()
-  const [internalSortModel, setInternalSortModel] = useState<GridSortModel>(sortModel)
-  const [internalVisibilityModel, setInternalVisibilityModel] = useState<GridColumnVisibilityModel>(columnVisibilityModel)
-  const [internalDensity, setInternalDensity] = useState<GridDensity>(density)
   const theme = useTheme()
+  const navigate = useNavigate()
   const isTablet = useMediaQuery(theme.breakpoints.down('lg'))
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const { page, pageSize } = paginationModel
@@ -181,10 +161,6 @@ const UserList = ({
     },
     [onPageSummaryChange, page, pageSize]
   )
-
-  useEffect(() => setInternalSortModel(sortModel), [sortModel])
-  useEffect(() => setInternalVisibilityModel(columnVisibilityModel), [columnVisibilityModel])
-  useEffect(() => setInternalDensity(density), [density])
 
   useEffect(
     () => () => {
@@ -209,6 +185,8 @@ const UserList = ({
     return payload
   }, [filters])
 
+  const sortPayload = useMemo(() => mapSortModelToApiSort(sortModel), [sortModel])
+
   const fetchUsers = useCallback(async () => {
     if (!user) return
 
@@ -218,6 +196,10 @@ const UserList = ({
       filters: Object.keys(filtersPayload).length > 0 ? filtersPayload : undefined,
     }
 
+    if (sortPayload.length > 0) {
+      body.sort = sortPayload
+    }
+
     try {
       setLoading(true)
       setError(undefined)
@@ -225,17 +207,16 @@ const UserList = ({
 
       const response = await UserService.getUsers(body, keyword, paginationModel.page + 1, paginationModel.pageSize)
       const { rows: dataRows, totalRecords } = normalizeUsersResult(response)
-      const sortedRows = sortRows(dataRows, internalSortModel)
 
-      setRows(sortedRows)
+      setRows(dataRows)
       setRowCount(totalRecords)
       onTotalChange?.(totalRecords)
-      updateSummary(totalRecords, sortedRows.length)
+      updateSummary(totalRecords, dataRows.length)
 
       if (selectionModel.length > 0) {
         setSelectedUsersMap((prev) => {
           const updated = { ...prev }
-          sortedRows.forEach((r) => {
+          dataRows.forEach((r) => {
             if (r._id && selectionModel.includes(r._id)) updated[r._id] = r
           })
           return updated
@@ -256,24 +237,28 @@ const UserList = ({
     keyword,
     paginationModel.page,
     paginationModel.pageSize,
-    internalSortModel,
     selectionModel,
     onTotalChange,
     onLoadingChange,
     updateSummary,
+    sortPayload,
   ])
 
   useEffect(() => {
- fetchUsers()
-}, [fetchUsers, refreshToken])
+    fetchUsers()
+  }, [fetchUsers, refreshToken])
 
   useEffect(() => {
- updateSummary(rowCount, rows.length)
-}, [rowCount, rows.length, paginationModel.page, paginationModel.pageSize, updateSummary])
+    updateSummary(rowCount, rows.length)
+  }, [rowCount, rows.length, paginationModel.page, paginationModel.pageSize, updateSummary])
 
   useEffect(() => {
- setPaginationModel((p) => ({ ...p, page: 0 }))
-}, [keyword, filtersPayload])
+    setPaginationModel((p) => ({ ...p, page: 0 }))
+  }, [keyword, filtersPayload])
+
+  useEffect(() => {
+    setPaginationModel((prev) => (prev.page === 0 ? prev : { ...prev, page: 0 }))
+  }, [sortPayload])
 
   useEffect(() => {
     setSelectionModel([])
@@ -296,11 +281,11 @@ const UserList = ({
     setSelectedUsersMap((previous) => {
       const updated: Record<string, bookcarsTypes.User> = {}
       ids.forEach((id) => {
- if (previous[id]) updated[id] = previous[id]
-})
+        if (previous[id]) updated[id] = previous[id]
+      })
       rows.forEach((row) => {
- if (row._id && ids.includes(row._id)) updated[row._id] = row
-})
+        if (row._id && ids.includes(row._id)) updated[row._id] = row
+      })
       return updated
     })
   }
@@ -344,17 +329,31 @@ const UserList = ({
     }
   }
 
-  const closeMenu = () => {
+  const closeMenu = useCallback(() => {
     setMenuAnchor(null)
     setMenuRow(undefined)
-  }
+  }, [])
+
+  const navigateFromMenu = useCallback(
+    (buildPath: (id: string) => string) => {
+      if (!menuRow?._id) {
+        helper.error(undefined, strings.MENU_ACTION_USER_MISSING)
+        return
+      }
+
+      const target = buildPath(menuRow._id)
+      closeMenu()
+      navigate(target)
+    },
+    [closeMenu, menuRow, navigate]
+  )
 
   // === Stabilisation des renderers ===
   // 1) ref pour suivre copiedField sans dépendance
   const copiedFieldRef = useRef<string | null>(null)
   useEffect(() => {
- copiedFieldRef.current = copiedField
-}, [copiedField])
+    copiedFieldRef.current = copiedField
+  }, [copiedField])
 
   // 2) copyToClipboard stable
   const copyToClipboard = useCallback(async (value: string, fieldId: string) => {
@@ -364,6 +363,7 @@ const UserList = ({
         return
       }
       await navigator.clipboard.writeText(value)
+      helper.info(strings.COPIED_TO_CLIPBOARD)
       setCopiedField(fieldId)
       if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current)
       copyTimeoutRef.current = window.setTimeout(() => setCopiedField(null), 1500)
@@ -382,52 +382,84 @@ const UserList = ({
       ? <Avatar src={avatarUrl} className="us-avatar-small" alt={row.fullName} />
       : <Avatar className="us-avatar-small">{row.fullName?.[0]?.toUpperCase()}</Avatar>
 
+    const statusItems = [
+      {
+        key: 'verified',
+        label: row.verified ? strings.VERIFIED_SHORT : strings.UNVERIFIED_SHORT,
+        tooltip: row.verified ? strings.ACCOUNT_VERIFIED : strings.ACCOUNT_UNVERIFIED,
+        className: row.verified ? 'us-flag-chip us-flag-chip--positive' : 'us-flag-chip us-flag-chip--neutral',
+      },
+      {
+        key: 'active',
+        label: row.active ? strings.ACTIVE_LABEL : strings.INACTIVE_LABEL,
+        tooltip: row.active ? strings.ACCOUNT_ACTIVE : strings.ACCOUNT_INACTIVE,
+        className: row.active ? 'us-flag-chip us-flag-chip--positive' : 'us-flag-chip us-flag-chip--danger',
+      },
+    ]
+
+    if (row.blacklisted) {
+      statusItems.push({
+        key: 'blacklisted',
+        label: strings.BLACKLISTED_LABEL,
+        tooltip: strings.BLACKLISTED_STATUS,
+        className: 'us-flag-chip us-flag-chip--warning',
+      })
+    }
+
     return (
       <Stack direction="row" spacing={2} alignItems="center" className="us-user-cell">
         {avatar}
         <Box>
           <Link href={`/user?u=${row._id}`} className="us-user-link">
             <Typography variant="body2" fontWeight={600} color="text.primary">
-              {params.value}
+              {params.value || '—'}
             </Typography>
           </Link>
-          <Stack direction="row" spacing={1} alignItems="center" className="us-user-statuses">
-            <Tooltip title={row.verified ? strings.ACCOUNT_VERIFIED : strings.ACCOUNT_UNVERIFIED}>
-              <span className={`us-status-dot ${row.verified ? 'us-status-dot--success' : 'us-status-dot--warning'}`}>
-                {row.verified ? <CheckCircleOutline fontSize="small" /> : <HighlightOff fontSize="small" />}
-              </span>
-            </Tooltip>
-            <Tooltip title={row.active ? strings.ACCOUNT_ACTIVE : strings.ACCOUNT_INACTIVE}>
-              <span className={`us-status-dot ${row.active ? 'us-status-dot--success' : 'us-status-dot--danger'}`}>
-                {row.active ? <CheckCircleOutline fontSize="small" /> : <HighlightOff fontSize="small" />}
-              </span>
-            </Tooltip>
-            {row.blacklisted && (
-              <Tooltip title={strings.BLACKLISTED_STATUS}>
-                <span className="us-status-dot us-status-dot--danger">
-                  <Block fontSize="small" />
-                </span>
+          <Stack direction="row" spacing={0.5} flexWrap="wrap" alignItems="center" className="us-user-statuses">
+            {statusItems.map((status) => (
+              <Tooltip key={status.key} title={status.tooltip} placement="top" arrow>
+                <span className={status.className}>{status.label}</span>
               </Tooltip>
-            )}
+            ))}
           </Stack>
         </Box>
       </Stack>
     )
   }, [])
 
-  const renderCopyCell = useCallback((
-    params: GridRenderCellParams<bookcarsTypes.User, string>,
-    field: 'email' | 'phone',
-  ) => {
+  const renderCopyCell = useCallback((params: GridRenderCellParams<bookcarsTypes.User, string>) => {
     const value = params.value || ''
     if (!value) return <Typography variant="body2" color="text.secondary">—</Typography>
 
-    const fieldId = `${field}-${params.row._id}`
+    const fieldId = `email-${params.row._id}`
     const copied = copiedFieldRef.current === fieldId
+
+    const handleCopy = (event: React.MouseEvent | React.KeyboardEvent) => {
+      event.stopPropagation()
+      copyToClipboard(value, fieldId)
+    }
 
     return (
       <Stack direction="row" spacing={1} alignItems="center" className="us-copy-cell">
-        <Typography variant="body2" color="text.primary">{value}</Typography>
+        <Tooltip title={copied ? strings.COPIED_TO_CLIPBOARD : strings.COPY_TO_CLIPBOARD}>
+          <ButtonBase
+            component="span"
+            className="us-copy-trigger"
+            onClick={handleCopy}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                handleCopy(event)
+              }
+            }}
+            focusRipple
+            aria-label={strings.COPY_ACTION_LABEL}
+          >
+            <Typography variant="body2" color="text.primary">
+              {value}
+            </Typography>
+          </ButtonBase>
+        </Tooltip>
         <Tooltip title={copied ? strings.COPIED_TO_CLIPBOARD : strings.COPY_TO_CLIPBOARD}>
           <span>
             <IconButton
@@ -448,118 +480,129 @@ const UserList = ({
 
   const renderRolePill = useCallback((params: GridRenderCellParams<bookcarsTypes.User, string>) => {
     let label = strings.CLIENT_LABEL
-    let className = 'us-pill us-pill--role-client'
+    let className = 'us-role-chip us-role-chip--client'
     if (params.value === bookcarsTypes.UserType.Admin) {
       label = commonStrings.ADMIN
-      className = 'us-pill us-pill--role-admin'
+      className = 'us-role-chip us-role-chip--admin'
     } else if (params.value === bookcarsTypes.UserType.Supplier) {
       label = commonStrings.SUPPLIER
-      className = 'us-pill us-pill--role-supplier'
+      className = 'us-role-chip us-role-chip--supplier'
     }
     return (
       <Box className={className} component="span">
-        <span className="us-pill__dot" />
+        <span className="us-role-chip__dot" />
         {label}
       </Box>
     )
   }, [])
 
-  const renderStatusPill = useCallback((
-    condition: boolean | undefined,
-    truthyLabel: string,
-    falsyLabel: string,
-    truthyClass: string,
-    falsyClass: string,
-  ) => (
-    <Box className={`${condition ? truthyClass : falsyClass} us-pill`} component="span">
-      <span className="us-pill__dot" />
-      {condition ? truthyLabel : falsyLabel}
-    </Box>
-  ), [])
-
   const computedVisibilityModel = useMemo<GridColumnVisibilityModel>(() => {
-    const model: GridColumnVisibilityModel = { ...internalVisibilityModel }
+    const model: GridColumnVisibilityModel = { ...columnVisibilityModel }
     if (isTablet) {
-      model.lastLoginAt = false
-      if (admin) model.blacklisted = false
+      model.createdAt = false
     }
-    if (isMobile) model.phone = false
+    if (isMobile) {
+      model.lastLoginAt = false
+    }
     return model
-  }, [admin, internalVisibilityModel, isMobile, isTablet])
+  }, [columnVisibilityModel, isMobile, isTablet])
 
-  const columns = useMemo<GridColDef<bookcarsTypes.User>[]>(() => {
-    const baseColumns: GridColDef<bookcarsTypes.User>[] = [
-      {
-        field: 'fullName',
-        headerName: strings.USER_COLUMN,
-        flex: 1.2,
-        minWidth: 260,
-        renderCell: renderAvatarCell,
-        sortable: true,
+  const columns = useMemo<GridColDef<bookcarsTypes.User>[]>(() => [
+    {
+      field: 'fullName',
+      headerName: strings.USER_COLUMN,
+      flex: 1.4,
+      minWidth: 260,
+      renderCell: renderAvatarCell,
+      sortable: true,
+    },
+    {
+      field: 'email',
+      headerName: commonStrings.EMAIL,
+      flex: 1,
+      minWidth: 220,
+      renderCell: (params) => renderCopyCell(params),
+      sortable: false,
+    },
+    {
+      field: 'type',
+      headerName: commonStrings.TYPE,
+      flex: 0.6,
+      minWidth: 150,
+      renderCell: renderRolePill,
+      sortable: false,
+    },
+    {
+      field: 'lastLoginAt',
+      headerName: strings.LAST_LOGIN_COLUMN,
+      flex: 0.8,
+      minWidth: 170,
+      valueGetter: (params: any) => {
+        if (!params) {
+          return null
+        }
+        // Si params est directement une date, la retourner
+        if (params instanceof Date || typeof params === 'string' || typeof params === 'number') {
+          return params
+        }
+        // Sinon, chercher dans params.row
+        if (params.row) {
+          return getLastLoginValue(params.row)
+        }
+        // Sinon, chercher directement dans params (au cas où c'est la valeur directement)
+        return getLastLoginValue(params as bookcarsTypes.User)
       },
-      {
-        field: 'email',
-        headerName: commonStrings.EMAIL,
-        flex: 1,
-        minWidth: 220,
-        renderCell: (params) => renderCopyCell(params, 'email'),
-        sortable: false,
+      valueFormatter: (params: { value?: Date | string | null }) => {
+        if (!params) {
+          return '—'
+        }
+        return formatDateTime(params as Date | string | null)
       },
-      {
-        field: 'phone',
-        headerName: commonStrings.PHONE,
-        flex: 0.8,
-        minWidth: 180,
-        renderCell: (params) => renderCopyCell(params, 'phone'),
-        sortable: false,
+      sortComparator: (a, b) =>
+        getDateTimestamp(a as Date | string | null) - getDateTimestamp(b as Date | string | null),
+      sortable: true,
+    },
+    {
+      field: 'createdAt',
+      headerName: strings.CREATED_AT_COLUMN,
+      flex: 0.8,
+      minWidth: 170,
+      valueGetter: (params: any) => {
+        if (!params) {
+          return null
+        }
+        // Si params est directement une date, la retourner
+        if (params instanceof Date || typeof params === 'string' || typeof params === 'number') {
+          return params
+        }
+        // Sinon, chercher dans params.row
+        if (params.row) {
+          return getCreatedAtValue(params.row)
+        }
+        // Sinon, chercher directement dans params (au cas où c'est la valeur directement)
+        return getCreatedAtValue(params as bookcarsTypes.User)
       },
-      {
-        field: 'type',
-        headerName: commonStrings.TYPE,
-        flex: 0.6,
-        minWidth: 150,
-        renderCell: renderRolePill,
-        sortable: false,
+      valueFormatter: (params: { value?: Date | string | null }) => {
+        if (!params) {
+          return '—'
+        }
+        return formatDateTime(params as Date | string | null)
       },
-      {
-        field: 'verified',
-        headerName: strings.VERIFIED_COLUMN,
-        flex: 0.6,
-        minWidth: 140,
-        renderCell: ({ value }) =>
-          renderStatusPill(Boolean(value), strings.VERIFIED_SHORT, strings.UNVERIFIED_SHORT, 'us-pill--success', 'us-pill--neutral'),
-        sortable: false,
-      },
-      {
-        field: 'active',
-        headerName: strings.ACTIVE_COLUMN,
-        flex: 0.6,
-        minWidth: 140,
-        renderCell: ({ value }) =>
-          renderStatusPill(Boolean(value), strings.ACTIVE_LABEL, strings.INACTIVE_LABEL, 'us-pill--success', 'us-pill--danger'),
-        sortable: false,
-      },
-      {
-        field: 'lastLoginAt',
-        headerName: strings.LAST_LOGIN_COLUMN,
-        flex: 0.7,
-        minWidth: 180,
-        valueGetter: (params) => params ?? null,
-        valueFormatter: (params) => formatLastLoginValue(params as any),
-        sortable: true,
-      },
-      {
-        field: 'reviewCount',
-        headerName: strings.REVIEWS_COLUMN,
-        flex: 0.5,
-        minWidth: 140,
-        renderCell: ({ row }) => {
-          const count = row.reviewCount ?? row.reviews?.length ?? 0
-          if (count === 0) return <Typography variant="body2">0</Typography>
+      sortComparator: (a, b) =>
+        getDateTimestamp(a as Date | string | null) - getDateTimestamp(b as Date | string | null),
+      sortable: true,
+    },
+    {
+      field: 'reviewCount',
+      headerName: strings.REVIEWS_COLUMN,
+      flex: 0.5,
+      minWidth: 110,
+      renderCell: ({ row }) => {
+        const count = row.reviewCount ?? (Array.isArray(row.reviews) ? row.reviews.length : 0)
+        if (count > 0) {
           return (
             <Button
               size="small"
-              startIcon={<Reviews fontSize="small" />}
               onClick={(event) => {
                 event.stopPropagation()
                 onReviewsClick(row)
@@ -568,65 +611,52 @@ const UserList = ({
               {count}
             </Button>
           )
-        },
-        sortable: false,
+        }
+        return (
+          <Typography variant="body2" color="text.secondary">
+            0
+          </Typography>
+        )
       },
-      {
-        field: 'actions',
-        headerName: strings.ACTIONS_COLUMN,
-        sortable: false,
-        filterable: false,
-        disableColumnMenu: true,
-        minWidth: 80,
-        align: 'right',
-        renderCell: ({ row }) => (
-          <IconButton
-            size="small"
-            onClick={(event) => {
-              event.stopPropagation()
-              setMenuAnchor(event.currentTarget)
-              setMenuRow(row)
-            }}
-            aria-label={strings.ACTIONS_COLUMN}
-          >
-            <MoreVert fontSize="small" />
-          </IconButton>
-        ),
-      },
-    ]
-
-    if (admin) {
-      baseColumns.splice(6, 0, {
-        field: 'blacklisted',
-        headerName: strings.BLACKLIST_COLUMN,
-        flex: 0.6,
-        minWidth: 140,
-        renderCell: ({ value }) =>
-          renderStatusPill(Boolean(value), strings.BLACKLISTED_LABEL, strings.NOT_BLACKLISTED_LABEL, 'us-pill--danger', 'us-pill--neutral'),
-        sortable: false,
-      })
-    }
-
-    return baseColumns
-  }, [admin, onReviewsClick, renderAvatarCell, renderCopyCell, renderRolePill, renderStatusPill])
+      sortable: false,
+    },
+    {
+      field: 'actions',
+      headerName: strings.ACTIONS_COLUMN,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      minWidth: 80,
+      align: 'right',
+      renderCell: ({ row }) => (
+        <IconButton
+          size="small"
+          onClick={(event) => {
+            event.stopPropagation()
+            setMenuAnchor(event.currentTarget)
+            setMenuRow(row)
+          }}
+          aria-label={strings.ACTIONS_COLUMN}
+        >
+          <MoreVert fontSize="small" />
+        </IconButton>
+      ),
+    },
+  ], [onReviewsClick, renderAvatarCell, renderCopyCell, renderRolePill])
 
   const handleSortModelChange = (model: GridSortModel) => {
-    const nextModel = model.length > 0 ? [model[0]] : []
-    setInternalSortModel(nextModel)
-    onSortModelChange(nextModel)
-    setRows((current) => sortRows(current, nextModel))
+    onSortModelChange(model)
+    setPaginationModel((prev) => ({ ...prev, page: 0 }))
   }
 
   const handleVisibilityChange = (model: GridColumnVisibilityModel) => {
-    setInternalVisibilityModel(model)
     onColumnVisibilityModelChange(model)
   }
 
   const handlePaginationChange = (model: { page: number; pageSize: number }) => {
     setPaginationModel(model)
     const nextDensity: GridDensity = model.pageSize > 50 ? 'compact' : 'comfortable'
-    if (nextDensity !== internalDensity) {
-      setInternalDensity(nextDensity)
+    if (nextDensity !== density) {
       onDensityChange?.(nextDensity)
     }
   }
@@ -680,16 +710,25 @@ const UserList = ({
         rowSelectionModel={selectionModel}
         onRowSelectionModelChange={handleSelectionChange}
         keepNonExistentRowsSelected
-        sortModel={internalSortModel}
+        sortingMode="server"
+        sortModel={sortModel}
         onSortModelChange={handleSortModelChange}
         columnVisibilityModel={computedVisibilityModel}
         onColumnVisibilityModelChange={handleVisibilityChange}
-        density={internalDensity}
+        density={density}
         className="us-data-grid"
         disableColumnFilter
         hideFooter
         hideFooterSelectedRowCount
         sx={{
+          flex: 1,
+          minHeight: 0,
+          '& .MuiDataGrid-main': {
+            flex: 1,
+          },
+          '& .MuiDataGrid-virtualScroller': {
+            backgroundColor: '#fff',
+          },
           '& .MuiDataGrid-columnHeaders': {
             backgroundColor: '#F5F7FB',
             borderBottom: '1px solid #E0E6ED',
@@ -699,7 +738,7 @@ const UserList = ({
             letterSpacing: '0.08em',
           },
           '& .MuiDataGrid-row:hover': {
-            backgroundColor: '#F8FAFC',
+            backgroundColor: '#F5F7FB',
           },
           '& .MuiDataGrid-withBorderColor': {
             borderColor: 'rgba(226, 232, 240, 0.9)',
@@ -743,18 +782,30 @@ const UserList = ({
       </Box>
 
       <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-        <MenuItem component={Link} href={`/user?u=${menuRow?._id}`} onClick={closeMenu}>
+        <MenuItem
+          onClick={() => navigateFromMenu((id) => `/user?u=${id}`)}
+          component="button"
+          type="button"
+        >
           <Launch fontSize="small" sx={{ mr: 1 }} />
           {strings.VIEW_PROFILE}
         </MenuItem>
         {admin && (
-          <MenuItem component={Link} href={`/update-user?u=${menuRow?._id}`} onClick={closeMenu}>
+          <MenuItem
+            onClick={() => navigateFromMenu((id) => `/update-user?u=${id}`)}
+            component="button"
+            type="button"
+          >
             <EditOutlined fontSize="small" sx={{ mr: 1 }} />
             {strings.EDIT_USER}
           </MenuItem>
         )}
         {admin && (
-          <MenuItem component={Link} href={`/reset-password?u=${menuRow?._id}`} onClick={closeMenu}>
+          <MenuItem
+            onClick={() => navigateFromMenu((id) => `/reset-password?u=${id}`)}
+            component="button"
+            type="button"
+          >
             <LockReset fontSize="small" sx={{ mr: 1 }} />
             {strings.RESET_PASSWORD}
           </MenuItem>

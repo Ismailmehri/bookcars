@@ -36,6 +36,7 @@ const routes = {
   hasPassword: '/api/has-password/:id',
   addReview: '/api/add-review',
   getUsersReviews: '/api/get-users-reviews',
+  getUserReviews: '/api/users/:userId/reviews',
   acceptCommissionAgreement: '/api/commission-agreement/accept',
   notifySuppliersWithoutCars: '/api/cron/suppliers/reminder',
   notifySuppliersWithoutPhone: '/api/cron/suppliers/phone',

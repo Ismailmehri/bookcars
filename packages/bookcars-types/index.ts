@@ -733,7 +733,9 @@ export interface User {
   slug?: string
   commissionAgreementAccepted?: boolean
   commissionAgreementAcceptedAt?: string | Date
-  lastLoginAt?: Date
+  lastLoginAt?: Date | string | null
+  createdAt?: Date | string
+  listIndex?: number
 }
 
 export interface CommissionAgreementAcceptanceResponse {
@@ -910,6 +912,13 @@ export interface UsersFiltersPayload {
   lastLoginTo?: string | null
 }
 
+export type UsersSortableField = 'fullName' | 'lastLoginAt' | 'createdAt'
+
+export interface UsersSortDescriptor {
+  field: UsersSortableField
+  direction: 'asc' | 'desc'
+}
+
 export interface UsersGrowthMetric {
   current: number
   previous: number
@@ -926,6 +935,7 @@ export interface GetUsersBody {
   user: string
   types: UserType[]
   filters?: UsersFiltersPayload
+  sort?: UsersSortDescriptor[]
 }
 
 export interface CreatePaymentPayload {

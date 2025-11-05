@@ -30,12 +30,12 @@ describe('userStatsService', () => {
   })
 
   it('computes stats using injected countDocuments implementation', async () => {
-    const counts = [12, 10, 4, 2, 8, 6]
+    const counts = [12, 5, 3, 4, 3, 1, 8, 5, 3]
     const countDocuments = jest.fn().mockImplementation(async () => counts.shift() ?? 0)
 
     const stats = await getUsersStats({ countDocuments } as any, new Date('2024-05-15T12:00:00Z'))
 
-    expect(countDocuments).toHaveBeenCalledTimes(6)
+    expect(countDocuments).toHaveBeenCalledTimes(9)
     expect(stats.totalUsers).toEqual({ current: 12, previous: 10, growth: 20 })
     expect(stats.suppliers).toEqual({ current: 4, previous: 2, growth: 100 })
     expect(stats.clients).toEqual({ current: 8, previous: 6, growth: 33.33 })

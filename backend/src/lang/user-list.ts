@@ -52,6 +52,7 @@ const strings = new LocalizedStrings({
     AGENCY_NOTE_TYPE_BLOCK: 'Blocage',
     AGENCY_NOTE_TYPE_UNBLOCK: 'Déblocage',
     AGENCY_NOTE_TYPE_NOTE: 'Note interne',
+    MENU_ACTION_USER_MISSING: 'Utilisateur introuvable. Veuillez réessayer.',
   },
   en: {
     DELETE_USER: 'Are you sure you want to delete this user and all his data?',
@@ -103,6 +104,7 @@ const strings = new LocalizedStrings({
     AGENCY_NOTE_TYPE_BLOCK: 'Block',
     AGENCY_NOTE_TYPE_UNBLOCK: 'Unblock',
     AGENCY_NOTE_TYPE_NOTE: 'Internal note',
+    MENU_ACTION_USER_MISSING: 'Unable to determine the selected user. Please try again.',
   },
 })
 

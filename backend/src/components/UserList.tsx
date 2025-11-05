@@ -47,6 +47,7 @@ import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
 import { UsersFiltersState } from '@/pages/users.types'
 import { mapSortModelToApiSort } from '@/common/users-sort.utils'
+import { useNavigate } from 'react-router-dom'
 
 import '@/assets/css/user-list.css'
 import {
@@ -141,6 +142,7 @@ const UserList = ({
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const copyTimeoutRef = useRef<number>()
   const theme = useTheme()
+  const navigate = useNavigate()
   const isTablet = useMediaQuery(theme.breakpoints.down('lg'))
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const { page, pageSize } = paginationModel
@@ -327,10 +329,24 @@ const UserList = ({
     }
   }
 
-  const closeMenu = () => {
+  const closeMenu = useCallback(() => {
     setMenuAnchor(null)
     setMenuRow(undefined)
-  }
+  }, [])
+
+  const navigateFromMenu = useCallback(
+    (buildPath: (id: string) => string) => {
+      if (!menuRow?._id) {
+        helper.error(undefined, strings.MENU_ACTION_USER_MISSING)
+        return
+      }
+
+      const target = buildPath(menuRow._id)
+      closeMenu()
+      navigate(target)
+    },
+    [closeMenu, menuRow, navigate]
+  )
 
   // === Stabilisation des renderers ===
   // 1) ref pour suivre copiedField sans dépendance
@@ -766,18 +782,30 @@ const UserList = ({
       </Box>
 
       <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-        <MenuItem component={Link} href={`/user?u=${menuRow?._id}`} onClick={closeMenu}>
+        <MenuItem
+          onClick={() => navigateFromMenu((id) => `/user?u=${id}`)}
+          component="button"
+          type="button"
+        >
           <Launch fontSize="small" sx={{ mr: 1 }} />
           {strings.VIEW_PROFILE}
         </MenuItem>
         {admin && (
-          <MenuItem component={Link} href={`/update-user?u=${menuRow?._id}`} onClick={closeMenu}>
+          <MenuItem
+            onClick={() => navigateFromMenu((id) => `/update-user?u=${id}`)}
+            component="button"
+            type="button"
+          >
             <EditOutlined fontSize="small" sx={{ mr: 1 }} />
             {strings.EDIT_USER}
           </MenuItem>
         )}
         {admin && (
-          <MenuItem component={Link} href={`/reset-password?u=${menuRow?._id}`} onClick={closeMenu}>
+          <MenuItem
+            onClick={() => navigateFromMenu((id) => `/reset-password?u=${id}`)}
+            component="button"
+            type="button"
+          >
             <LockReset fontSize="small" sx={{ mr: 1 }} />
             {strings.RESET_PASSWORD}
           </MenuItem>

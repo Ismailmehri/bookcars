@@ -26,6 +26,7 @@ import Car from '../models/Car'
 import AdditionalDriver from '../models/AdditionalDriver'
 import * as logger from '../common/logger'
 import * as userStatsService from '../services/userStatsService'
+import { createUsersFiltersConditions } from './userController.helpers'
 
 /**
  * Get status message as HTML.
@@ -1636,6 +1637,11 @@ export const getUsers2 = async (req: Request, res: Response) => {
       $match.$and!.push({ _id: { $ne: new mongoose.Types.ObjectId(userId) } })
     }
 
+    const filtersConditions = createUsersFiltersConditions(body.filters)
+    if (filtersConditions.length > 0) {
+      $match.$and!.push(...filtersConditions)
+    }
+
     const sortableFields: Record<bookcarsTypes.UsersSortableField, string> = {
       fullName: 'fullName',
       lastLoginAt: 'lastLoginAt',
@@ -1769,6 +1775,11 @@ export const getUsers = async (req: Request, res: Response) => {
 
     if (userId) {
       $match.$and!.push({ _id: { $ne: new mongoose.Types.ObjectId(userId) } })
+    }
+
+    const filtersConditions = createUsersFiltersConditions(body.filters)
+    if (filtersConditions.length > 0) {
+      $match.$and!.push(...filtersConditions)
     }
 
     // Ajout de la condition spécifique pour les fournisseurs (pas admin)

@@ -431,7 +431,7 @@ const UserList = ({
     const value = params.value || ''
     if (!value) return <Typography variant="body2" color="text.secondary">—</Typography>
 
-    const fieldId = `email-${params.row._id}`
+    const fieldId = `${params.field}-${params.row._id}`
     const copied = copiedFieldRef.current === fieldId
 
     const handleCopy = (event: React.MouseEvent | React.KeyboardEvent) => {
@@ -527,6 +527,14 @@ const UserList = ({
         headerName: commonStrings.EMAIL,
         flex: 1,
         minWidth: 220,
+        renderCell: (params) => renderCopyCell(params),
+        sortable: false,
+      },
+      {
+        field: 'phone',
+        headerName: strings.PHONE_COLUMN,
+        flex: 0.9,
+        minWidth: 180,
         renderCell: (params) => renderCopyCell(params),
         sortable: false,
       },

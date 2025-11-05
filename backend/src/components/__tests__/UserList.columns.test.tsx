@@ -108,7 +108,16 @@ describe('UserList columns visibility', () => {
     const fields = lastCallArgs.columns.map((column) => column.field)
 
     expect(fields).toEqual(
-      expect.arrayContaining(['fullName', 'email', 'type', 'lastLoginAt', 'createdAt', 'reviewCount', 'actions'])
+      expect.arrayContaining([
+        'fullName',
+        'email',
+        'phone',
+        'type',
+        'lastLoginAt',
+        'createdAt',
+        'reviewCount',
+        'actions',
+      ])
     )
   })
 
@@ -121,7 +130,7 @@ describe('UserList columns visibility', () => {
     const lastCallArgs = dataGridSpy.mock.calls.at(-1)?.[0] as { columns: Array<{ field: string }> }
     const fields = lastCallArgs.columns.map((column) => column.field)
 
-    expect(fields).toEqual(expect.arrayContaining(['fullName', 'email', 'reviewCount', 'actions']))
+    expect(fields).toEqual(expect.arrayContaining(['fullName', 'email', 'phone', 'reviewCount', 'actions']))
     expect(fields).not.toContain('type')
     expect(fields).not.toContain('lastLoginAt')
     expect(fields).not.toContain('createdAt')

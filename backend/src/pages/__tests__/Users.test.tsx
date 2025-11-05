@@ -138,6 +138,9 @@ describe('Users page', () => {
 
     const actionButtons = Array.from(container.querySelectorAll('.users-toolbar__actions .MuiButton-root'))
     expect(actionButtons[0]?.textContent).toContain(usersStrings.SEARCH_BUTTON)
+    expect(actionButtons.some((button) => button.textContent?.includes(usersStrings.FILTERS_BUTTON))).toBe(true)
+    expect(actionButtons.some((button) => button.textContent?.includes(usersStrings.RESET_VIEW))).toBe(true)
+    expect(actionButtons.some((button) => button.textContent?.includes(usersStrings.SAVE_VIEW))).toBe(true)
 
     expect(userListPropsMock).toHaveBeenCalled()
     const firstCallProps = userListPropsMock.mock.calls[0][0]
@@ -172,5 +175,12 @@ describe('Users page', () => {
     expect(userListPropsMock).toHaveBeenCalled()
     const [{ admin: listAdmin }] = userListPropsMock.mock.calls
     expect(listAdmin).toBe(false)
+
+    const supplierActionButtons = Array.from(
+      container.querySelectorAll('.users-toolbar__actions .MuiButton-root'),
+    )
+    expect(supplierActionButtons.some((button) => button.textContent?.includes(usersStrings.FILTERS_BUTTON))).toBe(false)
+    expect(supplierActionButtons.some((button) => button.textContent?.includes(usersStrings.RESET_VIEW))).toBe(false)
+    expect(supplierActionButtons.some((button) => button.textContent?.includes(usersStrings.SAVE_VIEW))).toBe(false)
   })
 })

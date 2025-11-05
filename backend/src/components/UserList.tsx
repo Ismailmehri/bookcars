@@ -659,7 +659,7 @@ const UserList = ({
     ]
 
     if (!admin) {
-      return baseColumns.filter((column) => !['type', 'lastLoginAt', 'createdAt'].includes(column.field))
+      return baseColumns.filter((column) => !['type', 'lastLoginAt', 'createdAt', 'phone'].includes(column.field))
     }
 
     return baseColumns

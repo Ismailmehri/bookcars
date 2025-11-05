@@ -49,4 +49,3 @@ export const mapSortModelToApiSort = (model: GridSortModel): UsersSortDescriptor
 
   return result
 }
-

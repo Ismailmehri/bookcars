@@ -517,16 +517,19 @@ const Users = () => {
                       fullWidth
                       size="small"
                       variant="outlined"
-                      inputProps={{ 'aria-label': strings.SEARCH_PLACEHOLDER }}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
                             <SearchRoundedIcon fontSize="small" />
                           </InputAdornment>
                         ),
+                        inputProps: {
+                          'aria-label': strings.SEARCH_PLACEHOLDER,
+                        },
                       }}
                     />
                   </Box>
+
                   <Stack
                     direction={{ xs: 'column', sm: 'row' }}
                     spacing={{ xs: 1.2, sm: 1.2, md: 1.5 }}

@@ -37,6 +37,7 @@ import {
   DeleteOutline,
   ContentCopy,
 } from '@mui/icons-material'
+import { useNavigate } from 'react-router-dom'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
@@ -47,7 +48,6 @@ import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
 import { UsersFiltersState } from '@/pages/users.types'
 import { mapSortModelToApiSort } from '@/common/users-sort.utils'
-import { useNavigate } from 'react-router-dom'
 
 import '@/assets/css/user-list.css'
 import {

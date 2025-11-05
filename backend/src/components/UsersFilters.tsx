@@ -37,8 +37,8 @@ interface UsersFiltersProps {
   onClose: () => void
 }
 
-const toggleValue = <T,>(values: T[], value: T) =>
-  values.includes(value) ? values.filter((item) => item !== value) : [...values, value]
+const toggleValue = <T, >(values: T[], value: T) =>
+  (values.includes(value) ? values.filter((item) => item !== value) : [...values, value])
 
 const UsersFilters = ({ open, admin, filters, agencies, onApply, onReset, onClose }: UsersFiltersProps) => {
   const [draft, setDraft] = useState<UsersFiltersState>(filters)

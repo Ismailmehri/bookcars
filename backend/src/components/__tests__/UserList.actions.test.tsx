@@ -2,13 +2,36 @@ import React from 'react'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { MemoryRouter } from 'react-router-dom'
-import * as bookcarsTypes from ':bookcars-types'
 import { beforeAll, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
+import * as bookcarsTypes from ':bookcars-types'
 import UserList from '../UserList'
 import { defaultUsersFiltersState } from '@/pages/users.types'
 import { strings } from '@/lang/user-list'
 import * as UserService from '@/services/UserService'
 import * as helper from '@/common/helper'
+
+/**
+ * Utils pour éviter les erreurs ReactNode et l’indexation hasardeuse
+ */
+const safeGet = (obj: unknown, key: string): unknown => {
+  if (obj && typeof obj === 'object' && key in (obj as Record<string, unknown>)) {
+    return (obj as Record<string, unknown>)[key]
+  }
+  return undefined
+}
+
+const toNode = (value: unknown): React.ReactNode => {
+  if (React.isValidElement(value)) return value
+  if (value === null || value === undefined) return null
+  const t = typeof value
+  if (t === 'string' || t === 'number' || t === 'boolean') return String(value)
+  // Évite "{} is not assignable to ReactNode"
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
 
 vi.mock('@mui/x-data-grid', () => ({
   DataGrid: ({
@@ -16,23 +39,34 @@ vi.mock('@mui/x-data-grid', () => ({
     columns,
   }: {
     rows: bookcarsTypes.User[]
-    columns: Array<{ field: string; renderCell?: (params: Record<string, unknown>) => React.ReactNode }>
+    columns: Array<{
+      field: string
+      renderCell?: (params: {
+        id?: string
+        row: bookcarsTypes.User
+        field: string
+        value: unknown
+      }) => React.ReactNode
+    }>
   }) => (
     <div data-testid="data-grid">
-      {rows.map((row) => (
-        <div key={row._id ?? ''} data-testid={`row-${row._id}`}>
-          {columns.map((column) => (
-            <div key={column.field}>
-              {column.renderCell
-                ? column.renderCell({
-                    id: row._id,
-                    row,
-                    field: column.field,
-                    value: (row as Record<string, unknown>)[column.field],
-                  })
-                : (row as Record<string, unknown>)[column.field] ?? null}
-            </div>
-          ))}
+      {rows.map((row, idx) => (
+        <div key={(row._id as string) ?? `row-${idx}`} data-testid={`row-${row._id ?? idx}`}>
+          {columns.map((column) => {
+            const value = safeGet(row, column.field)
+            return (
+              <div key={column.field}>
+                {column.renderCell
+                  ? column.renderCell({
+                      id: row._id,
+                      row,
+                      field: column.field,
+                      value,
+                    })
+                  : toNode(value)}
+              </div>
+            )
+          })}
         </div>
       ))}
     </div>
@@ -129,9 +163,7 @@ describe('UserList action navigation', () => {
       </MemoryRouter>
     )
 
-    await waitFor(() => {
-      expect(getUsersMock).toHaveBeenCalled()
-    })
+    await waitFor(() => expect(getUsersMock).toHaveBeenCalled())
 
     const actionButton = await screen.findByLabelText(new RegExp(strings.ACTIONS_COLUMN, 'i'))
     fireEvent.click(actionButton)

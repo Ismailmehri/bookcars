@@ -1636,6 +1636,37 @@ export const getUsers2 = async (req: Request, res: Response) => {
       $match.$and!.push({ _id: { $ne: new mongoose.Types.ObjectId(userId) } })
     }
 
+    const sortableFields: Record<bookcarsTypes.UsersSortableField, string> = {
+      fullName: 'fullName',
+      lastLoginAt: 'lastLoginAt',
+      createdAt: 'createdAt',
+    }
+
+    const sortStage: Record<string, 1 | -1> = {}
+
+    if (Array.isArray(body.sort)) {
+      body.sort.forEach((descriptor) => {
+        const mappedField = sortableFields[descriptor.field as bookcarsTypes.UsersSortableField]
+        if (!mappedField || typeof sortStage[mappedField] !== 'undefined') {
+          return
+        }
+
+        sortStage[mappedField] = descriptor.direction === 'desc' ? -1 : 1
+      })
+    }
+
+    if (Object.keys(sortStage).length === 0) {
+      sortStage.lastLoginAt = -1
+    }
+
+    if (typeof sortStage.fullName === 'undefined') {
+      sortStage.fullName = 1
+    }
+
+    if (typeof sortStage._id === 'undefined') {
+      sortStage._id = 1
+    }
+
     const users = await User.aggregate(
       [
         {
@@ -1658,11 +1689,17 @@ export const getUsers2 = async (req: Request, res: Response) => {
             birthDate: 1,
             customerId: 1,
             active: 1,
+            lastLoginAt: { $ifNull: ['$lastLoginAt', null] },
+            createdAt: { $ifNull: ['$createdAt', null] },
           },
         },
         {
           $facet: {
-            resultData: [{ $sort: { fullName: 1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
+            resultData: [
+              { $sort: sortStage },
+              { $skip: (page - 1) * size },
+              { $limit: size },
+            ],
             pageInfo: [
               {
                 $count: 'totalRecords',
@@ -1750,6 +1787,37 @@ export const getUsers = async (req: Request, res: Response) => {
       })
     }
 
+    const sortableFields: Record<bookcarsTypes.UsersSortableField, string> = {
+      fullName: 'fullName',
+      lastLoginAt: 'lastLoginAt',
+      createdAt: 'createdAt',
+    }
+
+    const sortStage: Record<string, 1 | -1> = {}
+
+    if (Array.isArray(body.sort)) {
+      body.sort.forEach((descriptor) => {
+        const mappedField = sortableFields[descriptor.field as bookcarsTypes.UsersSortableField]
+        if (!mappedField || typeof sortStage[mappedField] !== 'undefined') {
+          return
+        }
+
+        sortStage[mappedField] = descriptor.direction === 'desc' ? -1 : 1
+      })
+    }
+
+    if (Object.keys(sortStage).length === 0) {
+      sortStage.lastLoginAt = -1
+    }
+
+    if (typeof sortStage.fullName === 'undefined') {
+      sortStage.fullName = 1
+    }
+
+    if (typeof sortStage._id === 'undefined') {
+      sortStage._id = 1
+    }
+
     const users = await User.aggregate(
       [
         {
@@ -1785,7 +1853,11 @@ export const getUsers = async (req: Request, res: Response) => {
         },
         {
           $facet: {
-            resultData: [{ $sort: { fullName: 1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
+            resultData: [
+              { $sort: sortStage },
+              { $skip: (page - 1) * size },
+              { $limit: size },
+            ],
             pageInfo: [
               {
                 $count: 'totalRecords',

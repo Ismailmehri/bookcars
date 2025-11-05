@@ -33,6 +33,7 @@ import { strings as commonStrings } from '@/lang/common'
 import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
 import * as SupplierService from '@/services/SupplierService'
+import { sanitizeUsersSortModel, sortModelsEqual } from '@/common/users-sort.utils'
 import {
   UsersFiltersState,
   UsersPersistedState,
@@ -72,25 +73,6 @@ const defaultSortModel: GridSortModel = [
 ]
 const defaultVisibilityModel: GridColumnVisibilityModel = {}
 const defaultDensity: GridDensity = 'comfortable'
-
-const sanitizeSortModel = (model: GridSortModel): GridSortModel => {
-  const filtered = model.filter((item) => item.sort)
-  if (filtered.length === 0) {
-    return [...defaultSortModel]
-  }
-
-  const hasLastLogin = filtered.some((item) => item.field === 'lastLoginAt')
-  const hasFullName = filtered.some((item) => item.field === 'fullName')
-
-  if (hasLastLogin && !hasFullName) {
-    return [...filtered, { field: 'fullName', sort: 'asc' }]
-  }
-
-  return filtered
-}
-
-const sortModelsEqual = (a: GridSortModel, b: GridSortModel) =>
-  a.length === b.length && a.every((item, index) => item.field === b[index]?.field && item.sort === b[index]?.sort)
 
 const sanitizeRoles = (roles: bookcarsTypes.UserType[], isAdmin: boolean) => {
   const allowed = isAdmin ? adminDefaultRoles : agencyDefaultRoles
@@ -170,7 +152,7 @@ const Users = () => {
           setFilters(persisted.filters)
         }
         if (persisted.sortModel) {
-          setSortModel(sanitizeSortModel(persisted.sortModel))
+          setSortModel(sanitizeUsersSortModel(persisted.sortModel, defaultSortModel))
         }
         if (persisted.columnVisibilityModel) {
           setColumnVisibilityModel(persisted.columnVisibilityModel)
@@ -464,7 +446,7 @@ const Users = () => {
   }
 
   const handleSortModelChange = (model: GridSortModel) => {
-    const effective = sanitizeSortModel(model.length > 0 ? model : defaultSortModel)
+    const effective = sanitizeUsersSortModel(model.length > 0 ? model : defaultSortModel, defaultSortModel)
     if (!sortModelsEqual(sortModel, effective)) {
       setSortModel(effective)
       setUnsavedChanges(true)

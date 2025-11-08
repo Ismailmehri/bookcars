@@ -1,73 +1,867 @@
-import React, { useState } from 'react'
-import { Button } from '@mui/material'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  Alert,
+  Badge,
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography,
+  InputAdornment,
+} from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined'
+import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined'
+import RotateLeftRoundedIcon from '@mui/icons-material/RotateLeftRounded'
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
+import { GridColumnVisibilityModel, GridDensity, GridSortModel } from '@mui/x-data-grid'
 import * as bookcarsTypes from ':bookcars-types'
 import Layout from '@/components/Layout'
-import env from '@/config/env.config'
-import { strings } from '@/lang/users'
-import * as helper from '@/common/helper'
-import UserTypeFilter from '@/components/UserTypeFilter'
-import Search from '@/components/Search'
+import UsersFilters from '@/components/UsersFilters'
+import UsersStatsCards from '@/components/UsersStatsCards'
 import UserList from '@/components/UserList'
+import UserReviewsDialog from '@/components/UserReviewsDialog'
+import BulkSmsDialog from '@/components/users/actions/BulkSmsDialog'
+import BulkEmailDialog from '@/components/users/actions/BulkEmailDialog'
+import { strings } from '@/lang/users'
+import { strings as commonStrings } from '@/lang/common'
+import { strings as insightsStrings } from '@/lang/insights'
+import * as helper from '@/common/helper'
+import * as UserService from '@/services/UserService'
+import * as SupplierService from '@/services/SupplierService'
+import * as InsightsActionService from '@/services/InsightsActionService'
+import { sanitizeUsersSortModel, sortModelsEqual } from '@/common/users-sort.utils'
+import {
+  UsersFiltersState,
+  UsersPersistedState,
+  defaultUsersFiltersState,
+} from './users.types'
 
 import '@/assets/css/users.css'
+
+const STORAGE_KEY = 'bc-users-filters'
+
+interface ConfirmState {
+  message: string
+  onConfirm: () => Promise<void>
+}
+
+interface PageSummaryState {
+  from: number
+  to: number
+  total: number
+  pageSize: number
+}
+
+const adminDefaultRoles = [
+  bookcarsTypes.UserType.Admin,
+  bookcarsTypes.UserType.Supplier,
+  bookcarsTypes.UserType.User,
+]
+
+const agencyDefaultRoles = [
+  bookcarsTypes.UserType.Supplier,
+  bookcarsTypes.UserType.User,
+]
+
+const defaultSortModel: GridSortModel = [
+  { field: 'lastLoginAt', sort: 'desc' },
+  { field: 'fullName', sort: 'asc' },
+]
+const defaultVisibilityModel: GridColumnVisibilityModel = {}
+const defaultDensity: GridDensity = 'comfortable'
+
+const sanitizeRoles = (roles: bookcarsTypes.UserType[], isAdmin: boolean) => {
+  const allowed = isAdmin ? adminDefaultRoles : agencyDefaultRoles
+  const sanitized = roles.filter((role) => allowed.includes(role))
+  return sanitized.length > 0 ? sanitized : allowed
+}
+
+const countActiveFilters = (filters: UsersFiltersState, isAdmin: boolean) => {
+  let count = 0
+  const defaultRoles = isAdmin ? adminDefaultRoles : agencyDefaultRoles
+  const rolesDiff = filters.roles.length > 0
+    && (filters.roles.length !== defaultRoles.length || filters.roles.some((role) => !defaultRoles.includes(role)))
+
+  if (rolesDiff) {
+    count += 1
+  }
+
+  if (filters.verification.length > 0) {
+    count += 1
+  }
+
+  if (filters.activity.length > 0) {
+    count += 1
+  }
+
+  if (isAdmin) {
+    if (filters.blacklisted !== 'all') {
+      count += 1
+    }
+
+    if (filters.agencyId) {
+      count += 1
+    }
+
+    if (filters.lastLoginFrom || filters.lastLoginTo) {
+      count += 1
+    }
+  }
+
+  return count
+}
 
 const Users = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
   const [admin, setAdmin] = useState(false)
-  const [types, setTypes] = useState<bookcarsTypes.UserType[]>()
   const [keyword, setKeyword] = useState('')
+  const [keywordDraft, setKeywordDraft] = useState('')
+  const [filters, setFilters] = useState<UsersFiltersState>(defaultUsersFiltersState)
+  const [agencies, setAgencies] = useState<bookcarsTypes.User[]>([])
+  const [stats, setStats] = useState<bookcarsTypes.UsersStatsResponse>()
+  const [statsLoading, setStatsLoading] = useState(false)
+  const [statsError, setStatsError] = useState<string>()
+  const [selection, setSelection] = useState<{ ids: string[]; rows: bookcarsTypes.User[] }>({ ids: [], rows: [] })
+  const [refreshToken, setRefreshToken] = useState(0)
+  const [selectionResetKey, setSelectionResetKey] = useState(0)
+  const [totalUsers, setTotalUsers] = useState(0)
+  const [pageSummary, setPageSummary] = useState<PageSummaryState>({ from: 0, to: 0, total: 0, pageSize: 0 })
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
+  const [reviewsOpen, setReviewsOpen] = useState(false)
+  const [reviewsUser, setReviewsUser] = useState<bookcarsTypes.User>()
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [sortModel, setSortModel] = useState<GridSortModel>(() => [...defaultSortModel])
+  const [columnVisibilityModel, setColumnVisibilityModel] = useState<GridColumnVisibilityModel>(defaultVisibilityModel)
+  const [density, setDensity] = useState<GridDensity>(defaultDensity)
+  const [unsavedChanges, setUnsavedChanges] = useState(false)
+  const [listLoading, setListLoading] = useState(false)
+  const [smsDialogOpen, setSmsDialogOpen] = useState(false)
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
 
-  const handleUserTypeFilterChange = (newTypes: bookcarsTypes.UserType[]) => {
-    setTypes(newTypes)
-  }
+  useEffect(() => {
+    try {
+      const persistedRaw = localStorage.getItem(STORAGE_KEY)
+      if (persistedRaw) {
+        const persisted = JSON.parse(persistedRaw) as UsersPersistedState
+        setKeyword(persisted.keyword || '')
+        setKeywordDraft(persisted.keyword || '')
+        if (persisted.filters) {
+          setFilters(persisted.filters)
+        }
+        if (persisted.sortModel) {
+          setSortModel(sanitizeUsersSortModel(persisted.sortModel, defaultSortModel))
+        }
+        if (persisted.columnVisibilityModel) {
+          setColumnVisibilityModel(persisted.columnVisibilityModel)
+        }
+        if (persisted.density) {
+          setDensity(persisted.density)
+        }
+      }
+    } catch (err) {
+      helper.error(err)
+    }
+  }, [])
 
-  const handleSearch = (newKeyword: string) => {
-    setKeyword(newKeyword)
-  }
+  useEffect(() => {
+    if (user) {
+      const isAdmin = helper.admin(user)
+      setAdmin(isAdmin)
+      setFilters((prev) => ({
+        ...prev,
+        roles: sanitizeRoles(prev.roles, isAdmin),
+      }))
+    }
+  }, [admin, user])
+
+  useEffect(() => {
+    if (!admin) {
+      setFilters((prev) => ({
+        ...prev,
+        blacklisted: 'all',
+        agencyId: null,
+        lastLoginFrom: null,
+        lastLoginTo: null,
+      }))
+    }
+  }, [admin])
+
+  const reloadStats = useCallback(async () => {
+    if (!admin) {
+      return
+    }
+
+    try {
+      setStatsLoading(true)
+      setStatsError(undefined)
+      const data = await UserService.getUsersStats()
+      setStats(data)
+    } catch (err) {
+      setStatsError(strings.STATS_ERROR)
+      helper.error(err)
+    } finally {
+      setStatsLoading(false)
+    }
+  }, [admin])
+
+  useEffect(() => {
+    reloadStats()
+  }, [reloadStats])
+
+  useEffect(() => {
+    const loadAgencies = async () => {
+      if (!admin) {
+        return
+      }
+      try {
+        const list = await SupplierService.getAllSuppliers()
+        setAgencies(list)
+      } catch (err) {
+        helper.error(err)
+      }
+    }
+
+    loadAgencies()
+  }, [admin])
 
   const onLoad = (_user?: bookcarsTypes.User) => {
-    const _admin = helper.admin(_user)
-    const _types = _admin
-      ? helper.getUserTypes().map((userType) => userType.value)
-      : [bookcarsTypes.UserType.Supplier, bookcarsTypes.UserType.User]
+    if (_user) {
+      const isAdmin = helper.admin(_user)
+      setUser(_user)
+      setAdmin(isAdmin)
+      setFilters((prev) => ({
+        ...prev,
+        roles: sanitizeRoles(prev.roles, isAdmin),
+      }))
+    }
+  }
 
-    setUser(_user)
-    setAdmin(_admin)
-    setTypes(_types)
+  const handleKeywordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setKeywordDraft(event.target.value)
+  }
+
+  const executeSearch = useCallback(() => {
+    const trimmed = keywordDraft.trim()
+    setKeyword(trimmed)
+    setSelectionResetKey((prev) => prev + 1)
+    setRefreshToken((prev) => prev + 1)
+    setUnsavedChanges(true)
+  }, [keywordDraft])
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      executeSearch()
+    }
+  }
+
+  const handleFiltersApply = (nextFilters: UsersFiltersState) => {
+    setFilters({
+      ...nextFilters,
+      roles: sanitizeRoles(nextFilters.roles, admin),
+    })
+    setSelectionResetKey((prev) => prev + 1)
+    setFiltersOpen(false)
+    setUnsavedChanges(true)
+  }
+
+  const handleResetFilters = () => {
+    setFilters({
+      ...defaultUsersFiltersState,
+      roles: admin ? adminDefaultRoles : agencyDefaultRoles,
+    })
+    setSelectionResetKey((prev) => prev + 1)
+    setUnsavedChanges(true)
+  }
+
+  const handleSelectionChange = useCallback((nextSelection: { ids: string[]; rows: bookcarsTypes.User[] }) => {
+    setSelection(nextSelection)
+  }, [])
+
+  const handleListLoadingChange = useCallback((value: boolean) => {
+    setListLoading(value)
+  }, [])
+
+  const handlePageSummaryChange = useCallback((summary: PageSummaryState) => {
+    setPageSummary(summary)
+  }, [])
+
+  useEffect(() => {
+    if (selection.ids.length === 0) {
+      setSmsDialogOpen(false)
+      setEmailDialogOpen(false)
+    }
+  }, [selection.ids.length])
+
+  const handleReviewsClick = (selectedUser: bookcarsTypes.User) => {
+    setReviewsUser(selectedUser)
+    setReviewsOpen(true)
+  }
+
+  const closeReviewsDialog = () => {
+    setReviewsOpen(false)
+    setReviewsUser(undefined)
+  }
+
+  const buildUpdatePayload = (source: bookcarsTypes.User, patch: Partial<bookcarsTypes.UpdateUserPayload>): bookcarsTypes.UpdateUserPayload => ({
+    _id: source._id as string,
+    fullName: source.fullName,
+    phone: source.phone || '',
+    bio: source.bio || '',
+    location: source.location || '',
+    language: source.language || UserService.getLanguage(),
+    type: (patch.type as string) || (source.type as string),
+    avatar: source.avatar,
+    birthDate: source.birthDate ? new Date(source.birthDate).getTime() : undefined,
+    active: typeof patch.active !== 'undefined' ? patch.active : source.active,
+    blacklisted: typeof patch.blacklisted !== 'undefined' ? patch.blacklisted : source.blacklisted,
+    payLater: source.payLater,
+  })
+
+  const performBulkUpdate = async (patch: (item: bookcarsTypes.User) => Partial<bookcarsTypes.UpdateUserPayload>) => {
+    if (selection.rows.length === 0) {
+      return
+    }
+
+    try {
+      setActionLoading(true)
+      const responses = await Promise.all(selection.rows.map(async (item) => {
+        const payload = buildUpdatePayload(item, patch(item))
+        return UserService.updateUser(payload)
+      }))
+
+      if (responses.every((status) => status === 200)) {
+        helper.info(strings.USERS_UPDATED_SUCCESS)
+        setRefreshToken((prev) => prev + 1)
+        setSelectionResetKey((prev) => prev + 1)
+      } else {
+        helper.error(undefined, strings.USERS_UPDATE_ERROR)
+      }
+    } catch (err) {
+      helper.error(err, strings.USERS_UPDATE_ERROR)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const performBulkDelete = async () => {
+    if (selection.ids.length === 0) {
+      return
+    }
+
+    try {
+      setActionLoading(true)
+      const status = await UserService.deleteUsers(selection.ids)
+      if (status === 200) {
+        helper.info(strings.USERS_DELETED_SUCCESS)
+        setRefreshToken((prev) => prev + 1)
+        setSelectionResetKey((prev) => prev + 1)
+      } else {
+        helper.error(undefined, strings.USERS_DELETE_ERROR)
+      }
+    } catch (err) {
+      helper.error(err, strings.USERS_DELETE_ERROR)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const openConfirm = (message: string, onConfirm: () => Promise<void>) => {
+    setConfirmState({ message, onConfirm })
+  }
+
+  const handleConfirm = async () => {
+    if (!confirmState) {
+      return
+    }
+
+    try {
+      setActionLoading(true)
+      await confirmState.onConfirm()
+      setConfirmState(null)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleActivate = () => openConfirm(strings.CONFIRM_ACTIVATE, () => performBulkUpdate(() => ({ active: true })))
+  const handleDeactivate = () => openConfirm(strings.CONFIRM_DEACTIVATE, () => performBulkUpdate(() => ({ active: false })))
+  const handleBlacklist = () => openConfirm(strings.CONFIRM_BLACKLIST, () => performBulkUpdate(() => ({ blacklisted: true })))
+  const handleToSupplier = () => openConfirm(strings.CONFIRM_TO_SUPPLIER, () => performBulkUpdate(() => ({ type: bookcarsTypes.UserType.Supplier })))
+  const handleToClient = () => openConfirm(strings.CONFIRM_TO_CLIENT, () => performBulkUpdate(() => ({ type: bookcarsTypes.UserType.User })))
+  const handleDelete = () => openConfirm(strings.CONFIRM_DELETE, performBulkDelete)
+  const selectedUsers = useMemo(() => selection.rows, [selection.rows])
+
+  const reasonLabels = useMemo(
+    () => ({
+      MISSING_EMAIL: insightsStrings.REASON_MISSING_EMAIL,
+      EMAIL_SEND_FAILED: insightsStrings.REASON_EMAIL_FAILED,
+      INVALID_PHONE: insightsStrings.REASON_INVALID_PHONE,
+      SMS_SEND_FAILED: insightsStrings.REASON_SMS_FAILED,
+      BLOCK_FAILED: insightsStrings.REASON_BLOCK_FAILED,
+      UNBLOCK_FAILED: insightsStrings.REASON_UNBLOCK_FAILED,
+      NOTE_SAVE_FAILED: insightsStrings.REASON_NOTE_FAILED,
+      AGENCY_NOT_FOUND: insightsStrings.REASON_NOT_FOUND,
+      INVALID_AGENCY_ID: insightsStrings.REASON_INVALID_ID,
+      ALREADY_ACTIVE: insightsStrings.REASON_ALREADY_ACTIVE,
+    }),
+    [],
+  )
+
+  const formatBulkFailures = useCallback(
+    (entries: bookcarsTypes.BulkActionFailureEntry[]) => {
+      if (entries.length === 0) {
+        return ''
+      }
+
+      const summary = entries
+        .slice(0, 3)
+        .map((entry) => `${entry.agencyName}: ${reasonLabels[entry.reason as keyof typeof reasonLabels] ?? entry.reason}`)
+        .join(', ')
+
+      return entries.length > 3 ? `${summary}, …` : summary
+    },
+    [reasonLabels],
+  )
+
+  const handleBulkActionOutcome = useCallback(
+    (result: bookcarsTypes.BulkActionResponse, successTemplate: string) => {
+      if (result.succeeded.length > 0) {
+        helper.info(successTemplate.replace('{count}', result.succeeded.length.toString()))
+      }
+
+      if (result.failed.length > 0) {
+        const details = formatBulkFailures(result.failed) || '—'
+        helper.error(
+          undefined,
+          strings.BULK_ACTION_FAILURE
+            .replace('{count}', result.failed.length.toString())
+            .replace('{details}', details),
+        )
+      }
+
+      if (result.warnings.length > 0) {
+        const details = formatBulkFailures(result.warnings) || '—'
+        helper.info(
+          strings.BULK_ACTION_WARNINGS
+            .replace('{count}', result.warnings.length.toString())
+            .replace('{details}', details),
+        )
+      }
+
+      if (result.failed.length === 0 && result.warnings.length === 0) {
+        setSelectionResetKey((prev) => prev + 1)
+      }
+    },
+    [formatBulkFailures],
+  )
+
+  const handleSendSms = () => {
+    setSmsDialogOpen(true)
+  }
+
+  const handleSendEmail = () => {
+    setEmailDialogOpen(true)
+  }
+
+  const handleSmsSubmit = useCallback(
+    async ({ message }: { message: string }) => {
+      if (selection.ids.length === 0) {
+        return
+      }
+
+      try {
+        setActionLoading(true)
+        const result = await InsightsActionService.sendBulkSms({
+          agencyIds: selection.ids,
+          message,
+        })
+        handleBulkActionOutcome(result, strings.BULK_ACTION_SUCCESS)
+        setSmsDialogOpen(false)
+      } catch (err) {
+        helper.error(err, strings.BULK_ACTION_GENERIC_ERROR)
+      } finally {
+        setActionLoading(false)
+      }
+    },
+    [handleBulkActionOutcome, selection.ids],
+  )
+
+  const handleEmailSubmit = useCallback(
+    async ({ subject, message }: { subject: string; message: string }) => {
+      if (selection.ids.length === 0) {
+        return
+      }
+
+      try {
+        setActionLoading(true)
+        const result = await InsightsActionService.sendBulkEmail({
+          agencyIds: selection.ids,
+          subject,
+          message,
+        })
+        handleBulkActionOutcome(result, strings.BULK_ACTION_SUCCESS)
+        setEmailDialogOpen(false)
+      } catch (err) {
+        helper.error(err, strings.BULK_ACTION_GENERIC_ERROR)
+      } finally {
+        setActionLoading(false)
+      }
+    },
+    [handleBulkActionOutcome, selection.ids],
+  )
+
+  const canBulk = selection.ids.length > 0 && !actionLoading
+
+  const resultsLabel = useMemo(() => strings.formatString(strings.RESULTS_COUNT, totalUsers.toLocaleString()) as string, [totalUsers])
+
+  const filtersCount = useMemo(() => countActiveFilters(filters, admin), [filters, admin])
+
+  const filtersLabel = useMemo(
+    () =>
+      (filtersCount > 0
+        ? strings.formatString(strings.FILTERS_BUTTON_COUNT, filtersCount) ?? strings.FILTERS_BUTTON
+        : strings.FILTERS_BUTTON) as string,
+    [filtersCount],
+  )
+
+  const summaryLabel = useMemo(() => {
+    const displayed = pageSummary.to >= pageSummary.from && pageSummary.to > 0
+        ? pageSummary.to - pageSummary.from + 1
+        : pageSummary.total > 0 && pageSummary.pageSize > 0
+          ? Math.min(pageSummary.pageSize, pageSummary.total)
+          : 0
+
+    return strings.formatString(
+      strings.RESULTS_PAGE_SUMMARY,
+      displayed.toLocaleString(),
+      pageSummary.total.toLocaleString(),
+    ) as string
+  }, [pageSummary])
+
+  const handleSaveView = () => {
+    const state: UsersPersistedState = {
+      keyword,
+      filters,
+      sortModel,
+      columnVisibilityModel,
+      density,
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    helper.info(strings.SAVE_VIEW_SUCCESS)
+    setUnsavedChanges(false)
+  }
+
+  const handleResetView = () => {
+    setKeyword('')
+    setKeywordDraft('')
+    setFilters({
+      ...defaultUsersFiltersState,
+      roles: admin ? adminDefaultRoles : agencyDefaultRoles,
+    })
+    setSortModel([...defaultSortModel])
+    setColumnVisibilityModel(defaultVisibilityModel)
+    setDensity(defaultDensity)
+    setSelectionResetKey((prev) => prev + 1)
+    setRefreshToken((prev) => prev + 1)
+    setUnsavedChanges(false)
+    localStorage.removeItem(STORAGE_KEY)
+    helper.info(strings.RESET_VIEW_SUCCESS)
+  }
+
+  const handleSortModelChange = (model: GridSortModel) => {
+    const effective = sanitizeUsersSortModel(model.length > 0 ? model : defaultSortModel, defaultSortModel)
+    if (!sortModelsEqual(sortModel, effective)) {
+      setSortModel(effective)
+      setUnsavedChanges(true)
+    }
+  }
+
+  const handleVisibilityChange = (model: GridColumnVisibilityModel) => {
+    setColumnVisibilityModel(model)
+    setUnsavedChanges(true)
+  }
+
+  const handleDensityChange = (value: GridDensity) => {
+    setDensity(value)
+    setUnsavedChanges(true)
   }
 
   return (
     <Layout onLoad={onLoad} strict>
       {user && (
-        <div className="users">
-          <div className="col-1">
-            <div className="div.col-1-container">
-              <Search onSubmit={handleSearch} className="search" />
+        <Box className="users-page-wrapper">
+          <Container maxWidth="xl" className="users-page">
+            <Box component="header" className="users-header">
+              <Typography variant="h3" fontWeight={700} color="text.primary">
+                {strings.PAGE_TITLE}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                {strings.PAGE_SUBTITLE}
+              </Typography>
+            </Box>
 
-              {admin
-                && (
-                <UserTypeFilter
-                  className="user-type-filter"
-                  onChange={handleUserTypeFilterChange}
-                />
-)}
+            {admin && (
+              <Box className="users-stats-section">
+                <Stack direction="row" justifyContent="space-between" alignItems="center" className="users-section-header">
+                  <Typography variant="h5" fontWeight={700} color="text.primary">
+                    {strings.STATS_TITLE}
+                  </Typography>
+                  {statsLoading && <CircularProgress size={20} />}
+                </Stack>
+                {statsError && (
+                  <Alert
+                    severity="error"
+                    action={(
+                      <Button color="inherit" size="small" onClick={reloadStats}>
+                        {strings.RETRY}
+                      </Button>
+                    )}
+                  >
+                    {statsError}
+                  </Alert>
+                )}
+                <UsersStatsCards stats={stats} loading={statsLoading} />
+              </Box>
+            )}
 
-              <Button variant="contained" className="btn-primary new-user" size="small" href="/create-user">
-                {strings.NEW_USER}
-              </Button>
-            </div>
-          </div>
-          <div className="col-2">
-            <UserList
-              user={user}
-              types={types}
-              keyword={keyword}
-              checkboxSelection={!env.isMobile() && admin}
-              hideDesktopColumns={env.isMobile()}
-            />
-          </div>
-        </div>
+            <Box className="users-toolbar-container">
+              <Box className="users-toolbar">
+                <Stack
+                  direction={{ xs: 'column', lg: 'row' }}
+                  spacing={{ xs: 2, lg: 3 }}
+                  alignItems={{ xs: 'stretch', lg: 'center' }}
+                >
+                  <Box className="users-toolbar__search">
+                    <TextField
+                      value={keywordDraft}
+                      onChange={handleKeywordChange}
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder={strings.SEARCH_PLACEHOLDER}
+                      fullWidth
+                      size="small"
+                      variant="outlined"
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchRoundedIcon fontSize="small" />
+                          </InputAdornment>
+                        ),
+                        inputProps: {
+                          'aria-label': strings.SEARCH_PLACEHOLDER,
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={{ xs: 1.2, sm: 1.2, md: 1.5 }}
+                    alignItems={{ xs: 'stretch', sm: 'center' }}
+                    justifyContent="flex-end"
+                    className="users-toolbar__actions"
+                  >
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<SearchRoundedIcon />}
+                      onClick={executeSearch}
+                    >
+                      {strings.SEARCH_BUTTON}
+                    </Button>
+                    {admin && (
+                      <>
+                        <Button
+                          variant="outlined"
+                          startIcon={<FilterAltOutlinedIcon />}
+                          onClick={() => setFiltersOpen(true)}
+                          color="primary"
+                        >
+                          {filtersLabel}
+                        </Button>
+                        <Button variant="text" startIcon={<RotateLeftRoundedIcon />} onClick={handleResetView}>
+                          {strings.RESET_VIEW}
+                        </Button>
+                        <Tooltip title={strings.SAVE_VIEW} disableHoverListener={!unsavedChanges}>
+                          <span>
+                            <Badge color="secondary" variant="dot" invisible={!unsavedChanges} overlap="circular">
+                              <Button
+                                variant="outlined"
+                                startIcon={<SaveOutlinedIcon />}
+                                onClick={handleSaveView}
+                                disabled={!unsavedChanges}
+                              >
+                                {strings.SAVE_VIEW}
+                              </Button>
+                            </Badge>
+                          </span>
+                        </Tooltip>
+                      </>
+                    )}
+                    <Tooltip
+                      title={strings.ADMIN_ONLY_ACTION}
+                      placement="top"
+                      arrow
+                      disableFocusListener={admin}
+                      disableHoverListener={admin}
+                      disableTouchListener={admin}
+                    >
+                      <span>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="medium"
+                          className="users-add"
+                          href="/create-user"
+                          startIcon={<AddIcon />}
+                          disabled={!admin}
+                        >
+                          {strings.NEW_USER}
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  </Stack>
+                </Stack>
+              </Box>
+            </Box>
+
+            <Box className="users-content">
+              <Box className="users-table-card">
+                <Box className="users-table-card__header">
+                  <Box>
+                    <Typography variant="body2" color="text.primary">
+                      {resultsLabel}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {summaryLabel}
+                    </Typography>
+                  </Box>
+                  {(listLoading || actionLoading) && (
+                    <Stack direction="row" spacing={1} alignItems="center" className="users-table-card__loading">
+                      <CircularProgress size={16} />
+                      <Typography variant="caption" color="text.secondary">
+                        {commonStrings.PLEASE_WAIT}
+                      </Typography>
+                    </Stack>
+                  )}
+                </Box>
+                <Box className="users-table-card__body">
+                  <UserList
+                    user={user}
+                    keyword={keyword}
+                    filters={filters}
+                    admin={admin}
+                    refreshToken={refreshToken}
+                    selectionResetKey={selectionResetKey}
+                    sortModel={sortModel}
+                    onSortModelChange={handleSortModelChange}
+                    columnVisibilityModel={columnVisibilityModel}
+                    onColumnVisibilityModelChange={handleVisibilityChange}
+                    density={density}
+                    onDensityChange={handleDensityChange}
+                    onSelectionChange={handleSelectionChange}
+                    onReviewsClick={handleReviewsClick}
+                    onTotalChange={setTotalUsers}
+                    onLoadingChange={handleListLoadingChange}
+                    onPageSummaryChange={handlePageSummaryChange}
+                  />
+                </Box>
+              </Box>
+            </Box>
+          </Container>
+
+          {admin && selection.ids.length > 0 && (
+            <Box className="users-bulk-bar">
+              <Stack spacing={0.5}>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  {strings.formatString(strings.BULK_SELECTED_COUNT, selection.ids.length) as string}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {strings.BULK_ACTIONS_DESCRIPTION}
+                </Typography>
+              </Stack>
+              <Box className="users-bulk-bar__actions">
+                <Button variant="outlined" onClick={handleSendSms} disabled={!canBulk}>
+                  {strings.BULK_SEND_SMS}
+                </Button>
+                <Button variant="outlined" onClick={handleSendEmail} disabled={!canBulk}>
+                  {strings.BULK_SEND_EMAIL}
+                </Button>
+                <Button variant="outlined" onClick={handleActivate} disabled={!canBulk}>
+                  {strings.BULK_ACTIVATE}
+                </Button>
+                <Button variant="outlined" onClick={handleDeactivate} disabled={!canBulk}>
+                  {strings.BULK_DEACTIVATE}
+                </Button>
+                <Button variant="outlined" onClick={handleBlacklist} disabled={!canBulk}>
+                  {strings.BULK_BLACKLIST}
+                </Button>
+                <Button variant="outlined" onClick={handleToSupplier} disabled={!canBulk}>
+                  {strings.BULK_TO_SUPPLIER}
+                </Button>
+                <Button variant="outlined" onClick={handleToClient} disabled={!canBulk}>
+                  {strings.BULK_TO_CLIENT}
+                </Button>
+                <Button variant="contained" color="error" onClick={handleDelete} disabled={!canBulk}>
+                  {strings.BULK_DELETE}
+                </Button>
+              </Box>
+            </Box>
+          )}
+        </Box>
       )}
+
+      <UsersFilters
+        open={filtersOpen}
+        admin={admin}
+        filters={filters}
+        agencies={agencies}
+        onApply={handleFiltersApply}
+        onReset={handleResetFilters}
+        onClose={() => setFiltersOpen(false)}
+      />
+
+      <UserReviewsDialog open={reviewsOpen} user={reviewsUser} onClose={closeReviewsDialog} />
+
+      <BulkSmsDialog
+        open={smsDialogOpen}
+        users={selectedUsers}
+        loading={actionLoading}
+        onClose={() => setSmsDialogOpen(false)}
+        onSubmit={handleSmsSubmit}
+      />
+
+      <BulkEmailDialog
+        open={emailDialogOpen}
+        users={selectedUsers}
+        loading={actionLoading}
+        onClose={() => setEmailDialogOpen(false)}
+        onSubmit={handleEmailSubmit}
+      />
+
+      <Dialog open={Boolean(confirmState)} onClose={() => setConfirmState(null)} maxWidth="xs" fullWidth>
+        <DialogTitle className="dialog-header">{commonStrings.CONFIRM_TITLE}</DialogTitle>
+        <DialogContent className="dialog-content">
+          {confirmState?.message}
+        </DialogContent>
+        <DialogActions className="dialog-actions">
+          <Button onClick={() => setConfirmState(null)} variant="contained" className="btn-secondary">
+            {commonStrings.CANCEL}
+          </Button>
+          <Button onClick={handleConfirm} variant="contained" color="primary" disabled={actionLoading}>
+            {commonStrings.CONFIRM}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Layout>
   )
 }

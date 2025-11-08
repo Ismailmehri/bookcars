@@ -728,11 +728,14 @@ export interface User {
   contracts?: Contract[]
   emailLogs?: EmailLog[]
   reviews?: Review[]
+  reviewCount?: number
   score?: number
   slug?: string
   commissionAgreementAccepted?: boolean
   commissionAgreementAcceptedAt?: string | Date
-  lastLoginAt?: Date
+  lastLoginAt?: Date | string | null
+  createdAt?: Date | string
+  listIndex?: number
 }
 
 export interface CommissionAgreementAcceptanceResponse {
@@ -900,9 +903,39 @@ export interface PaginatedResult<T> {
   }
 }
 
+export interface UsersFiltersPayload {
+  verification?: boolean[]
+  active?: boolean[]
+  blacklisted?: boolean | null
+  agencyId?: string | null
+  lastLoginFrom?: string | null
+  lastLoginTo?: string | null
+}
+
+export type UsersSortableField = 'fullName' | 'lastLoginAt' | 'createdAt'
+
+export interface UsersSortDescriptor {
+  field: UsersSortableField
+  direction: 'asc' | 'desc'
+}
+
+export interface UsersGrowthMetric {
+  current: number
+  previous: number
+  growth: number
+}
+
+export interface UsersStatsResponse {
+  totalUsers: UsersGrowthMetric
+  suppliers: UsersGrowthMetric
+  clients: UsersGrowthMetric
+}
+
 export interface GetUsersBody {
   user: string
   types: UserType[]
+  filters?: UsersFiltersPayload
+  sort?: UsersSortDescriptor[]
 }
 
 export interface CreatePaymentPayload {

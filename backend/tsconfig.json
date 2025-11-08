@@ -6,7 +6,6 @@
     "module": "ESNext",
     "skipLibCheck": true,
 
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
@@ -14,7 +13,6 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": true,
@@ -26,8 +24,16 @@
       ":bookcars-helper": ["../packages/bookcars-helper/index.ts"],
       ":disable-react-devtools": ["../packages/disable-react-devtools/index.ts"]
     },
+
+    "types": ["node"]
   },
-  "include": ["src"],
+  "include": [
+    "src",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "vitest.setup.ts",
+    "src/setupTests.ts"
+  ],
   "references": [
     { "path": "./tsconfig.node.json" },
     { "path": "../packages/bookcars-types" },

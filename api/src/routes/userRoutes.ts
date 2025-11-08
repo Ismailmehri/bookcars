@@ -36,6 +36,7 @@ routes.route(routeNames.deleteTempAvatar).post(authJwt.verifyToken, userControll
 routes.route(routeNames.changePassword).post(authJwt.verifyToken, userController.changePassword)
 routes.route(routeNames.checkPassword).get(authJwt.verifyToken, userController.checkPassword)
 routes.route(routeNames.getUsers).post(authJwt.verifyToken, userController.getUsers)
+routes.route(routeNames.getUsersStats).get(authJwt.verifyToken, userController.getUsersStats)
 routes.route(routeNames.getVerifiedUsers).get(apiKeyValidator, userController.getVerifiedUsers)
 routes.route(routeNames.delete).post(authJwt.verifyToken, userController.deleteUsers)
 routes.route(routeNames.addReview).post(authJwt.verifyToken, userController.addReview)
@@ -44,5 +45,6 @@ routes.route(routeNames.acceptCommissionAgreement).post(authJwt.verifyToken, use
 routes.route(routeNames.sendEmail).post(userController.sendEmail)
 routes.route(routeNames.hasPassword).get(authJwt.verifyToken, userController.hasPassword)
 routes.route(routeNames.getUsersReviews).get(authJwt.verifyToken, userController.getUsersReviews)
+routes.route(routeNames.getUserReviews).get(authJwt.verifyToken, userController.getUserReviews)
 
 export default routes

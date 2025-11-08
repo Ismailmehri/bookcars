@@ -385,6 +385,34 @@ export const getUsers = (
     )
     .then((res) => res.data)
 
+export const getUsersStats = (): Promise<bookcarsTypes.UsersStatsResponse> =>
+  axiosInstance
+    .get(
+      '/api/users/stats',
+      { withCredentials: true }
+    )
+    .then((res) => res.data)
+
+export const getUserReviews = (
+  userId: string,
+  page: number,
+  limit: number,
+  scope?: string
+): Promise<bookcarsTypes.PaginatedResult<bookcarsTypes.Review>> =>
+  axiosInstance
+    .get(
+      `/api/users/${encodeURIComponent(userId)}/reviews`,
+      {
+        params: {
+          page,
+          limit,
+          scope,
+        },
+        withCredentials: true,
+      }
+    )
+    .then((res) => res.data)
+
 /**
  * Update a User.
  *

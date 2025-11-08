@@ -25,6 +25,8 @@ import NotificationCounter from '../models/NotificationCounter'
 import Car from '../models/Car'
 import AdditionalDriver from '../models/AdditionalDriver'
 import * as logger from '../common/logger'
+import * as userStatsService from '../services/userStatsService'
+import { createUsersFiltersConditions } from './userController.helpers'
 
 /**
  * Get status message as HTML.
@@ -1094,6 +1096,7 @@ export const update = async (req: Request, res: Response) => {
       enableEmailNotifications,
       payLater,
       active,
+      blacklisted,
     } = body
 
     if (fullName) {
@@ -1116,6 +1119,9 @@ export const update = async (req: Request, res: Response) => {
 
     if (isAdmin) {
       user.active = active
+      if (typeof blacklisted !== 'undefined') {
+        user.blacklisted = blacklisted
+      }
     }
 
     await user.save()
@@ -1548,6 +1554,39 @@ export const checkPassword = async (req: Request, res: Response) => {
 }
 
 /**
+ * Get monthly users statistics.
+ *
+ * @export
+ * @async
+ * @param {Request} req
+ * @param {Response} res
+ * @returns {unknown}
+ */
+export const getUsersStats = async (req: Request, res: Response) => {
+  try {
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser: bookcarsTypes.User | null = sessionData.id ? await User.findById(sessionData.id) : null
+
+    if (!connectedUser) {
+      return res.sendStatus(401)
+    }
+
+    const isAdmin = helper.admin(connectedUser)
+
+    if (!isAdmin) {
+      return res.sendStatus(403)
+    }
+
+    const stats = await userStatsService.getUsersStats()
+
+    return res.status(200).json(stats)
+  } catch (err) {
+    logger.error(`[user.getUsersStats] ${i18n.t('DB_ERROR')}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
+  }
+}
+
+/**
  * Get Users.
  *
  * @export
@@ -1598,6 +1637,42 @@ export const getUsers2 = async (req: Request, res: Response) => {
       $match.$and!.push({ _id: { $ne: new mongoose.Types.ObjectId(userId) } })
     }
 
+    const filtersConditions = createUsersFiltersConditions(body.filters)
+    if (filtersConditions.length > 0) {
+      $match.$and!.push(...filtersConditions)
+    }
+
+    const sortableFields: Record<bookcarsTypes.UsersSortableField, string> = {
+      fullName: 'fullName',
+      lastLoginAt: 'lastLoginAt',
+      createdAt: 'createdAt',
+    }
+
+    const sortStage: Record<string, 1 | -1> = {}
+
+    if (Array.isArray(body.sort)) {
+      body.sort.forEach((descriptor) => {
+        const mappedField = sortableFields[descriptor.field as bookcarsTypes.UsersSortableField]
+        if (!mappedField || typeof sortStage[mappedField] !== 'undefined') {
+          return
+        }
+
+        sortStage[mappedField] = descriptor.direction === 'desc' ? -1 : 1
+      })
+    }
+
+    if (Object.keys(sortStage).length === 0) {
+      sortStage.lastLoginAt = -1
+    }
+
+    if (typeof sortStage.fullName === 'undefined') {
+      sortStage.fullName = 1
+    }
+
+    if (typeof sortStage._id === 'undefined') {
+      sortStage._id = 1
+    }
+
     const users = await User.aggregate(
       [
         {
@@ -1620,11 +1695,17 @@ export const getUsers2 = async (req: Request, res: Response) => {
             birthDate: 1,
             customerId: 1,
             active: 1,
+            lastLoginAt: { $ifNull: ['$lastLoginAt', null] },
+            createdAt: { $ifNull: ['$createdAt', null] },
           },
         },
         {
           $facet: {
-            resultData: [{ $sort: { fullName: 1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
+            resultData: [
+              { $sort: sortStage },
+              { $skip: (page - 1) * size },
+              { $limit: size },
+            ],
             pageInfo: [
               {
                 $count: 'totalRecords',
@@ -1696,6 +1777,11 @@ export const getUsers = async (req: Request, res: Response) => {
       $match.$and!.push({ _id: { $ne: new mongoose.Types.ObjectId(userId) } })
     }
 
+    const filtersConditions = createUsersFiltersConditions(body.filters)
+    if (filtersConditions.length > 0) {
+      $match.$and!.push(...filtersConditions)
+    }
+
     // Ajout de la condition spécifique pour les fournisseurs (pas admin)
     if (!isAdmin && isSupplier) {
       const supplierId = connectedUser?._id
@@ -1710,6 +1796,37 @@ export const getUsers = async (req: Request, res: Response) => {
           { _id: { $in: userCreatedBySupplier } }, // Utilisateurs créés par le fournisseur
         ],
       })
+    }
+
+    const sortableFields: Record<bookcarsTypes.UsersSortableField, string> = {
+      fullName: 'fullName',
+      lastLoginAt: 'lastLoginAt',
+      createdAt: 'createdAt',
+    }
+
+    const sortStage: Record<string, 1 | -1> = {}
+
+    if (Array.isArray(body.sort)) {
+      body.sort.forEach((descriptor) => {
+        const mappedField = sortableFields[descriptor.field as bookcarsTypes.UsersSortableField]
+        if (!mappedField || typeof sortStage[mappedField] !== 'undefined') {
+          return
+        }
+
+        sortStage[mappedField] = descriptor.direction === 'desc' ? -1 : 1
+      })
+    }
+
+    if (Object.keys(sortStage).length === 0) {
+      sortStage.lastLoginAt = -1
+    }
+
+    if (typeof sortStage.fullName === 'undefined') {
+      sortStage.fullName = 1
+    }
+
+    if (typeof sortStage._id === 'undefined') {
+      sortStage._id = 1
     }
 
     const users = await User.aggregate(
@@ -1734,11 +1851,24 @@ export const getUsers = async (req: Request, res: Response) => {
             birthDate: 1,
             customerId: 1,
             active: 1,
+            lastLoginAt: { $ifNull: ['$lastLoginAt', null] },
+            createdAt: { $ifNull: ['$createdAt', null] },
+            reviewCount: {
+              $cond: {
+                if: { $isArray: '$reviews' },
+                then: { $size: '$reviews' },
+                else: 0,
+              },
+            },
           },
         },
         {
           $facet: {
-            resultData: [{ $sort: { fullName: 1, _id: 1 } }, { $skip: (page - 1) * size }, { $limit: size }],
+            resultData: [
+              { $sort: sortStage },
+              { $skip: (page - 1) * size },
+              { $limit: size },
+            ],
             pageInfo: [
               {
                 $count: 'totalRecords',
@@ -2044,6 +2174,133 @@ export const getUsersReviews = async (req: Request, res: Response) => {
   } catch (err) {
     console.error('[getUsersReviews] Error:', err)
     return res.status(500).json({ error: 'Erreur serveur' })
+  }
+}
+
+export const getUserReviews = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params
+    const page = Number.parseInt(req.query.page as string, 10) || 1
+    const limit = Number.parseInt(req.query.limit as string, 10) || 10
+
+    if (!helper.isValidObjectId(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' })
+    }
+
+    const sessionData = await authHelper.getSessionData(req)
+    const connectedUser: bookcarsTypes.User | null = await User.findById(sessionData.id)
+
+    const isAdmin = connectedUser ? helper.admin(connectedUser) : false
+    const isSupplier = connectedUser ? helper.supplier(connectedUser) : false
+
+    if (!isAdmin && !isSupplier) {
+      return res.status(403).json({ error: 'Unauthorized' })
+    }
+
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    // Si ce n'est pas un admin, vérifier que le fournisseur peut voir les avis de cet utilisateur
+    if (!isAdmin && isSupplier) {
+      const supplierId = connectedUser?._id
+      const bookedDriverIds = await Booking.distinct('driver', { supplier: supplierId })
+      const userCreatedBySupplier = await User.distinct('_id', { supplier: supplierId })
+
+      const canView = bookedDriverIds.some((id) => id.toString() === userId)
+        || userCreatedBySupplier.some((id) => id.toString() === userId)
+
+      if (!canView) {
+        return res.status(403).json({ error: 'Unauthorized to view this user reviews' })
+      }
+    }
+
+    const offset = (page - 1) * limit
+
+    // Récupérer les avis avec les informations de l'auteur de l'avis
+    const reviewsPipeline: mongoose.PipelineStage[] = [
+      {
+        $match: { _id: new mongoose.Types.ObjectId(userId) },
+      },
+      {
+        $unwind: {
+          path: '$reviews',
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $lookup: {
+          from: 'User',
+          localField: 'reviews.user',
+          foreignField: '_id',
+          as: 'reviewerInfo',
+        },
+      },
+      {
+        $unwind: {
+          path: '$reviewerInfo',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: '$reviews._id',
+          booking: '$reviews.booking',
+          user: '$reviews.user',
+          type: '$reviews.type',
+          rating: '$reviews.rating',
+          comments: '$reviews.comments',
+          rentedCar: '$reviews.rentedCar',
+          answeredCall: '$reviews.answeredCall',
+          canceledLastMinute: '$reviews.canceledLastMinute',
+          carEta: '$reviews.carEta',
+          createdAt: '$reviews.createdAt',
+          reviewerFullName: '$reviewerInfo.fullName',
+          reviewerEmail: '$reviewerInfo.email',
+          reviewerAvatar: '$reviewerInfo.avatar',
+          reviewerType: '$reviewerInfo.type',
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $facet: {
+          resultData: [
+            { $skip: offset },
+            { $limit: limit },
+          ],
+          pageInfo: [
+            {
+              $count: 'totalRecords',
+            },
+          ],
+        },
+      },
+    ]
+
+    const result = await User.aggregate(reviewsPipeline)
+
+    if (result.length === 0) {
+      return res.json({
+        resultData: [],
+        pageInfo: [{ totalRecords: 0 }],
+      })
+    }
+
+    const [aggregationResult] = result
+    const reviewsData = aggregationResult.resultData || []
+    const pageInfo = aggregationResult.pageInfo || [{ totalRecords: 0 }]
+    const totalRecords = pageInfo[0]?.totalRecords || 0
+
+    return res.json({
+      resultData: reviewsData,
+      pageInfo: [{ totalRecords }],
+    })
+  } catch (err) {
+    logger.error(`[user.getUserReviews] ${i18n.t('DB_ERROR')}`, err)
+    return res.status(400).send(i18n.t('DB_ERROR') + err)
   }
 }
 

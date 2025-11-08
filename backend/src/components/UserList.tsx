@@ -1,477 +1,857 @@
-import React, { useState, useEffect } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   DataGrid,
   GridColDef,
+  GridColumnVisibilityModel,
+  GridDensity,
   GridRenderCellParams,
+  GridRowSelectionModel,
+  GridSortModel,
 } from '@mui/x-data-grid'
 import {
-  Tooltip,
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  ButtonBase,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   Link,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Avatar,
-  Badge,
-  Box
+  Menu,
+  MenuItem,
+  Stack,
+  Tooltip,
+  Typography,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  AccountCircle, Check as VerifiedIcon,
-  PriorityHigh as NotActivatedIcon,
-  HourglassEmpty as UnverifiedIcon,
-  CheckCircle as ActivateIcon
+  MoreVert,
+  Launch,
+  EditOutlined,
+  LockReset,
+  DeleteOutline,
+  ContentCopy,
 } from '@mui/icons-material'
+import { useNavigate } from 'react-router-dom'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
 import { strings as commonStrings } from '@/lang/common'
 import { strings } from '@/lang/user-list'
+import { strings as usersPageStrings } from '@/lang/users'
 import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
+import { UsersFiltersState } from '@/pages/users.types'
+import { mapSortModelToApiSort } from '@/common/users-sort.utils'
 
 import '@/assets/css/user-list.css'
+import {
+  formatDateTime,
+  getCreatedAtValue,
+  getDateTimestamp,
+  getLastLoginValue,
+  normalizeUsersResult,
+} from '@/common/user-list.utils'
 
 interface UserListProps {
-  types?: bookcarsTypes.UserType[]
-  keyword?: string
   user?: bookcarsTypes.User
-  hideDesktopColumns?: boolean
-  checkboxSelection?: boolean
-  onLoad?: bookcarsTypes.DataEvent<bookcarsTypes.User>
+  keyword: string
+  filters: UsersFiltersState
+  admin: boolean
+  refreshToken: number
+  selectionResetKey: number
+  sortModel: GridSortModel
+  onSortModelChange: (model: GridSortModel) => void
+  columnVisibilityModel: GridColumnVisibilityModel
+  onColumnVisibilityModelChange: (model: GridColumnVisibilityModel) => void
+  density: GridDensity
+  onDensityChange?: (density: GridDensity) => void
+  onSelectionChange: (selection: { ids: string[]; rows: bookcarsTypes.User[] }) => void
+  onReviewsClick: (user: bookcarsTypes.User) => void
+  onTotalChange?: (total: number) => void
+  onLoadingChange?: (loading: boolean) => void
+  onPageSummaryChange?: (summary: { from: number; to: number; total: number; pageSize: number }) => void
 }
 
+const defaultAdminRoles = [
+  bookcarsTypes.UserType.Admin,
+  bookcarsTypes.UserType.Supplier,
+  bookcarsTypes.UserType.User,
+]
+
+const defaultAgencyRoles = [
+  bookcarsTypes.UserType.Supplier,
+  bookcarsTypes.UserType.User,
+]
+
+// --- Overlays stables ---
+const NoRowsOverlay: React.FC = () => (
+  <Stack alignItems="center" justifyContent="center" height="100%" spacing={1}>
+    <Typography variant="h6" color="text.primary">
+      {strings.EMPTY_STATE_TITLE}
+    </Typography>
+    <Typography variant="body2" color="text.secondary" align="center" px={4}>
+      {strings.EMPTY_STATE}
+    </Typography>
+  </Stack>
+)
+
+const LoadingOverlay: React.FC = () => (
+  <Stack alignItems="center" justifyContent="center" height="100%" spacing={2}>
+    <CircularProgress size={28} thickness={5} />
+    <Typography variant="body2" color="text.secondary">
+      {strings.LOADING_STATE}
+    </Typography>
+  </Stack>
+)
+
 const UserList = ({
-  types: userListTypes,
-  keyword: userListKeyword,
-  user: userListUser,
-  hideDesktopColumns,
-  checkboxSelection,
-  onLoad
+  user,
+  keyword,
+  filters,
+  admin,
+  refreshToken,
+  selectionResetKey,
+  sortModel,
+  onSortModelChange,
+  columnVisibilityModel,
+  onColumnVisibilityModelChange,
+  density,
+  onDensityChange,
+  onSelectionChange,
+  onReviewsClick,
+  onTotalChange,
+  onLoadingChange,
+  onPageSummaryChange,
 }: UserListProps) => {
-  const [user, setUser] = useState<bookcarsTypes.User>()
-  const [page, setPage] = useState(0)
-  const [pageSize, setPageSize] = useState(env.PAGE_SIZE)
-  const [columns, setColumns] = useState<GridColDef<bookcarsTypes.User>[]>([])
   const [rows, setRows] = useState<bookcarsTypes.User[]>([])
   const [rowCount, setRowCount] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [selectedId, setSelectedId] = useState('')
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
-  const [types, setTypes] = useState<bookcarsTypes.UserType[]>()
-  const [keyword, setKeyword] = useState(userListKeyword)
-  const [reloadColumns, setReloadColumns] = useState(false)
-  const [paginationModel, setPaginationModel] = useState({
-    pageSize: env.PAGE_SIZE,
-    page: 0,
-  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string>()
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: env.PAGE_SIZE })
+  const [selectionModel, setSelectionModel] = useState<GridRowSelectionModel>([])
+  const [selectedUsersMap, setSelectedUsersMap] = useState<Record<string, bookcarsTypes.User>>({})
+  const [deleteTarget, setDeleteTarget] = useState<bookcarsTypes.User>()
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null)
+  const [menuRow, setMenuRow] = useState<bookcarsTypes.User>()
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+  const copyTimeoutRef = useRef<number>()
+  const theme = useTheme()
+  const navigate = useNavigate()
+  const isTablet = useMediaQuery(theme.breakpoints.down('lg'))
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const { page, pageSize } = paginationModel
 
-  useEffect(() => {
-    setPage(paginationModel.page)
-    setPageSize(paginationModel.pageSize)
-  }, [paginationModel])
+  // === Résumé de page: dépend uniquement de page/pageSize/prop callback ===
+  const updateSummary = useCallback(
+    (totalRecords: number, rowsLength: number) => {
+      if (!onPageSummaryChange) return
+      if (totalRecords === 0 || rowsLength === 0) {
+        onPageSummaryChange({ from: 0, to: 0, total: totalRecords, pageSize })
+        return
+      }
+      const from = page * pageSize + 1
+      const to = Math.min(totalRecords, from + rowsLength - 1)
+      onPageSummaryChange({ from, to, total: totalRecords, pageSize })
+    },
+    [onPageSummaryChange, page, pageSize]
+  )
 
-  const fetchData = async (_page: number, _user?: bookcarsTypes.User) => {
+  useEffect(
+    () => () => {
+      if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current)
+    },
+    []
+  )
+
+  const types = useMemo(() => {
+    if (filters.roles.length > 0) return filters.roles
+    return admin ? defaultAdminRoles : defaultAgencyRoles
+  }, [admin, filters.roles])
+
+  const filtersPayload = useMemo(() => {
+    const payload: bookcarsTypes.UsersFiltersPayload = {}
+    if (filters.verification.length > 0) payload.verification = filters.verification.map((s) => s === 'verified')
+    if (filters.activity.length > 0) payload.active = filters.activity.map((s) => s === 'active')
+    if (filters.blacklisted !== 'all') payload.blacklisted = filters.blacklisted === 'blacklisted'
+    if (filters.agencyId) payload.agencyId = filters.agencyId
+    if (filters.lastLoginFrom) payload.lastLoginFrom = filters.lastLoginFrom
+    if (filters.lastLoginTo) payload.lastLoginTo = filters.lastLoginTo
+    return payload
+  }, [filters])
+
+  const sortPayload = useMemo(() => mapSortModelToApiSort(sortModel), [sortModel])
+
+  const fetchUsers = useCallback(async () => {
+    if (!user) return
+
+    const body: bookcarsTypes.GetUsersBody = {
+      user: user._id || '',
+      types,
+      filters: Object.keys(filtersPayload).length > 0 ? filtersPayload : undefined,
+    }
+
+    if (sortPayload.length > 0) {
+      body.sort = sortPayload
+    }
+
     try {
-      if (_user && types) {
-        setLoading(true)
+      setLoading(true)
+      setError(undefined)
+      onLoadingChange?.(true)
 
-        const payload: bookcarsTypes.GetUsersBody = {
-          user: (_user && _user._id) || '',
-          types
-        }
+      const response = await UserService.getUsers(body, keyword, paginationModel.page + 1, paginationModel.pageSize)
+      const { rows: dataRows, totalRecords } = normalizeUsersResult(response)
 
-        const data = await UserService.getUsers(payload, keyword || '', _page + 1, pageSize)
-        const _data = data && data.length > 0 ? data[0] : { pageInfo: { totalRecord: 0 }, resultData: [] }
-        if (!_data) {
-          helper.error()
-          return
-        }
-        const totalRecords = Array.isArray(_data.pageInfo) && _data.pageInfo.length > 0 ? _data.pageInfo[0].totalRecords : 0
-        const _rows = _data.resultData
+      setRows(dataRows)
+      setRowCount(totalRecords)
+      onTotalChange?.(totalRecords)
+      updateSummary(totalRecords, dataRows.length)
 
-        setRows(_rows)
-        setRowCount(totalRecords)
-
-        if (onLoad) {
-          onLoad({ rows: _data.resultData, rowCount: totalRecords })
-        }
+      if (selectionModel.length > 0) {
+        setSelectedUsersMap((prev) => {
+          const updated = { ...prev }
+          dataRows.forEach((r) => {
+            if (r._id && selectionModel.includes(r._id)) updated[r._id] = r
+          })
+          return updated
+        })
       }
     } catch (err) {
+      setError(strings.ERROR_LOADING_USERS)
       helper.error(err)
+      updateSummary(0, 0)
     } finally {
       setLoading(false)
+      onLoadingChange?.(false)
     }
+  }, [
+    user,
+    types,
+    filtersPayload,
+    keyword,
+    paginationModel.page,
+    paginationModel.pageSize,
+    selectionModel,
+    onTotalChange,
+    onLoadingChange,
+    updateSummary,
+    sortPayload,
+  ])
+
+  useEffect(() => {
+    fetchUsers()
+  }, [fetchUsers, refreshToken])
+
+  useEffect(() => {
+    updateSummary(rowCount, rows.length)
+  }, [rowCount, rows.length, paginationModel.page, paginationModel.pageSize, updateSummary])
+
+  useEffect(() => {
+    setPaginationModel((p) => ({ ...p, page: 0 }))
+  }, [keyword, filtersPayload])
+
+  useEffect(() => {
+    setPaginationModel((prev) => (prev.page === 0 ? prev : { ...prev, page: 0 }))
+  }, [sortPayload])
+
+  useEffect(() => {
+    setSelectionModel([])
+    setSelectedUsersMap({})
+    onSelectionChange({ ids: [], rows: [] })
+  }, [selectionResetKey, onSelectionChange])
+
+  useEffect(() => {
+    if (!admin) {
+      setSelectionModel([])
+      setSelectedUsersMap({})
+      onSelectionChange({ ids: [], rows: [] })
+    }
+  }, [admin, onSelectionChange])
+
+  const handleSelectionChange = (newSelection: GridRowSelectionModel) => {
+    const ids = newSelection.map((id) => id.toString())
+    setSelectionModel(ids)
+
+    setSelectedUsersMap((previous) => {
+      const updated: Record<string, bookcarsTypes.User> = {}
+      ids.forEach((id) => {
+        if (previous[id]) updated[id] = previous[id]
+      })
+      rows.forEach((row) => {
+        if (row._id && ids.includes(row._id)) updated[row._id] = row
+      })
+      return updated
+    })
   }
 
   useEffect(() => {
-    setTypes(userListTypes)
-  }, [userListTypes])
+    const selectedRows = Object.values(selectedUsersMap)
+    const ids = selectedRows.map((s) => s._id as string)
+    onSelectionChange({ ids, rows: selectedRows })
+  }, [selectedUsersMap, onSelectionChange])
 
-  useEffect(() => {
-    setKeyword(userListKeyword || '')
-  }, [userListKeyword])
-
-  useEffect(() => {
-    if (types) {
-      fetchData(page, user)
-    }
-  }, [page]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (types) {
-      if (page === 0) {
-        fetchData(0, user)
-      } else {
-        const _paginationModel = bookcarsHelper.clone(paginationModel)
-        _paginationModel.page = 0
-        setPaginationModel(_paginationModel)
-      }
-    }
-  }, [pageSize]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleActivate = async (row: any) => {
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget?._id) return
     try {
-      const payload : bookcarsTypes.ActivatePayload = { userId: row._id, token: '', password: '' }
-      await UserService.activateSupplier(payload) // Appeler le service
-      row.active = true
-    } catch (error) {
-      console.error('Erreur lors de l\'activation du fournisseur :', error)
+      setLoading(true)
+      onLoadingChange?.(true)
+      const status = await UserService.deleteUsers([deleteTarget._id])
+      if (status === 200) {
+        helper.info(strings.USER_DELETED_SUCCESS)
+        const nextTotal = Math.max(rowCount - 1, 0)
+        setRows((current) => {
+          const updatedRows = current.filter((r) => r._id !== deleteTarget._id)
+          updateSummary(nextTotal, updatedRows.length)
+          return updatedRows
+        })
+        setRowCount(nextTotal)
+        setSelectionModel((current) => current.filter((id) => id !== deleteTarget._id))
+        setSelectedUsersMap((current) => {
+          const updated = { ...current }
+          delete updated[deleteTarget._id as string]
+          return updated
+        })
+      } else {
+        helper.error(undefined, strings.USER_DELETE_ERROR)
+      }
+    } catch (err) {
+      helper.error(err, strings.USER_DELETE_ERROR)
+    } finally {
+      setDeleteTarget(undefined)
+      setLoading(false)
+      onLoadingChange?.(false)
     }
   }
-  const getColumns = (_user: bookcarsTypes.User): GridColDef<bookcarsTypes.User>[] => {
-    const _columns: GridColDef<bookcarsTypes.User>[] = [
+
+  const closeMenu = useCallback(() => {
+    setMenuAnchor(null)
+    setMenuRow(undefined)
+  }, [])
+
+  const navigateFromMenu = useCallback(
+    (buildPath: (id: string) => string) => {
+      if (!menuRow?._id) {
+        helper.error(undefined, strings.MENU_ACTION_USER_MISSING)
+        return
+      }
+
+      const target = buildPath(menuRow._id)
+      closeMenu()
+      navigate(target)
+    },
+    [closeMenu, menuRow, navigate]
+  )
+
+  // === Stabilisation des renderers ===
+  // 1) ref pour suivre copiedField sans dépendance
+  const copiedFieldRef = useRef<string | null>(null)
+  useEffect(() => {
+    copiedFieldRef.current = copiedField
+  }, [copiedField])
+
+  // 2) copyToClipboard stable
+  const copyToClipboard = useCallback(async (value: string, fieldId: string) => {
+    try {
+      if (!navigator?.clipboard?.writeText) {
+        helper.error(undefined, strings.COPY_ERROR)
+        return
+      }
+      await navigator.clipboard.writeText(value)
+      helper.info(strings.COPIED_TO_CLIPBOARD)
+      setCopiedField(fieldId)
+      if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current)
+      copyTimeoutRef.current = window.setTimeout(() => setCopiedField(null), 1500)
+    } catch (err) {
+      helper.error(err, strings.COPY_ERROR)
+    }
+  }, [])
+
+  const renderAvatarCell = useCallback((params: GridRenderCellParams<bookcarsTypes.User, string>) => {
+    const { row } = params
+    const avatarUrl = row.avatar
+      ? (row.avatar.startsWith('http') ? row.avatar : bookcarsHelper.joinURL(env.CDN_USERS, row.avatar))
+      : ''
+
+    const avatar = row.avatar
+      ? <Avatar src={avatarUrl} className="us-avatar-small" alt={row.fullName} />
+      : <Avatar className="us-avatar-small">{row.fullName?.[0]?.toUpperCase()}</Avatar>
+
+    const statusItems = [
+      {
+        key: 'verified',
+        label: row.verified ? strings.VERIFIED_SHORT : strings.UNVERIFIED_SHORT,
+        tooltip: row.verified ? strings.ACCOUNT_VERIFIED : strings.ACCOUNT_UNVERIFIED,
+        className: row.verified ? 'us-flag-chip us-flag-chip--positive' : 'us-flag-chip us-flag-chip--neutral',
+      },
+      {
+        key: 'active',
+        label: row.active ? strings.ACTIVE_LABEL : strings.INACTIVE_LABEL,
+        tooltip: row.active ? strings.ACCOUNT_ACTIVE : strings.ACCOUNT_INACTIVE,
+        className: row.active ? 'us-flag-chip us-flag-chip--positive' : 'us-flag-chip us-flag-chip--danger',
+      },
+    ]
+
+    if (row.blacklisted) {
+      statusItems.push({
+        key: 'blacklisted',
+        label: strings.BLACKLISTED_LABEL,
+        tooltip: strings.BLACKLISTED_STATUS,
+        className: 'us-flag-chip us-flag-chip--warning',
+      })
+    }
+
+    return (
+      <Stack direction="row" spacing={2} alignItems="center" className="us-user-cell">
+        {avatar}
+        <Box>
+          <Link href={`/user?u=${row._id}`} className="us-user-link">
+            <Typography variant="body2" fontWeight={600} color="text.primary">
+              {params.value || '—'}
+            </Typography>
+          </Link>
+          <Stack direction="row" spacing={0.5} flexWrap="wrap" alignItems="center" className="us-user-statuses">
+            {statusItems.map((status) => (
+              <Tooltip key={status.key} title={status.tooltip} placement="top" arrow>
+                <span className={status.className}>{status.label}</span>
+              </Tooltip>
+            ))}
+          </Stack>
+        </Box>
+      </Stack>
+    )
+  }, [])
+
+  const renderCopyCell = useCallback((params: GridRenderCellParams<bookcarsTypes.User, string>) => {
+    const value = params.value || ''
+    if (!value) return <Typography variant="body2" color="text.secondary">—</Typography>
+
+    const fieldId = `${params.field}-${params.row._id}`
+    const copied = copiedFieldRef.current === fieldId
+
+    const handleCopy = (event: React.MouseEvent | React.KeyboardEvent) => {
+      event.stopPropagation()
+      copyToClipboard(value, fieldId)
+    }
+
+    return (
+      <Stack direction="row" spacing={1} alignItems="center" className="us-copy-cell">
+        <Tooltip title={copied ? strings.COPIED_TO_CLIPBOARD : strings.COPY_TO_CLIPBOARD}>
+          <ButtonBase
+            component="span"
+            className="us-copy-trigger"
+            onClick={handleCopy}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                handleCopy(event)
+              }
+            }}
+            focusRipple
+            aria-label={strings.COPY_ACTION_LABEL}
+          >
+            <Typography variant="body2" color="text.primary">
+              {value}
+            </Typography>
+          </ButtonBase>
+        </Tooltip>
+        <Tooltip title={copied ? strings.COPIED_TO_CLIPBOARD : strings.COPY_TO_CLIPBOARD}>
+          <span>
+            <IconButton
+              size="small"
+              onClick={(event) => {
+                event.stopPropagation()
+                copyToClipboard(value, fieldId)
+              }}
+              aria-label={strings.COPY_ACTION_LABEL}
+            >
+              <ContentCopy fontSize="inherit" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      </Stack>
+    )
+  }, [copyToClipboard])
+
+  const renderRolePill = useCallback((params: GridRenderCellParams<bookcarsTypes.User, string>) => {
+    let label = strings.CLIENT_LABEL
+    let className = 'us-role-chip us-role-chip--client'
+    if (params.value === bookcarsTypes.UserType.Admin) {
+      label = commonStrings.ADMIN
+      className = 'us-role-chip us-role-chip--admin'
+    } else if (params.value === bookcarsTypes.UserType.Supplier) {
+      label = commonStrings.SUPPLIER
+      className = 'us-role-chip us-role-chip--supplier'
+    }
+    return (
+      <Box className={className} component="span">
+        <span className="us-role-chip__dot" />
+        {label}
+      </Box>
+    )
+  }, [])
+
+  const computedVisibilityModel = useMemo<GridColumnVisibilityModel>(() => {
+    const model: GridColumnVisibilityModel = { ...columnVisibilityModel }
+    if (!admin) {
+      model.type = false
+      model.lastLoginAt = false
+      model.createdAt = false
+    }
+    if (isTablet) {
+      model.createdAt = false
+    }
+    if (isMobile) {
+      model.lastLoginAt = false
+    }
+    return model
+  }, [admin, columnVisibilityModel, isMobile, isTablet])
+
+  const columns = useMemo<GridColDef<bookcarsTypes.User>[]>(() => {
+    const baseColumns: GridColDef<bookcarsTypes.User>[] = [
       {
         field: 'fullName',
-        headerName: commonStrings.USER,
-        flex: 1,
-        renderCell: ({ row, value }: GridRenderCellParams<bookcarsTypes.User, string>) => {
-          const __user = row
-          let userAvatar
-
-          if (__user.avatar) {
-            if (__user.type === bookcarsTypes.RecordType.Supplier) {
-              const supplierAvatar = (
-                <img
-                  src={bookcarsHelper.joinURL(env.CDN_USERS, row.avatar)}
-                  alt={row.fullName}
-                />
-              )
-
-              // Vérification si le fournisseur est activé
-              userAvatar = __user.active ? (
-                supplierAvatar
-              ) : (
-                <Badge
-                  overlap="circular"
-                  anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'right',
-                }}
-                  badgeContent={(
-                    <Tooltip title={commonStrings.UNVERIFIED}>
-                      <Box borderRadius="50%" className="user-avatar-notactivated-small">
-                        <NotActivatedIcon className="user-avatar-verified-icon-small" />
-                      </Box>
-                    </Tooltip>
-                )}
-                >
-                  {supplierAvatar}
-                </Badge>
-              )
-            } else {
-              const userAvatarUrl = __user.avatar
-                ? (__user.avatar.startsWith('http') ? __user.avatar : bookcarsHelper.joinURL(env.CDN_USERS, __user.avatar))
-                : ''
-
-              const avatar = <Avatar src={userAvatarUrl} className="avatar-small" />
-              if (__user.verified) {
-                userAvatar = (
-                  <Badge
-                    overlap="circular"
-                    anchorOrigin={{
-                      vertical: 'bottom',
-                      horizontal: 'right',
-                    }}
-                    badgeContent={(
-                      <Tooltip title={commonStrings.VERIFIED}>
-                        <Box borderRadius="50%" className="user-avatar-verified-small">
-                          <VerifiedIcon className="user-avatar-verified-icon-small" />
-                        </Box>
-                      </Tooltip>
-                    )}
-                  >
-                    {avatar}
-                  </Badge>
-                )
-              } else {
-                userAvatar = (
-                  <Badge
-                    overlap="circular"
-                    anchorOrigin={{
-                      vertical: 'bottom',
-                      horizontal: 'right',
-                    }}
-                    badgeContent={(
-                      <Tooltip title={commonStrings.UNVERIFIED}>
-                        <Box borderRadius="50%" className="user-avatar-unverified-small">
-                          <UnverifiedIcon className="user-avatar-verified-icon-small" />
-                        </Box>
-                      </Tooltip>
-                    )}
-                  >
-                    {avatar}
-                  </Badge>
-                )
-              }
-            }
-          } else {
-            const avatar = <AccountCircle className="avatar-small" color="disabled" />
-
-            if (__user.verified) {
-              userAvatar = (
-                <Badge
-                  overlap="circular"
-                  anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'right',
-                  }}
-                  badgeContent={(
-                    <Tooltip title={commonStrings.VERIFIED}>
-                      <Box borderRadius="50%" className="user-avatar-verified-small">
-                        <VerifiedIcon className="user-avatar-verified-icon-small" />
-                      </Box>
-                    </Tooltip>
-                  )}
-                >
-                  {avatar}
-                </Badge>
-              )
-            } else {
-              userAvatar = (
-                <Badge
-                  overlap="circular"
-                  anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'right',
-                  }}
-                  badgeContent={(
-                    <Tooltip title={commonStrings.UNVERIFIED}>
-                      <Box borderRadius="50%" className="user-avatar-unverified-small">
-                        <UnverifiedIcon className="user-avatar-verified-icon-small" />
-                      </Box>
-                    </Tooltip>
-                  )}
-                >
-                  {avatar}
-                </Badge>
-              )
-            }
-          }
-
-          return (
-            <Link href={`/user?u=${row._id}`} className="us-user">
-              <span className="us-avatar">{userAvatar}</span>
-              <span>{value}</span>
-            </Link>
-          )
-        },
-        valueGetter: (value: string) => value,
+        headerName: strings.USER_COLUMN,
+        flex: 1.4,
+        minWidth: 260,
+        renderCell: renderAvatarCell,
+        sortable: true,
       },
       {
         field: 'email',
         headerName: commonStrings.EMAIL,
         flex: 1,
-        valueGetter: (value: string) => value,
+        minWidth: 220,
+        renderCell: (params) => renderCopyCell(params),
+        sortable: false,
       },
       {
         field: 'phone',
-        headerName: commonStrings.PHONE,
-        flex: 1,
-        valueGetter: (value: string) => value,
+        headerName: strings.PHONE_COLUMN,
+        flex: 0.9,
+        minWidth: 180,
+        renderCell: (params) => renderCopyCell(params),
+        sortable: false,
       },
       {
         field: 'type',
         headerName: commonStrings.TYPE,
-        flex: 1,
-        renderCell: ({ value }: GridRenderCellParams<bookcarsTypes.User, bookcarsTypes.UserType>) => <span className={`bs us-${value?.toLowerCase()}`}>{helper.getUserType(value)}</span>,
-        valueGetter: (value: string) => value,
+        flex: 0.6,
+        minWidth: 150,
+        renderCell: renderRolePill,
+        sortable: false,
       },
       {
-        field: 'action',
-        headerName: '',
-        sortable: false,
-        disableColumnMenu: true,
-        renderCell: ({ row }: GridRenderCellParams<bookcarsTypes.User>) => {
-          const handleDelete = (e: React.MouseEvent<HTMLElement>) => {
-            e.stopPropagation() // don't select this row after clicking
-            setSelectedId(row._id || '')
-            setOpenDeleteDialog(true)
+        field: 'lastLoginAt',
+        headerName: strings.LAST_LOGIN_COLUMN,
+        flex: 0.8,
+        minWidth: 170,
+        valueGetter: (params: any) => {
+          if (!params) {
+            return null
           }
-
-          const __user = row
-          return _user.type === bookcarsTypes.RecordType.Admin || __user.supplier === _user._id ? (
-            <div>
-              <Tooltip title={commonStrings.UPDATE}>
-                <IconButton href={`update-user?u=${row._id}`}>
-                  <EditIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title={commonStrings.DELETE}>
-                <IconButton onClick={handleDelete}>
-                  <DeleteIcon />
-                </IconButton>
-              </Tooltip>
-            </div>
-          ) : (
-            <></>
-          )
+          // Si params est directement une date, la retourner
+          if (params instanceof Date || typeof params === 'string' || typeof params === 'number') {
+            return params
+          }
+          // Sinon, chercher dans params.row
+          if (params.row) {
+            return getLastLoginValue(params.row)
+          }
+          // Sinon, chercher directement dans params (au cas où c'est la valeur directement)
+          return getLastLoginValue(params as bookcarsTypes.User)
         },
-        renderHeader: () => (selectedIds.length > 0 ? (
-          <div>
-            <div style={{ width: 40, display: 'inline-block' }} />
-            <Tooltip title={strings.DELETE_SELECTION}>
-              <IconButton
-                onClick={() => {
-                  setOpenDeleteDialog(true)
+        valueFormatter: (params: { value?: Date | string | null }) => {
+          if (!params) {
+            return '—'
+          }
+          return formatDateTime(params as Date | string | null)
+        },
+        sortComparator: (a, b) =>
+          getDateTimestamp(a as Date | string | null) - getDateTimestamp(b as Date | string | null),
+        sortable: true,
+      },
+      {
+        field: 'createdAt',
+        headerName: strings.CREATED_AT_COLUMN,
+        flex: 0.8,
+        minWidth: 170,
+        valueGetter: (params: any) => {
+          if (!params) {
+            return null
+          }
+          // Si params est directement une date, la retourner
+          if (params instanceof Date || typeof params === 'string' || typeof params === 'number') {
+            return params
+          }
+          // Sinon, chercher dans params.row
+          if (params.row) {
+            return getCreatedAtValue(params.row)
+          }
+          // Sinon, chercher directement dans params (au cas où c'est la valeur directement)
+          return getCreatedAtValue(params as bookcarsTypes.User)
+        },
+        valueFormatter: (params: { value?: Date | string | null }) => {
+          if (!params) {
+            return '—'
+          }
+          return formatDateTime(params as Date | string | null)
+        },
+        sortComparator: (a, b) =>
+          getDateTimestamp(a as Date | string | null) - getDateTimestamp(b as Date | string | null),
+        sortable: true,
+      },
+      {
+        field: 'reviewCount',
+        headerName: strings.REVIEWS_COLUMN,
+        flex: 0.5,
+        minWidth: 110,
+        renderCell: ({ row }) => {
+          const count = row.reviewCount ?? (Array.isArray(row.reviews) ? row.reviews.length : 0)
+          if (count > 0) {
+            return (
+              <Button
+                size="small"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onReviewsClick(row)
                 }}
               >
-                <DeleteIcon />
-              </IconButton>
-            </Tooltip>
-          </div>
-        ) : (
-          <></>
-        )),
-      },
-      {
-        field: 'active',
-        headerName: '',
-        sortable: false,
-        disableColumnMenu: true,
-        renderCell: ({ row }: GridRenderCellParams<bookcarsTypes.User>) => {
-          const __user = row
-          return _user.type === bookcarsTypes.RecordType.Admin ? ( // Condition principale
-            <div>
-              {!__user.active ? ( // Condition pour afficher le bouton d'activation
-                <Tooltip title={commonStrings.ACTIVATE}>
-                  <IconButton onClick={() => handleActivate(row)}>
-                    <NotActivatedIcon color="error" />
-                  </IconButton>
-                </Tooltip>
-              ) : ( // Si l'utilisateur est déjà actif
-                <Tooltip title={commonStrings.ACTIVATE}>
-                  <IconButton>
-                    <ActivateIcon color="success" />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </div>
-          ) : ( // Si l'utilisateur n'est pas un admin
-              null
+                {count}
+              </Button>
+            )
+          }
+          return (
+            <Button
+              disabled
+              size="small"
+            >
+              0
+            </Button>
           )
         },
+        sortable: false,
+      },
+      {
+        field: 'actions',
+        headerName: strings.ACTIONS_COLUMN,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        minWidth: 80,
+        align: 'right',
+        renderCell: ({ row }) => (
+          <IconButton
+            size="small"
+            onClick={(event) => {
+              event.stopPropagation()
+              setMenuAnchor(event.currentTarget)
+              setMenuRow(row)
+            }}
+            aria-label={strings.ACTIONS_COLUMN}
+          >
+            <MoreVert fontSize="small" />
+          </IconButton>
+        ),
       },
     ]
 
-    if (hideDesktopColumns) {
-      _columns.splice(1, 3)
-    } else if (_user.type !== bookcarsTypes.RecordType.Admin) {
-      _columns.splice(3)
+    if (!admin) {
+      return baseColumns.filter((column) => !['type', 'lastLoginAt', 'createdAt'].includes(column.field))
     }
 
-    return _columns
+    return baseColumns
+  }, [admin, onReviewsClick, renderAvatarCell, renderCopyCell, renderRolePill])
+
+  const handleSortModelChange = (model: GridSortModel) => {
+    onSortModelChange(model)
+    setPaginationModel((prev) => ({ ...prev, page: 0 }))
   }
 
-  useEffect(() => {
-    if (userListUser && types) {
-      setUser(userListUser)
-      const _columns = getColumns(userListUser)
-      setColumns(_columns)
-
-      if (page === 0) {
-        fetchData(0, userListUser)
-      } else {
-        const _paginationModel = bookcarsHelper.clone(paginationModel)
-        _paginationModel.page = 0
-        setPaginationModel(_paginationModel)
-      }
-    }
-  }, [userListUser, types, keyword]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (user && reloadColumns) {
-      const _columns = getColumns(user)
-      setColumns(_columns)
-      setReloadColumns(false)
-    }
-  }, [user, selectedIds, reloadColumns]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleCancelDelete = () => {
-    setOpenDeleteDialog(false)
-    setSelectedId('')
+  const handleVisibilityChange = (model: GridColumnVisibilityModel) => {
+    onColumnVisibilityModelChange(model)
   }
 
-  const handleConfirmDelete = async () => {
-    try {
-      const ids = selectedIds.length > 0 ? selectedIds : [selectedId]
-
-      setOpenDeleteDialog(false)
-
-      const status = await UserService.deleteUsers(ids)
-
-      if (status === 200) {
-        if (selectedIds.length > 0) {
-          setRows(rows.filter((row) => !selectedIds.includes(row._id as string)))
-        } else {
-          setRows(rows.filter((row) => row._id !== selectedId))
-        }
-      } else {
-        helper.error()
-      }
-    } catch (err) {
-      helper.error(err)
-    } finally {
-      setLoading(false)
+  const handlePaginationChange = (model: { page: number; pageSize: number }) => {
+    setPaginationModel(model)
+    const nextDensity: GridDensity = model.pageSize > 50 ? 'compact' : 'comfortable'
+    if (nextDensity !== density) {
+      onDensityChange?.(nextDensity)
     }
+  }
+
+  const displayedCount = rows.length
+  const totalPages = Math.max(1, Math.ceil(rowCount / paginationModel.pageSize))
+  const summaryLabel = useMemo(
+    () =>
+      usersPageStrings.formatString(
+        usersPageStrings.RESULTS_PAGE_SUMMARY,
+        displayedCount.toLocaleString(),
+        rowCount.toLocaleString(),
+      ) as string,
+    [displayedCount, rowCount],
+  )
+
+  const isFirstPage = paginationModel.page === 0
+  const isLastPage = paginationModel.page >= totalPages - 1
+
+  const handlePrevPageClick = () => {
+    if (isFirstPage) return
+    setPaginationModel((prev) => ({ ...prev, page: Math.max(prev.page - 1, 0) }))
+  }
+
+  const handleNextPageClick = () => {
+    if (isLastPage) return
+    setPaginationModel((prev) => ({ ...prev, page: prev.page + 1 }))
   }
 
   return (
-    <div className="us-list">
-      {user && columns.length > 0 && (
-        <DataGrid
-          checkboxSelection={checkboxSelection}
-          getRowId={(row) => row._id as string}
-          columns={columns}
-          rows={rows}
-          rowCount={rowCount}
-          loading={loading}
-          initialState={{
-            pagination: { paginationModel: { pageSize: env.PAGE_SIZE } },
-          }}
-          pageSizeOptions={[env.PAGE_SIZE, 50, 100]}
-          pagination
-          paginationMode="server"
-          paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
-          onRowSelectionModelChange={(_selectedIds) => {
-            setSelectedIds(Array.from(new Set(_selectedIds)).map((id) => id.toString()))
-            setReloadColumns(true)
-          }}
-          getRowClassName={(params: any) => (params.row.blacklisted ? 'us-blacklisted' : '')}
-          disableRowSelectionOnClick
-        />
+    <Box className="us-list">
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
       )}
 
-      <Dialog disableEscapeKeyDown maxWidth="xs" open={openDeleteDialog}>
+      <DataGrid
+        getRowId={(row) => row._id as string}
+        rows={rows}
+        columns={columns}
+        rowCount={rowCount}
+        checkboxSelection={admin}
+        disableRowSelectionOnClick
+        pagination
+        paginationMode="server"
+        paginationModel={paginationModel}
+        onPaginationModelChange={handlePaginationChange}
+        pageSizeOptions={[env.PAGE_SIZE, 25, 50, 100]}
+        loading={loading}
+        rowSelectionModel={selectionModel}
+        onRowSelectionModelChange={handleSelectionChange}
+        keepNonExistentRowsSelected
+        sortingMode="server"
+        sortModel={sortModel}
+        onSortModelChange={handleSortModelChange}
+        columnVisibilityModel={computedVisibilityModel}
+        onColumnVisibilityModelChange={handleVisibilityChange}
+        density={density}
+        className="us-data-grid"
+        disableColumnFilter
+        hideFooter
+        hideFooterSelectedRowCount
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          '& .MuiDataGrid-main': {
+            flex: 1,
+          },
+          '& .MuiDataGrid-virtualScroller': {
+            backgroundColor: '#fff',
+          },
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: '#F5F7FB',
+            borderBottom: '1px solid #E0E6ED',
+            fontWeight: 600,
+            fontSize: '0.72rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+          },
+          '& .MuiDataGrid-row:hover': {
+            backgroundColor: '#F5F7FB',
+          },
+          '& .MuiDataGrid-withBorderColor': {
+            borderColor: 'rgba(226, 232, 240, 0.9)',
+          },
+          '& .MuiDataGrid-cell:focus-within, & .MuiDataGrid-columnHeader:focus': {
+            outline: 'none',
+          },
+        }}
+        slots={{ noRowsOverlay: NoRowsOverlay, loadingOverlay: LoadingOverlay }}
+      />
+
+      <Box className="us-pagination">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }}>
+          <Box>
+            <Typography variant="body2" color="text.secondary">
+              {summaryLabel}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {strings.formatString(
+                strings.PAGINATION_LABEL,
+                (paginationModel.page + 1).toLocaleString(),
+                totalPages.toLocaleString(),
+              ) as string}
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={1.5} alignItems="center" ml={{ xs: 0, sm: 'auto' }}>
+            <Button variant="outlined" size="small" onClick={handlePrevPageClick} disabled={isFirstPage || loading}>
+              {usersPageStrings.PAGINATION_PREVIOUS}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              color="primary"
+              onClick={handleNextPageClick}
+              disabled={isLastPage || loading}
+            >
+              {usersPageStrings.PAGINATION_NEXT}
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
+
+      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+        <MenuItem
+          onClick={() => navigateFromMenu((id) => `/user?u=${id}`)}
+          component="button"
+          type="button"
+        >
+          <Launch fontSize="small" sx={{ mr: 1 }} />
+          {strings.VIEW_PROFILE}
+        </MenuItem>
+        {admin && (
+          <MenuItem
+            onClick={() => navigateFromMenu((id) => `/update-user?u=${id}`)}
+            component="button"
+            type="button"
+          >
+            <EditOutlined fontSize="small" sx={{ mr: 1 }} />
+            {strings.EDIT_USER}
+          </MenuItem>
+        )}
+        {admin && (
+          <MenuItem
+            onClick={() => navigateFromMenu((id) => `/reset-password?u=${id}`)}
+            component="button"
+            type="button"
+          >
+            <LockReset fontSize="small" sx={{ mr: 1 }} />
+            {strings.RESET_PASSWORD}
+          </MenuItem>
+        )}
+        {admin && (
+          <MenuItem
+            onClick={() => {
+              closeMenu()
+              setDeleteTarget(menuRow)
+            }}
+          >
+            <DeleteOutline fontSize="small" sx={{ mr: 1 }} />
+            {strings.DELETE_USER_SHORT}
+          </MenuItem>
+        )}
+      </Menu>
+
+      <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(undefined)} maxWidth="xs" fullWidth>
         <DialogTitle className="dialog-header">{commonStrings.CONFIRM_TITLE}</DialogTitle>
-        <DialogContent className="dialog-content">{selectedIds.length === 0 ? strings.DELETE_USER : strings.DELETE_USERS}</DialogContent>
+        <DialogContent className="dialog-content">{strings.DELETE_USER}</DialogContent>
         <DialogActions className="dialog-actions">
-          <Button onClick={handleCancelDelete} variant="contained" className="btn-secondary">
+          <Button onClick={() => setDeleteTarget(undefined)} variant="contained" className="btn-secondary">
             {commonStrings.CANCEL}
           </Button>
           <Button onClick={handleConfirmDelete} variant="contained" color="error">
@@ -479,7 +859,7 @@ const UserList = ({
           </Button>
         </DialogActions>
       </Dialog>
-    </div>
+    </Box>
   )
 }
 

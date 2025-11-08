@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react'
-import { IconButton, TextField } from '@mui/material'
+import React, { useEffect, useRef, useState } from 'react'
+import { IconButton, InputAdornment, TextField } from '@mui/material'
 import { Search as SearchIcon, Clear as ClearIcon } from '@mui/icons-material'
 import { strings as commonStrings } from '@/lang/common'
 
@@ -8,14 +8,22 @@ import '@/assets/css/search.css'
 interface SearchProps {
   className?: string
   onSubmit?: (value: string) => void
+  initialValue?: string
+  placeholder?: string
 }
 
 const Search = ({
   className,
-  onSubmit
+  onSubmit,
+  initialValue,
+  placeholder,
 }: SearchProps) => {
-  const [keyword, setKeyword] = useState('')
+  const [keyword, setKeyword] = useState(initialValue ?? '')
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setKeyword(initialValue ?? '')
+  }, [initialValue])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setKeyword(e.target.value)
@@ -45,23 +53,29 @@ const Search = ({
           value={keyword}
           onKeyDown={handleSearchKeyDown}
           onChange={handleSearchChange}
-          placeholder={commonStrings.SEARCH_PLACEHOLDER}
+          placeholder={placeholder ?? commonStrings.SEARCH_PLACEHOLDER}
           slotProps={{
             input: {
-              endAdornment: keyword ? (
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    setKeyword('')
-                    inputRef.current?.focus()
-                  }}
-                >
-                  <ClearIcon style={{ width: 20, height: 20 }} />
-                </IconButton>
-              ) : (
-                <></>
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
               ),
-            }
+              endAdornment: keyword ? (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setKeyword('')
+                      inputRef.current?.focus()
+                    }}
+                    aria-label={commonStrings.RESET}
+                  >
+                    <ClearIcon style={{ width: 20, height: 20 }} />
+                  </IconButton>
+                </InputAdornment>
+              ) : undefined,
+            },
           }}
           className="sc-search"
           id="search"

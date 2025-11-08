@@ -1,83 +1,286 @@
-div.users {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  left: 0;
+.users-page-wrapper {
+  background: #f7f9fc;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 120px;
 }
 
-/* Device width is lower than or equal to 960px */
+.users-page {
+  flex: 1;
+  padding: 40px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
 
-@media only screen and (max-width: 960px) {
-  div.users {
-    top: 56px;
+.users-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.users-stats-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.users-section-header {
+  padding: 0 4px;
+}
+
+.users-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.users-stats-card {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e8eef4;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.users-stats-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.users-stats-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #f1f5ff;
+  color: #1d4ed8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.users-stats-card__growth {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.users-stats-card__growth-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+}
+
+.users-stats-card__growth-indicator--positive {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+.users-stats-card__growth-indicator--negative {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+.users-stats-card__footer {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.users-toolbar-container {
+  position: sticky;
+  top: 92px;
+  z-index: 20;
+}
+
+.users-toolbar {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e8eef4;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  padding: 20px 24px;
+}
+
+.users-toolbar__search {
+  flex: 1 1 auto;
+  display: flex;
+  max-width: 480px;
+  width: 100%;
+}
+
+.users-toolbar__search .MuiOutlinedInput-root {
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.users-toolbar__search .MuiOutlinedInput-root.Mui-focused {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.users-toolbar__search .MuiOutlinedInput-input {
+  padding: 12px 4px !important;
+}
+
+.users-toolbar__actions {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.users-toolbar__actions .MuiButton-root {
+  min-width: 140px;
+}
+
+.users-toolbar__actions .users-add {
+  min-width: 160px;
+}
+
+.users-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 16px;
+  min-height: 0;
+}
+
+.users-table-card {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e8eef4;
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.users-table-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  color: #0f172a;
+}
+
+.users-table-card__loading {
+  color: #6b7280;
+}
+
+.users-table-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 12px 24px;
+}
+
+.users-table-card__body .us-list {
+  flex: 1;
+}
+
+.users-bulk-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(960px, calc(100% - 32px));
+  padding: 18px 24px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 22px 44px rgba(15, 23, 42, 0.16);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  z-index: 30;
+}
+
+.users-bulk-bar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 1024px) {
+  .users-toolbar {
+    padding: 18px;
   }
 
-  div.users div.col-1 {
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    padding: 10px;
-    display: flex;
-    justify-content: center;
+  .users-toolbar__actions {
+    justify-content: flex-end;
   }
 
-  div.users div.col-1 div.col-1-container {
-    width: 100%;
-    max-width: 480px;
-  }
-
-  div.users div.col-1 .user-type-filter {
-    display: none;
-  }
-
-  div.users div.col-1 .search,
-  div.users div.col-1 .new-user {
-    width: 100%;
-  }
-
-  div.users div.col-2 {
-    position: absolute;
-    top: 90px;
-    right: 0;
-    bottom: 0;
-    left: 0;
+  .users-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-/* Device width is greater than or equal to 960px */
-
-@media only screen and (min-width: 960px) {
-  div.users {
-    top: 64px;
+@media (max-width: 900px) {
+  .users-toolbar {
+    padding: 18px;
   }
 
-  div.users div.col-1 {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 300px;
-    padding: 20px 0 0 12px;
-    background: #fefefe;
+  .users-toolbar__actions {
+    width: 100%;
+    justify-content: stretch;
   }
 
-  div.users div.col-1 .user-type-filter {
-    margin-left: 5px;
-    width: 265px;
+  .users-toolbar__actions .MuiButton-root {
+    flex: 1 1 100%;
+    min-width: unset;
   }
 
-  div.users div.col-1 .new-user {
-    width: 265px;
-    margin-left: 5px;
-    margin-top: 15px;
+  .users-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .users-page {
+    padding: 28px 0 0;
+    gap: 24px;
   }
 
-  div.users div.col-2 {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 300px;
+  .users-header {
+    padding: 0;
+  }
+
+  .users-toolbar-container {
+    top: 74px;
+  }
+
+  .users-toolbar {
+    padding: 16px;
+  }
+
+  .users-table-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .users-bulk-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    bottom: 16px;
   }
 }

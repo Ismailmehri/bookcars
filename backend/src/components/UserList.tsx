@@ -431,7 +431,7 @@ const UserList = ({
     const value = params.value || ''
     if (!value) return <Typography variant="body2" color="text.secondary">—</Typography>
 
-    const fieldId = `email-${params.row._id}`
+    const fieldId = `${params.field}-${params.row._id}`
     const copied = copiedFieldRef.current === fieldId
 
     const handleCopy = (event: React.MouseEvent | React.KeyboardEvent) => {
@@ -498,6 +498,11 @@ const UserList = ({
 
   const computedVisibilityModel = useMemo<GridColumnVisibilityModel>(() => {
     const model: GridColumnVisibilityModel = { ...columnVisibilityModel }
+    if (!admin) {
+      model.type = false
+      model.lastLoginAt = false
+      model.createdAt = false
+    }
     if (isTablet) {
       model.createdAt = false
     }
@@ -505,144 +510,160 @@ const UserList = ({
       model.lastLoginAt = false
     }
     return model
-  }, [columnVisibilityModel, isMobile, isTablet])
+  }, [admin, columnVisibilityModel, isMobile, isTablet])
 
-  const columns = useMemo<GridColDef<bookcarsTypes.User>[]>(() => [
-    {
-      field: 'fullName',
-      headerName: strings.USER_COLUMN,
-      flex: 1.4,
-      minWidth: 260,
-      renderCell: renderAvatarCell,
-      sortable: true,
-    },
-    {
-      field: 'email',
-      headerName: commonStrings.EMAIL,
-      flex: 1,
-      minWidth: 220,
-      renderCell: (params) => renderCopyCell(params),
-      sortable: false,
-    },
-    {
-      field: 'type',
-      headerName: commonStrings.TYPE,
-      flex: 0.6,
-      minWidth: 150,
-      renderCell: renderRolePill,
-      sortable: false,
-    },
-    {
-      field: 'lastLoginAt',
-      headerName: strings.LAST_LOGIN_COLUMN,
-      flex: 0.8,
-      minWidth: 170,
-      valueGetter: (params: any) => {
-        if (!params) {
-          return null
-        }
-        // Si params est directement une date, la retourner
-        if (params instanceof Date || typeof params === 'string' || typeof params === 'number') {
-          return params
-        }
-        // Sinon, chercher dans params.row
-        if (params.row) {
-          return getLastLoginValue(params.row)
-        }
-        // Sinon, chercher directement dans params (au cas où c'est la valeur directement)
-        return getLastLoginValue(params as bookcarsTypes.User)
+  const columns = useMemo<GridColDef<bookcarsTypes.User>[]>(() => {
+    const baseColumns: GridColDef<bookcarsTypes.User>[] = [
+      {
+        field: 'fullName',
+        headerName: strings.USER_COLUMN,
+        flex: 1.4,
+        minWidth: 260,
+        renderCell: renderAvatarCell,
+        sortable: true,
       },
-      valueFormatter: (params: { value?: Date | string | null }) => {
-        if (!params) {
-          return '—'
-        }
-        return formatDateTime(params as Date | string | null)
+      {
+        field: 'email',
+        headerName: commonStrings.EMAIL,
+        flex: 1,
+        minWidth: 220,
+        renderCell: (params) => renderCopyCell(params),
+        sortable: false,
       },
-      sortComparator: (a, b) =>
-        getDateTimestamp(a as Date | string | null) - getDateTimestamp(b as Date | string | null),
-      sortable: true,
-    },
-    {
-      field: 'createdAt',
-      headerName: strings.CREATED_AT_COLUMN,
-      flex: 0.8,
-      minWidth: 170,
-      valueGetter: (params: any) => {
-        if (!params) {
-          return null
-        }
-        // Si params est directement une date, la retourner
-        if (params instanceof Date || typeof params === 'string' || typeof params === 'number') {
-          return params
-        }
-        // Sinon, chercher dans params.row
-        if (params.row) {
-          return getCreatedAtValue(params.row)
-        }
-        // Sinon, chercher directement dans params (au cas où c'est la valeur directement)
-        return getCreatedAtValue(params as bookcarsTypes.User)
+      {
+        field: 'phone',
+        headerName: strings.PHONE_COLUMN,
+        flex: 0.9,
+        minWidth: 180,
+        renderCell: (params) => renderCopyCell(params),
+        sortable: false,
       },
-      valueFormatter: (params: { value?: Date | string | null }) => {
-        if (!params) {
-          return '—'
-        }
-        return formatDateTime(params as Date | string | null)
+      {
+        field: 'type',
+        headerName: commonStrings.TYPE,
+        flex: 0.6,
+        minWidth: 150,
+        renderCell: renderRolePill,
+        sortable: false,
       },
-      sortComparator: (a, b) =>
-        getDateTimestamp(a as Date | string | null) - getDateTimestamp(b as Date | string | null),
-      sortable: true,
-    },
-    {
-      field: 'reviewCount',
-      headerName: strings.REVIEWS_COLUMN,
-      flex: 0.5,
-      minWidth: 110,
-      renderCell: ({ row }) => {
-        const count = row.reviewCount ?? (Array.isArray(row.reviews) ? row.reviews.length : 0)
-        if (count > 0) {
+      {
+        field: 'lastLoginAt',
+        headerName: strings.LAST_LOGIN_COLUMN,
+        flex: 0.8,
+        minWidth: 170,
+        valueGetter: (params: any) => {
+          if (!params) {
+            return null
+          }
+          // Si params est directement une date, la retourner
+          if (params instanceof Date || typeof params === 'string' || typeof params === 'number') {
+            return params
+          }
+          // Sinon, chercher dans params.row
+          if (params.row) {
+            return getLastLoginValue(params.row)
+          }
+          // Sinon, chercher directement dans params (au cas où c'est la valeur directement)
+          return getLastLoginValue(params as bookcarsTypes.User)
+        },
+        valueFormatter: (params: { value?: Date | string | null }) => {
+          if (!params) {
+            return '—'
+          }
+          return formatDateTime(params as Date | string | null)
+        },
+        sortComparator: (a, b) =>
+          getDateTimestamp(a as Date | string | null) - getDateTimestamp(b as Date | string | null),
+        sortable: true,
+      },
+      {
+        field: 'createdAt',
+        headerName: strings.CREATED_AT_COLUMN,
+        flex: 0.8,
+        minWidth: 170,
+        valueGetter: (params: any) => {
+          if (!params) {
+            return null
+          }
+          // Si params est directement une date, la retourner
+          if (params instanceof Date || typeof params === 'string' || typeof params === 'number') {
+            return params
+          }
+          // Sinon, chercher dans params.row
+          if (params.row) {
+            return getCreatedAtValue(params.row)
+          }
+          // Sinon, chercher directement dans params (au cas où c'est la valeur directement)
+          return getCreatedAtValue(params as bookcarsTypes.User)
+        },
+        valueFormatter: (params: { value?: Date | string | null }) => {
+          if (!params) {
+            return '—'
+          }
+          return formatDateTime(params as Date | string | null)
+        },
+        sortComparator: (a, b) =>
+          getDateTimestamp(a as Date | string | null) - getDateTimestamp(b as Date | string | null),
+        sortable: true,
+      },
+      {
+        field: 'reviewCount',
+        headerName: strings.REVIEWS_COLUMN,
+        flex: 0.5,
+        minWidth: 110,
+        renderCell: ({ row }) => {
+          const count = row.reviewCount ?? (Array.isArray(row.reviews) ? row.reviews.length : 0)
+          if (count > 0) {
+            return (
+              <Button
+                size="small"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onReviewsClick(row)
+                }}
+              >
+                {count}
+              </Button>
+            )
+          }
           return (
-            <Button
-              size="small"
-              onClick={(event) => {
-                event.stopPropagation()
-                onReviewsClick(row)
-              }}
-            >
-              {count}
-            </Button>
+            <Typography variant="body2" color="text.secondary">
+              0
+            </Typography>
           )
-        }
-        return (
-          <Typography variant="body2" color="text.secondary">
-            0
-          </Typography>
-        )
+        },
+        sortable: false,
       },
-      sortable: false,
-    },
-    {
-      field: 'actions',
-      headerName: strings.ACTIONS_COLUMN,
-      sortable: false,
-      filterable: false,
-      disableColumnMenu: true,
-      minWidth: 80,
-      align: 'right',
-      renderCell: ({ row }) => (
-        <IconButton
-          size="small"
-          onClick={(event) => {
-            event.stopPropagation()
-            setMenuAnchor(event.currentTarget)
-            setMenuRow(row)
-          }}
-          aria-label={strings.ACTIONS_COLUMN}
-        >
-          <MoreVert fontSize="small" />
-        </IconButton>
-      ),
-    },
-  ], [onReviewsClick, renderAvatarCell, renderCopyCell, renderRolePill])
+      {
+        field: 'actions',
+        headerName: strings.ACTIONS_COLUMN,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        minWidth: 80,
+        align: 'right',
+        renderCell: ({ row }) => (
+          <IconButton
+            size="small"
+            onClick={(event) => {
+              event.stopPropagation()
+              setMenuAnchor(event.currentTarget)
+              setMenuRow(row)
+            }}
+            aria-label={strings.ACTIONS_COLUMN}
+          >
+            <MoreVert fontSize="small" />
+          </IconButton>
+        ),
+      },
+    ]
+
+    if (!admin) {
+      return baseColumns.filter((column) => !['type', 'lastLoginAt', 'createdAt'].includes(column.field))
+    }
+
+    return baseColumns
+  }, [admin, onReviewsClick, renderAvatarCell, renderCopyCell, renderRolePill])
 
   const handleSortModelChange = (model: GridSortModel) => {
     onSortModelChange(model)

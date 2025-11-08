@@ -545,31 +545,35 @@ const Users = () => {
                     >
                       {strings.SEARCH_BUTTON}
                     </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<FilterAltOutlinedIcon />}
-                      onClick={() => setFiltersOpen(true)}
-                      color="primary"
-                    >
-                      {filtersLabel}
-                    </Button>
-                    <Button variant="text" startIcon={<RotateLeftRoundedIcon />} onClick={handleResetView}>
-                      {strings.RESET_VIEW}
-                    </Button>
-                    <Tooltip title={strings.SAVE_VIEW} disableHoverListener={!unsavedChanges}>
-                      <span>
-                        <Badge color="secondary" variant="dot" invisible={!unsavedChanges} overlap="circular">
-                          <Button
-                            variant="outlined"
-                            startIcon={<SaveOutlinedIcon />}
-                            onClick={handleSaveView}
-                            disabled={!unsavedChanges}
-                          >
-                            {strings.SAVE_VIEW}
-                          </Button>
-                        </Badge>
-                      </span>
-                    </Tooltip>
+                    {admin && (
+                      <>
+                        <Button
+                          variant="outlined"
+                          startIcon={<FilterAltOutlinedIcon />}
+                          onClick={() => setFiltersOpen(true)}
+                          color="primary"
+                        >
+                          {filtersLabel}
+                        </Button>
+                        <Button variant="text" startIcon={<RotateLeftRoundedIcon />} onClick={handleResetView}>
+                          {strings.RESET_VIEW}
+                        </Button>
+                        <Tooltip title={strings.SAVE_VIEW} disableHoverListener={!unsavedChanges}>
+                          <span>
+                            <Badge color="secondary" variant="dot" invisible={!unsavedChanges} overlap="circular">
+                              <Button
+                                variant="outlined"
+                                startIcon={<SaveOutlinedIcon />}
+                                onClick={handleSaveView}
+                                disabled={!unsavedChanges}
+                              >
+                                {strings.SAVE_VIEW}
+                              </Button>
+                            </Badge>
+                          </span>
+                        </Tooltip>
+                      </>
+                    )}
                     <Tooltip
                       title={strings.ADMIN_ONLY_ACTION}
                       placement="top"

@@ -2,14 +2,8 @@ import React from 'react'
 import { act } from 'react-dom/test-utils'
 import { createRoot, Root } from 'react-dom/client'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import Users from '../Users'
 import * as bookcarsTypes from ':bookcars-types'
 import { strings as usersStrings } from '@/lang/users'
@@ -19,53 +13,79 @@ const getUsersStatsMock = vi.fn()
 const getAllSuppliersMock = vi.fn()
 const userListPropsMock = vi.fn()
 
+/**
+ * Mock Layout – composant nommé (PascalCase) + hooks OK
+ */
 vi.mock('@/components/Layout', async () => {
-  const actual = await vi.importActual<typeof import('react')>('react')
+  const ReactActual = await vi.importActual<typeof import('react')>('react')
 
-  return {
-    __esModule: true,
-    default: ({ onLoad, children }: { onLoad?: (user?: bookcarsTypes.User) => void; children: React.ReactNode }) => {
-      actual.useEffect(() => {
-        if (onLoad) {
-          onLoad(layoutUser)
-        }
-      }, [onLoad])
-
-      return <div data-testid="layout">{children}</div>
-    },
+  const MockLayout: React.FC<{
+    onLoad?: (user?: bookcarsTypes.User) => void
+    children: React.ReactNode
+  }> = ({ onLoad, children }) => {
+    ReactActual.useEffect(() => {
+      if (onLoad) onLoad(layoutUser)
+    }, [onLoad])
+    return <div data-testid="layout">{children}</div>
   }
+
+  return { __esModule: true, default: MockLayout }
 })
 
+/**
+ * Mock UsersFilters – props déstructurées (règle react/destructuring-assignment)
+ */
 vi.mock('@/components/UsersFilters', () => ({
   __esModule: true,
-  default: (props: any) => (
-    <div data-testid="users-filters-mock" data-open={props.open} data-admin={props.admin} />
+  default: ({ open, admin }: any) => (
+    <div data-testid="users-filters-mock" data-open={open} data-admin={admin} />
   ),
 }))
 
+/**
+ * Mock UsersStatsCards
+ */
 vi.mock('@/components/UsersStatsCards', () => ({
   __esModule: true,
   default: () => <div data-testid="users-stats" />,
 }))
 
-vi.mock('@/components/UserList', () => ({
-  __esModule: true,
-  default: (props: any) => {
-    userListPropsMock(props)
-    React.useEffect(() => {
-      props.onTotalChange?.(42)
-      props.onPageSummaryChange?.({ from: 1, to: 10, total: 42, pageSize: 10 })
-      props.onLoadingChange?.(false)
-    }, [props])
-    return <div data-testid="users-list" />
-  },
-}))
+/**
+ * Mock UserList – props déstructurées + hook OK + on logge les props
+ */
+vi.mock('@/components/UserList', () => {
+  const MockUserList: React.FC<any> = ({
+    onTotalChange,
+    onPageSummaryChange,
+    onLoadingChange,
+    ...rest
+  }) => {
+    // garder la trace des props passées au composant
+    userListPropsMock({ onTotalChange, onPageSummaryChange, onLoadingChange, ...rest })
 
+    React.useEffect(() => {
+      onTotalChange?.(42)
+      onPageSummaryChange?.({ from: 1, to: 10, total: 42, pageSize: 10 })
+      onLoadingChange?.(false)
+    }, [onTotalChange, onPageSummaryChange, onLoadingChange])
+
+    return <div data-testid="users-list" />
+  }
+
+  return { __esModule: true, default: MockUserList }
+})
+
+/**
+ * Mock UserReviewsDialog
+ */
 vi.mock('@/components/UserReviewsDialog', () => ({
   __esModule: true,
   default: () => <div data-testid="reviews-dialog" />,
 }))
 
+/**
+ * Services
+ */
 vi.mock('@/services/UserService', () => ({
   __esModule: true,
   getUsersStats: () => getUsersStatsMock(),
@@ -102,6 +122,7 @@ describe('Users page', () => {
     getUsersStatsMock.mockReset()
     getAllSuppliersMock.mockReset()
     userListPropsMock.mockReset()
+
     getUsersStatsMock.mockResolvedValue({
       totalUsers: { current: 120, previous: 100, growth: 20 },
       suppliers: { current: 30, previous: 25, growth: 20 },
@@ -138,6 +159,9 @@ describe('Users page', () => {
 
     const actionButtons = Array.from(container.querySelectorAll('.users-toolbar__actions .MuiButton-root'))
     expect(actionButtons[0]?.textContent).toContain(usersStrings.SEARCH_BUTTON)
+    expect(actionButtons.some((b) => b.textContent?.includes(usersStrings.FILTERS_BUTTON))).toBe(true)
+    expect(actionButtons.some((b) => b.textContent?.includes(usersStrings.RESET_VIEW))).toBe(true)
+    expect(actionButtons.some((b) => b.textContent?.includes(usersStrings.SAVE_VIEW))).toBe(true)
 
     expect(userListPropsMock).toHaveBeenCalled()
     const firstCallProps = userListPropsMock.mock.calls[0][0]
@@ -172,5 +196,12 @@ describe('Users page', () => {
     expect(userListPropsMock).toHaveBeenCalled()
     const [{ admin: listAdmin }] = userListPropsMock.mock.calls
     expect(listAdmin).toBe(false)
+
+    const supplierActionButtons = Array.from(
+      container.querySelectorAll('.users-toolbar__actions .MuiButton-root'),
+    )
+    expect(supplierActionButtons.some((b) => b.textContent?.includes(usersStrings.FILTERS_BUTTON))).toBe(false)
+    expect(supplierActionButtons.some((b) => b.textContent?.includes(usersStrings.RESET_VIEW))).toBe(false)
+    expect(supplierActionButtons.some((b) => b.textContent?.includes(usersStrings.SAVE_VIEW))).toBe(false)
   })
 })

@@ -25,7 +25,7 @@
       ":disable-react-devtools": ["../packages/disable-react-devtools/index.ts"]
     },
 
-    "types": ["vitest", "node", "jsdom"]   // 👈 AJOUT
+    "types": ["node", "jsdom"]
   },
   "include": [
     "src",

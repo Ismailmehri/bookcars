@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
   Alert,
   Box,
@@ -37,14 +37,13 @@ const UserReviewsDialog = ({ open, user, onClose }: UserReviewsDialogProps) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>()
 
-  const loadReviews = async (currentPage: number) => {
-    if (!user?._id) {
-      return
-    }
+  const loadReviews = useCallback(async (currentPage: number) => {
+    if (!user?._id) return
 
     try {
       setLoading(true)
       setError(undefined)
+
       const scope = user.type === bookcarsTypes.UserType.Supplier ? 'supplier' : 'user'
 
       const response = await UserService.getUserReviews(
@@ -55,17 +54,22 @@ const UserReviewsDialog = ({ open, user, onClose }: UserReviewsDialogProps) => {
       )
 
       setReviews(response.resultData ?? [])
-      const total = Array.isArray(response.pageInfo) && response.pageInfo[0]?.totalRecords
-        ? response.pageInfo[0].totalRecords
-        : response.pageInfo?.totalRecords ?? 0
-      setTotalRecords(total)
+
+      const total = (Array.isArray(response.pageInfo) && response.pageInfo[0]?.totalRecords)
+        ?? response.pageInfo?.totalRecords
+        ?? 0
+
+      setTotalRecords(Number(total) || 0)
     } catch (err) {
       setError(strings.REVIEWS_ERROR)
       helper.error(err)
     } finally {
       setLoading(false)
     }
-  }
+  }, [
+    user?._id,
+    user?.type,
+  ])
 
   useEffect(() => {
     if (open) {
@@ -77,7 +81,7 @@ const UserReviewsDialog = ({ open, user, onClose }: UserReviewsDialogProps) => {
     if (open) {
       loadReviews(page)
     }
-  }, [open, page])
+  }, [open, page, loadReviews])
 
   useEffect(() => {
     if (!open) {
@@ -159,7 +163,7 @@ const UserReviewsDialog = ({ open, user, onClose }: UserReviewsDialogProps) => {
                       primary={(
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
                           <Typography variant="subtitle1" fontWeight={600}>
-                            {strings.formatString(strings.REVIEW_ENTRY_TITLE, index + 1, review.booking) as string}
+                            {strings.formatString(strings.REVIEW_ENTRY_TITLE, index + 1, review.booking as any) as string}
                           </Typography>
                           <Rating value={review.rating ?? 0} precision={0.5} readOnly size="small" />
                         </Stack>

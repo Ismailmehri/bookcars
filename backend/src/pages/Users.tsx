@@ -414,7 +414,7 @@ const Users = () => {
       INVALID_AGENCY_ID: insightsStrings.REASON_INVALID_ID,
       ALREADY_ACTIVE: insightsStrings.REASON_ALREADY_ACTIVE,
     }),
-    [insightsStrings],
+    [],
   )
 
   const formatBulkFailures = useCallback(
@@ -425,7 +425,7 @@ const Users = () => {
 
       const summary = entries
         .slice(0, 3)
-        .map((entry) => `${entry.agencyName}: ${reasonLabels[entry.reason] ?? entry.reason}`)
+        .map((entry) => `${entry.agencyName}: ${reasonLabels[entry.reason as keyof typeof reasonLabels] ?? entry.reason}`)
         .join(', ')
 
       return entries.length > 3 ? `${summary}, …` : summary

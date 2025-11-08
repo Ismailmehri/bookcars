@@ -627,9 +627,12 @@ const UserList = ({
             )
           }
           return (
-            <Typography variant="body2" color="text.secondary">
+            <Button
+              disabled
+              size="small"
+            >
               0
-            </Typography>
+            </Button>
           )
         },
         sortable: false,

@@ -264,8 +264,7 @@ describe('Users page', () => {
     })
 
     const smsDialogTitle = Array.from(document.querySelectorAll('h2')).find((node) =>
-      node.textContent?.includes(usersStrings.SMS_DIALOG_TITLE),
-    )
+      node.textContent?.includes(usersStrings.SMS_DIALOG_TITLE),)
     expect(smsDialogTitle).toBeDefined()
 
     const smsDialog = smsDialogTitle?.closest('[role="dialog"]') as HTMLElement | null
@@ -281,8 +280,7 @@ describe('Users page', () => {
 
     const confirmButton = smsDialog
       ? Array.from(smsDialog.querySelectorAll<HTMLButtonElement>('button')).find((button) =>
-        button.textContent?.includes(usersStrings.SMS_DIALOG_CONFIRM.replace('{count}', '2')),
-      )
+        button.textContent?.includes(usersStrings.SMS_DIALOG_CONFIRM.replace('{count}', '2')),)
       : undefined
     expect(confirmButton).toBeDefined()
 
@@ -302,8 +300,7 @@ describe('Users page', () => {
     await act(async () => {})
 
     const openDialog = Array.from(document.querySelectorAll('h2')).find((node) =>
-      node.textContent?.includes(usersStrings.SMS_DIALOG_TITLE),
-    )
+      node.textContent?.includes(usersStrings.SMS_DIALOG_TITLE),)
     expect(openDialog).toBeUndefined()
   })
 
@@ -346,8 +343,7 @@ describe('Users page', () => {
     })
 
     const emailDialogTitle = Array.from(document.querySelectorAll('h2')).find((node) =>
-      node.textContent?.includes(usersStrings.EMAIL_DIALOG_TITLE),
-    )
+      node.textContent?.includes(usersStrings.EMAIL_DIALOG_TITLE),)
     expect(emailDialogTitle).toBeDefined()
 
     const emailDialog = emailDialogTitle?.closest('[role="dialog"]') as HTMLElement | null
@@ -367,8 +363,7 @@ describe('Users page', () => {
 
     const confirmButton = emailDialog
       ? Array.from(emailDialog.querySelectorAll<HTMLButtonElement>('button')).find((button) =>
-        button.textContent?.includes(usersStrings.EMAIL_DIALOG_CONFIRM.replace('{count}', '3')),
-      )
+        button.textContent?.includes(usersStrings.EMAIL_DIALOG_CONFIRM.replace('{count}', '3')),)
       : undefined
     expect(confirmButton).toBeDefined()
 

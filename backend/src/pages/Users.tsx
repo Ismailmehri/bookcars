@@ -386,6 +386,22 @@ const Users = () => {
   const handleToSupplier = () => openConfirm(strings.CONFIRM_TO_SUPPLIER, () => performBulkUpdate(() => ({ type: bookcarsTypes.UserType.Supplier })))
   const handleToClient = () => openConfirm(strings.CONFIRM_TO_CLIENT, () => performBulkUpdate(() => ({ type: bookcarsTypes.UserType.User })))
   const handleDelete = () => openConfirm(strings.CONFIRM_DELETE, performBulkDelete)
+  const handleSendSms = () => {
+    const countLabel = selection.ids.length.toLocaleString()
+    const message = strings.formatString(strings.CONFIRM_SEND_SMS, countLabel) as string
+    openConfirm(message, async () => {
+      const successMessage = strings.formatString(strings.BULK_SMS_SUCCESS, countLabel) as string
+      helper.info(successMessage)
+    })
+  }
+  const handleSendEmail = () => {
+    const countLabel = selection.ids.length.toLocaleString()
+    const message = strings.formatString(strings.CONFIRM_SEND_EMAIL, countLabel) as string
+    openConfirm(message, async () => {
+      const successMessage = strings.formatString(strings.BULK_EMAIL_SUCCESS, countLabel) as string
+      helper.info(successMessage)
+    })
+  }
 
   const canBulk = selection.ids.length > 0 && !actionLoading
 
@@ -657,6 +673,12 @@ const Users = () => {
                 </Typography>
               </Stack>
               <Box className="users-bulk-bar__actions">
+                <Button variant="outlined" onClick={handleSendSms} disabled={!canBulk}>
+                  {strings.BULK_SEND_SMS}
+                </Button>
+                <Button variant="outlined" onClick={handleSendEmail} disabled={!canBulk}>
+                  {strings.BULK_SEND_EMAIL}
+                </Button>
                 <Button variant="outlined" onClick={handleActivate} disabled={!canBulk}>
                   {strings.BULK_ACTIVATE}
                 </Button>

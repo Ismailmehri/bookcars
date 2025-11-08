@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Users from '../Users'
 import * as bookcarsTypes from ':bookcars-types'
 import { strings as usersStrings } from '@/lang/users'
+import { strings as commonStrings } from '@/lang/common'
+import * as helper from '@/common/helper'
 
 let layoutUser: bookcarsTypes.User
 const getUsersStatsMock = vi.fn()
@@ -100,6 +102,7 @@ vi.mock('@/services/SupplierService', () => ({
 describe('Users page', () => {
   let container: HTMLDivElement
   let root: Root
+  let infoSpy: ReturnType<typeof vi.spyOn>
 
   const renderPage = async (userType: bookcarsTypes.UserType) => {
     layoutUser = {
@@ -122,6 +125,7 @@ describe('Users page', () => {
     getUsersStatsMock.mockReset()
     getAllSuppliersMock.mockReset()
     userListPropsMock.mockReset()
+    infoSpy = vi.spyOn(helper, 'info').mockImplementation(() => {})
 
     getUsersStatsMock.mockResolvedValue({
       totalUsers: { current: 120, previous: 100, growth: 20 },
@@ -141,6 +145,7 @@ describe('Users page', () => {
       root.unmount()
     })
     document.body.removeChild(container)
+    infoSpy.mockRestore()
   })
 
   it('renders admin dashboard with stats and admin options', async () => {
@@ -203,5 +208,76 @@ describe('Users page', () => {
     expect(supplierActionButtons.some((b) => b.textContent?.includes(usersStrings.FILTERS_BUTTON))).toBe(false)
     expect(supplierActionButtons.some((b) => b.textContent?.includes(usersStrings.RESET_VIEW))).toBe(false)
     expect(supplierActionButtons.some((b) => b.textContent?.includes(usersStrings.SAVE_VIEW))).toBe(false)
+  })
+
+  it('displays SMS and email bulk actions for admin selections', async () => {
+    await renderPage(bookcarsTypes.UserType.Admin)
+
+    const lastCall = userListPropsMock.mock.calls[userListPropsMock.mock.calls.length - 1]?.[0] as
+      | { onSelectionChange: (selection: { ids: string[]; rows: bookcarsTypes.User[] }) => void }
+      | undefined
+    expect(lastCall).toBeDefined()
+    if (!lastCall) {
+      throw new Error('UserList props were not captured')
+    }
+
+    await act(async () => {
+      lastCall.onSelectionChange({
+        ids: ['u1', 'u2'],
+        rows: [
+          { _id: 'u1', fullName: 'Alice' } as bookcarsTypes.User,
+          { _id: 'u2', fullName: 'Bob' } as bookcarsTypes.User,
+        ],
+      })
+    })
+
+    const bulkBar = container.querySelector('.users-bulk-bar')
+    expect(bulkBar).not.toBeNull()
+
+    const actionButtons = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('.users-bulk-bar__actions .MuiButton-root'),
+    )
+    const smsButton = actionButtons.find((button) => button.textContent?.includes(usersStrings.BULK_SEND_SMS))
+    const emailButton = actionButtons.find((button) => button.textContent?.includes(usersStrings.BULK_SEND_EMAIL))
+
+    expect(smsButton).toBeDefined()
+    expect(emailButton).toBeDefined()
+
+    await act(async () => {
+      smsButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const dialogContent = document.querySelector('.dialog-content')
+    expect(dialogContent?.textContent).toContain('SMS')
+
+    const confirmButton = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('.dialog-actions .MuiButton-root'),
+    ).find((button) => button.textContent?.includes(commonStrings.CONFIRM))
+    expect(confirmButton).toBeDefined()
+
+    await act(async () => {
+      confirmButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const smsMessage = usersStrings.formatString(usersStrings.BULK_SMS_SUCCESS, '2') as string
+    expect(infoSpy).toHaveBeenCalledWith(smsMessage)
+
+    infoSpy.mockClear()
+
+    await act(async () => {
+      emailButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const emailConfirmButton = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('.dialog-actions .MuiButton-root'),
+    ).find((button) => button.textContent?.includes(commonStrings.CONFIRM))
+    expect(emailConfirmButton).toBeDefined()
+
+    await act(async () => {
+      emailConfirmButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const emailMessage = usersStrings.formatString(usersStrings.BULK_EMAIL_SUCCESS, '2') as string
+    expect(infoSpy).toHaveBeenCalledWith(emailMessage)
   })
 })

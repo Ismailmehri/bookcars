@@ -2,7 +2,7 @@ import React from 'react'
 import { act } from 'react-dom/test-utils'
 import { createRoot, Root } from 'react-dom/client'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 
 import Users from '../Users'
 import * as bookcarsTypes from ':bookcars-types'
@@ -110,8 +110,8 @@ vi.mock('@/services/InsightsActionService', () => ({
 describe('Users page', () => {
   let container: HTMLDivElement
   let root: Root
-  let infoSpy: ReturnType<typeof vi.spyOn>
-  let errorSpy: ReturnType<typeof vi.spyOn>
+  let infoSpy: MockInstance<[message: string], void>
+  let errorSpy: MockInstance<[err?: unknown, message?: string], void>
 
   const renderPage = async (userType: bookcarsTypes.UserType) => {
     layoutUser = {

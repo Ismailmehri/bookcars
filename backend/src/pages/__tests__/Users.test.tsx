@@ -7,13 +7,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Users from '../Users'
 import * as bookcarsTypes from ':bookcars-types'
 import { strings as usersStrings } from '@/lang/users'
-import { strings as commonStrings } from '@/lang/common'
+import { strings as insightsStrings } from '@/lang/insights'
 import * as helper from '@/common/helper'
 
 let layoutUser: bookcarsTypes.User
 const getUsersStatsMock = vi.fn()
 const getAllSuppliersMock = vi.fn()
 const userListPropsMock = vi.fn()
+const sendBulkSmsMock = vi.fn()
+const sendBulkEmailMock = vi.fn()
 
 /**
  * Mock Layout – composant nommé (PascalCase) + hooks OK
@@ -99,10 +101,17 @@ vi.mock('@/services/SupplierService', () => ({
   getAllSuppliers: () => getAllSuppliersMock(),
 }))
 
+vi.mock('@/services/InsightsActionService', () => ({
+  __esModule: true,
+  sendBulkSms: (payload: any) => sendBulkSmsMock(payload),
+  sendBulkEmail: (payload: any) => sendBulkEmailMock(payload),
+}))
+
 describe('Users page', () => {
   let container: HTMLDivElement
   let root: Root
   let infoSpy: ReturnType<typeof vi.spyOn>
+  let errorSpy: ReturnType<typeof vi.spyOn>
 
   const renderPage = async (userType: bookcarsTypes.UserType) => {
     layoutUser = {
@@ -125,7 +134,10 @@ describe('Users page', () => {
     getUsersStatsMock.mockReset()
     getAllSuppliersMock.mockReset()
     userListPropsMock.mockReset()
+    sendBulkSmsMock.mockReset()
+    sendBulkEmailMock.mockReset()
     infoSpy = vi.spyOn(helper, 'info').mockImplementation(() => {})
+    errorSpy = vi.spyOn(helper, 'error').mockImplementation(() => {})
 
     getUsersStatsMock.mockResolvedValue({
       totalUsers: { current: 120, previous: 100, growth: 20 },
@@ -146,6 +158,7 @@ describe('Users page', () => {
     })
     document.body.removeChild(container)
     infoSpy.mockRestore()
+    errorSpy.mockRestore()
   })
 
   it('renders admin dashboard with stats and admin options', async () => {
@@ -210,7 +223,7 @@ describe('Users page', () => {
     expect(supplierActionButtons.some((b) => b.textContent?.includes(usersStrings.SAVE_VIEW))).toBe(false)
   })
 
-  it('displays SMS and email bulk actions for admin selections', async () => {
+  it('submits SMS action via bulk dialog for admin selections', async () => {
     await renderPage(bookcarsTypes.UserType.Admin)
 
     const lastCall = userListPropsMock.mock.calls[userListPropsMock.mock.calls.length - 1]?.[0] as
@@ -231,53 +244,158 @@ describe('Users page', () => {
       })
     })
 
-    const bulkBar = container.querySelector('.users-bulk-bar')
-    expect(bulkBar).not.toBeNull()
-
     const actionButtons = Array.from(
       container.querySelectorAll<HTMLButtonElement>('.users-bulk-bar__actions .MuiButton-root'),
     )
     const smsButton = actionButtons.find((button) => button.textContent?.includes(usersStrings.BULK_SEND_SMS))
-    const emailButton = actionButtons.find((button) => button.textContent?.includes(usersStrings.BULK_SEND_EMAIL))
-
     expect(smsButton).toBeDefined()
-    expect(emailButton).toBeDefined()
+
+    sendBulkSmsMock.mockResolvedValue({
+      succeeded: [
+        { agencyId: 'u1', agencyName: 'Alice' },
+        { agencyId: 'u2', agencyName: 'Bob' },
+      ],
+      failed: [],
+      warnings: [],
+    })
 
     await act(async () => {
       smsButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    const dialogContent = document.querySelector('.dialog-content')
-    expect(dialogContent?.textContent).toContain('SMS')
+    const smsDialogTitle = Array.from(document.querySelectorAll('h2')).find((node) =>
+      node.textContent?.includes(usersStrings.SMS_DIALOG_TITLE),
+    )
+    expect(smsDialogTitle).toBeDefined()
 
-    const confirmButton = Array.from(
-      document.querySelectorAll<HTMLButtonElement>('.dialog-actions .MuiButton-root'),
-    ).find((button) => button.textContent?.includes(commonStrings.CONFIRM))
+    const smsDialog = smsDialogTitle?.closest('[role="dialog"]') as HTMLElement | null
+    expect(smsDialog).not.toBeNull()
+
+    const smsTextarea = smsDialog?.querySelector('textarea') as HTMLTextAreaElement
+    expect(smsTextarea).toBeDefined()
+
+    await act(async () => {
+      smsTextarea.value = 'Bonjour à tous'
+      smsTextarea.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    const confirmButton = smsDialog
+      ? Array.from(smsDialog.querySelectorAll<HTMLButtonElement>('button')).find((button) =>
+        button.textContent?.includes(usersStrings.SMS_DIALOG_CONFIRM.replace('{count}', '2')),
+      )
+      : undefined
     expect(confirmButton).toBeDefined()
 
     await act(async () => {
       confirmButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    const smsMessage = usersStrings.formatString(usersStrings.BULK_SMS_SUCCESS, '2') as string
-    expect(infoSpy).toHaveBeenCalledWith(smsMessage)
+    expect(sendBulkSmsMock).toHaveBeenCalledWith({
+      agencyIds: ['u1', 'u2'],
+      message: 'Bonjour à tous',
+    })
 
-    infoSpy.mockClear()
+    const successMessage = usersStrings.BULK_ACTION_SUCCESS.replace('{count}', '2')
+    expect(infoSpy).toHaveBeenCalledWith(successMessage)
+    expect(errorSpy).not.toHaveBeenCalled()
+
+    await act(async () => {})
+
+    const openDialog = Array.from(document.querySelectorAll('h2')).find((node) =>
+      node.textContent?.includes(usersStrings.SMS_DIALOG_TITLE),
+    )
+    expect(openDialog).toBeUndefined()
+  })
+
+  it('displays warnings and errors for bulk email dialog submissions', async () => {
+    await renderPage(bookcarsTypes.UserType.Admin)
+
+    const lastCall = userListPropsMock.mock.calls[userListPropsMock.mock.calls.length - 1]?.[0] as
+      | { onSelectionChange: (selection: { ids: string[]; rows: bookcarsTypes.User[] }) => void }
+      | undefined
+    expect(lastCall).toBeDefined()
+    if (!lastCall) {
+      throw new Error('UserList props were not captured')
+    }
+
+    await act(async () => {
+      lastCall.onSelectionChange({
+        ids: ['u1', 'u2', 'u3'],
+        rows: [
+          { _id: 'u1', fullName: 'Alice' } as bookcarsTypes.User,
+          { _id: 'u2', fullName: 'Bob' } as bookcarsTypes.User,
+          { _id: 'u3', fullName: 'Charlie' } as bookcarsTypes.User,
+        ],
+      })
+    })
+
+    const actionButtons = Array.from(
+      container.querySelectorAll<HTMLButtonElement>('.users-bulk-bar__actions .MuiButton-root'),
+    )
+    const emailButton = actionButtons.find((button) => button.textContent?.includes(usersStrings.BULK_SEND_EMAIL))
+    expect(emailButton).toBeDefined()
+
+    sendBulkEmailMock.mockResolvedValue({
+      succeeded: [{ agencyId: 'u1', agencyName: 'Alice' }],
+      failed: [{ agencyId: 'u2', agencyName: 'Bob', reason: 'MISSING_EMAIL' }],
+      warnings: [{ agencyId: 'u3', agencyName: 'Charlie', reason: 'EMAIL_SEND_FAILED' }],
+    })
 
     await act(async () => {
       emailButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    const emailConfirmButton = Array.from(
-      document.querySelectorAll<HTMLButtonElement>('.dialog-actions .MuiButton-root'),
-    ).find((button) => button.textContent?.includes(commonStrings.CONFIRM))
-    expect(emailConfirmButton).toBeDefined()
+    const emailDialogTitle = Array.from(document.querySelectorAll('h2')).find((node) =>
+      node.textContent?.includes(usersStrings.EMAIL_DIALOG_TITLE),
+    )
+    expect(emailDialogTitle).toBeDefined()
+
+    const emailDialog = emailDialogTitle?.closest('[role="dialog"]') as HTMLElement | null
+    expect(emailDialog).not.toBeNull()
+
+    const subjectInput = emailDialog?.querySelector('input') as HTMLInputElement
+    const messageTextarea = emailDialog?.querySelector('textarea') as HTMLTextAreaElement
+    expect(subjectInput).toBeDefined()
+    expect(messageTextarea).toBeDefined()
 
     await act(async () => {
-      emailConfirmButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      subjectInput.value = 'Annonce importante'
+      subjectInput.dispatchEvent(new Event('input', { bubbles: true }))
+      messageTextarea.value = 'Contenu du message'
+      messageTextarea.dispatchEvent(new Event('input', { bubbles: true }))
     })
 
-    const emailMessage = usersStrings.formatString(usersStrings.BULK_EMAIL_SUCCESS, '2') as string
-    expect(infoSpy).toHaveBeenCalledWith(emailMessage)
+    const confirmButton = emailDialog
+      ? Array.from(emailDialog.querySelectorAll<HTMLButtonElement>('button')).find((button) =>
+        button.textContent?.includes(usersStrings.EMAIL_DIALOG_CONFIRM.replace('{count}', '3')),
+      )
+      : undefined
+    expect(confirmButton).toBeDefined()
+
+    infoSpy.mockClear()
+    errorSpy.mockClear()
+
+    await act(async () => {
+      confirmButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(sendBulkEmailMock).toHaveBeenCalledWith({
+      agencyIds: ['u1', 'u2', 'u3'],
+      subject: 'Annonce importante',
+      message: 'Contenu du message',
+    })
+
+    const successMessage = usersStrings.BULK_ACTION_SUCCESS.replace('{count}', '1')
+    expect(infoSpy).toHaveBeenCalledWith(successMessage)
+
+    const warningsMessage = usersStrings.BULK_ACTION_WARNINGS
+      .replace('{count}', '1')
+      .replace('{details}', `Charlie: ${insightsStrings.REASON_EMAIL_FAILED}`)
+    expect(infoSpy).toHaveBeenCalledWith(warningsMessage)
+
+    const errorMessage = usersStrings.BULK_ACTION_FAILURE
+      .replace('{count}', '1')
+      .replace('{details}', `Bob: ${insightsStrings.REASON_MISSING_EMAIL}`)
+    expect(errorSpy).toHaveBeenCalledWith(undefined, errorMessage)
   })
 })

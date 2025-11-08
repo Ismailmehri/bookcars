@@ -28,11 +28,15 @@ import UsersFilters from '@/components/UsersFilters'
 import UsersStatsCards from '@/components/UsersStatsCards'
 import UserList from '@/components/UserList'
 import UserReviewsDialog from '@/components/UserReviewsDialog'
+import BulkSmsDialog from '@/components/users/actions/BulkSmsDialog'
+import BulkEmailDialog from '@/components/users/actions/BulkEmailDialog'
 import { strings } from '@/lang/users'
 import { strings as commonStrings } from '@/lang/common'
+import { strings as insightsStrings } from '@/lang/insights'
 import * as helper from '@/common/helper'
 import * as UserService from '@/services/UserService'
 import * as SupplierService from '@/services/SupplierService'
+import * as InsightsActionService from '@/services/InsightsActionService'
 import { sanitizeUsersSortModel, sortModelsEqual } from '@/common/users-sort.utils'
 import {
   UsersFiltersState,
@@ -140,6 +144,8 @@ const Users = () => {
   const [density, setDensity] = useState<GridDensity>(defaultDensity)
   const [unsavedChanges, setUnsavedChanges] = useState(false)
   const [listLoading, setListLoading] = useState(false)
+  const [smsDialogOpen, setSmsDialogOpen] = useState(false)
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
 
   useEffect(() => {
     try {
@@ -289,6 +295,13 @@ const Users = () => {
     setPageSummary(summary)
   }, [])
 
+  useEffect(() => {
+    if (selection.ids.length === 0) {
+      setSmsDialogOpen(false)
+      setEmailDialogOpen(false)
+    }
+  }, [selection.ids.length])
+
   const handleReviewsClick = (selectedUser: bookcarsTypes.User) => {
     setReviewsUser(selectedUser)
     setReviewsOpen(true)
@@ -386,22 +399,126 @@ const Users = () => {
   const handleToSupplier = () => openConfirm(strings.CONFIRM_TO_SUPPLIER, () => performBulkUpdate(() => ({ type: bookcarsTypes.UserType.Supplier })))
   const handleToClient = () => openConfirm(strings.CONFIRM_TO_CLIENT, () => performBulkUpdate(() => ({ type: bookcarsTypes.UserType.User })))
   const handleDelete = () => openConfirm(strings.CONFIRM_DELETE, performBulkDelete)
+  const selectedUsers = useMemo(() => selection.rows, [selection.rows])
+
+  const reasonLabels = useMemo(
+    () => ({
+      MISSING_EMAIL: insightsStrings.REASON_MISSING_EMAIL,
+      EMAIL_SEND_FAILED: insightsStrings.REASON_EMAIL_FAILED,
+      INVALID_PHONE: insightsStrings.REASON_INVALID_PHONE,
+      SMS_SEND_FAILED: insightsStrings.REASON_SMS_FAILED,
+      BLOCK_FAILED: insightsStrings.REASON_BLOCK_FAILED,
+      UNBLOCK_FAILED: insightsStrings.REASON_UNBLOCK_FAILED,
+      NOTE_SAVE_FAILED: insightsStrings.REASON_NOTE_FAILED,
+      AGENCY_NOT_FOUND: insightsStrings.REASON_NOT_FOUND,
+      INVALID_AGENCY_ID: insightsStrings.REASON_INVALID_ID,
+      ALREADY_ACTIVE: insightsStrings.REASON_ALREADY_ACTIVE,
+    }),
+    [insightsStrings],
+  )
+
+  const formatBulkFailures = useCallback(
+    (entries: bookcarsTypes.BulkActionFailureEntry[]) => {
+      if (entries.length === 0) {
+        return ''
+      }
+
+      const summary = entries
+        .slice(0, 3)
+        .map((entry) => `${entry.agencyName}: ${reasonLabels[entry.reason] ?? entry.reason}`)
+        .join(', ')
+
+      return entries.length > 3 ? `${summary}, …` : summary
+    },
+    [reasonLabels],
+  )
+
+  const handleBulkActionOutcome = useCallback(
+    (result: bookcarsTypes.BulkActionResponse, successTemplate: string) => {
+      if (result.succeeded.length > 0) {
+        helper.info(successTemplate.replace('{count}', result.succeeded.length.toString()))
+      }
+
+      if (result.failed.length > 0) {
+        const details = formatBulkFailures(result.failed) || '—'
+        helper.error(
+          undefined,
+          strings.BULK_ACTION_FAILURE
+            .replace('{count}', result.failed.length.toString())
+            .replace('{details}', details),
+        )
+      }
+
+      if (result.warnings.length > 0) {
+        const details = formatBulkFailures(result.warnings) || '—'
+        helper.info(
+          strings.BULK_ACTION_WARNINGS
+            .replace('{count}', result.warnings.length.toString())
+            .replace('{details}', details),
+        )
+      }
+
+      if (result.failed.length === 0 && result.warnings.length === 0) {
+        setSelectionResetKey((prev) => prev + 1)
+      }
+    },
+    [formatBulkFailures],
+  )
+
   const handleSendSms = () => {
-    const countLabel = selection.ids.length.toLocaleString()
-    const message = strings.formatString(strings.CONFIRM_SEND_SMS, countLabel) as string
-    openConfirm(message, async () => {
-      const successMessage = strings.formatString(strings.BULK_SMS_SUCCESS, countLabel) as string
-      helper.info(successMessage)
-    })
+    setSmsDialogOpen(true)
   }
+
   const handleSendEmail = () => {
-    const countLabel = selection.ids.length.toLocaleString()
-    const message = strings.formatString(strings.CONFIRM_SEND_EMAIL, countLabel) as string
-    openConfirm(message, async () => {
-      const successMessage = strings.formatString(strings.BULK_EMAIL_SUCCESS, countLabel) as string
-      helper.info(successMessage)
-    })
+    setEmailDialogOpen(true)
   }
+
+  const handleSmsSubmit = useCallback(
+    async ({ message }: { message: string }) => {
+      if (selection.ids.length === 0) {
+        return
+      }
+
+      try {
+        setActionLoading(true)
+        const result = await InsightsActionService.sendBulkSms({
+          agencyIds: selection.ids,
+          message,
+        })
+        handleBulkActionOutcome(result, strings.BULK_ACTION_SUCCESS)
+        setSmsDialogOpen(false)
+      } catch (err) {
+        helper.error(err, strings.BULK_ACTION_GENERIC_ERROR)
+      } finally {
+        setActionLoading(false)
+      }
+    },
+    [handleBulkActionOutcome, selection.ids],
+  )
+
+  const handleEmailSubmit = useCallback(
+    async ({ subject, message }: { subject: string; message: string }) => {
+      if (selection.ids.length === 0) {
+        return
+      }
+
+      try {
+        setActionLoading(true)
+        const result = await InsightsActionService.sendBulkEmail({
+          agencyIds: selection.ids,
+          subject,
+          message,
+        })
+        handleBulkActionOutcome(result, strings.BULK_ACTION_SUCCESS)
+        setEmailDialogOpen(false)
+      } catch (err) {
+        helper.error(err, strings.BULK_ACTION_GENERIC_ERROR)
+      } finally {
+        setActionLoading(false)
+      }
+    },
+    [handleBulkActionOutcome, selection.ids],
+  )
 
   const canBulk = selection.ids.length > 0 && !actionLoading
 
@@ -714,6 +831,22 @@ const Users = () => {
       />
 
       <UserReviewsDialog open={reviewsOpen} user={reviewsUser} onClose={closeReviewsDialog} />
+
+      <BulkSmsDialog
+        open={smsDialogOpen}
+        users={selectedUsers}
+        loading={actionLoading}
+        onClose={() => setSmsDialogOpen(false)}
+        onSubmit={handleSmsSubmit}
+      />
+
+      <BulkEmailDialog
+        open={emailDialogOpen}
+        users={selectedUsers}
+        loading={actionLoading}
+        onClose={() => setEmailDialogOpen(false)}
+        onSubmit={handleEmailSubmit}
+      />
 
       <Dialog open={Boolean(confirmState)} onClose={() => setConfirmState(null)} maxWidth="xs" fullWidth>
         <DialogTitle className="dialog-header">{commonStrings.CONFIRM_TITLE}</DialogTitle>

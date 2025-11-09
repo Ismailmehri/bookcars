@@ -701,6 +701,11 @@ export interface Review {
   createdAt: Date; // Date de création de l'avis
 }
 
+export interface ReviewAuthor {
+  _id: string;
+  fullName: string;
+}
+
 export interface User {
   _id?: string
   supplier?: User | string
@@ -731,6 +736,7 @@ export interface User {
   reviewCount?: number
   score?: number
   slug?: string
+  reviewAuthors?: ReviewAuthor[]
   commissionAgreementAccepted?: boolean
   commissionAgreementAcceptedAt?: string | Date
   lastLoginAt?: Date | string | null

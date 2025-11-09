@@ -730,6 +730,7 @@ export interface User {
   checked?: boolean
   customerId?: string
   carCount?: number
+  reservationCount?: number
   contracts?: Contract[]
   emailLogs?: EmailLog[]
   reviews?: Review[]

@@ -331,11 +331,10 @@ export const getAllSuppliers = async (req: Request, res: Response) => {
   try {
     const data = await User.aggregate(
       [
-        // Étape 1 : Filtrer les utilisateurs de type "Supplier" avec un avatar et non blacklistés
+        // Étape 1 : Filtrer les utilisateurs de type "Supplier" non blacklistés
         {
           $match: {
             type: bookcarsTypes.UserType.Supplier,
-            avatar: { $ne: null },
             blacklisted: { $ne: true },
           },
         },
@@ -350,7 +349,7 @@ export const getAllSuppliers = async (req: Request, res: Response) => {
           },
         },
 
-        // Étape 3 : Ajouter des champs calculés (voitures et avis)
+        // Étape 3 : Ajouter des champs calculés (voitures, avis et réservations)
         {
           $addFields: {
             carCount: { $size: '$cars' },
@@ -371,7 +370,37 @@ export const getAllSuppliers = async (req: Request, res: Response) => {
           },
         },
 
-        // Étape 4 : Récupérer les informations des auteurs d'avis
+        // Étape 4 : Compter le nombre de réservations confirmées pour chaque agence
+        {
+          $lookup: {
+            from: 'Booking',
+            let: { supplierId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$supplier', '$$supplierId'] },
+                },
+              },
+              {
+                $count: 'count',
+              },
+            ],
+            as: 'reservationStats',
+          },
+        },
+        {
+          $addFields: {
+            reservationCount: {
+              $cond: [
+                { $gt: [{ $size: '$reservationStats' }, 0] },
+                { $arrayElemAt: ['$reservationStats.count', 0] },
+                0,
+              ],
+            },
+          },
+        },
+
+        // Étape 5 : Récupérer les informations des auteurs d'avis
         {
           $lookup: {
             from: 'User',
@@ -395,10 +424,10 @@ export const getAllSuppliers = async (req: Request, res: Response) => {
           },
         },
 
-        // Étape 5 : Trier les résultats par statut de validation puis par disponibilité
+        // Étape 6 : Trier les résultats par statut de validation puis par disponibilité
         { $sort: { agencyVerified: -1, carCount: -1, fullName: 1 } },
 
-        // Étape 6 : Sélectionner uniquement les champs nécessaires
+        // Étape 7 : Sélectionner uniquement les champs nécessaires
         {
           $project: {
             _id: 1,
@@ -413,6 +442,8 @@ export const getAllSuppliers = async (req: Request, res: Response) => {
             reviewCount: 1,
             reviews: { $ifNull: ['$reviews', []] },
             reviewAuthors: 1,
+            reservationCount: 1,
+            location: 1,
           },
         },
       ],

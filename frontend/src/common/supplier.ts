@@ -97,6 +97,20 @@ export const getReviewCount = (supplier: SupplierWithReviews): number => {
   return 0
 }
 
+export const getReservationCount = (supplier: SupplierWithReviews): number => {
+  if (typeof supplier.reservationCount === 'number' && Number.isFinite(supplier.reservationCount)) {
+    return Math.max(0, supplier.reservationCount)
+  }
+
+  const { reservations } = supplier as SupplierWithReviews & { reservations?: number }
+
+  if (typeof reservations === 'number' && Number.isFinite(reservations)) {
+    return Math.max(0, reservations)
+  }
+
+  return 0
+}
+
 const getAuthorFullName = (supplier: SupplierWithReviews, review: bookcarsTypes.Review): string => {
   const author = supplier.reviewAuthors?.find((candidate) => candidate._id === review.user)
   if (author?.fullName) {

@@ -20,6 +20,7 @@ const {
   getSortedReviews,
   getReviewAuthorName,
   resolveReviewAuthorNames,
+  getReservationCount,
 } = supplierModule
 
 const createReview = ({
@@ -65,6 +66,7 @@ const createSupplier = (overrides = {}) => ({
     { _id: 'u1', fullName: 'Le Locataire' },
     { _id: 'u2', fullName: 'Agence Premium' },
   ],
+  reservationCount: 18,
   ...overrides,
 })
 
@@ -134,4 +136,12 @@ test('resolveReviewAuthorNames privilégie reviewerFullName et gère le fallback
   const fromSupplier = resolveReviewAuthorNames(supplier, review)
   assert.equal(fromSupplier.fullName, 'Agence Premium')
   assert.equal(fromSupplier.abbreviated, 'Agence P.')
+})
+
+test('getReservationCount renvoie une valeur positive même sans reservationCount explicite', () => {
+  const supplier = createSupplier({ reservationCount: undefined })
+  const fallbackSupplier = createSupplier({ reservationCount: undefined, reservations: 12 })
+
+  assert.equal(getReservationCount(supplier), 0)
+  assert.equal(getReservationCount(fallbackSupplier), 12)
 })

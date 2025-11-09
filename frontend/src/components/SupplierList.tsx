@@ -20,7 +20,6 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  Grid,
   IconButton,
   List,
   ListItemAvatar,
@@ -37,7 +36,7 @@ import {
   DirectionsCarFilled,
   LocationOnOutlined,
   Verified as VerifiedIcon,
-  StarRounded,
+  EventAvailableOutlined,
 } from '@mui/icons-material'
 import CloseIcon from '@mui/icons-material/Close'
 import { Helmet } from 'react-helmet'
@@ -46,6 +45,7 @@ import env from '@/config/env.config'
 import * as SupplierService from '@/services/SupplierService'
 import {
   buildSupplierStructuredData,
+  getReservationCount,
   getReviewAuthorName,
   getReviewCount,
   getRecentReviews,
@@ -71,6 +71,8 @@ interface SupplierCardProps {
 const SupplierCard = memo(({ supplier, onOpenReviews }: SupplierCardProps) => {
   const imageSrc = supplier.avatar ? bookcarsHelper.joinURL(env.CDN_USERS, supplier.avatar) : undefined
   const reviewCount = getReviewCount(supplier)
+  const reservationCount = getReservationCount(supplier)
+  const reservationLabel = reservationCount > 1 ? 'réservations' : 'réservation'
   const numericScore = typeof supplier.score === 'number' ? supplier.score : Number(supplier.score ?? 0)
   const boundedRating = Math.min(Math.max(Number.isFinite(numericScore) ? numericScore : 0, 0), 5)
   const supplierUrl = supplier.slug ? `https://plany.tn/search/agence/${supplier.slug}` : undefined
@@ -86,44 +88,50 @@ const SupplierCard = memo(({ supplier, onOpenReviews }: SupplierCardProps) => {
 
   return (
     <Card className="supplier-card" elevation={4}>
-      <Box className="supplier-card__hero">
-        <Avatar
-          src={imageSrc}
-          alt={`Logo de l'agence ${displayName}`}
-          className="supplier-card__avatar"
-          imgProps={{ loading: 'lazy' }}
-        >
-          {!imageSrc && supplierInitial}
-        </Avatar>
-      </Box>
       <CardContent className="supplier-card__content">
         <Box className="supplier-card__header">
-          <Box className="supplier-card__title-wrapper">
-            <Typography variant="h6" component="p" className="supplier-card__title">
-              {displayName}
-            </Typography>
-            {supplier.agencyVerified && (
-              <Chip
-                icon={<VerifiedIcon fontSize="small" />}
-                label="Agence vérifiée"
-                color="primary"
-                size="small"
-                className="supplier-card__badge"
-              />
+          <Avatar
+            src={imageSrc}
+            alt={`Logo de l'agence ${displayName}`}
+            className="supplier-card__avatar"
+            imgProps={{ loading: 'lazy' }}
+          >
+            {!imageSrc && supplierInitial}
+          </Avatar>
+          <Box className="supplier-card__identity">
+            <Box className="supplier-card__title-wrapper">
+              <Typography variant="h6" component="p" className="supplier-card__title">
+                {displayName}
+              </Typography>
+              {supplier.agencyVerified && (
+                <Chip
+                  icon={<VerifiedIcon fontSize="small" />}
+                  label="Agence vérifiée"
+                  color="primary"
+                  size="small"
+                  className="supplier-card__badge"
+                />
+              )}
+            </Box>
+            {locationLabel && (
+              <Stack direction="row" spacing={0.5} alignItems="center" className="supplier-card__location">
+                <LocationOnOutlined fontSize="small" />
+                <Typography variant="body2" color="text.secondary">
+                  {locationLabel}
+                </Typography>
+              </Stack>
             )}
           </Box>
-          {locationLabel && (
-            <Stack direction="row" spacing={0.5} alignItems="center" className="supplier-card__location">
-              <LocationOnOutlined fontSize="small" />
-              <Typography variant="body2" color="text.secondary">
-                {locationLabel}
-              </Typography>
-            </Stack>
-          )}
         </Box>
 
         <Box className="supplier-card__stats" role="list">
-          <Stack direction="row" spacing={1.5} alignItems="center" role="listitem" className="supplier-card__stats-item">
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            role="listitem"
+            className="supplier-card__stats-item supplier-card__stats-item--rating"
+          >
             <Rating
               name={`rating-${supplier._id ?? supplier.slug}`}
               value={boundedRating}
@@ -133,15 +141,9 @@ const SupplierCard = memo(({ supplier, onOpenReviews }: SupplierCardProps) => {
               aria-label={`Note moyenne ${boundedRating.toFixed(1)} sur 5`}
             />
             {hasReviews ? (
-              <Stack direction="row" spacing={0.5} alignItems="center" className="supplier-card__stats-rating">
-                <StarRounded fontSize="small" />
-                <Typography variant="subtitle2" className="supplier-card__stats-score">
-                  {boundedRating.toFixed(1)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {`(${reviewCount} avis)`}
-                </Typography>
-              </Stack>
+              <Typography variant="body2" color="text.secondary" className="supplier-card__stats-reviews">
+                {`(${reviewCount} avis)`}
+              </Typography>
             ) : (
               <Typography variant="body2" color="text.secondary">
                 Aucun avis
@@ -153,6 +155,13 @@ const SupplierCard = memo(({ supplier, onOpenReviews }: SupplierCardProps) => {
             <DirectionsCarFilled fontSize="small" className="supplier-card__stats-icon" />
             <Typography variant="subtitle2" className="supplier-card__stats-value">
               {`${supplier.carCount ?? 0} voitures dispo`}
+            </Typography>
+          </Stack>
+          <Divider orientation="vertical" flexItem className="supplier-card__stats-divider" />
+          <Stack direction="row" spacing={1} alignItems="center" role="listitem" className="supplier-card__stats-item">
+            <EventAvailableOutlined fontSize="small" className="supplier-card__stats-icon supplier-card__stats-icon--reservations" />
+            <Typography variant="subtitle2" className="supplier-card__stats-value">
+              {`${reservationCount} ${reservationLabel}`}
             </Typography>
           </Stack>
         </Box>
@@ -192,7 +201,7 @@ const SupplierCard = memo(({ supplier, onOpenReviews }: SupplierCardProps) => {
       <CardActions className="supplier-card__actions">
         {hasReviews && (
           <Button
-            variant="outlined"
+            variant="text"
             size="large"
             onClick={handleReviewsClick}
             className="supplier-card__reviews-button"
@@ -428,23 +437,20 @@ const SupplierList = () => {
 
   if (loading) {
     return (
-      <Grid
-        container
-        spacing={{ xs: 2, md: 3 }}
-        className="supplier-grid"
-        columns={{ xs: 4, sm: 8, md: 12, lg: 16, xl: 20 }}
-      >
+      <Box className="supplier-grid">
         {SKELETON_PLACEHOLDERS.map((placeholder) => (
-          <Grid item xs={4} sm={4} md={4} lg={4} xl={4} key={`supplier-skeleton-${placeholder}`}>
+          <Box className="supplier-grid__item" key={`supplier-skeleton-${placeholder}`}>
             <Card className="supplier-card" elevation={4}>
-              <Box className="supplier-card__hero">
-                <Skeleton variant="circular" width={72} height={72} />
-              </Box>
               <CardContent className="supplier-card__content">
-                <Skeleton variant="text" width="70%" height={28} />
-                <Skeleton variant="text" width="45%" />
+                <Box className="supplier-card__header">
+                  <Skeleton variant="circular" width={56} height={56} />
+                  <Box className="supplier-card__identity">
+                    <Skeleton variant="text" width="70%" height={28} />
+                    <Skeleton variant="text" width="45%" />
+                  </Box>
+                </Box>
                 <Box className="supplier-card__stats supplier-card__stats--skeleton">
-                  <Skeleton variant="rectangular" height={28} width="100%" />
+                  <Skeleton variant="text" width="60%" />
                 </Box>
                 <Box className="supplier-card__reviews">
                   <Skeleton variant="text" width="50%" />
@@ -453,13 +459,13 @@ const SupplierList = () => {
                 </Box>
               </CardContent>
               <CardActions className="supplier-card__actions">
-                <Skeleton variant="rectangular" height={36} width="48%" />
-                <Skeleton variant="rectangular" height={36} width="48%" />
+                <Skeleton variant="rectangular" height={40} width="48%" />
+                <Skeleton variant="rectangular" height={40} width="48%" />
               </CardActions>
             </Card>
-          </Grid>
+          </Box>
         ))}
-      </Grid>
+      </Box>
     )
   }
 
@@ -489,18 +495,13 @@ const SupplierList = () => {
           </script>
         </Helmet>
       )}
-      <Grid
-        container
-        spacing={{ xs: 2, md: 3 }}
-        className="supplier-grid"
-        columns={{ xs: 4, sm: 8, md: 12, lg: 16, xl: 20 }}
-      >
+      <Box className="supplier-grid">
         {suppliers.map((supplier) => (
-          <Grid item xs={4} sm={4} md={4} lg={4} xl={4} key={supplier._id ?? supplier.slug}>
+          <Box className="supplier-grid__item" key={supplier._id ?? supplier.slug}>
             <SupplierCard supplier={supplier} onOpenReviews={openReviewsDialog} />
-          </Grid>
+          </Box>
         ))}
-      </Grid>
+      </Box>
       <Dialog
         open={reviewsDialogOpen}
         onClose={closeReviewsDialog}

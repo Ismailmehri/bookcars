@@ -49,9 +49,6 @@ import {
 
 import '@/assets/css/supplier-list.css'
 
-const CARD_BUTTON_BG = '#007bff'
-const CARD_BUTTON_HOVER_BG = '#005fcc'
-const CARD_BADGE_COLOR = '#F7931E'
 const SKELETON_PLACEHOLDERS = ['one', 'two', 'three', 'four', 'five', 'six']
 
 const SupplierList = () => {
@@ -135,18 +132,19 @@ const SupplierList = () => {
         {SKELETON_PLACEHOLDERS.map((placeholder) => (
           <Grid item xs={4} sm={4} md={4} lg={4} xl={4} key={`supplier-skeleton-${placeholder}`}>
             <Card className="supplier-card">
-              <Skeleton variant="rectangular" height={160} animation="wave" />
+              <Skeleton variant="rectangular" height={140} animation="wave" />
               <CardHeader
+                className="supplier-card__header"
                 avatar={<Skeleton variant="circular" width={48} height={48} />}
                 title={<Skeleton variant="text" width="60%" />}
                 subheader={<Skeleton variant="text" width="40%" />}
               />
-              <CardContent>
+              <CardContent className="supplier-card__content">
                 <Skeleton variant="text" width="80%" />
                 <Skeleton variant="text" width="70%" />
                 <Skeleton variant="rectangular" height={64} sx={{ mt: 2 }} />
               </CardContent>
-              <CardActions>
+              <CardActions className="supplier-card__actions">
                 <Skeleton variant="rectangular" height={36} width="50%" />
               </CardActions>
             </Card>
@@ -187,19 +185,20 @@ const SupplierList = () => {
           {imageSrc ? (
             <CardMedia
               component="img"
-              height="160"
+              className="supplier-card__logo"
               image={imageSrc}
               alt={`Logo de l'agence ${supplier.fullName}`}
             />
           ) : (
             <Box className="supplier-card__media" aria-label={`Initiales de ${supplier.fullName}`}>
-              <Avatar className="supplier-card__avatar" sx={{ width: 64, height: 64 }}>
+              <Avatar className="supplier-card__avatar">
                 {supplier.fullName.charAt(0)}
               </Avatar>
             </Box>
           )}
 
           <CardHeader
+            className="supplier-card__header"
             avatar={(
               <Avatar
                 src={imageSrc}
@@ -242,30 +241,22 @@ const SupplierList = () => {
             )}
           />
 
-          <CardContent>
-            <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+          <CardContent className="supplier-card__content">
+            <Box className="supplier-card__stats" mb={2}>
               <Chip
+                className="supplier-card__stat supplier-card__stat--cars"
                 icon={<DirectionsCarFilled fontSize="small" />}
                 label={`${supplier.carCount ?? 0} voitures disponibles`}
-                sx={{
-                  backgroundColor: '#eef4ff',
-                  color: '#003c82',
-                  fontWeight: 600,
-                }}
               />
               <Chip
+                className="supplier-card__stat supplier-card__stat--reviews"
                 icon={<RateReviewIcon fontSize="small" />}
                 label={`${reviewCount} avis`}
-                sx={{
-                  backgroundColor: '#fff3e5',
-                  color: CARD_BADGE_COLOR,
-                  fontWeight: 600,
-                }}
               />
-            </Stack>
+            </Box>
 
             <Box className="supplier-card__reviews" aria-label="Avis récents">
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+              <Typography variant="subtitle1" className="supplier-card__reviews-title" gutterBottom>
                 Avis récents
               </Typography>
               {recentReviews.length === 0 && (
@@ -279,7 +270,7 @@ const SupplierList = () => {
                     {preview.authorName}
                   </Typography>
                   <Tooltip title={preview.review.comments} placement="top" arrow>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" className="supplier-card__review-text">
                       {truncateText(preview.review.comments, 140)}
                     </Typography>
                   </Tooltip>
@@ -295,12 +286,6 @@ const SupplierList = () => {
                 size="large"
                 onClick={() => openReviewsDialog(supplier)}
                 className="supplier-card__reviews-button"
-                sx={{
-                  borderRadius: '999px',
-                  px: 3,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                }}
               >
                 Voir les avis
               </Button>
@@ -312,18 +297,7 @@ const SupplierList = () => {
                 rel="noopener noreferrer"
                 variant="contained"
                 size="large"
-                sx={{
-                  backgroundColor: CARD_BUTTON_BG,
-                  color: '#ffffff',
-                  borderRadius: '999px',
-                  px: 3,
-                  py: 1,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  '&:hover': {
-                    backgroundColor: CARD_BUTTON_HOVER_BG,
-                  },
-                }}
+                className="supplier-card__primary-button"
               >
                 Voir l’agence
               </Button>
@@ -332,7 +306,7 @@ const SupplierList = () => {
               <Button
                 disabled
                 variant="outlined"
-                sx={{ borderRadius: '999px', px: 3, textTransform: 'none' }}
+                className="supplier-card__secondary-button"
               >
                 Bientôt disponible
               </Button>

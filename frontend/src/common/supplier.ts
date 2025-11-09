@@ -73,6 +73,18 @@ export const isSupplierValidated = (supplier: SupplierWithReviews): boolean => (
   Boolean(supplier.agencyVerified ?? supplier.verified)
 )
 
+export const getReviewCount = (supplier: SupplierWithReviews): number => {
+  if (typeof supplier.reviewCount === 'number' && Number.isFinite(supplier.reviewCount)) {
+    return Math.max(0, supplier.reviewCount)
+  }
+
+  if (Array.isArray(supplier.reviews)) {
+    return supplier.reviews.length
+  }
+
+  return 0
+}
+
 const getAuthorFullName = (supplier: SupplierWithReviews, review: bookcarsTypes.Review): string => {
   const author = supplier.reviewAuthors?.find((candidate) => candidate._id === review.user)
   if (author?.fullName) {
@@ -86,25 +98,32 @@ const getAuthorFullName = (supplier: SupplierWithReviews, review: bookcarsTypes.
   return 'Client Plany'
 }
 
+export const getReviewAuthorName = (
+  supplier: SupplierWithReviews,
+  review: bookcarsTypes.Review,
+): string => getAuthorFullName(supplier, review)
+
+export const getSortedReviews = (
+  supplier: SupplierWithReviews,
+): bookcarsTypes.Review[] => {
+  const reviews = Array.isArray(supplier.reviews) ? supplier.reviews.slice() : []
+
+  return reviews.sort((a, b) => parseDate(b.createdAt) - parseDate(a.createdAt))
+}
+
 export const getRecentReviews = (
   supplier: SupplierWithReviews,
   limit = 2,
-): SupplierReviewPreview[] => {
-  const reviews = Array.isArray(supplier.reviews) ? supplier.reviews : []
-
-  return reviews
-    .slice()
-    .sort((a, b) => parseDate(b.createdAt) - parseDate(a.createdAt))
-    .slice(0, limit)
-    .map((review) => {
-      const fullAuthorName = getAuthorFullName(supplier, review)
-      return {
-        review,
-        fullAuthorName,
-        authorName: abbreviateName(fullAuthorName),
-      }
-    })
-}
+): SupplierReviewPreview[] => getSortedReviews(supplier)
+  .slice(0, limit)
+  .map((review) => {
+    const fullAuthorName = getAuthorFullName(supplier, review)
+    return {
+      review,
+      fullAuthorName,
+      authorName: abbreviateName(fullAuthorName),
+    }
+  })
 
 export const sortSuppliers = (a: SupplierWithReviews, b: SupplierWithReviews): number => {
   const validatedA = isSupplierValidated(a)

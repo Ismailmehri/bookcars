@@ -53,7 +53,21 @@
 .supplier-card__actions {
   padding: 0 24px 24px;
   justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-top: auto;
+}
+
+.supplier-card__reviews-button {
+  border-width: 2px;
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.supplier-card__reviews-button:hover {
+  border-color: #005fcc;
+  background-color: rgba(0, 123, 255, 0.08);
 }
 
 .supplier-empty-state {

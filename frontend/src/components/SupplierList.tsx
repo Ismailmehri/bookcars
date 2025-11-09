@@ -10,7 +10,16 @@ import {
   CardHeader,
   CardMedia,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
   Grid,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
   Rating,
   Skeleton,
   Stack,
@@ -22,13 +31,17 @@ import {
   RateReview as RateReviewIcon,
   Verified as VerifiedIcon,
 } from '@mui/icons-material'
+import CloseIcon from '@mui/icons-material/Close'
 import { Helmet } from 'react-helmet'
 import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
 import * as SupplierService from '@/services/SupplierService'
 import {
   buildSupplierStructuredData,
+  getReviewAuthorName,
+  getReviewCount,
   getRecentReviews,
+  getSortedReviews,
   sortSuppliers,
   truncateText,
   type SupplierWithReviews,
@@ -45,6 +58,8 @@ const SupplierList = () => {
   const [suppliers, setSuppliers] = useState<SupplierWithReviews[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [reviewsDialogOpen, setReviewsDialogOpen] = useState(false)
+  const [selectedSupplier, setSelectedSupplier] = useState<SupplierWithReviews | null>(null)
 
   useEffect(() => {
     let mounted = true
@@ -92,11 +107,33 @@ const SupplierList = () => {
     [suppliers],
   )
 
+  const dialogReviews = useMemo(
+    () => (selectedSupplier ? getSortedReviews(selectedSupplier) : []),
+    [selectedSupplier],
+  )
+
+  const selectedSupplierReviewCount = selectedSupplier ? getReviewCount(selectedSupplier) : 0
+
+  const closeReviewsDialog = () => {
+    setReviewsDialogOpen(false)
+    setSelectedSupplier(null)
+  }
+
+  const openReviewsDialog = (supplier: SupplierWithReviews) => {
+    setSelectedSupplier(supplier)
+    setReviewsDialogOpen(true)
+  }
+
   if (loading) {
     return (
-      <Grid container spacing={3} className="supplier-grid">
+      <Grid
+        container
+        spacing={{ xs: 2, md: 3 }}
+        className="supplier-grid"
+        columns={{ xs: 4, sm: 8, md: 12, lg: 20, xl: 20 }}
+      >
         {SKELETON_PLACEHOLDERS.map((placeholder) => (
-          <Grid item xs={12} sm={6} lg={4} key={`supplier-skeleton-${placeholder}`}>
+          <Grid item xs={4} sm={4} md={4} lg={4} xl={4} key={`supplier-skeleton-${placeholder}`}>
             <Card className="supplier-card">
               <Skeleton variant="rectangular" height={160} animation="wave" />
               <CardHeader
@@ -138,13 +175,14 @@ const SupplierList = () => {
 
   const renderSupplierCard = (supplier: SupplierWithReviews) => {
     const imageSrc = supplier.avatar ? bookcarsHelper.joinURL(env.CDN_USERS, supplier.avatar) : undefined
-    const reviewCount = supplier.reviewCount ?? (Array.isArray(supplier.reviews) ? supplier.reviews.length : 0)
+    const reviewCount = getReviewCount(supplier)
     const ratingValue = Math.min(Math.max(typeof supplier.score === 'number' ? supplier.score : Number(supplier.score ?? 0), 0), 5)
     const recentReviews = getRecentReviews(supplier)
     const supplierUrl = supplier.slug ? `https://plany.tn/search/agence/${supplier.slug}` : undefined
+    const hasReviews = reviewCount > 0
 
     return (
-      <Grid item xs={12} sm={6} lg={4} key={supplier._id ?? supplier.slug}>
+      <Grid item xs={4} sm={4} md={4} lg={4} xl={4} key={supplier._id ?? supplier.slug}>
         <Card className="supplier-card" elevation={4}>
           {imageSrc ? (
             <CardMedia
@@ -198,7 +236,7 @@ const SupplierList = () => {
                   aria-label={`Note moyenne ${ratingValue.toFixed(1)} sur 5`}
                 />
                 <Typography variant="body2" color="text.secondary">
-                  {`${ratingValue.toFixed(1)} / 5 (${reviewCount} avis)`}
+                  {hasReviews ? `(${reviewCount} avis)` : 'Aucun avis pour le moment'}
                 </Typography>
               </Stack>
             )}
@@ -251,6 +289,22 @@ const SupplierList = () => {
           </CardContent>
 
           <CardActions className="supplier-card__actions">
+            {hasReviews && (
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={() => openReviewsDialog(supplier)}
+                className="supplier-card__reviews-button"
+                sx={{
+                  borderRadius: '999px',
+                  px: 3,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                }}
+              >
+                Voir les avis
+              </Button>
+            )}
             {supplierUrl && (
               <Button
                 href={supplierUrl}
@@ -298,9 +352,94 @@ const SupplierList = () => {
           </script>
         </Helmet>
       )}
-      <Grid container spacing={3} className="supplier-grid">
+      <Grid
+        container
+        spacing={{ xs: 2, md: 3 }}
+        className="supplier-grid"
+        columns={{ xs: 4, sm: 8, md: 12, lg: 20, xl: 20 }}
+      >
         {suppliers.map((supplier) => renderSupplierCard(supplier))}
       </Grid>
+      <Dialog
+        open={reviewsDialogOpen}
+        onClose={closeReviewsDialog}
+        fullWidth
+        maxWidth="sm"
+        aria-labelledby="supplier-reviews-title"
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 2 }}>
+          <Box>
+            <Typography id="supplier-reviews-title" variant="h6" fontWeight={700} color="text.primary">
+              {selectedSupplier?.fullName ?? 'Avis de l’agence'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {selectedSupplierReviewCount > 0
+                ? `${selectedSupplierReviewCount} avis disponibles`
+                : 'Aucun avis à afficher'}
+            </Typography>
+          </Box>
+          <IconButton onClick={closeReviewsDialog} aria-label="Fermer la fenêtre des avis">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <Divider />
+        <DialogContent dividers>
+          {selectedSupplier && dialogReviews.length === 0 && (
+            <Alert severity="info">Aucun avis n’est disponible pour cette agence.</Alert>
+          )}
+          {dialogReviews.length > 0 && (
+            <List disablePadding>
+              {dialogReviews.map((review, index) => {
+                const parsedDate = review.createdAt ? new Date(review.createdAt) : undefined
+                const dateIsValid = parsedDate && !Number.isNaN(parsedDate.getTime())
+                const formattedDate = dateIsValid
+                  ? `${bookcarsHelper.formatDatePart(parsedDate.getDate())}/${bookcarsHelper.formatDatePart(parsedDate.getMonth() + 1)}/${parsedDate.getFullYear()}`
+                  : ''
+                const authorName = selectedSupplier ? getReviewAuthorName(selectedSupplier, review) : undefined
+                const reviewRatingRaw = typeof review.rating === 'number' ? review.rating : Number(review.rating ?? 0)
+                const reviewRating = Number.isFinite(reviewRatingRaw) ? reviewRatingRaw : 0
+
+                return (
+                  <React.Fragment key={review._id ?? `${review.booking}-${index}`}>
+                    <ListItem alignItems="flex-start" sx={{ pb: 2 }}>
+                      <ListItemText
+                        primary={(
+                          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+                            <Typography variant="subtitle1" fontWeight={600} color="text.primary">
+                              {authorName || 'Client Plany'}
+                            </Typography>
+                            <Rating value={reviewRating} precision={0.5} readOnly size="small" aria-label={`Note de ${reviewRating} sur 5`} />
+                          </Stack>
+                        )}
+                        secondary={(
+                          <Box mt={1}>
+                            {review.comments && (
+                              <Typography variant="body2" color="text.primary" sx={{ mb: formattedDate ? 1 : 0 }}>
+                                {review.comments}
+                              </Typography>
+                            )}
+                            {formattedDate && (
+                              <Typography variant="caption" color="text.secondary">
+                                {`Avis du ${formattedDate}`}
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+                      />
+                    </ListItem>
+                    {index < dialogReviews.length - 1 && <Divider component="li" />}
+                  </React.Fragment>
+                )
+              })}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={closeReviewsDialog} variant="contained" sx={{ borderRadius: '999px', textTransform: 'none', fontWeight: 600 }}>
+            Fermer
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }

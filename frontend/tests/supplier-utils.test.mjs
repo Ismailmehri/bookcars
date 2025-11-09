@@ -16,6 +16,9 @@ const {
   buildSupplierStructuredData,
   abbreviateName,
   truncateText,
+  getReviewCount,
+  getSortedReviews,
+  getReviewAuthorName,
 } = supplierModule
 
 const createReview = ({
@@ -100,4 +103,17 @@ test('buildSupplierStructuredData génère un schéma JSON-LD complet', () => {
   assert.equal(structured.aggregateRating.reviewCount, 3)
   assert.equal(structured.aggregateRating.ratingValue, 4.6)
   assert.equal(structured.review.length, 2)
+})
+
+test('getReviewCount, getSortedReviews et getReviewAuthorName gèrent les cas limites', () => {
+  const supplier = createSupplier({ reviewCount: undefined })
+
+  assert.equal(getReviewCount(supplier), 3)
+
+  const sorted = getSortedReviews(supplier)
+  assert.equal(sorted[0]._id, 'r3')
+  assert.equal(sorted[sorted.length - 1]._id, 'r1')
+
+  const authorName = getReviewAuthorName(supplier, sorted[1])
+  assert.equal(authorName, 'Agence Premium')
 })

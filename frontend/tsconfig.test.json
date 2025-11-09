@@ -12,6 +12,7 @@
     "src/common/analytics.types.ts",
     "src/common/gtm.ts",
     "src/common/pricing.ts",
+    "src/common/locationLinks.ts",
     "src/common/supplier.ts",
     "src/components/car-list.utils.ts",
     "src/config/**/*.ts",

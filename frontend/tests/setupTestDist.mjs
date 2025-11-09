@@ -49,6 +49,7 @@ await Promise.all([
   ensureCopiedFromFrontend('common/gtm.js'),
   ensureCopiedFromFrontend('common/pricing.js'),
   ensureCopiedFromFrontend('common/locationLinks.js'),
+  ensureCopiedFromFrontend('common/locationPageRoutes.js'),
   ensureCopiedFromFrontend('common/supplier.js'),
 ])
 

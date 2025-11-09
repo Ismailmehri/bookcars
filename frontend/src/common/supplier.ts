@@ -4,6 +4,18 @@ export type SupplierWithReviews = bookcarsTypes.User & {
   reviewAuthors?: bookcarsTypes.ReviewAuthor[]
 }
 
+export interface SupplierReviewRecord extends bookcarsTypes.Review {
+  reviewerFullName?: string
+  reviewerEmail?: string
+  reviewerAvatar?: string
+  reviewerType?: string
+}
+
+export interface SupplierReviewsResponse {
+  resultData?: SupplierReviewRecord[]
+  pageInfo?: Array<{ totalRecords?: number }>
+}
+
 export interface SupplierReviewPreview {
   review: bookcarsTypes.Review
   authorName: string
@@ -102,6 +114,24 @@ export const getReviewAuthorName = (
   supplier: SupplierWithReviews,
   review: bookcarsTypes.Review,
 ): string => getAuthorFullName(supplier, review)
+
+export const resolveReviewAuthorNames = (
+  supplier: SupplierWithReviews | null,
+  review: SupplierReviewRecord,
+): { fullName: string; abbreviated: string } => {
+  const fullNameFromReview = review.reviewerFullName?.trim()
+
+  const fullName = fullNameFromReview && fullNameFromReview.length > 0
+    ? fullNameFromReview
+    : supplier
+      ? getAuthorFullName(supplier, review)
+      : 'Client Plany'
+
+  return {
+    fullName,
+    abbreviated: abbreviateName(fullName),
+  }
+}
 
 export const getSortedReviews = (
   supplier: SupplierWithReviews,

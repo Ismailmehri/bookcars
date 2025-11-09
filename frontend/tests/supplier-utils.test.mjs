@@ -19,6 +19,7 @@ const {
   getReviewCount,
   getSortedReviews,
   getReviewAuthorName,
+  resolveReviewAuthorNames,
 } = supplierModule
 
 const createReview = ({
@@ -116,4 +117,21 @@ test('getReviewCount, getSortedReviews et getReviewAuthorName gèrent les cas li
 
   const authorName = getReviewAuthorName(supplier, sorted[1])
   assert.equal(authorName, 'Agence Premium')
+})
+
+test('resolveReviewAuthorNames privilégie reviewerFullName et gère le fallback', () => {
+  const supplier = createSupplier()
+  const review = createReview({ _id: 'r4', user: 'u2' })
+
+  const fromReview = resolveReviewAuthorNames(null, {
+    ...review,
+    reviewerFullName: 'Cliente Premium',
+  })
+
+  assert.equal(fromReview.fullName, 'Cliente Premium')
+  assert.equal(fromReview.abbreviated, 'Cliente P.')
+
+  const fromSupplier = resolveReviewAuthorNames(supplier, review)
+  assert.equal(fromSupplier.fullName, 'Agence Premium')
+  assert.equal(fromSupplier.abbreviated, 'Agence P.')
 })

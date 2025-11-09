@@ -1,4 +1,5 @@
 import * as bookcarsTypes from ':bookcars-types'
+import { SupplierReviewsResponse } from '@/common/supplier'
 import axiosInstance from './axiosInstance'
 
 /**
@@ -42,3 +43,22 @@ export const getFrontendSuppliers = (data: bookcarsTypes.GetCarsPayload): Promis
       '/api/frontend-suppliers',
       data
     ).then((res) => res.data)
+
+export const getSupplierReviews = (
+  supplierId: string,
+  options: { page?: number; limit?: number } = {},
+): Promise<SupplierReviewsResponse> => {
+  const { page, limit } = options
+
+  return axiosInstance
+    .get(
+      `/api/users/${encodeURIComponent(supplierId)}/reviews`,
+      {
+        params: {
+          page,
+          limit,
+        },
+      },
+    )
+    .then((res) => res.data)
+}

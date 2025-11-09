@@ -430,7 +430,7 @@ const Suppliers = () => {
               </Typography>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 4 }}>
                 <Button
-                  href="#liste-agences"
+                  href="/"
                   variant="contained"
                   size="large"
                   sx={{
@@ -446,7 +446,7 @@ const Suppliers = () => {
                     },
                   }}
                 >
-                  Explorer les agences
+                  Réserver maintenant
                 </Button>
                 <Button
                   href="/contact"

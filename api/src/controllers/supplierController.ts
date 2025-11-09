@@ -331,30 +331,103 @@ export const getAllSuppliers = async (req: Request, res: Response) => {
   try {
     const data = await User.aggregate(
       [
-        // Étape 1 : Filtrer les utilisateurs de type "Supplier" avec un avatar
-        { $match: { type: bookcarsTypes.UserType.Supplier, avatar: { $ne: null } } },
+        // Étape 1 : Filtrer les utilisateurs de type "Supplier" non blacklistés
+        {
+          $match: {
+            type: bookcarsTypes.UserType.Supplier,
+            blacklisted: { $ne: true },
+          },
+        },
 
         // Étape 2 : Joindre la collection "Car" pour compter les voitures associées
         {
           $lookup: {
-            from: 'Car', // Collection à joindre
-            localField: '_id', // Champ dans la collection User
-            foreignField: 'supplier', // Champ dans la collection Car
-            as: 'cars', // Nom du tableau de résultats
+            from: 'Car',
+            localField: '_id',
+            foreignField: 'supplier',
+            as: 'cars',
           },
         },
 
-        // Étape 3 : Ajouter un champ `carCount` qui contient le nombre de voitures
+        // Étape 3 : Ajouter des champs calculés (voitures, avis et réservations)
         {
           $addFields: {
-            carCount: { $size: '$cars' }, // `carCount` est le nombre d'éléments dans le tableau `cars`
+            carCount: { $size: '$cars' },
+            reviewCount: {
+              $cond: {
+                if: { $isArray: '$reviews' },
+                then: { $size: '$reviews' },
+                else: 0,
+              },
+            },
+            reviewAuthorIds: {
+              $map: {
+                input: { $ifNull: ['$reviews', []] },
+                as: 'review',
+                in: '$$review.user',
+              },
+            },
           },
         },
 
-        // Étape 4 : Trier les résultats par `fullName`
-        { $sort: { carCount: 1, fullName: 1 } },
+        // Étape 4 : Compter le nombre de réservations confirmées pour chaque agence
+        {
+          $lookup: {
+            from: 'Booking',
+            let: { supplierId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$supplier', '$$supplierId'] },
+                },
+              },
+              {
+                $count: 'count',
+              },
+            ],
+            as: 'reservationStats',
+          },
+        },
+        {
+          $addFields: {
+            reservationCount: {
+              $cond: [
+                { $gt: [{ $size: '$reservationStats' }, 0] },
+                { $arrayElemAt: ['$reservationStats.count', 0] },
+                0,
+              ],
+            },
+          },
+        },
 
-        // Étape 5 : Sélectionner uniquement les champs nécessaires
+        // Étape 5 : Récupérer les informations des auteurs d'avis
+        {
+          $lookup: {
+            from: 'User',
+            let: { reviewerIds: '$reviewAuthorIds' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $in: ['$_id', { $ifNull: ['$$reviewerIds', []] }],
+                  },
+                },
+              },
+              {
+                $project: {
+                  _id: 1,
+                  fullName: 1,
+                },
+              },
+            ],
+            as: 'reviewAuthors',
+          },
+        },
+
+        // Étape 6 : Trier les résultats par statut de validation puis par disponibilité
+        { $sort: { agencyVerified: -1, carCount: -1, fullName: 1 } },
+
+        // Étape 7 : Sélectionner uniquement les champs nécessaires
         {
           $project: {
             _id: 1,
@@ -364,11 +437,17 @@ export const getAllSuppliers = async (req: Request, res: Response) => {
             active: 1,
             agencyVerified: 1,
             slug: 1,
-            carCount: 1, // Inclure le champ `carCount` dans les résultats
+            carCount: 1,
+            score: { $ifNull: ['$score', 0] },
+            reviewCount: 1,
+            reviews: { $ifNull: ['$reviews', []] },
+            reviewAuthors: 1,
+            reservationCount: 1,
+            location: 1,
           },
         },
       ],
-      { collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 } }, // Options de collation pour le tri
+      { collation: { locale: env.DEFAULT_LANGUAGE, strength: 2 } },
     )
 
     return res.json(data)

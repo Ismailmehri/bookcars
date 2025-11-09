@@ -3,11 +3,13 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Alert,
   Box,
   Button,
   Chip,
   Container,
   Grid,
+  Link as MuiLink,
   Paper,
   Stack,
   Typography,
@@ -25,8 +27,14 @@ import { buildDescription } from '@/common/seo'
 
 const SupplierList = lazy(() => import('@/components/SupplierList'))
 
+interface FaqItem {
+  question: string
+  answer: React.ReactNode
+  structuredAnswer: string
+}
+
 // Données structurées pour Schema.org
-const structuredData = {
+const supplierListStructuredData = {
   '@context': 'https://schema.org',
   '@type': 'ItemList',
   name: 'Liste des agences de location de voitures en Tunisie',
@@ -74,34 +82,275 @@ const Suppliers = () => {
     'Découvrez les agences de location de voitures en Tunisie validées par Plany.tn. Comparez les services, consultez les avis récents et réservez votre véhicule en toute confiance.'
   )
 
-  const faqItems = useMemo(
+  const keywords = 'agences de location de voitures en Tunisie, location voiture Tunisie, Plany.tn, réservation voiture Tunisie, avis agence location, location auto Tunisie'
+
+  const faqItems = useMemo<FaqItem[]>(
     () => [
       {
-        question: 'Comment choisir la bonne agence de location de voitures ?',
-        answer:
-          'Identifiez vos besoins (type de véhicule, kilométrage, budget) puis comparez les agences validées sur Plany.tn. Chaque fiche agence affiche les avis récents, la note moyenne et le nombre de voitures disponibles pour vous aider à décider rapidement.',
+        question: 'Qu’est-ce que Plany.tn ?',
+        structuredAnswer:
+          'Plany.tn est une plateforme tunisienne qui compare les offres de plusieurs agences locales de location de voitures et permet de réserver simplement au meilleur prix partout en Tunisie.',
+        answer: (
+          <Typography variant="body2" color="text.secondary">
+            Plany.tn est une plateforme tunisienne qui compare les offres de plusieurs agences locales de location de voitures et
+            vous permet de réserver simplement au meilleur prix, partout en Tunisie.
+          </Typography>
+        ),
       },
       {
-        question: 'Quels documents sont nécessaires pour réserver une voiture ?',
-        answer:
-          'Vous aurez besoin d’une pièce d’identité en cours de validité, d’un permis de conduire et d’une carte bancaire pour la caution. Certaines agences peuvent demander des documents supplémentaires ; tout est précisé dans la fiche agence.',
+        question: 'Comment réserver une voiture sur Plany.tn ?',
+        structuredAnswer:
+          'Saisissez le lieu et les dates, comparez les offres, cliquez sur « Réserver » et renseignez vos informations. Vous recevez la confirmation par l’agence sous 24 heures maximum.',
+        answer: (
+          <Stack spacing={1.5}>
+            <Typography variant="body2" color="text.secondary">
+              Il suffit d’indiquer votre lieu et vos dates de location, de comparer les offres disponibles puis de compléter vos
+              informations en cliquant sur « Réserver ».
+            </Typography>
+            <Box component="ol" sx={{ pl: 3, color: 'text.secondary', display: 'grid', gap: 0.75 }}>
+              <Typography component="li" variant="body2">
+                Indiquez le
+                <Box component="span" sx={{ fontWeight: 700, ml: 0.5 }}>
+                  lieu
+                </Box>
+                et les
+                <Box component="span" sx={{ fontWeight: 700, ml: 0.5 }}>
+                  dates
+                </Box>
+                de prise en charge et de retour.
+              </Typography>
+              <Typography component="li" variant="body2">
+                Comparez les offres disponibles et choisissez votre voiture.
+              </Typography>
+              <Typography component="li" variant="body2">
+                Cliquez sur
+                <Box component="span" sx={{ fontWeight: 700, ml: 0.5 }}>
+                  « Réserver »
+                </Box>
+                et complétez vos informations.
+              </Typography>
+              <Typography component="li" variant="body2">
+                Recevez la
+                <Box component="span" sx={{ fontWeight: 700, ml: 0.5 }}>
+                  confirmation de l’agence sous 24 heures maximum
+                </Box>
+                .
+              </Typography>
+            </Box>
+            <Alert
+              severity="info"
+              icon={false}
+              sx={{
+                backgroundColor: 'rgba(0, 123, 255, 0.08)',
+                color: '#062451',
+                border: '1px solid rgba(0, 123, 255, 0.18)',
+                borderRadius: 2,
+                fontSize: '0.95rem',
+              }}
+            >
+              Pas de retour après 24h ? Contactez directement l’agence via le numéro indiqué dans l’email de réservation.
+            </Alert>
+          </Stack>
+        ),
       },
       {
-        question: 'Puis-je annuler ma réservation sans frais ?',
-        answer:
-          'La politique d’annulation dépend de l’agence sélectionnée. Sur Plany.tn, nous mettons en avant les conditions d’annulation afin que vous puissiez choisir une agence flexible si vous avez besoin de plus de liberté.',
+        question: 'Sous combien de temps ma réservation est-elle confirmée ?',
+        structuredAnswer:
+          'L’agence doit confirmer votre réservation dans un délai maximum de 24 heures. Si vous n’avez pas de retour, appelez directement l’agence via le numéro indiqué dans l’email de réservation.',
+        answer: (
+          <Typography variant="body2" color="text.secondary">
+            Chaque agence dispose de 24 heures maximum pour valider votre réservation. En cas d’absence de réponse, appelez
+            l’agence via le numéro reçu dans l’email de confirmation.
+          </Typography>
+        ),
       },
       {
-        question: 'Les prix affichés incluent-ils l’assurance ?',
-        answer:
-          'Oui, les prix affichés incluent les assurances de base exigées par la loi. Selon l’agence, vous pouvez ajouter des protections complémentaires (assurance tous risques, conducteur supplémentaire, etc.) directement lors de la réservation.',
+        question: 'Comment se fait le paiement ?',
+        structuredAnswer:
+          'Le paiement se fait globalement en espèces (cash) au moment de la remise du véhicule. Certaines agences acceptent la carte bancaire : vérifiez la fiche de l’agence avant de réserver.',
+        answer: (
+          <Typography variant="body2" color="text.secondary">
+            Le paiement se fait principalement en espèces lors de la remise du véhicule. Certaines agences acceptent la carte
+            bancaire&nbsp;: vérifiez la fiche de l’agence choisie avant de confirmer.
+          </Typography>
+        ),
       },
       {
-        question: 'Comment contacter le service client Plany.tn ?',
-        answer:
-          'Notre équipe vous accompagne 7j/7 via le chat en ligne, le téléphone ou WhatsApp. Les coordonnées complètes sont disponibles dans la section Assistance de Plany.tn.',
+        question: 'Comment fonctionne la caution (dépôt de garantie) ?',
+        structuredAnswer:
+          'La caution est généralement versée en espèces et restituée au retour du véhicule si aucune anomalie n’est constatée. Certaines agences acceptent une empreinte carte bancaire : à vérifier sur la fiche agence.',
+        answer: (
+          <Typography variant="body2" color="text.secondary">
+            La caution est habituellement versée en espèces et restituée au retour du véhicule si aucun dommage n’est constaté.
+            Quelques agences proposent une empreinte carte bancaire&nbsp;: consultez leur fiche pour en être certain.
+          </Typography>
+        ),
+      },
+      {
+        question: 'Dois-je restituer la voiture au même endroit ?',
+        structuredAnswer:
+          'Oui, la restitution se fait en principe au même lieu que la prise en charge. Toute restitution dans un autre endroit doit être convenue à l’avance avec l’agence.',
+        answer: (
+          <Typography variant="body2" color="text.secondary">
+            La restitution se fait en principe au même endroit que la prise en charge. Toute dépose ailleurs doit être validée
+            au préalable avec l’agence.
+          </Typography>
+        ),
+      },
+      {
+        question: 'Quelle est la politique de carburant ?',
+        structuredAnswer:
+          'Politique standard : « même niveau au départ, même niveau au retour ». Rendez la voiture avec le même niveau d’essence qu’au moment de la prise en charge.',
+        answer: (
+          <Typography variant="body2" color="text.secondary">
+            La règle la plus courante est « même niveau au départ, même niveau au retour ». Remettez le véhicule avec un niveau
+            d’essence identique à celui constaté lors de la prise en charge.
+          </Typography>
+        ),
+      },
+      {
+        question: 'Le kilométrage est-il limité ?',
+        structuredAnswer:
+          'Selon l’agence : certaines offres incluent un kilométrage illimité, d’autres fixent une limite par jour (ex. 300 km/j). Cette information est affichée sur chaque annonce.',
+        answer: (
+          <Typography variant="body2" color="text.secondary">
+            Cela dépend de l’agence sélectionnée. Certaines offres prévoient un kilométrage illimité, d’autres une limite
+            journalière (ex.&nbsp;: 300 km/j). Consultez l’annonce pour connaître la politique précise.
+          </Typography>
+        ),
+      },
+      {
+        question: 'Quels documents dois-je présenter pour louer ?',
+        structuredAnswer:
+          'Pièce d’identité/passeport, permis de conduire valide et moyen de paiement pour la caution (cash ou carte selon l’agence).',
+        answer: (
+          <Stack spacing={1.25}>
+            <Typography variant="body2" color="text.secondary">
+              Préparez les documents suivants lors de la remise du véhicule&nbsp;:
+            </Typography>
+            <Box component="ul" sx={{ pl: 3, color: 'text.secondary', display: 'grid', gap: 0.5 }}>
+              <Typography component="li" variant="body2">
+                Pièce d’identité ou passeport en cours de validité
+              </Typography>
+              <Typography component="li" variant="body2">
+                Permis de conduire valide
+              </Typography>
+              <Typography component="li" variant="body2">
+                Moyen de paiement pour la caution (cash ou carte selon l’agence)
+              </Typography>
+            </Box>
+          </Stack>
+        ),
+      },
+      {
+        question: 'Puis-je ajouter un conducteur supplémentaire ?',
+        structuredAnswer:
+          'Oui, selon l’agence. L’option peut être gratuite ou payante (montant précisé dans la fiche de l’offre).',
+        answer: (
+          <Typography variant="body2" color="text.secondary">
+            Oui, de nombreuses agences acceptent un conducteur additionnel. L’option peut être gratuite ou facturée&nbsp;: le
+            montant est indiqué dans la fiche de l’offre.
+          </Typography>
+        ),
+      },
+      {
+        question: 'Puis-je annuler ou modifier ma réservation ?',
+        structuredAnswer:
+          'Oui, selon la politique de l’agence. Beaucoup d’offres permettent l’annulation gratuite ou avec des frais réduits. Les conditions exactes figurent dans chaque annonce.',
+        answer: (
+          <Typography variant="body2" color="text.secondary">
+            Oui. Les conditions d’annulation ou de modification dépendent de l’agence et sont précisées sur chaque annonce. De
+            nombreuses offres prévoient une annulation gratuite ou à frais réduits.
+          </Typography>
+        ),
+      },
+      {
+        question: 'Que faire si l’agence n’a plus le véhicule réservé ?',
+        structuredAnswer:
+          'Signalez le problème à Plany. Les agences qui annulent fréquemment peuvent être déréférencées. L’agence peut aussi proposer un modèle équivalent selon disponibilité.',
+        answer: (
+          <Typography variant="body2" color="text.secondary">
+            Prévenez immédiatement Plany. Nous surveillons les annulations répétées et pouvons déréférencer une agence si
+            nécessaire. L’agence peut également proposer un modèle équivalent selon les disponibilités.
+          </Typography>
+        ),
+      },
+      {
+        question: 'Où puis-je louer une voiture via Plany ?',
+        structuredAnswer:
+          'Dans toute la Tunisie : Tunis, Sousse, Hammamet, Monastir, Djerba, Sfax, Nabeul, Mahdia, Bizerte, Tozeur, etc.',
+        answer: (
+          <Typography variant="body2" color="text.secondary">
+            Partout en Tunisie&nbsp;: Tunis, Sousse, Hammamet, Monastir, Djerba, Sfax, Nabeul, Mahdia, Bizerte, Tozeur et de
+            nombreuses autres villes.
+          </Typography>
+        ),
+      },
+      {
+        question: 'Les véhicules sont-ils récents et entretenus ?',
+        structuredAnswer:
+          'Oui. Les véhicules proviennent d’agences agréées, sont entretenus régulièrement et livrés propres.',
+        answer: (
+          <Typography variant="body2" color="text.secondary">
+            Oui. Les agences partenaires disposent de véhicules récents, entretenus régulièrement et livrés propres pour garantir
+            une expérience sereine.
+          </Typography>
+        ),
+      },
+      {
+        question: 'Où suivre les actualités et conseils de Plany ?',
+        structuredAnswer:
+          'Sur le blog officiel : https://blog.plany.tn (guides pratiques, conseils location, promos).',
+        answer: (
+          <Typography variant="body2" color="text.secondary">
+            Retrouvez nos actualités, conseils de location et promotions sur notre blog officiel&nbsp;:
+            {' '}
+            <MuiLink href="https://blog.plany.tn" target="_blank" rel="noopener noreferrer" underline="hover" color="primary">
+              blog.plany.tn
+            </MuiLink>
+            .
+          </Typography>
+        ),
       },
     ],
+    [],
+  )
+
+  const faqStructuredData = useMemo(
+    () => ({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqItems.map((item) => ({
+        '@type': 'Question',
+        name: item.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: item.structuredAnswer,
+        },
+      })),
+    }),
+    [faqItems],
+  )
+
+  const breadcrumbStructuredData = useMemo(
+    () => ({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Accueil',
+          item: 'https://plany.tn/',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Agences de location de voitures en Tunisie',
+          item: 'https://plany.tn/suppliers',
+        },
+      ],
+    }),
     [],
   )
 
@@ -111,9 +360,14 @@ const Suppliers = () => {
         title="Liste des agences de location de voitures en Tunisie | Plany.tn"
         description={description}
         canonical="https://plany.tn/suppliers"
+        robots="index, follow"
       />
       <Helmet>
         <meta charSet="utf-8" />
+        <html lang="fr" />
+        <meta name="keywords" content={keywords} />
+        <meta name="author" content="Plany.tn" />
+        <link rel="alternate" hrefLang="fr" href="https://plany.tn/suppliers" />
         <meta
           property="og:title"
           content="Agences de location de voitures en Tunisie - Plany.tn"
@@ -122,9 +376,11 @@ const Suppliers = () => {
           property="og:description"
           content="Explorez les agences partenaires Plany.tn, comparez leurs offres et lisez les avis vérifiés pour réserver votre voiture de location en Tunisie."
         />
+        <meta property="og:locale" content="fr_FR" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://plany.tn/suppliers" />
         <meta property="og:image" content="https://plany.tn/logo.png" />
+        <meta property="og:image:alt" content="Logo Plany.tn" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:site_name" content="Plany" />
@@ -138,8 +394,17 @@ const Suppliers = () => {
           content="Réservez votre voiture en Tunisie avec Plany.tn : agences validées, avis authentiques et services professionnels."
         />
         <meta name="twitter:image" content="https://plany.tn/logo.png" />
+        <meta name="twitter:image:alt" content="Logo de Plany.tn" />
+        <meta name="twitter:site" content="@PlanyTN" />
+        <meta name="twitter:creator" content="@PlanyTN" />
         <script type="application/ld+json">
-          {JSON.stringify(structuredData)}
+          {JSON.stringify(supplierListStructuredData)}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify(faqStructuredData)}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify(breadcrumbStructuredData)}
         </script>
       </Helmet>
 
@@ -347,13 +612,28 @@ const Suppliers = () => {
                   p: { xs: 3, md: 4 },
                   borderRadius: 4,
                   background: 'linear-gradient(135deg, rgba(0, 123, 255, 0.08), rgba(247, 147, 30, 0.12))',
+                  border: '1px solid rgba(0, 123, 255, 0.16)',
+                  boxShadow: '0 24px 48px rgba(6, 36, 81, 0.08)',
+                  backdropFilter: 'blur(6px)',
                 }}
               >
                 <Typography component="h3" variant="h5" sx={{ fontWeight: 700, color: '#062451' }} gutterBottom>
                   FAQ – Réponses aux questions des voyageurs
                 </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Tout ce qu’il faut savoir pour réserver sereinement sur
+                  <Box component="span" sx={{ fontWeight: 700, color: '#062451', ml: 0.5 }}>
+                    Plany.tn
+                  </Box>
+                  : paiement, caution, confirmation sous 24h, restitution, carburant, documents, annulation et plus encore.
+                </Typography>
                 {faqItems.map((item) => (
-                  <Accordion key={item.question} disableGutters sx={{ backgroundColor: 'transparent', boxShadow: 'none' }}>
+                  <Accordion
+                    key={item.question}
+                    disableGutters
+                    sx={{ backgroundColor: 'transparent', boxShadow: 'none' }}
+                    defaultExpanded={item.question === 'Qu’est-ce que Plany.tn ?'}
+                  >
                     <AccordionSummary
                       expandIcon={<ExpandMoreIcon sx={{ color: '#007bff' }} />}
                       aria-controls={`faq-${item.question}`}
@@ -362,10 +642,8 @@ const Suppliers = () => {
                         {item.question}
                       </Typography>
                     </AccordionSummary>
-                    <AccordionDetails>
-                      <Typography variant="body2" color="text.secondary">
-                        {item.answer}
-                      </Typography>
+                    <AccordionDetails sx={{ color: '#4c648f', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      {item.answer}
                     </AccordionDetails>
                   </Accordion>
                 ))}

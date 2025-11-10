@@ -23,7 +23,8 @@
 
     "paths": {
       "@/*": ["./src/*"],
-      "react-helmet-async": ["./node_modules/react-helmet"],
+      "react-helmet": ["./src/shims/react-helmet"],
+      "react-helmet-async": ["./src/shims/react-helmet-async"],
       ":bookcars-types": ["../packages/bookcars-types"],
       ":bookcars-helper": ["../packages/bookcars-helper/index.ts"],
       ":disable-react-devtools": ["../packages/disable-react-devtools"]

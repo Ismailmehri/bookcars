@@ -12,7 +12,8 @@ export default ({ mode }: { mode: string }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
-        'react-helmet-async': 'react-helmet',
+        'react-helmet': path.resolve(__dirname, './src/shims/react-helmet.tsx'),
+        'react-helmet-async': path.resolve(__dirname, './src/shims/react-helmet-async.ts'),
         ':bookcars-types': path.resolve(__dirname, '../packages/bookcars-types'),
         ':bookcars-helper': path.resolve(__dirname, '../packages/bookcars-helper/index.ts'),
         ':disable-react-devtools': path.resolve(__dirname, '../packages/disable-react-devtools'),

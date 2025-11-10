@@ -61,6 +61,7 @@ export interface NearbyDestination {
   description: string
   image: string
   link: string
+  imageAlt?: string
 }
 
 export interface VehicleCategory {
@@ -121,6 +122,13 @@ export interface LocationLandingPageProps {
   blogUrl: string
   cta: CtaContent
   crosslinkIntro?: string
+  seoKeywords?: {
+    principal?: string[]
+    secondaires?: string[]
+    semantiques?: string[]
+  }
+  jsonLd?: Array<Record<string, unknown>> | Record<string, unknown>
+  seoNote?: string
 }
 
 const iconForAdvantage = (icon: AdvantageIcon) => {
@@ -183,6 +191,9 @@ const LocationLandingPage: React.FC<LocationLandingPageProps> = ({
   blogUrl,
   cta,
   crosslinkIntro,
+  seoKeywords,
+  jsonLd,
+  seoNote,
 }) => {
   const canonicalUrl = useMemo(() => `https://plany.tn${slug}`, [slug])
   const [suppliers, setSuppliers] = useState<bookcarsTypes.User[]>([])
@@ -213,25 +224,49 @@ const LocationLandingPage: React.FC<LocationLandingPageProps> = ({
     }
   }, [])
 
-  const faqJsonLd = useMemo(() => buildFaqSchema(faqItems), [faqItems])
-  const offerCatalogJsonLd = useMemo(
-    () => buildOfferCatalogSchema(city, canonicalUrl, vehicleCategories),
-    [city, canonicalUrl, vehicleCategories],
-  )
-  const localBusinessJsonLd = useMemo(
-    () => buildLocalBusinessSchema(city, canonicalUrl, metaDescription, blogUrl),
-    [blogUrl, canonicalUrl, city, metaDescription],
-  )
+  const defaultJsonLd = useMemo(() => {
+    const faqSchema = buildFaqSchema(faqItems)
+    const offerCatalogSchema = buildOfferCatalogSchema(city, canonicalUrl, vehicleCategories)
+    const localBusinessSchema = buildLocalBusinessSchema(city, canonicalUrl, metaDescription, blogUrl)
+    return [localBusinessSchema, faqSchema, offerCatalogSchema]
+  }, [blogUrl, canonicalUrl, city, faqItems, metaDescription, vehicleCategories])
+
+  const additionalJsonLd = useMemo(() => {
+    if (!jsonLd) {
+      return []
+    }
+    if (Array.isArray(jsonLd)) {
+      return jsonLd
+    }
+    return [jsonLd]
+  }, [jsonLd])
+
+  const allJsonLd = useMemo(() => [...defaultJsonLd, ...additionalJsonLd], [additionalJsonLd, defaultJsonLd])
 
   const crosslinks = useMemo(() => pickCrosslinks(internalLinks, 4), [internalLinks])
 
+  const keywordList = useMemo(() => {
+    if (!seoKeywords) {
+      return undefined
+    }
+    const { principal = [], secondaires = [], semantiques = [] } = seoKeywords
+    return [...new Set([...principal, ...secondaires, ...semantiques])]
+  }, [seoKeywords])
+
   return (
     <Layout strict={false}>
-      <Seo title={title} description={metaDescription} canonical={canonicalUrl} />
+      <Seo title={title} description={metaDescription} canonical={canonicalUrl} keywords={keywordList} />
       <Helmet>
-        <script type="application/ld+json">{JSON.stringify(localBusinessJsonLd)}</script>
-        <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
-        <script type="application/ld+json">{JSON.stringify(offerCatalogJsonLd)}</script>
+        {allJsonLd.map((schema) => {
+          const record = schema as Record<string, unknown>
+          const key = typeof record['@type'] === 'string' ? (record['@type'] as string) : JSON.stringify(record)
+
+          return (
+            <script key={key} type="application/ld+json">
+              {JSON.stringify(schema)}
+            </script>
+          )
+        })}
       </Helmet>
 
       <Box
@@ -338,7 +373,12 @@ const LocationLandingPage: React.FC<LocationLandingPageProps> = ({
               <Grid item xs={12} md={4} key={destination.name}>
                 <Card sx={{ borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <CardActionArea href={destination.link} sx={{ flexGrow: 1 }}>
-                    <CardMedia component="img" height="200" image={destination.image} alt={destination.name} />
+                    <CardMedia
+                      component="img"
+                      height="200"
+                      image={destination.image}
+                      alt={destination.imageAlt ?? destination.name}
+                    />
                     <CardContent>
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
                         {destination.name}
@@ -572,6 +612,16 @@ const LocationLandingPage: React.FC<LocationLandingPageProps> = ({
           </Stack>
         </Container>
       </Box>
+
+      {seoNote && (
+        <Container maxWidth="md" sx={{ py: { xs: 4, md: 5 } }}>
+          <Paper elevation={1} sx={{ p: { xs: 3, md: 4 }, borderRadius: 3 }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.8 }}>
+              {seoNote}
+            </Typography>
+          </Paper>
+        </Container>
+      )}
 
       <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
         <RentalAgencySection />

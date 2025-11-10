@@ -1,76 +1,17 @@
 import React from 'react'
-import { Container, Box, Typography, Stack, Link, Divider, List, ListItem, ListItemText, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { Helmet } from 'react-helmet'
-import SearchForm from '@/components/SearchForm'
-import { createInternalLinks } from '@/common/locationLinks'
+import LocationPageTemplate, { SectionContent, FaqItem } from '@/components/location/LocationPageTemplate'
 
+const slug = '/location-voiture-pas-cher-a-bizerte'
 const title = 'Location voiture pas cher à Bizerte | Plany'
 const description = 'Réservez votre voiture à Bizerte avec Plany. Prix compétitifs, véhicules récents.'
 
-const faqItems = [
-  {
-    question: 'Accès au vieux port en voiture ?',
-    answer: 'Oui, des parkings surveillés autour du vieux port permettent de stationner votre voiture de location avant de visiter la médina.',
-  },
-  {
-    question: 'Voiture automatique possible ?',
-    answer: 'Oui, plusieurs loueurs proposent des modèles automatiques et hybrides pour circuler confortablement sur la corniche de Bizerte.',
-  },
-]
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqItems.map((item) => ({
-    '@type': 'Question',
-    name: item.question,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: item.answer,
-    },
-  })),
-}
-
-const autoRentalJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'AutoRental',
-  name: 'Plany Bizerte',
-  description,
-  areaServed: 'Bizerte',
-  url: 'https://plany.tn/location-voiture-pas-cher-a-bizerte',
-  sameAs: ['https://plany.tn', 'https://blog.plany.tn'],
-}
-
-const internalLinks = createInternalLinks([
-  '/location-voiture-pas-cher-a-tunis',
-  '/location-voiture-pas-cher-a-sousse',
-  '/location-voiture-pas-cher-a-sfax',
-  '/location-voiture-pas-cher-a-nabeul',
-  '/location-voiture-pas-cher-a-monastir',
-  '/location-voiture-pas-cher-a-mahdia',
-  '/location-voiture-pas-cher-a-kairouan',
-  '/location-voiture-pas-cher-a-djerba',
-  '/location-voiture-pas-cher-a-ariana',
-  '/location-voiture-pas-cher-a-ben-arous',
-  '/location-voiture-pas-cher-a-gabes',
-  '/location-voiture-pas-cher-a-gafsa',
-  '/location-voiture-pas-cher-a-tozeur',
-  '/location-voiture-pas-cher-a-kasserine',
-  '/location-voiture-pas-cher-a-sidi-bouzid',
-  '/location-voiture-pas-cher-a-zaghouan',
-  '/location-voiture-pas-cher-a-medenine',
-  '/location-voiture-pas-cher-a-jerba-midoun',
-  '/location-voiture-pas-cher-a-hammamet',
-])
-
-const introductionParagraphs = [
+const introductionParagraphs: string[] = [
   'Plany facilite votre location voiture Bizerte en vous connectant aux agences de la ville portuaire. En quelques clics, choisissez le véhicule idéal pour parcourir la corniche, rejoindre les plages de Sidi Salem ou explorer la lagune de Bizerte.',
   'Nous négocions des tarifs transparents pour garantir une location voiture pas cher Bizerte, tout en privilégiant des véhicules récents, climatisés et adaptés au relief côtier. Profitez de la liberté de vous déplacer entre le centre, Zarzouna et Menzel Jemil sans dépendre des taxis.',
   'Grâce à l’interface responsive de Plany, réservez depuis votre smartphone et recevez vos confirmations instantanément. Vous pouvez demander la livraison à votre hôtel, au port de plaisance ou à la gare ferroviaire selon votre programme.',
 ]
 
-const sections = [
+const sections: SectionContent[] = [
   {
     title: 'Pourquoi louer à Bizerte ?',
     paragraphs: [
@@ -105,81 +46,50 @@ const sections = [
   },
 ]
 
+const faqItems: FaqItem[] = [
+  {
+    question: 'Accès au vieux port en voiture ?',
+    answer: 'Oui, des parkings surveillés autour du vieux port permettent de stationner votre voiture de location avant de visiter la médina.',
+  },
+  {
+    question: 'Voiture automatique possible ?',
+    answer: 'Oui, plusieurs loueurs proposent des modèles automatiques et hybrides pour circuler confortablement sur la corniche de Bizerte.',
+  },
+]
+
+const internalLinks: string[] = [
+  '/location-voiture-pas-cher-a-tunis',
+  '/location-voiture-pas-cher-a-sousse',
+  '/location-voiture-pas-cher-a-sfax',
+  '/location-voiture-pas-cher-a-nabeul',
+  '/location-voiture-pas-cher-a-monastir',
+  '/location-voiture-pas-cher-a-mahdia',
+  '/location-voiture-pas-cher-a-kairouan',
+  '/location-voiture-pas-cher-a-djerba',
+  '/location-voiture-pas-cher-a-ariana',
+  '/location-voiture-pas-cher-a-ben-arous',
+  '/location-voiture-pas-cher-a-gabes',
+  '/location-voiture-pas-cher-a-gafsa',
+  '/location-voiture-pas-cher-a-tozeur',
+  '/location-voiture-pas-cher-a-kasserine',
+  '/location-voiture-pas-cher-a-sidi-bouzid',
+  '/location-voiture-pas-cher-a-zaghouan',
+  '/location-voiture-pas-cher-a-medenine',
+  '/location-voiture-pas-cher-a-jerba-midoun',
+  '/location-voiture-pas-cher-a-hammamet',
+]
+
 const LocationABizerte = () => (
-  <Container component="main" maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-    <SearchForm />
-    <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
-      <script type="application/ld+json">{JSON.stringify(autoRentalJsonLd)}</script>
-    </Helmet>
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h1" component="h1" gutterBottom>
-        {title}
-      </Typography>
-      <Stack spacing={2}>
-        {introductionParagraphs.map((paragraph) => (
-          <Typography key={paragraph} variant="body1" paragraph>
-            {paragraph}
-          </Typography>
-        ))}
-      </Stack>
-    </Box>
-    <Stack spacing={4}>
-      {sections.map((section) => (
-        <Box key={section.title}>
-          <Typography variant="h2" component="h2" gutterBottom>
-            {section.title}
-          </Typography>
-          {section.title.includes('Questions fréquentes') ? (
-            <Stack spacing={2}>
-              {faqItems.map((item) => (
-                <Accordion key={item.question} disableGutters>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`${item.question}-content`} id={`${item.question}-header`}>
-                    <Typography variant="subtitle1">{item.question}</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography variant="body2">{item.answer}</Typography>
-                  </AccordionDetails>
-                </Accordion>
-              ))}
-            </Stack>
-          ) : (
-            section.paragraphs.map((paragraph) => (
-              <Typography key={paragraph} variant="body1" paragraph>
-                {paragraph}
-              </Typography>
-            ))
-          )}
-        </Box>
-      ))}
-    </Stack>
-    <Divider sx={{ my: 5 }} />
-    <Box>
-      <Typography variant="h2" component="h2" gutterBottom>
-        Voir aussi
-      </Typography>
-      <List>
-        {internalLinks.map((link) => (
-          <ListItem key={link.href} disablePadding>
-            <ListItemText>
-              <Link href={link.href}>{link.label}</Link>
-            </ListItemText>
-          </ListItem>
-        ))}
-        <ListItem disablePadding>
-          <ListItemText>
-            <Link href="https://blog.plany.tn">Conseils & actus : le blog Plany</Link>
-          </ListItemText>
-        </ListItem>
-      </List>
-    </Box>
-    <Divider sx={{ my: 5 }} />
-    <Typography variant="body1" paragraph>
-      Lancez votre recherche avec Plany pour réserver en toute simplicité la voiture qui vous accompagnera sur les routes de Bizerte et de son littoral.
-    </Typography>
-  </Container>
+  <LocationPageTemplate
+    city="Bizerte"
+    slug={slug}
+    title={title}
+    description={description}
+    introductionParagraphs={introductionParagraphs}
+    sections={sections}
+    faqItems={faqItems}
+    internalLinks={internalLinks}
+  />
 )
 
 export default LocationABizerte

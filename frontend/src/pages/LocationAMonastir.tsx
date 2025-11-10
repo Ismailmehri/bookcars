@@ -1,79 +1,16 @@
 import React from 'react'
-import { Container, Box, Typography, Stack, Link, Divider, List, ListItem, ListItemText, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { Helmet } from 'react-helmet'
-import SearchForm from '@/components/SearchForm'
-import { createInternalLinks } from '@/common/locationLinks'
+import LocationPageTemplate, { SectionContent, FaqItem } from '@/components/location/LocationPageTemplate'
 
+const slug = '/location-voiture-pas-cher-a-monastir'
 const title = 'Location voiture pas cher à Monastir | Plany'
 const description = 'Réservez une voiture à Monastir au meilleur tarif avec Plany. Idéal pour visiter les plages et le centre-ville.'
 
-const faqItems = [
-  {
-    question: 'Est-ce adapté aux familles ?',
-    answer: 'Oui, Plany propose des monospaces, SUV et véhicules équipés de sièges enfants pour des vacances en famille à Monastir.',
-  },
-  {
-    question: 'Peut-on louer depuis l’aéroport ?',
-    answer: 'Absolument, les loueurs livrent votre véhicule à l’aéroport international Monastir Habib Bourguiba sur simple demande.',
-  },
-  {
-    question: 'Assurance incluse ?',
-    answer: 'Selon l’agence, l’assurance de base est souvent incluse et des options tous risques peuvent être ajoutées en ligne.',
-  },
-]
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqItems.map((item) => ({
-    '@type': 'Question',
-    name: item.question,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: item.answer,
-    },
-  })),
-}
-
-const autoRentalJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'AutoRental',
-  name: 'Plany Monastir',
-  description,
-  areaServed: 'Monastir',
-  url: 'https://plany.tn/location-voiture-pas-cher-a-monastir',
-  sameAs: ['https://plany.tn', 'https://blog.plany.tn'],
-}
-
-const internalLinks = createInternalLinks([
-  '/location-voiture-pas-cher-a-tunis',
-  '/location-voiture-pas-cher-a-sousse',
-  '/location-voiture-pas-cher-a-sfax',
-  '/location-voiture-pas-cher-a-nabeul',
-  '/location-voiture-pas-cher-a-mahdia',
-  '/location-voiture-pas-cher-a-kairouan',
-  '/location-voiture-pas-cher-a-djerba',
-  '/location-voiture-pas-cher-a-ariana',
-  '/location-voiture-pas-cher-a-ben-arous',
-  '/location-voiture-pas-cher-a-bizerte',
-  '/location-voiture-pas-cher-a-gabes',
-  '/location-voiture-pas-cher-a-gafsa',
-  '/location-voiture-pas-cher-a-tozeur',
-  '/location-voiture-pas-cher-a-kasserine',
-  '/location-voiture-pas-cher-a-sidi-bouzid',
-  '/location-voiture-pas-cher-a-zaghouan',
-  '/location-voiture-pas-cher-a-medenine',
-  '/location-voiture-pas-cher-a-jerba-midoun',
-  '/location-voiture-pas-cher-a-hammamet',
-])
-
-const introductionParagraphs = [
+const introductionParagraphs: string[] = [
   'Avec son ribat historique, sa marina moderne et ses plages dorées, Monastir mérite d’être explorée en toute liberté. Grâce à Plany, la location voiture Monastir devient simple et avantageuse. Nous comparons les offres des loueurs locaux pour vous garantir un véhicule fiable, parfaitement adapté à votre programme de vacances ou à votre déplacement professionnel.',
   'Notre plateforme vous permet de réserver une voiture de location Monastir en quelques minutes, avec des tarifs transparents et des options personnalisées. Choisissez votre modèle préféré, ajoutez des services comme la livraison à l’hôtel ou les sièges pour enfants, puis validez votre réservation en ligne. Vous pourrez ainsi longer la corniche, visiter le mausolée Bourguiba et découvrir les plages du village voisin de Sayada sans contrainte.',
 ]
 
-const sections = [
+const sections: SectionContent[] = [
   {
     title: 'Pourquoi choisir Monastir ?',
     paragraphs: [
@@ -108,82 +45,54 @@ const sections = [
   },
 ]
 
+const faqItems: FaqItem[] = [
+  {
+    question: 'Est-ce adapté aux familles ?',
+    answer: 'Oui, Plany propose des monospaces, SUV et véhicules équipés de sièges enfants pour des vacances en famille à Monastir.',
+  },
+  {
+    question: 'Peut-on louer depuis l’aéroport ?',
+    answer: 'Absolument, les loueurs livrent votre véhicule à l’aéroport international Monastir Habib Bourguiba sur simple demande.',
+  },
+  {
+    question: 'Assurance incluse ?',
+    answer: 'Selon l’agence, l’assurance de base est souvent incluse et des options tous risques peuvent être ajoutées en ligne.',
+  },
+]
+
+const internalLinks: string[] = [
+  '/location-voiture-pas-cher-a-tunis',
+  '/location-voiture-pas-cher-a-sousse',
+  '/location-voiture-pas-cher-a-sfax',
+  '/location-voiture-pas-cher-a-nabeul',
+  '/location-voiture-pas-cher-a-mahdia',
+  '/location-voiture-pas-cher-a-kairouan',
+  '/location-voiture-pas-cher-a-djerba',
+  '/location-voiture-pas-cher-a-ariana',
+  '/location-voiture-pas-cher-a-ben-arous',
+  '/location-voiture-pas-cher-a-bizerte',
+  '/location-voiture-pas-cher-a-gabes',
+  '/location-voiture-pas-cher-a-gafsa',
+  '/location-voiture-pas-cher-a-tozeur',
+  '/location-voiture-pas-cher-a-kasserine',
+  '/location-voiture-pas-cher-a-sidi-bouzid',
+  '/location-voiture-pas-cher-a-zaghouan',
+  '/location-voiture-pas-cher-a-medenine',
+  '/location-voiture-pas-cher-a-jerba-midoun',
+  '/location-voiture-pas-cher-a-hammamet',
+]
+
 const LocationAMonastir = () => (
-  <Container component="main" maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-    <SearchForm />
-    <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
-      <script type="application/ld+json">{JSON.stringify(autoRentalJsonLd)}</script>
-    </Helmet>
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h1" component="h1" sx={{ mb: 3 }}>
-        {title}
-      </Typography>
-      <Stack spacing={2}>
-        {introductionParagraphs.map((paragraph) => (
-          <Typography key={paragraph} variant="body1">
-            {paragraph}
-          </Typography>
-        ))}
-      </Stack>
-    </Box>
-    {sections.map((section) => (
-      <Box key={section.title} component="section" sx={{ mb: 5 }}>
-        <Typography variant="h2" component="h2" sx={{ mb: 2 }}>
-          {section.title}
-        </Typography>
-        {section.paragraphs.length > 0 ? (
-          <Stack spacing={2}>
-            {section.paragraphs.map((paragraph) => (
-              <Typography key={paragraph} variant="body1">
-                {paragraph}
-              </Typography>
-            ))}
-          </Stack>
-        ) : (
-          <Stack spacing={2}>
-            {faqItems.map((item) => (
-              <Accordion key={item.question} disableGutters>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="subtitle1">{item.question}</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Typography variant="body1">{item.answer}</Typography>
-                </AccordionDetails>
-              </Accordion>
-            ))}
-          </Stack>
-        )}
-      </Box>
-    ))}
-    <Divider sx={{ mb: 4 }} />
-    <Box component="section" sx={{ mb: 4 }}>
-      <Typography variant="h2" component="h2" sx={{ mb: 2 }}>
-        Voir aussi
-      </Typography>
-      <List>
-        {internalLinks.map((link) => (
-          <ListItem key={link.href} disableGutters>
-            <ListItemText>
-              <Link href={link.href}>{link.label}</Link>
-            </ListItemText>
-          </ListItem>
-        ))}
-        <ListItem disableGutters>
-          <ListItemText>
-            <Link href="https://blog.plany.tn">Conseils & actus : le blog Plany</Link>
-          </ListItemText>
-        </ListItem>
-      </List>
-    </Box>
-    <Box component="section" sx={{ mb: 2 }}>
-      <Typography variant="body1">
-        Pour finaliser votre location voiture Monastir, complétez le formulaire ci-dessus, comparez les modèles disponibles et choisissez l’offre la mieux adaptée à votre séjour sur la côte sahelienne.
-      </Typography>
-    </Box>
-  </Container>
+  <LocationPageTemplate
+    city="Monastir"
+    slug={slug}
+    title={title}
+    description={description}
+    introductionParagraphs={introductionParagraphs}
+    sections={sections}
+    faqItems={faqItems}
+    internalLinks={internalLinks}
+  />
 )
 
 export default LocationAMonastir

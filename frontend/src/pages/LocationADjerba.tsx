@@ -1,80 +1,17 @@
 import React from 'react'
-import { Container, Box, Typography, Stack, Link, Divider, List, ListItem, ListItemText, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { Helmet } from 'react-helmet'
-import SearchForm from '@/components/SearchForm'
-import { createInternalLinks } from '@/common/locationLinks'
+import LocationPageTemplate, { SectionContent, FaqItem } from '@/components/location/LocationPageTemplate'
 
+const slug = '/location-voiture-pas-cher-a-djerba'
 const title = 'Location voiture pas cher à Djerba | Plany'
 const description = 'Location voiture à Djerba : profitez de votre séjour avec un véhicule adapté. Offres à partir de 55 TND/jour.'
 
-const faqItems = [
-  {
-    question: 'Quel véhicule pour explorer l’île ?',
-    answer: 'Optez pour une citadine pour circuler dans Houmt Souk ou un SUV pour parcourir les plages et les routes secondaires de l’île de Djerba.',
-  },
-  {
-    question: 'Assurance tous risques ?',
-    answer: 'Disponible en option selon le loueur, souvent recommandée pour couvrir vos déplacements sur l’île.',
-  },
-  {
-    question: 'Lieux populaires ?',
-    answer: 'Houmt Souk, Midoun, la plage de la Seguia, le phare de Taguermess et la synagogue de la Ghriba figurent parmi les incontournables.',
-  },
-]
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqItems.map((item) => ({
-    '@type': 'Question',
-    name: item.question,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: item.answer,
-    },
-  })),
-}
-
-const autoRentalJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'AutoRental',
-  name: 'Plany Djerba',
-  description,
-  areaServed: 'Djerba',
-  url: 'https://plany.tn/location-voiture-pas-cher-a-djerba',
-  sameAs: ['https://plany.tn', 'https://blog.plany.tn'],
-}
-
-const internalLinks = createInternalLinks([
-  '/location-voiture-pas-cher-a-tunis',
-  '/location-voiture-pas-cher-a-sousse',
-  '/location-voiture-pas-cher-a-sfax',
-  '/location-voiture-pas-cher-a-nabeul',
-  '/location-voiture-pas-cher-a-monastir',
-  '/location-voiture-pas-cher-a-mahdia',
-  '/location-voiture-pas-cher-a-kairouan',
-  '/location-voiture-pas-cher-a-ariana',
-  '/location-voiture-pas-cher-a-ben-arous',
-  '/location-voiture-pas-cher-a-bizerte',
-  '/location-voiture-pas-cher-a-gabes',
-  '/location-voiture-pas-cher-a-gafsa',
-  '/location-voiture-pas-cher-a-tozeur',
-  '/location-voiture-pas-cher-a-kasserine',
-  '/location-voiture-pas-cher-a-sidi-bouzid',
-  '/location-voiture-pas-cher-a-zaghouan',
-  '/location-voiture-pas-cher-a-medenine',
-  '/location-voiture-pas-cher-a-jerba-midoun',
-  '/location-voiture-pas-cher-a-hammamet',
-])
-
-const introductionParagraphs = [
+const introductionParagraphs: string[] = [
   'Avec Plany, la location voiture Djerba devient la clé pour découvrir chaque plage et chaque village de l’île sans contrainte. Notre comparateur rassemble les agences basées à l’aéroport de Djerba-Zarzis, à Houmt Souk et à Midoun pour vous proposer des véhicules adaptés à vos envies balnéaires ou culturelles.',
   'Nos offres privilégient la location voiture pas cher Djerba tout en garantissant le confort : climatisation puissante, GPS multilingue, sièges enfant et options premium pour les escapades vers les lagunes. Les véhicules sont contrôlés et prêts pour affronter les routes côtières ainsi que les pistes plus sauvages du sud de l’île.',
   'Que vous arriviez par avion ou par le bac de Jorf, l’interface Plany vous permet de réserver en quelques clics depuis votre mobile. Nous mettons à votre disposition un service client attentif pour adapter vos horaires de prise en charge, ajouter un conducteur ou organiser la restitution à votre hôtel.',
 ]
 
-const sections = [
+const sections: SectionContent[] = [
   {
     title: 'Pourquoi louer à Djerba ?',
     paragraphs: [
@@ -109,81 +46,54 @@ const sections = [
   },
 ]
 
+const faqItems: FaqItem[] = [
+  {
+    question: 'Quel véhicule pour explorer l’île ?',
+    answer: 'Optez pour une citadine pour circuler dans Houmt Souk ou un SUV pour parcourir les plages et les routes secondaires de l’île de Djerba.',
+  },
+  {
+    question: 'Assurance tous risques ?',
+    answer: 'Disponible en option selon le loueur, souvent recommandée pour couvrir vos déplacements sur l’île.',
+  },
+  {
+    question: 'Lieux populaires ?',
+    answer: 'Houmt Souk, Midoun, la plage de la Seguia, le phare de Taguermess et la synagogue de la Ghriba figurent parmi les incontournables.',
+  },
+]
+
+const internalLinks: string[] = [
+  '/location-voiture-pas-cher-a-tunis',
+  '/location-voiture-pas-cher-a-sousse',
+  '/location-voiture-pas-cher-a-sfax',
+  '/location-voiture-pas-cher-a-nabeul',
+  '/location-voiture-pas-cher-a-monastir',
+  '/location-voiture-pas-cher-a-mahdia',
+  '/location-voiture-pas-cher-a-kairouan',
+  '/location-voiture-pas-cher-a-ariana',
+  '/location-voiture-pas-cher-a-ben-arous',
+  '/location-voiture-pas-cher-a-bizerte',
+  '/location-voiture-pas-cher-a-gabes',
+  '/location-voiture-pas-cher-a-gafsa',
+  '/location-voiture-pas-cher-a-tozeur',
+  '/location-voiture-pas-cher-a-kasserine',
+  '/location-voiture-pas-cher-a-sidi-bouzid',
+  '/location-voiture-pas-cher-a-zaghouan',
+  '/location-voiture-pas-cher-a-medenine',
+  '/location-voiture-pas-cher-a-jerba-midoun',
+  '/location-voiture-pas-cher-a-hammamet',
+]
+
 const LocationADjerba = () => (
-  <Container component="main" maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-    <SearchForm />
-    <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
-      <script type="application/ld+json">{JSON.stringify(autoRentalJsonLd)}</script>
-    </Helmet>
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h1" component="h1" gutterBottom>
-        {title}
-      </Typography>
-      <Stack spacing={2}>
-        {introductionParagraphs.map((paragraph) => (
-          <Typography key={paragraph} variant="body1" paragraph>
-            {paragraph}
-          </Typography>
-        ))}
-      </Stack>
-    </Box>
-    <Stack spacing={4}>
-      {sections.map((section) => (
-        <Box key={section.title}>
-          <Typography variant="h2" component="h2" gutterBottom>
-            {section.title}
-          </Typography>
-          {section.title.includes('FAQ') ? (
-            <Stack spacing={2}>
-              {faqItems.map((item) => (
-                <Accordion key={item.question} disableGutters>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`${item.question}-content`} id={`${item.question}-header`}>
-                    <Typography variant="subtitle1">{item.question}</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography variant="body2">{item.answer}</Typography>
-                  </AccordionDetails>
-                </Accordion>
-              ))}
-            </Stack>
-          ) : (
-            section.paragraphs.map((paragraph) => (
-              <Typography key={paragraph} variant="body1" paragraph>
-                {paragraph}
-              </Typography>
-            ))
-          )}
-        </Box>
-      ))}
-    </Stack>
-    <Divider sx={{ my: 5 }} />
-    <Box>
-      <Typography variant="h2" component="h2" gutterBottom>
-        Voir aussi
-      </Typography>
-      <List>
-        {internalLinks.map((link) => (
-          <ListItem key={link.href} disablePadding>
-            <ListItemText>
-              <Link href={link.href}>{link.label}</Link>
-            </ListItemText>
-          </ListItem>
-        ))}
-        <ListItem disablePadding>
-          <ListItemText>
-            <Link href="https://blog.plany.tn">Conseils & actus : le blog Plany</Link>
-          </ListItemText>
-        </ListItem>
-      </List>
-    </Box>
-    <Divider sx={{ my: 5 }} />
-    <Typography variant="body1" paragraph>
-      Prêt à parcourir Djerba à votre rythme ? Lancez une recherche avec le formulaire Plany pour comparer les véhicules disponibles et réserver votre voiture en toute confiance.
-    </Typography>
-  </Container>
+  <LocationPageTemplate
+    city="Djerba"
+    slug={slug}
+    title={title}
+    description={description}
+    introductionParagraphs={introductionParagraphs}
+    sections={sections}
+    faqItems={faqItems}
+    internalLinks={internalLinks}
+  />
 )
 
 export default LocationADjerba

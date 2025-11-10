@@ -1,80 +1,17 @@
 import React from 'react'
-import { Container, Box, Typography, Stack, Link, Divider, List, ListItem, ListItemText, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { Helmet } from 'react-helmet'
-import SearchForm from '@/components/SearchForm'
-import { createInternalLinks } from '@/common/locationLinks'
+import LocationPageTemplate, { SectionContent, FaqItem } from '@/components/location/LocationPageTemplate'
 
+const slug = '/location-voiture-pas-cher-a-kairouan'
 const title = 'Location voiture pas cher à Kairouan | Plany'
 const description = 'Louez une voiture à Kairouan pour explorer ses sites uniques. Tarifs accessibles, réservation rapide.'
 
-const faqItems = [
-  {
-    question: 'Quels lieux touristiques ?',
-    answer: 'Visitez la Grande Mosquée, les bassins des Aghlabides, les souks et les sites historiques environnants en toute liberté.',
-  },
-  {
-    question: 'Voiture possible depuis Sfax ?',
-    answer: 'Oui, certaines agences acceptent les trajets en aller-simple depuis ou vers Sfax selon disponibilité et frais additionnels.',
-  },
-  {
-    question: 'Location utilitaire possible ?',
-    answer: 'Oui, Plany recense des partenaires proposant des utilitaires et des véhicules spacieux adaptés aux artisans et transporteurs.',
-  },
-]
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqItems.map((item) => ({
-    '@type': 'Question',
-    name: item.question,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: item.answer,
-    },
-  })),
-}
-
-const autoRentalJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'AutoRental',
-  name: 'Plany Kairouan',
-  description,
-  areaServed: 'Kairouan',
-  url: 'https://plany.tn/location-voiture-pas-cher-a-kairouan',
-  sameAs: ['https://plany.tn', 'https://blog.plany.tn'],
-}
-
-const internalLinks = createInternalLinks([
-  '/location-voiture-pas-cher-a-tunis',
-  '/location-voiture-pas-cher-a-sousse',
-  '/location-voiture-pas-cher-a-sfax',
-  '/location-voiture-pas-cher-a-nabeul',
-  '/location-voiture-pas-cher-a-monastir',
-  '/location-voiture-pas-cher-a-mahdia',
-  '/location-voiture-pas-cher-a-djerba',
-  '/location-voiture-pas-cher-a-ariana',
-  '/location-voiture-pas-cher-a-ben-arous',
-  '/location-voiture-pas-cher-a-bizerte',
-  '/location-voiture-pas-cher-a-gabes',
-  '/location-voiture-pas-cher-a-gafsa',
-  '/location-voiture-pas-cher-a-tozeur',
-  '/location-voiture-pas-cher-a-kasserine',
-  '/location-voiture-pas-cher-a-sidi-bouzid',
-  '/location-voiture-pas-cher-a-zaghouan',
-  '/location-voiture-pas-cher-a-medenine',
-  '/location-voiture-pas-cher-a-jerba-midoun',
-  '/location-voiture-pas-cher-a-hammamet',
-])
-
-const introductionParagraphs = [
+const introductionParagraphs: string[] = [
   'Plany simplifie votre location voiture Kairouan avec une plateforme pensée pour vos déplacements dans la capitale spirituelle de la Tunisie. En quelques clics, vous accédez aux véhicules économiques, SUV ou utilitaires des agences locales et vous profitez de tarifs clairs adaptés à votre budget voyage ou professionnel.',
   'Que vous soyez pèlerin, amateur de patrimoine ou artisan, notre moteur compare les options pour vous aider à trouver une location voiture pas cher Kairouan incluant les assurances essentielles et la climatisation, indispensable durant les étés chauds du Sahel. Planifiez vos trajets vers la médina, les quartiers résidentiels de Bir Barrouta ou les routes vers Sbeitla en toute tranquillité.',
   'Grâce à notre interface responsive, vous réservez sur mobile en route ou sur desktop avant le départ. Plany assure un accompagnement client continu pour ajuster votre contrat, ajouter un conducteur ou gérer un aller-simple, le tout sans surprise sur la facture finale.',
 ]
 
-const sections = [
+const sections: SectionContent[] = [
   {
     title: 'Pourquoi louer à Kairouan ?',
     paragraphs: [
@@ -109,81 +46,54 @@ const sections = [
   },
 ]
 
+const faqItems: FaqItem[] = [
+  {
+    question: 'Quels lieux touristiques ?',
+    answer: 'Visitez la Grande Mosquée, les bassins des Aghlabides, les souks et les sites historiques environnants en toute liberté.',
+  },
+  {
+    question: 'Voiture possible depuis Sfax ?',
+    answer: 'Oui, certaines agences acceptent les trajets en aller-simple depuis ou vers Sfax selon disponibilité et frais additionnels.',
+  },
+  {
+    question: 'Location utilitaire possible ?',
+    answer: 'Oui, Plany recense des partenaires proposant des utilitaires et des véhicules spacieux adaptés aux artisans et transporteurs.',
+  },
+]
+
+const internalLinks: string[] = [
+  '/location-voiture-pas-cher-a-tunis',
+  '/location-voiture-pas-cher-a-sousse',
+  '/location-voiture-pas-cher-a-sfax',
+  '/location-voiture-pas-cher-a-nabeul',
+  '/location-voiture-pas-cher-a-monastir',
+  '/location-voiture-pas-cher-a-mahdia',
+  '/location-voiture-pas-cher-a-djerba',
+  '/location-voiture-pas-cher-a-ariana',
+  '/location-voiture-pas-cher-a-ben-arous',
+  '/location-voiture-pas-cher-a-bizerte',
+  '/location-voiture-pas-cher-a-gabes',
+  '/location-voiture-pas-cher-a-gafsa',
+  '/location-voiture-pas-cher-a-tozeur',
+  '/location-voiture-pas-cher-a-kasserine',
+  '/location-voiture-pas-cher-a-sidi-bouzid',
+  '/location-voiture-pas-cher-a-zaghouan',
+  '/location-voiture-pas-cher-a-medenine',
+  '/location-voiture-pas-cher-a-jerba-midoun',
+  '/location-voiture-pas-cher-a-hammamet',
+]
+
 const LocationAKairouan = () => (
-  <Container component="main" maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-    <SearchForm />
-    <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
-      <script type="application/ld+json">{JSON.stringify(autoRentalJsonLd)}</script>
-    </Helmet>
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h1" component="h1" gutterBottom>
-        {title}
-      </Typography>
-      <Stack spacing={2}>
-        {introductionParagraphs.map((paragraph) => (
-          <Typography key={paragraph} variant="body1" paragraph>
-            {paragraph}
-          </Typography>
-        ))}
-      </Stack>
-    </Box>
-    <Stack spacing={4}>
-      {sections.map((section) => (
-        <Box key={section.title}>
-          <Typography variant="h2" component="h2" gutterBottom>
-            {section.title}
-          </Typography>
-          {section.title.includes('Questions fréquentes') ? (
-            <Stack spacing={2}>
-              {faqItems.map((item) => (
-                <Accordion key={item.question} disableGutters>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`${item.question}-content`} id={`${item.question}-header`}>
-                    <Typography variant="subtitle1">{item.question}</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography variant="body2">{item.answer}</Typography>
-                  </AccordionDetails>
-                </Accordion>
-              ))}
-            </Stack>
-          ) : (
-            section.paragraphs.map((paragraph) => (
-              <Typography key={paragraph} variant="body1" paragraph>
-                {paragraph}
-              </Typography>
-            ))
-          )}
-        </Box>
-      ))}
-    </Stack>
-    <Divider sx={{ my: 5 }} />
-    <Box>
-      <Typography variant="h2" component="h2" gutterBottom>
-        Voir aussi
-      </Typography>
-      <List>
-        {internalLinks.map((link) => (
-          <ListItem key={link.href} disablePadding>
-            <ListItemText>
-              <Link href={link.href}>{link.label}</Link>
-            </ListItemText>
-          </ListItem>
-        ))}
-        <ListItem disablePadding>
-          <ListItemText>
-            <Link href="https://blog.plany.tn">Conseils & actus : le blog Plany</Link>
-          </ListItemText>
-        </ListItem>
-      </List>
-    </Box>
-    <Divider sx={{ my: 5 }} />
-    <Typography variant="body1" paragraph>
-      Besoin d’organiser vos déplacements à Kairouan ? Utilisez le formulaire ci-dessus pour lancer votre recherche, comparer les agences en temps réel et réserver une voiture parfaitement adaptée à votre séjour.
-    </Typography>
-  </Container>
+  <LocationPageTemplate
+    city="Kairouan"
+    slug={slug}
+    title={title}
+    description={description}
+    introductionParagraphs={introductionParagraphs}
+    sections={sections}
+    faqItems={faqItems}
+    internalLinks={internalLinks}
+  />
 )
 
 export default LocationAKairouan

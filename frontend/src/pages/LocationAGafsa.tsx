@@ -1,76 +1,17 @@
 import React from 'react'
-import { Container, Box, Typography, Stack, Link, Divider, List, ListItem, ListItemText, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { Helmet } from 'react-helmet'
-import SearchForm from '@/components/SearchForm'
-import { createInternalLinks } from '@/common/locationLinks'
+import LocationPageTemplate, { SectionContent, FaqItem } from '@/components/location/LocationPageTemplate'
 
+const slug = '/location-voiture-pas-cher-a-gafsa'
 const title = 'Location voiture pas cher à Gafsa | Plany'
 const description = 'Réservez une voiture à Gafsa avec Plany. Accès simple et rapide à nos véhicules.'
 
-const faqItems = [
-  {
-    question: 'Voitures 4x4 disponibles ?',
-    answer: 'Oui, des 4x4 et SUV robustes sont proposés pour affronter les pistes montagneuses autour de Gafsa.',
-  },
-  {
-    question: 'Tarif journalier moyen ?',
-    answer: 'Comptez environ 60 TND par jour selon le modèle, la saison et les options sélectionnées.',
-  },
-]
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqItems.map((item) => ({
-    '@type': 'Question',
-    name: item.question,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: item.answer,
-    },
-  })),
-}
-
-const autoRentalJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'AutoRental',
-  name: 'Plany Gafsa',
-  description,
-  areaServed: 'Gafsa',
-  url: 'https://plany.tn/location-voiture-pas-cher-a-gafsa',
-  sameAs: ['https://plany.tn', 'https://blog.plany.tn'],
-}
-
-const internalLinks = createInternalLinks([
-  '/location-voiture-pas-cher-a-tunis',
-  '/location-voiture-pas-cher-a-sousse',
-  '/location-voiture-pas-cher-a-sfax',
-  '/location-voiture-pas-cher-a-nabeul',
-  '/location-voiture-pas-cher-a-monastir',
-  '/location-voiture-pas-cher-a-mahdia',
-  '/location-voiture-pas-cher-a-kairouan',
-  '/location-voiture-pas-cher-a-djerba',
-  '/location-voiture-pas-cher-a-ariana',
-  '/location-voiture-pas-cher-a-ben-arous',
-  '/location-voiture-pas-cher-a-bizerte',
-  '/location-voiture-pas-cher-a-gabes',
-  '/location-voiture-pas-cher-a-tozeur',
-  '/location-voiture-pas-cher-a-kasserine',
-  '/location-voiture-pas-cher-a-sidi-bouzid',
-  '/location-voiture-pas-cher-a-zaghouan',
-  '/location-voiture-pas-cher-a-medenine',
-  '/location-voiture-pas-cher-a-jerba-midoun',
-  '/location-voiture-pas-cher-a-hammamet',
-])
-
-const introductionParagraphs = [
+const introductionParagraphs: string[] = [
   'Opter pour une location voiture Gafsa avec Plany, c’est profiter d’un partenaire de confiance pour explorer les oasis, les carrières phosphatières et les reliefs verdoyants du sud-ouest tunisien. Nous mettons à votre disposition des offres claires et compétitives pour louer une auto pas cher adaptée à vos trajets.',
   'Vous pouvez choisir entre des berlines confortables, des citadines maniables ou des 4x4 puissants selon votre programme : visite des gorges de Selja, réunion professionnelle à Métlaoui ou escapade vers Tozeur. Toutes les voitures sont récentes, contrôlées et prêtes à partir.',
   'Le SearchForm Plany vous accompagne étape par étape : sélection des dates, comparaison des loueurs, options additionnelles comme le Wi-Fi embarqué ou le siège bébé, et confirmation instantanée par email et SMS.',
 ]
 
-const sections = [
+const sections: SectionContent[] = [
   {
     title: 'Pourquoi louer à Gafsa ?',
     paragraphs: [
@@ -105,81 +46,50 @@ const sections = [
   },
 ]
 
-const LocationAGafsa: React.FC = () => (
-  <Container component="main" sx={{ py: 4 }}>
-    <SearchForm />
-    <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
-      <script type="application/ld+json">{JSON.stringify(autoRentalJsonLd)}</script>
-    </Helmet>
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h1" component="h1" gutterBottom>
-        {title}
-      </Typography>
-      <Stack spacing={2}>
-        {introductionParagraphs.map((paragraph) => (
-          <Typography key={paragraph} variant="body1" paragraph>
-            {paragraph}
-          </Typography>
-        ))}
-      </Stack>
-    </Box>
-    <Stack spacing={4}>
-      {sections.map((section) => (
-        <Box key={section.title}>
-          <Typography variant="h2" component="h2" gutterBottom>
-            {section.title}
-          </Typography>
-          {section.title.includes('FAQ') ? (
-            <Stack spacing={2}>
-              {faqItems.map((item) => (
-                <Accordion key={item.question} disableGutters>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`${item.question}-content`} id={`${item.question}-header`}>
-                    <Typography variant="subtitle1">{item.question}</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography variant="body2">{item.answer}</Typography>
-                  </AccordionDetails>
-                </Accordion>
-              ))}
-            </Stack>
-          ) : (
-            section.paragraphs.map((paragraph) => (
-              <Typography key={paragraph} variant="body1" paragraph>
-                {paragraph}
-              </Typography>
-            ))
-          )}
-        </Box>
-      ))}
-    </Stack>
-    <Divider sx={{ my: 5 }} />
-    <Box>
-      <Typography variant="h2" component="h2" gutterBottom>
-        Voir aussi
-      </Typography>
-      <List>
-        {internalLinks.map((link) => (
-          <ListItem key={link.href} disablePadding>
-            <ListItemText>
-              <Link href={link.href}>{link.label}</Link>
-            </ListItemText>
-          </ListItem>
-        ))}
-        <ListItem disablePadding>
-          <ListItemText>
-            <Link href="https://blog.plany.tn">Conseils & actus : le blog Plany</Link>
-          </ListItemText>
-        </ListItem>
-      </List>
-    </Box>
-    <Divider sx={{ my: 5 }} />
-    <Typography variant="body1" paragraph>
-      Lancez votre SearchForm, choisissez votre location voiture Gafsa idéale et prenez la route des oasis en toute confiance avec Plany.
-    </Typography>
-  </Container>
+const faqItems: FaqItem[] = [
+  {
+    question: 'Voitures 4x4 disponibles ?',
+    answer: 'Oui, des 4x4 et SUV robustes sont proposés pour affronter les pistes montagneuses autour de Gafsa.',
+  },
+  {
+    question: 'Tarif journalier moyen ?',
+    answer: 'Comptez environ 60 TND par jour selon le modèle, la saison et les options sélectionnées.',
+  },
+]
+
+const internalLinks: string[] = [
+  '/location-voiture-pas-cher-a-tunis',
+  '/location-voiture-pas-cher-a-sousse',
+  '/location-voiture-pas-cher-a-sfax',
+  '/location-voiture-pas-cher-a-nabeul',
+  '/location-voiture-pas-cher-a-monastir',
+  '/location-voiture-pas-cher-a-mahdia',
+  '/location-voiture-pas-cher-a-kairouan',
+  '/location-voiture-pas-cher-a-djerba',
+  '/location-voiture-pas-cher-a-ariana',
+  '/location-voiture-pas-cher-a-ben-arous',
+  '/location-voiture-pas-cher-a-bizerte',
+  '/location-voiture-pas-cher-a-gabes',
+  '/location-voiture-pas-cher-a-tozeur',
+  '/location-voiture-pas-cher-a-kasserine',
+  '/location-voiture-pas-cher-a-sidi-bouzid',
+  '/location-voiture-pas-cher-a-zaghouan',
+  '/location-voiture-pas-cher-a-medenine',
+  '/location-voiture-pas-cher-a-jerba-midoun',
+  '/location-voiture-pas-cher-a-hammamet',
+]
+
+const LocationAGafsa = () => (
+  <LocationPageTemplate
+    city="Gafsa"
+    slug={slug}
+    title={title}
+    description={description}
+    introductionParagraphs={introductionParagraphs}
+    sections={sections}
+    faqItems={faqItems}
+    internalLinks={internalLinks}
+  />
 )
 
 export default LocationAGafsa

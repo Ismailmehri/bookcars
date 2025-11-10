@@ -1,76 +1,17 @@
 import React from 'react'
-import { Container, Box, Typography, Stack, Link, Divider, List, ListItem, ListItemText, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { Helmet } from 'react-helmet'
-import SearchForm from '@/components/SearchForm'
-import { createInternalLinks } from '@/common/locationLinks'
+import LocationPageTemplate, { SectionContent, FaqItem } from '@/components/location/LocationPageTemplate'
 
+const slug = '/location-voiture-pas-cher-a-ben-arous'
 const title = 'Location voiture pas cher à Ben Arous | Plany'
 const description = 'Louez une voiture à Ben Arous avec Plany en quelques clics. Disponibilité immédiate.'
 
-const faqItems = [
-  {
-    question: 'Peut-on louer pour entreprises ?',
-    answer: 'Oui, des formules professionnelles avec facturation détaillée sont proposées pour les entreprises de Ben Arous et de la zone industrielle de Mégrine.',
-  },
-  {
-    question: 'Y a-t-il des agences ouvertes le week-end ?',
-    answer: 'Plusieurs agences partenaires assurent un service le samedi et le dimanche, notamment près de la route de Mornag et de la zone portuaire de Radès.',
-  },
-]
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqItems.map((item) => ({
-    '@type': 'Question',
-    name: item.question,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: item.answer,
-    },
-  })),
-}
-
-const autoRentalJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'AutoRental',
-  name: 'Plany Ben Arous',
-  description,
-  areaServed: 'Ben Arous',
-  url: 'https://plany.tn/location-voiture-pas-cher-a-ben-arous',
-  sameAs: ['https://plany.tn', 'https://blog.plany.tn'],
-}
-
-const internalLinks = createInternalLinks([
-  '/location-voiture-pas-cher-a-tunis',
-  '/location-voiture-pas-cher-a-sousse',
-  '/location-voiture-pas-cher-a-sfax',
-  '/location-voiture-pas-cher-a-nabeul',
-  '/location-voiture-pas-cher-a-monastir',
-  '/location-voiture-pas-cher-a-mahdia',
-  '/location-voiture-pas-cher-a-kairouan',
-  '/location-voiture-pas-cher-a-djerba',
-  '/location-voiture-pas-cher-a-ariana',
-  '/location-voiture-pas-cher-a-bizerte',
-  '/location-voiture-pas-cher-a-gabes',
-  '/location-voiture-pas-cher-a-gafsa',
-  '/location-voiture-pas-cher-a-tozeur',
-  '/location-voiture-pas-cher-a-kasserine',
-  '/location-voiture-pas-cher-a-sidi-bouzid',
-  '/location-voiture-pas-cher-a-zaghouan',
-  '/location-voiture-pas-cher-a-medenine',
-  '/location-voiture-pas-cher-a-jerba-midoun',
-  '/location-voiture-pas-cher-a-hammamet',
-])
-
-const introductionParagraphs = [
+const introductionParagraphs: string[] = [
   'Située au sud de Tunis, Ben Arous est un carrefour industriel et logistique. Avec Plany, trouvez rapidement une location voiture Ben Arous pour vos déplacements entre Mégrine, Radès, Ezzahra ou Mornag.',
   'Notre moteur compare les offres des agences locales afin de vous proposer une location voiture pas cher Ben Arous avec des véhicules entretenus, climatisés et adaptés aux trajets professionnels comme aux déplacements familiaux.',
   'Grâce à la plateforme responsive, vous pouvez réserver depuis votre bureau, votre dépôt ou votre smartphone en mission. Notre équipe accompagne les professionnels pour gérer les flottes temporaires ou les besoins ponctuels d’utilitaires.',
 ]
 
-const sections = [
+const sections: SectionContent[] = [
   {
     title: 'Pourquoi louer à Ben Arous ?',
     paragraphs: [
@@ -105,81 +46,50 @@ const sections = [
   },
 ]
 
+const faqItems: FaqItem[] = [
+  {
+    question: 'Peut-on louer pour entreprises ?',
+    answer: 'Oui, des formules professionnelles avec facturation détaillée sont proposées pour les entreprises de Ben Arous et de la zone industrielle de Mégrine.',
+  },
+  {
+    question: 'Y a-t-il des agences ouvertes le week-end ?',
+    answer: 'Plusieurs agences partenaires assurent un service le samedi et le dimanche, notamment près de la route de Mornag et de la zone portuaire de Radès.',
+  },
+]
+
+const internalLinks: string[] = [
+  '/location-voiture-pas-cher-a-tunis',
+  '/location-voiture-pas-cher-a-sousse',
+  '/location-voiture-pas-cher-a-sfax',
+  '/location-voiture-pas-cher-a-nabeul',
+  '/location-voiture-pas-cher-a-monastir',
+  '/location-voiture-pas-cher-a-mahdia',
+  '/location-voiture-pas-cher-a-kairouan',
+  '/location-voiture-pas-cher-a-djerba',
+  '/location-voiture-pas-cher-a-ariana',
+  '/location-voiture-pas-cher-a-bizerte',
+  '/location-voiture-pas-cher-a-gabes',
+  '/location-voiture-pas-cher-a-gafsa',
+  '/location-voiture-pas-cher-a-tozeur',
+  '/location-voiture-pas-cher-a-kasserine',
+  '/location-voiture-pas-cher-a-sidi-bouzid',
+  '/location-voiture-pas-cher-a-zaghouan',
+  '/location-voiture-pas-cher-a-medenine',
+  '/location-voiture-pas-cher-a-jerba-midoun',
+  '/location-voiture-pas-cher-a-hammamet',
+]
+
 const LocationABenArous = () => (
-  <Container component="main" maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-    <SearchForm />
-    <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
-      <script type="application/ld+json">{JSON.stringify(autoRentalJsonLd)}</script>
-    </Helmet>
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h1" component="h1" gutterBottom>
-        {title}
-      </Typography>
-      <Stack spacing={2}>
-        {introductionParagraphs.map((paragraph) => (
-          <Typography key={paragraph} variant="body1" paragraph>
-            {paragraph}
-          </Typography>
-        ))}
-      </Stack>
-    </Box>
-    <Stack spacing={4}>
-      {sections.map((section) => (
-        <Box key={section.title}>
-          <Typography variant="h2" component="h2" gutterBottom>
-            {section.title}
-          </Typography>
-          {section.title.includes('Questions fréquentes') ? (
-            <Stack spacing={2}>
-              {faqItems.map((item) => (
-                <Accordion key={item.question} disableGutters>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`${item.question}-content`} id={`${item.question}-header`}>
-                    <Typography variant="subtitle1">{item.question}</Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Typography variant="body2">{item.answer}</Typography>
-                  </AccordionDetails>
-                </Accordion>
-              ))}
-            </Stack>
-          ) : (
-            section.paragraphs.map((paragraph) => (
-              <Typography key={paragraph} variant="body1" paragraph>
-                {paragraph}
-              </Typography>
-            ))
-          )}
-        </Box>
-      ))}
-    </Stack>
-    <Divider sx={{ my: 5 }} />
-    <Box>
-      <Typography variant="h2" component="h2" gutterBottom>
-        Voir aussi
-      </Typography>
-      <List>
-        {internalLinks.map((link) => (
-          <ListItem key={link.href} disablePadding>
-            <ListItemText>
-              <Link href={link.href}>{link.label}</Link>
-            </ListItemText>
-          </ListItem>
-        ))}
-        <ListItem disablePadding>
-          <ListItemText>
-            <Link href="https://blog.plany.tn">Conseils & actus : le blog Plany</Link>
-          </ListItemText>
-        </ListItem>
-      </List>
-    </Box>
-    <Divider sx={{ my: 5 }} />
-    <Typography variant="body1" paragraph>
-      Planifiez vos trajets à Ben Arous dès maintenant : remplissez le formulaire de recherche Plany pour comparer les offres disponibles et réserver la voiture idéale.
-    </Typography>
-  </Container>
+  <LocationPageTemplate
+    city="Ben Arous"
+    slug={slug}
+    title={title}
+    description={description}
+    introductionParagraphs={introductionParagraphs}
+    sections={sections}
+    faqItems={faqItems}
+    internalLinks={internalLinks}
+  />
 )
 
 export default LocationABenArous

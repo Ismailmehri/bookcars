@@ -1,79 +1,16 @@
 import React from 'react'
-import { Container, Box, Typography, Stack, Link, Divider, List, ListItem, ListItemText, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { Helmet } from 'react-helmet'
-import SearchForm from '@/components/SearchForm'
-import { createInternalLinks } from '@/common/locationLinks'
+import LocationPageTemplate, { SectionContent, FaqItem } from '@/components/location/LocationPageTemplate'
 
+const slug = '/location-voiture-pas-cher-a-nabeul'
 const title = 'Location voiture pas cher à Nabeul | Plany'
 const description = 'Location de voiture à Nabeul à prix pas cher avec Plany. Large choix, réservation rapide, assistance locale.'
 
-const faqItems = [
-  {
-    question: 'Quels sont les lieux à visiter ?',
-    answer: 'Autour de Nabeul, explorez Korba, Hammamet et les plages de Maamoura facilement en voiture.',
-  },
-  {
-    question: 'Voiture possible en aller-simple ?',
-    answer: 'Oui, selon les agences partenaires, vous pouvez restituer la voiture dans une autre ville moyennant un supplément.',
-  },
-  {
-    question: 'Véhicules disponibles ?',
-    answer: 'Les agences proposent des citadines, SUV, familiales et quelques modèles décapotables pour la côte.',
-  },
-]
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqItems.map((item) => ({
-    '@type': 'Question',
-    name: item.question,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: item.answer,
-    },
-  })),
-}
-
-const autoRentalJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'AutoRental',
-  name: 'Plany Nabeul',
-  description,
-  areaServed: 'Nabeul',
-  url: 'https://plany.tn/location-voiture-pas-cher-a-nabeul',
-  sameAs: ['https://plany.tn', 'https://blog.plany.tn'],
-}
-
-const internalLinks = createInternalLinks([
-  '/location-voiture-pas-cher-a-tunis',
-  '/location-voiture-pas-cher-a-sousse',
-  '/location-voiture-pas-cher-a-sfax',
-  '/location-voiture-pas-cher-a-monastir',
-  '/location-voiture-pas-cher-a-mahdia',
-  '/location-voiture-pas-cher-a-kairouan',
-  '/location-voiture-pas-cher-a-djerba',
-  '/location-voiture-pas-cher-a-ariana',
-  '/location-voiture-pas-cher-a-ben-arous',
-  '/location-voiture-pas-cher-a-bizerte',
-  '/location-voiture-pas-cher-a-gabes',
-  '/location-voiture-pas-cher-a-gafsa',
-  '/location-voiture-pas-cher-a-tozeur',
-  '/location-voiture-pas-cher-a-kasserine',
-  '/location-voiture-pas-cher-a-sidi-bouzid',
-  '/location-voiture-pas-cher-a-zaghouan',
-  '/location-voiture-pas-cher-a-medenine',
-  '/location-voiture-pas-cher-a-jerba-midoun',
-  '/location-voiture-pas-cher-a-hammamet',
-])
-
-const introductionParagraphs = [
+const introductionParagraphs: string[] = [
   'Nabeul est l’une des villes côtières les plus attachantes du Cap Bon. Pour profiter de ses poteries artisanales, de ses plages familiales et des marchés parfumés, optez pour une location voiture Nabeul sur Plany. Vous gardez la liberté de circuler entre le centre-ville, les zones touristiques de Hammamet Nord et les villages agricoles qui font la réputation du gouvernorat.',
   'En quelques clics, vous comparez les offres de voiture de location Nabeul proposées par nos partenaires locaux. Notre moteur met en avant les prix, les équipements et les conditions de chaque loueur afin que vous puissiez réserver en toute confiance. Que vous recherchiez une compacte économique pour vous garer près du souk ou un SUV avec coffre généreux pour transporter planches et parasols, la solution se trouve sur Plany.',
 ]
 
-const sections = [
+const sections: SectionContent[] = [
   {
     title: 'Avantages de louer à Nabeul',
     paragraphs: [
@@ -108,82 +45,54 @@ const sections = [
   },
 ]
 
+const faqItems: FaqItem[] = [
+  {
+    question: 'Quels sont les lieux à visiter ?',
+    answer: 'Autour de Nabeul, explorez Korba, Hammamet et les plages de Maamoura facilement en voiture.',
+  },
+  {
+    question: 'Voiture possible en aller-simple ?',
+    answer: 'Oui, selon les agences partenaires, vous pouvez restituer la voiture dans une autre ville moyennant un supplément.',
+  },
+  {
+    question: 'Véhicules disponibles ?',
+    answer: 'Les agences proposent des citadines, SUV, familiales et quelques modèles décapotables pour la côte.',
+  },
+]
+
+const internalLinks: string[] = [
+  '/location-voiture-pas-cher-a-tunis',
+  '/location-voiture-pas-cher-a-sousse',
+  '/location-voiture-pas-cher-a-sfax',
+  '/location-voiture-pas-cher-a-monastir',
+  '/location-voiture-pas-cher-a-mahdia',
+  '/location-voiture-pas-cher-a-kairouan',
+  '/location-voiture-pas-cher-a-djerba',
+  '/location-voiture-pas-cher-a-ariana',
+  '/location-voiture-pas-cher-a-ben-arous',
+  '/location-voiture-pas-cher-a-bizerte',
+  '/location-voiture-pas-cher-a-gabes',
+  '/location-voiture-pas-cher-a-gafsa',
+  '/location-voiture-pas-cher-a-tozeur',
+  '/location-voiture-pas-cher-a-kasserine',
+  '/location-voiture-pas-cher-a-sidi-bouzid',
+  '/location-voiture-pas-cher-a-zaghouan',
+  '/location-voiture-pas-cher-a-medenine',
+  '/location-voiture-pas-cher-a-jerba-midoun',
+  '/location-voiture-pas-cher-a-hammamet',
+]
+
 const LocationANabeul = () => (
-  <Container component="main" maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-    <SearchForm />
-    <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
-      <script type="application/ld+json">{JSON.stringify(autoRentalJsonLd)}</script>
-    </Helmet>
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h1" component="h1" sx={{ mb: 3 }}>
-        {title}
-      </Typography>
-      <Stack spacing={2}>
-        {introductionParagraphs.map((paragraph) => (
-          <Typography key={paragraph} variant="body1">
-            {paragraph}
-          </Typography>
-        ))}
-      </Stack>
-    </Box>
-    {sections.map((section) => (
-      <Box key={section.title} component="section" sx={{ mb: 5 }}>
-        <Typography variant="h2" component="h2" sx={{ mb: 2 }}>
-          {section.title}
-        </Typography>
-        {section.paragraphs.length > 0 ? (
-          <Stack spacing={2}>
-            {section.paragraphs.map((paragraph) => (
-              <Typography key={paragraph} variant="body1">
-                {paragraph}
-              </Typography>
-            ))}
-          </Stack>
-        ) : (
-          <Stack spacing={2}>
-            {faqItems.map((item) => (
-              <Accordion key={item.question} disableGutters>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="subtitle1">{item.question}</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Typography variant="body1">{item.answer}</Typography>
-                </AccordionDetails>
-              </Accordion>
-            ))}
-          </Stack>
-        )}
-      </Box>
-    ))}
-    <Divider sx={{ mb: 4 }} />
-    <Box component="section" sx={{ mb: 4 }}>
-      <Typography variant="h2" component="h2" sx={{ mb: 2 }}>
-        Voir aussi
-      </Typography>
-      <List>
-        {internalLinks.map((link) => (
-          <ListItem key={link.href} disableGutters>
-            <ListItemText>
-              <Link href={link.href}>{link.label}</Link>
-            </ListItemText>
-          </ListItem>
-        ))}
-        <ListItem disableGutters>
-          <ListItemText>
-            <Link href="https://blog.plany.tn">Conseils & actus : le blog Plany</Link>
-          </ListItemText>
-        </ListItem>
-      </List>
-    </Box>
-    <Box component="section" sx={{ mb: 2 }}>
-      <Typography variant="body1">
-        Prêt pour la route ? Entrez vos dates dans le formulaire de recherche, explorez les offres de location voiture Nabeul et réservez le véhicule qui accompagnera votre séjour au Cap Bon.
-      </Typography>
-    </Box>
-  </Container>
+  <LocationPageTemplate
+    city="Nabeul"
+    slug={slug}
+    title={title}
+    description={description}
+    introductionParagraphs={introductionParagraphs}
+    sections={sections}
+    faqItems={faqItems}
+    internalLinks={internalLinks}
+  />
 )
 
 export default LocationANabeul

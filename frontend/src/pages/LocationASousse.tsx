@@ -1,79 +1,16 @@
 import React from 'react'
-import { Container, Box, Typography, Stack, Link, Divider, List, ListItem, ListItemText, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { Helmet } from 'react-helmet'
-import SearchForm from '@/components/SearchForm'
-import { createInternalLinks } from '@/common/locationLinks'
+import LocationPageTemplate, { SectionContent, FaqItem } from '@/components/location/LocationPageTemplate'
 
+const slug = '/location-voiture-pas-cher-a-sousse'
 const title = 'Location voiture pas cher à Sousse | Plany'
 const description = 'Réservez une voiture à Sousse facilement sur Plany. Profitez de nos offres économiques et d’une réservation rapide.'
 
-const faqItems = [
-  {
-    question: 'Quels sont les prix à Sousse ?',
-    answer: 'Les tarifs démarrent dès 50 TND par jour selon la saison, le type de véhicule et la durée de location choisie via Plany.',
-  },
-  {
-    question: 'Types de véhicules disponibles ?',
-    answer: 'Nos partenaires à Sousse proposent des SUV, des citadines pour circuler en centre-ville et des boîtes automatiques idéales pour la corniche.',
-  },
-  {
-    question: 'Y a-t-il livraison hôtel ?',
-    answer: 'Oui, plusieurs agences partenaires peuvent livrer votre voiture directement à votre hôtel ou résidence de vacances à Sousse.',
-  },
-]
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqItems.map((item) => ({
-    '@type': 'Question',
-    name: item.question,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: item.answer,
-    },
-  })),
-}
-
-const autoRentalJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'AutoRental',
-  name: 'Plany Sousse',
-  description,
-  areaServed: 'Sousse',
-  url: 'https://plany.tn/location-voiture-pas-cher-a-sousse',
-  sameAs: ['https://plany.tn', 'https://blog.plany.tn'],
-}
-
-const internalLinks = createInternalLinks([
-  '/location-voiture-pas-cher-a-tunis',
-  '/location-voiture-pas-cher-a-sfax',
-  '/location-voiture-pas-cher-a-nabeul',
-  '/location-voiture-pas-cher-a-monastir',
-  '/location-voiture-pas-cher-a-mahdia',
-  '/location-voiture-pas-cher-a-kairouan',
-  '/location-voiture-pas-cher-a-djerba',
-  '/location-voiture-pas-cher-a-ariana',
-  '/location-voiture-pas-cher-a-ben-arous',
-  '/location-voiture-pas-cher-a-bizerte',
-  '/location-voiture-pas-cher-a-gabes',
-  '/location-voiture-pas-cher-a-gafsa',
-  '/location-voiture-pas-cher-a-tozeur',
-  '/location-voiture-pas-cher-a-kasserine',
-  '/location-voiture-pas-cher-a-sidi-bouzid',
-  '/location-voiture-pas-cher-a-zaghouan',
-  '/location-voiture-pas-cher-a-medenine',
-  '/location-voiture-pas-cher-a-jerba-midoun',
-  '/location-voiture-pas-cher-a-hammamet',
-])
-
-const introductionParagraphs = [
+const introductionParagraphs: string[] = [
   'Envie de profiter du meilleur de la ville de Sousse sans perdre de temps dans les transports ? Avec Plany, la location voiture Sousse devient un jeu d’enfant. Nous comparons pour vous les offres locales afin de vous proposer la solution la plus économique, que vous ayez besoin d’une citadine agile pour parcourir l’avenue Habib Bourguiba ou d’un SUV confortable pour explorer les quartiers résidentiels de Hammam Sousse.',
   'Notre plateforme a été pensée pour offrir une expérience fluide, rapide et sécurisée. Vous choisissez votre voiture de location Sousse, vous validez vos options et, en quelques clics, vous recevez la confirmation. Les tarifs sont transparents, sans frais cachés, et de nombreuses agences partenaires incluent déjà les assurances nécessaires pour circuler sereinement le long de la corniche ou vers Port El Kantaoui.',
 ]
 
-const sections = [
+const sections: SectionContent[] = [
   {
     title: 'Pourquoi louer une voiture à Sousse ?',
     paragraphs: [
@@ -108,82 +45,54 @@ const sections = [
   },
 ]
 
+const faqItems: FaqItem[] = [
+  {
+    question: 'Quels sont les prix à Sousse ?',
+    answer: 'Les tarifs démarrent dès 50 TND par jour selon la saison, le type de véhicule et la durée de location choisie via Plany.',
+  },
+  {
+    question: 'Types de véhicules disponibles ?',
+    answer: 'Nos partenaires à Sousse proposent des SUV, des citadines pour circuler en centre-ville et des boîtes automatiques idéales pour la corniche.',
+  },
+  {
+    question: 'Y a-t-il livraison hôtel ?',
+    answer: 'Oui, plusieurs agences partenaires peuvent livrer votre voiture directement à votre hôtel ou résidence de vacances à Sousse.',
+  },
+]
+
+const internalLinks: string[] = [
+  '/location-voiture-pas-cher-a-tunis',
+  '/location-voiture-pas-cher-a-sfax',
+  '/location-voiture-pas-cher-a-nabeul',
+  '/location-voiture-pas-cher-a-monastir',
+  '/location-voiture-pas-cher-a-mahdia',
+  '/location-voiture-pas-cher-a-kairouan',
+  '/location-voiture-pas-cher-a-djerba',
+  '/location-voiture-pas-cher-a-ariana',
+  '/location-voiture-pas-cher-a-ben-arous',
+  '/location-voiture-pas-cher-a-bizerte',
+  '/location-voiture-pas-cher-a-gabes',
+  '/location-voiture-pas-cher-a-gafsa',
+  '/location-voiture-pas-cher-a-tozeur',
+  '/location-voiture-pas-cher-a-kasserine',
+  '/location-voiture-pas-cher-a-sidi-bouzid',
+  '/location-voiture-pas-cher-a-zaghouan',
+  '/location-voiture-pas-cher-a-medenine',
+  '/location-voiture-pas-cher-a-jerba-midoun',
+  '/location-voiture-pas-cher-a-hammamet',
+]
+
 const LocationASousse = () => (
-  <Container component="main" maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-    <SearchForm />
-    <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
-      <script type="application/ld+json">{JSON.stringify(autoRentalJsonLd)}</script>
-    </Helmet>
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h1" component="h1" sx={{ mb: 3 }}>
-        {title}
-      </Typography>
-      <Stack spacing={2}>
-        {introductionParagraphs.map((paragraph) => (
-          <Typography key={paragraph} variant="body1">
-            {paragraph}
-          </Typography>
-        ))}
-      </Stack>
-    </Box>
-    {sections.map((section) => (
-      <Box key={section.title} component="section" sx={{ mb: 5 }}>
-        <Typography variant="h2" component="h2" sx={{ mb: 2 }}>
-          {section.title}
-        </Typography>
-        {section.paragraphs.length > 0 ? (
-          <Stack spacing={2}>
-            {section.paragraphs.map((paragraph) => (
-              <Typography key={paragraph} variant="body1">
-                {paragraph}
-              </Typography>
-            ))}
-          </Stack>
-        ) : (
-          <Stack spacing={2}>
-            {faqItems.map((item) => (
-              <Accordion key={item.question} disableGutters>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="subtitle1">{item.question}</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Typography variant="body1">{item.answer}</Typography>
-                </AccordionDetails>
-              </Accordion>
-            ))}
-          </Stack>
-        )}
-      </Box>
-    ))}
-    <Divider sx={{ mb: 4 }} />
-    <Box component="section" sx={{ mb: 4 }}>
-      <Typography variant="h2" component="h2" sx={{ mb: 2 }}>
-        Voir aussi
-      </Typography>
-      <List>
-        {internalLinks.map((link) => (
-          <ListItem key={link.href} disableGutters>
-            <ListItemText>
-              <Link href={link.href}>{link.label}</Link>
-            </ListItemText>
-          </ListItem>
-        ))}
-        <ListItem disableGutters>
-          <ListItemText>
-            <Link href="https://blog.plany.tn">Conseils & actus : le blog Plany</Link>
-          </ListItemText>
-        </ListItem>
-      </List>
-    </Box>
-    <Box component="section" sx={{ mb: 2 }}>
-      <Typography variant="body1">
-        Prêt à confirmer votre location voiture Sousse ? Utilisez le formulaire de recherche ci-dessus pour comparer les disponibilités, sélectionner l’offre idéale et finaliser votre réservation en quelques minutes.
-      </Typography>
-    </Box>
-  </Container>
+  <LocationPageTemplate
+    city="Sousse"
+    slug={slug}
+    title={title}
+    description={description}
+    introductionParagraphs={introductionParagraphs}
+    sections={sections}
+    faqItems={faqItems}
+    internalLinks={internalLinks}
+  />
 )
 
 export default LocationASousse

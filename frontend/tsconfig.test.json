@@ -16,6 +16,7 @@
     "src/common/locationPageRoutes.ts",
     "src/common/supplier.ts",
     "src/components/car-list.utils.ts",
+    "src/components/location/utils.ts",
     "src/config/**/*.ts",
     "src/types/**/*.d.ts"
   ]

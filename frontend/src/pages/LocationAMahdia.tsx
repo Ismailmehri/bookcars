@@ -1,79 +1,16 @@
 import React from 'react'
-import { Container, Box, Typography, Stack, Link, Divider, List, ListItem, ListItemText, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { Helmet } from 'react-helmet'
-import SearchForm from '@/components/SearchForm'
-import { createInternalLinks } from '@/common/locationLinks'
+import LocationPageTemplate, { SectionContent, FaqItem } from '@/components/location/LocationPageTemplate'
 
+const slug = '/location-voiture-pas-cher-a-mahdia'
 const title = 'Location voiture pas cher à Mahdia | Plany'
 const description = 'Trouvez une voiture à Mahdia dès 60 TND/jour avec Plany. Rapide, pratique, économique.'
 
-const faqItems = [
-  {
-    question: 'Peut-on louer près de la plage ?',
-    answer: 'Oui, plusieurs agences partenaires disposent de points de retrait à proximité des hôtels et des plages de Mahdia.',
-  },
-  {
-    question: 'Offres longue durée ?',
-    answer: 'Des remises sont proposées dès 7 jours de location et des forfaits mensuels sont disponibles pour les séjours prolongés.',
-  },
-  {
-    question: 'Voiture avec GPS ?',
-    answer: 'La plupart des agences offrent l’option GPS ou des applications mobiles préinstallées pour faciliter vos trajets.',
-  },
-]
-
-const faqJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: faqItems.map((item) => ({
-    '@type': 'Question',
-    name: item.question,
-    acceptedAnswer: {
-      '@type': 'Answer',
-      text: item.answer,
-    },
-  })),
-}
-
-const autoRentalJsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'AutoRental',
-  name: 'Plany Mahdia',
-  description,
-  areaServed: 'Mahdia',
-  url: 'https://plany.tn/location-voiture-pas-cher-a-mahdia',
-  sameAs: ['https://plany.tn', 'https://blog.plany.tn'],
-}
-
-const internalLinks = createInternalLinks([
-  '/location-voiture-pas-cher-a-tunis',
-  '/location-voiture-pas-cher-a-sousse',
-  '/location-voiture-pas-cher-a-sfax',
-  '/location-voiture-pas-cher-a-nabeul',
-  '/location-voiture-pas-cher-a-monastir',
-  '/location-voiture-pas-cher-a-kairouan',
-  '/location-voiture-pas-cher-a-djerba',
-  '/location-voiture-pas-cher-a-ariana',
-  '/location-voiture-pas-cher-a-ben-arous',
-  '/location-voiture-pas-cher-a-bizerte',
-  '/location-voiture-pas-cher-a-gabes',
-  '/location-voiture-pas-cher-a-gafsa',
-  '/location-voiture-pas-cher-a-tozeur',
-  '/location-voiture-pas-cher-a-kasserine',
-  '/location-voiture-pas-cher-a-sidi-bouzid',
-  '/location-voiture-pas-cher-a-zaghouan',
-  '/location-voiture-pas-cher-a-medenine',
-  '/location-voiture-pas-cher-a-jerba-midoun',
-  '/location-voiture-pas-cher-a-hammamet',
-])
-
-const introductionParagraphs = [
+const introductionParagraphs: string[] = [
   'Mahdia, avec sa vieille ville fortifiée et sa mer turquoise, est l’endroit rêvé pour une escapade balnéaire authentique. En réservant une location voiture Mahdia via Plany, vous transformez votre séjour en une expérience sur mesure. Vous pouvez vous lever tôt pour admirer le lever du soleil depuis le cap Afrique, profiter des plages, puis visiter le quartier des tisserands sans dépendre des taxis.',
   'La plateforme Plany centralise les offres des agences locales pour proposer une location voiture pas cher Mahdia avec service personnalisé. Que vous recherchiez une citadine compacte pour vous faufiler dans les rues étroites de la médina ou un SUV confortable pour longer la côte vers Chebba, vous trouverez un véhicule équipé des options indispensables comme la climatisation et les aides à la conduite.',
 ]
 
-const sections = [
+const sections: SectionContent[] = [
   {
     title: 'Pourquoi louer à Mahdia ?',
     paragraphs: [
@@ -108,82 +45,54 @@ const sections = [
   },
 ]
 
+const faqItems: FaqItem[] = [
+  {
+    question: 'Peut-on louer près de la plage ?',
+    answer: 'Oui, plusieurs agences partenaires disposent de points de retrait à proximité des hôtels et des plages de Mahdia.',
+  },
+  {
+    question: 'Offres longue durée ?',
+    answer: 'Des remises sont proposées dès 7 jours de location et des forfaits mensuels sont disponibles pour les séjours prolongés.',
+  },
+  {
+    question: 'Voiture avec GPS ?',
+    answer: 'La plupart des agences offrent l’option GPS ou des applications mobiles préinstallées pour faciliter vos trajets.',
+  },
+]
+
+const internalLinks: string[] = [
+  '/location-voiture-pas-cher-a-tunis',
+  '/location-voiture-pas-cher-a-sousse',
+  '/location-voiture-pas-cher-a-sfax',
+  '/location-voiture-pas-cher-a-nabeul',
+  '/location-voiture-pas-cher-a-monastir',
+  '/location-voiture-pas-cher-a-kairouan',
+  '/location-voiture-pas-cher-a-djerba',
+  '/location-voiture-pas-cher-a-ariana',
+  '/location-voiture-pas-cher-a-ben-arous',
+  '/location-voiture-pas-cher-a-bizerte',
+  '/location-voiture-pas-cher-a-gabes',
+  '/location-voiture-pas-cher-a-gafsa',
+  '/location-voiture-pas-cher-a-tozeur',
+  '/location-voiture-pas-cher-a-kasserine',
+  '/location-voiture-pas-cher-a-sidi-bouzid',
+  '/location-voiture-pas-cher-a-zaghouan',
+  '/location-voiture-pas-cher-a-medenine',
+  '/location-voiture-pas-cher-a-jerba-midoun',
+  '/location-voiture-pas-cher-a-hammamet',
+]
+
 const LocationAMahdia = () => (
-  <Container component="main" maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-    <SearchForm />
-    <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <script type="application/ld+json">{JSON.stringify(faqJsonLd)}</script>
-      <script type="application/ld+json">{JSON.stringify(autoRentalJsonLd)}</script>
-    </Helmet>
-    <Box sx={{ mb: 4 }}>
-      <Typography variant="h1" component="h1" sx={{ mb: 3 }}>
-        {title}
-      </Typography>
-      <Stack spacing={2}>
-        {introductionParagraphs.map((paragraph) => (
-          <Typography key={paragraph} variant="body1">
-            {paragraph}
-          </Typography>
-        ))}
-      </Stack>
-    </Box>
-    {sections.map((section) => (
-      <Box key={section.title} component="section" sx={{ mb: 5 }}>
-        <Typography variant="h2" component="h2" sx={{ mb: 2 }}>
-          {section.title}
-        </Typography>
-        {section.paragraphs.length > 0 ? (
-          <Stack spacing={2}>
-            {section.paragraphs.map((paragraph) => (
-              <Typography key={paragraph} variant="body1">
-                {paragraph}
-              </Typography>
-            ))}
-          </Stack>
-        ) : (
-          <Stack spacing={2}>
-            {faqItems.map((item) => (
-              <Accordion key={item.question} disableGutters>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="subtitle1">{item.question}</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Typography variant="body1">{item.answer}</Typography>
-                </AccordionDetails>
-              </Accordion>
-            ))}
-          </Stack>
-        )}
-      </Box>
-    ))}
-    <Divider sx={{ mb: 4 }} />
-    <Box component="section" sx={{ mb: 4 }}>
-      <Typography variant="h2" component="h2" sx={{ mb: 2 }}>
-        Voir aussi
-      </Typography>
-      <List>
-        {internalLinks.map((link) => (
-          <ListItem key={link.href} disableGutters>
-            <ListItemText>
-              <Link href={link.href}>{link.label}</Link>
-            </ListItemText>
-          </ListItem>
-        ))}
-        <ListItem disableGutters>
-          <ListItemText>
-            <Link href="https://blog.plany.tn">Conseils & actus : le blog Plany</Link>
-          </ListItemText>
-        </ListItem>
-      </List>
-    </Box>
-    <Box component="section" sx={{ mb: 2 }}>
-      <Typography variant="body1">
-        Utilisez dès maintenant le moteur de recherche Plany pour réserver votre location voiture Mahdia et profiter d’un séjour balnéaire rythmé par vos envies.
-      </Typography>
-    </Box>
-  </Container>
+  <LocationPageTemplate
+    city="Mahdia"
+    slug={slug}
+    title={title}
+    description={description}
+    introductionParagraphs={introductionParagraphs}
+    sections={sections}
+    faqItems={faqItems}
+    internalLinks={internalLinks}
+  />
 )
 
 export default LocationAMahdia

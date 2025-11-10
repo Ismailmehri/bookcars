@@ -1,7 +1,7 @@
 import React from 'react'
 import { Container, Box, Typography, Stack, Link, Divider, List, ListItem, ListItemText, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { Helmet } from 'react-helmet-async'
+import { Helmet } from 'react-helmet'
 import SearchForm from '@/components/SearchForm'
 import { createInternalLinks } from '@/common/locationLinks'
 

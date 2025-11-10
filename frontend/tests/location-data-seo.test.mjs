@@ -21,6 +21,16 @@ const trackedCities = [
   'djerba',
   'ariana',
   'ben-arous',
+  'bizerte',
+  'gabes',
+  'gafsa',
+  'tozeur',
+  'kasserine',
+  'sidi-bouzid',
+  'zaghouan',
+  'medenine',
+  'jerba-midoun',
+  'hammamet',
 ]
 
 test('SEO dataset provides enriched metadata for tracked cities', () => {

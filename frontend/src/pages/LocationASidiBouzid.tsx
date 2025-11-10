@@ -1,13 +1,13 @@
 import React from 'react'
 import LocationLandingPage from '@/components/location/LocationLandingPage'
 import { buildDescription } from '@/common/seo'
-import locationData from './locationData'
+import locationDataSEO from './locationData_SEO'
 
-const page = locationData['sidi-bouzid']
+const page = locationDataSEO['sidi-bouzid']
 
 const LocationASidiBouzid = () => {
   const { metaDescription: rawMetaDescription, ...rest } = page
-  const metaDescription = buildDescription(rawMetaDescription)
+  const metaDescription = buildDescription(rawMetaDescription, 250)
 
   return <LocationLandingPage {...rest} metaDescription={metaDescription} />
 }

@@ -209,7 +209,7 @@ locationDataSEO.tunis = {
   nearbyDestinations: nearbyFactory('Tunis', [
     {
       name: 'Hammamet',
-      image: '/cover.webp',
+      image: '/location-voiture-hammamet.webp',
       imageAlt: 'Location voiture Hammamet avec Plany.tn – plages et médina',
       link: '/location-voiture-pas-cher-a-hammamet',
       description: 'Cap Bon, plages et corniche de Yasmine Hammamet à 45 minutes.',
@@ -429,7 +429,7 @@ locationDataSEO.sfax = {
     },
     {
       name: 'Kerkennah',
-      image: '/cover.webp',
+      image: '/location-voiture-kerkennah.webp',
       imageAlt: 'Location voiture Kerkennah avec Plany.tn – archipel et balades en mer',
       link: '/location-voiture-pas-cher-a-sfax',
       description: 'Archipel de Kerkennah accessible via le bac de Sfax.',
@@ -518,14 +518,14 @@ locationDataSEO.nabeul = {
   nearbyDestinations: nearbyFactory('Nabeul', [
     {
       name: 'Hammamet',
-      image: '/cover.webp',
+      image: '/location-voiture-hammamet.webp',
       imageAlt: 'Location voiture Hammamet avec Plany.tn – plages et médina',
       link: '/location-voiture-pas-cher-a-hammamet',
       description: 'Yasmine Hammamet et sa marina animée.',
     },
     {
       name: 'Kelibia',
-      image: '/cover.webp',
+      image: '/location-voiture-kelibia.webp',
       imageAlt: 'Location voiture Kelibia avec Plany.tn – forteresse et plages cristallines',
       link: '/location-voiture-pas-cher-a-nabeul',
       description: 'Forteresse et plages cristallines de Kelibia.',
@@ -635,7 +635,7 @@ locationDataSEO.monastir = {
     },
     {
       name: 'El Jem',
-      image: '/cover.webp',
+      image: '/location-voiture-el-jem.webp',
       imageAlt: 'Location voiture El Jem avec Plany.tn – amphithéâtre romain',
       link: '/location-voiture-pas-cher-a-kairouan',
       description: 'Amphithéâtre romain El Jem classé UNESCO.',
@@ -738,7 +738,7 @@ locationDataSEO.mahdia = {
     },
     {
       name: 'El Jem',
-      image: '/cover.webp',
+      image: '/location-voiture-el-jem.webp',
       imageAlt: 'Location voiture El Jem avec Plany.tn – amphithéâtre romain',
       link: '/location-voiture-pas-cher-a-kairouan',
       description: 'Amphithéâtre romain et patrimoine antique.',
@@ -841,7 +841,7 @@ locationDataSEO.kairouan = {
     },
     {
       name: 'El Jem',
-      image: '/cover.webp',
+      image: '/location-voiture-el-jem.webp',
       imageAlt: 'Location voiture El Jem avec Plany.tn – amphithéâtre romain',
       link: '/location-voiture-pas-cher-a-kairouan',
       description: 'Amphithéâtre romain et patrimoine antique.',
@@ -930,7 +930,7 @@ locationDataSEO.djerba = {
   nearbyDestinations: nearbyFactory('Djerba', [
     {
       name: 'Houmt Souk',
-      image: '/cover.webp',
+      image: '/location-voiture-houmt-souk.webp',
       imageAlt: 'Location voiture Houmt Souk avec Plany.tn – souks et port de Djerba',
       link: '/location-voiture-pas-cher-a-djerba',
       description: 'Souks, port et musées traditionnels.',
@@ -1047,7 +1047,7 @@ locationDataSEO.ariana = {
     },
     {
       name: 'Hammamet',
-      image: '/cover.webp',
+      image: '/location-voiture-hammamet.webp',
       imageAlt: 'Location voiture Hammamet avec Plany.tn – plages et médina',
       link: '/location-voiture-pas-cher-a-hammamet',
       description: 'Yasmine Hammamet et ses resorts.',
@@ -1150,7 +1150,7 @@ locationDataSEO['ben-arous'] = {
     },
     {
       name: 'Hammamet',
-      image: '/cover.webp',
+      image: '/location-voiture-hammamet.webp',
       imageAlt: 'Location voiture Hammamet avec Plany.tn – plages et médina',
       link: '/location-voiture-pas-cher-a-hammamet',
       description: 'Plages et resorts de Hammamet.',
@@ -1868,7 +1868,7 @@ locationDataSEO.zaghouan = {
     },
     {
       name: 'Hammamet',
-      image: '/cover.webp',
+      image: '/location-voiture-hammamet.webp',
       imageAlt: 'Location voiture Hammamet avec Plany.tn – plages et médina',
       link: '/location-voiture-pas-cher-a-hammamet',
       description: 'Plages et marinas de Yasmine Hammamet.',
@@ -2184,7 +2184,7 @@ locationDataSEO.hammamet = {
     },
     {
       name: 'Kelibia',
-      image: '/cover.webp',
+      image: '/location-voiture-kelibia.webp',
       imageAlt: 'Location voiture Kelibia avec Plany.tn – forteresse et plages cristallines',
       link: '/location-voiture-pas-cher-a-hammamet',
       description: 'Fort et plages turquoises de Kélibia.',

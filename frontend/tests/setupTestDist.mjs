@@ -48,6 +48,8 @@ await Promise.all([
   ensureCopiedFromFrontend('common/analytics.types.js'),
   ensureCopiedFromFrontend('common/gtm.js'),
   ensureCopiedFromFrontend('common/pricing.js'),
+  ensureCopiedFromFrontend('common/locationLinks.js'),
+  ensureCopiedFromFrontend('common/locationPageRoutes.js'),
   ensureCopiedFromFrontend('common/supplier.js'),
 ])
 

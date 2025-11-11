@@ -135,7 +135,7 @@ locationData.tunis = {
   nearbyDestinations: nearbyFactory('Tunis', [
     {
       name: 'Hammamet',
-      image: '/cover.webp',
+      image: '/location-voiture-hammamet.webp',
       imageAlt: 'Location voiture Hammamet avec Plany.tn – plages et médina',
       link: '/location-voiture-pas-cher-a-hammamet',
       description: 'Rejoignez Hammamet en 45 minutes pour profiter de ses plages animées et de la médina.',
@@ -227,7 +227,7 @@ locationData.sousse = {
     },
     {
       name: 'Hammamet',
-      image: '/cover.webp',
+      image: '/location-voiture-hammamet.webp',
       imageAlt: 'Location voiture Hammamet avec Plany.tn – plages et médina',
       link: '/location-voiture-pas-cher-a-hammamet',
       description: 'Promenade le long de la corniche d’Hammamet et découverte de sa médina blanche.',
@@ -291,7 +291,7 @@ locationData.sfax = {
   nearbyDestinations: nearbyFactory('Sfax', [
     {
       name: 'Kerkennah',
-      image: '/cover.webp',
+      image: '/location-voiture-kerkennah.webp',
       imageAlt: 'Location voiture Kerkennah avec Plany.tn – archipel et balades en mer',
       link: '/location-voiture-pas-cher-a-mahdia',
       description: 'Embarquez vers les îles Kerkennah et explorez les plages sauvages après un court trajet routier.',
@@ -368,7 +368,7 @@ locationData.nabeul = {
   nearbyDestinations: nearbyFactory('Nabeul', [
     {
       name: 'Hammamet',
-      image: '/cover.webp',
+      image: '/location-voiture-hammamet.webp',
       imageAlt: 'Location voiture Hammamet avec Plany.tn – plages et médina',
       link: '/location-voiture-pas-cher-a-hammamet',
       description: 'Dégustez un thé à la menthe sur la corniche d’Hammamet après un court trajet.',
@@ -538,7 +538,7 @@ locationData.mahdia = {
     },
     {
       name: 'El Jem',
-      image: '/cover.webp',
+      image: '/location-voiture-el-jem.webp',
       imageAlt: 'Location voiture El Jem avec Plany.tn – amphithéâtre romain',
       link: '/location-voiture-pas-cher-a-kairouan',
       description: 'Explorez l’amphithéâtre romain d’El Jem avant de revenir sur la côte.',
@@ -615,7 +615,7 @@ locationData.kairouan = {
     },
     {
       name: 'El Jem',
-      image: '/cover.webp',
+      image: '/location-voiture-el-jem.webp',
       imageAlt: 'Location voiture El Jem avec Plany.tn – amphithéâtre romain',
       link: '/location-voiture-pas-cher-a-mahdia',
       description: 'Découvrez l’imposant amphithéâtre romain avant de rejoindre le littoral.',
@@ -771,7 +771,7 @@ locationData.ariana = {
     },
     {
       name: 'Hammamet',
-      image: '/cover.webp',
+      image: '/location-voiture-hammamet.webp',
       imageAlt: 'Location voiture Hammamet avec Plany.tn – plages et médina',
       link: '/location-voiture-pas-cher-a-hammamet',
       description: 'Offrez-vous une parenthèse balnéaire à Hammamet pour le week-end.',
@@ -842,7 +842,7 @@ locationData['ben-arous'] = {
     },
     {
       name: 'Hammamet',
-      image: '/cover.webp',
+      image: '/location-voiture-hammamet.webp',
       imageAlt: 'Location voiture Hammamet avec Plany.tn – plages et médina',
       link: '/location-voiture-pas-cher-a-hammamet',
       description: 'Offrez-vous une pause balnéaire sur la côte en empruntant l’autoroute A1.',
@@ -1385,7 +1385,7 @@ locationData.zaghouan = {
     },
     {
       name: 'Hammamet',
-      image: '/cover.webp',
+      image: '/location-voiture-hammamet.webp',
       imageAlt: 'Location voiture Hammamet avec Plany.tn – plages et médina',
       link: '/location-voiture-pas-cher-a-hammamet',
       description: 'Profitez d’une pause balnéaire à Hammamet à moins de 45 minutes.',
@@ -1534,7 +1534,7 @@ locationData['jerba-midoun'] = {
   nearbyDestinations: nearbyFactory('Jerba Midoun', [
     {
       name: 'Houmt Souk',
-      image: '/cover.webp',
+      image: '/location-voiture-houmt-souk.webp',
       imageAlt: 'Location voiture Houmt Souk avec Plany.tn – souks et port de Djerba',
       link: '/location-voiture-pas-cher-a-djerba',
       description: 'Flânez dans les souks de Houmt Souk et dégustez un poisson grillé.',

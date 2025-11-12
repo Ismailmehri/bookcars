@@ -167,6 +167,8 @@ test('sendViewContentEvent tracks item details', () => {
 })
 
 test('sendLeadEvent forwards metadata to data layer', () => {
+  env.STRIPE_CURRENCY_CODE = 'tnd'
+
   gtm.sendLeadEvent({
     source: 'contact-form',
     hasEmail: true,
@@ -178,6 +180,8 @@ test('sendLeadEvent forwards metadata to data layer', () => {
   assert.equal(dataLayerCalls[0].dataLayer.has_email, true)
   assert.equal(dataLayerCalls[0].dataLayer.message_length, 150)
   assert.equal(dataLayerCalls[0].dataLayer.lead_source, 'contact-form')
+  assert.equal(dataLayerCalls[0].dataLayer.value, 1)
+  assert.equal(dataLayerCalls[0].dataLayer.currency, 'TND')
 })
 
 test('sendPageviewEvent relays page location', () => {

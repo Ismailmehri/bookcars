@@ -47,6 +47,8 @@ export interface LeadEventInput {
   subject?: string
   messageLength?: number
   isAuthenticated?: boolean
+  value?: number
+  currency?: string
 }
 
 export interface AnalyticsItem {
@@ -91,4 +93,6 @@ export interface LeadAnalyticsPayload extends Record<string, unknown> {
   subject?: string
   message_length?: number
   is_authenticated?: boolean
+  value: number
+  currency: string
 }

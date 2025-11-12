@@ -228,7 +228,11 @@ export const sendViewContentEvent = (item: ViewContentEventInput) => {
 }
 
 export const sendLeadEvent = (input: LeadEventInput) => {
+  const leadValue = Number.isFinite(input.value) && input.value && input.value > 0 ? input.value : 1
+
   const data: LeadAnalyticsPayload = {
+    value: normalizeAmount(leadValue),
+    currency: normalizeCurrency(input.currency),
     lead_source: input.source ?? 'contact-form',
     ...(typeof input.hasEmail === 'boolean' ? { has_email: input.hasEmail } : {}),
     ...(input.subject ? { subject: input.subject } : {}),

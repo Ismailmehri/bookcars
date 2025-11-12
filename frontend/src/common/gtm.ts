@@ -228,7 +228,7 @@ export const sendViewContentEvent = (item: ViewContentEventInput) => {
 }
 
 export const sendLeadEvent = (input: LeadEventInput) => {
-  const leadValue = Number.isFinite(input.value) && input.value && input.value > 0 ? input.value : 1
+  const leadValue = typeof input.value === 'number' && Number.isFinite(input.value) && input.value > 0 ? input.value : 1
 
   const data: LeadAnalyticsPayload = {
     value: normalizeAmount(leadValue),

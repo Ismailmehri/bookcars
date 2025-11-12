@@ -189,6 +189,8 @@ describe('gtm events', () => {
   })
 
   it('sends lead events with metadata', () => {
+    env.STRIPE_CURRENCY_CODE = 'tnd'
+
     sendLeadEvent({
       source: 'contact-form',
       hasEmail: true,
@@ -204,6 +206,8 @@ describe('gtm events', () => {
           lead_source: 'contact-form',
           has_email: true,
           message_length: 120,
+          value: 1,
+          currency: 'TND',
         }),
       }),
     )

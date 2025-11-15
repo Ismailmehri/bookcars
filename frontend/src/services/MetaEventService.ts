@@ -101,6 +101,7 @@ export interface MetaEventInput {
   eventTime?: number
   eventSourceUrl?: string
   actionSource?: string
+  eventId?: string
   userData?: MetaEventUserData
   customData?: MetaEventCustomData
   content?: MetaEventContent
@@ -137,6 +138,40 @@ type NormalizeOptions = {
 
 const DEFAULT_ACTION_SOURCE = 'website'
 const DEFAULT_ORIGIN = 'http://localhost'
+const EVENT_ID_PREFIX = 'plany'
+
+const sanitizeEventId = (value?: string | null): string | undefined => {
+  const sanitized = sanitizeString(value)?.replace(/\s+/g, '')
+  return sanitized || undefined
+}
+
+const generateFallbackId = (): string => {
+  const random = Math.random().toString(16).slice(2, 10)
+  const time = Date.now().toString(16)
+  return `${EVENT_ID_PREFIX}-${random}${time}`
+}
+
+export const generateEventId = (): string => {
+  if (typeof globalThis !== 'undefined') {
+    const cryptoGlobal = (globalThis as { crypto?: Crypto }).crypto
+    if (cryptoGlobal) {
+      if (typeof cryptoGlobal.randomUUID === 'function') {
+        return `${EVENT_ID_PREFIX}-${cryptoGlobal.randomUUID()}`
+      }
+      if (typeof cryptoGlobal.getRandomValues === 'function') {
+        const buffer = new Uint32Array(4)
+        cryptoGlobal.getRandomValues(buffer)
+        const id = Array.from(buffer)
+          .map((value) => value.toString(16).padStart(8, '0'))
+          .join('')
+        return `${EVENT_ID_PREFIX}-${id}`
+      }
+    }
+  }
+  return generateFallbackId()
+}
+
+const resolveEventId = (value?: string): string => sanitizeEventId(value) ?? generateEventId()
 
 export const getNavigatorUserAgent = (): string | undefined => {
   if (typeof navigator !== 'undefined' && typeof navigator.userAgent === 'string') {
@@ -448,11 +483,13 @@ export const normalizeMetaEventInput = (
   const attributionData = normaliseAttributionData(payload.attributionData)
   const originalEventData = normaliseOriginalEventData(payload.originalEventData)
   const testEventCode = sanitizeString(payload.testEventCode ?? options.defaultTestEventCode)
+  const eventId = resolveEventId(payload.eventId)
 
   const normalised: MetaEventInput = {
     eventName,
     eventTime,
     actionSource,
+    eventId,
     userData,
     customData,
     content,

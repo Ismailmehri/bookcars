@@ -16,6 +16,7 @@ import {
 import {
   sendMetaEvent,
   getWindowLocationHref,
+  generateEventId,
   type MetaEventInput,
   type MetaEventCustomDataContentItem,
   type MetaEventUserData,
@@ -243,6 +244,8 @@ export const sendPageviewEvent = (pageUrl: string, pageTitle: string) => {
     pageTitle,
   }
 
+  const eventId = generateEventId()
+
   const payload: PageViewAnalyticsPayload = {
     page_location: data.pageUrl,
     page_title: data.pageTitle,
@@ -251,6 +254,7 @@ export const sendPageviewEvent = (pageUrl: string, pageTitle: string) => {
   pushEvent('PageView', {
     ...payload,
     page_url: data.pageUrl,
+    event_id: eventId,
   })
 
   const { isAuthenticated } = getCurrentUserContext()
@@ -260,6 +264,7 @@ export const sendPageviewEvent = (pageUrl: string, pageTitle: string) => {
   const metaPayload: MetaEventInput = {
     eventName: 'PageView',
     eventSourceUrl,
+    eventId,
     userData,
     customData: {
       pageLocation: payload.page_location ?? eventSourceUrl,
@@ -275,10 +280,12 @@ const pushCommerceEvent = (
   eventName: 'InitiateCheckout' | 'Purchase' | 'ViewContent',
   payload: AnalyticsCommercePayload,
   items: AnalyticsContent[],
+  eventId: string,
 ) => {
   const dataLayerPayload: Record<string, unknown> = {
     ...payload,
     items: mapItemsForDataLayer(items),
+    event_id: eventId,
   }
 
   pushEvent(eventName, dataLayerPayload)
@@ -292,7 +299,9 @@ export const sendCheckoutEvent = (input: CommerceEventInput) => {
     return
   }
 
-  pushCommerceEvent('InitiateCheckout', payload, input.items)
+  const eventId = generateEventId()
+
+  pushCommerceEvent('InitiateCheckout', payload, input.items, eventId)
 
   const { isAuthenticated } = getCurrentUserContext()
   const contents = mapItemsToMetaContents(input.items)
@@ -309,6 +318,7 @@ export const sendCheckoutEvent = (input: CommerceEventInput) => {
   const metaPayload: MetaEventInput = {
     eventName: 'InitiateCheckout',
     eventSourceUrl: resolveEventSourceUrl(getWindowLocationHref()),
+    eventId,
     userData,
     content: contentIds.length ? { ids: contentIds, type: input.contentType ?? payload.content_type } : undefined,
     customData: {
@@ -339,7 +349,9 @@ export const sendPurchaseEvent = (input: PurchaseEventInput) => {
     transaction_id: input.transactionId,
   }
 
-  pushCommerceEvent('Purchase', purchasePayload, input.items)
+  const eventId = generateEventId()
+
+  pushCommerceEvent('Purchase', purchasePayload, input.items, eventId)
 
   const { isAuthenticated } = getCurrentUserContext()
   const contents = mapItemsToMetaContents(input.items)
@@ -356,6 +368,7 @@ export const sendPurchaseEvent = (input: PurchaseEventInput) => {
   const metaPayload: MetaEventInput = {
     eventName: 'Purchase',
     eventSourceUrl: resolveEventSourceUrl(getWindowLocationHref()),
+    eventId,
     userData,
     content: contentIds.length ? { ids: contentIds, type: input.contentType ?? payload.content_type } : undefined,
     customData: {
@@ -388,7 +401,9 @@ export const sendSearchEvent = (input: SearchEventInput) => {
     ...(input.filters ? { filters: input.filters } : {}),
   }
 
-  pushEvent('Search', searchData)
+  const eventId = generateEventId()
+
+  pushEvent('Search', { ...searchData, event_id: eventId })
 
   const { isAuthenticated } = getCurrentUserContext()
   const userData = buildMetaUserData()
@@ -396,6 +411,7 @@ export const sendSearchEvent = (input: SearchEventInput) => {
   const metaPayload: MetaEventInput = {
     eventName: 'Search',
     eventSourceUrl: resolveEventSourceUrl(getWindowLocationHref()),
+    eventId,
     userData,
     customData: {
       searchString: input.searchTerm,
@@ -432,6 +448,8 @@ export const sendViewContentEvent = (item: ViewContentEventInput) => {
     content_type: item.category ?? 'product',
   }
 
+  const eventId = generateEventId()
+
   pushCommerceEvent('ViewContent', payload, [
     {
       id: item.id,
@@ -440,7 +458,7 @@ export const sendViewContentEvent = (item: ViewContentEventInput) => {
       quantity: 1,
       category: item.category,
     },
-  ])
+  ], eventId)
 
   const { isAuthenticated } = getCurrentUserContext()
   const contents = mapItemsToMetaContents([
@@ -451,6 +469,7 @@ export const sendViewContentEvent = (item: ViewContentEventInput) => {
   const metaPayload: MetaEventInput = {
     eventName: 'ViewContent',
     eventSourceUrl: resolveEventSourceUrl(getWindowLocationHref()),
+    eventId,
     userData: buildMetaUserData(),
     content: { ids: contentIds, type: item.category ?? 'product' },
     customData: {
@@ -480,7 +499,9 @@ export const sendLeadEvent = (input: LeadEventInput) => {
     ...(typeof input.isAuthenticated === 'boolean' ? { is_authenticated: input.isAuthenticated } : {}),
   }
 
-  pushEvent('Lead', data)
+  const eventId = generateEventId()
+
+  pushEvent('Lead', { ...data, event_id: eventId })
 
   const { isAuthenticated } = getCurrentUserContext()
   const userData = buildMetaUserData({
@@ -494,6 +515,7 @@ export const sendLeadEvent = (input: LeadEventInput) => {
   const metaPayload: MetaEventInput = {
     eventName: 'Lead',
     eventSourceUrl: resolveEventSourceUrl(getWindowLocationHref()),
+    eventId,
     userData,
     customData: {
       value: normalizeAmount(leadValue),

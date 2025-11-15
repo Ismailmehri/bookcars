@@ -4,6 +4,7 @@ import {
   type MetaEventClient,
   type MetaEventInput,
   type MetaEventResponseBody,
+  generateEventId,
 } from '@/services/MetaEventService'
 import {
   buildMetaUserData as buildMetaUserDataFromGtm,
@@ -58,6 +59,10 @@ export const createTrackEventHandler = ({
     const overrideTestCode = getOverrideTestCode()
     if (overrideTestCode && !nextPayload.testEventCode) {
       nextPayload.testEventCode = overrideTestCode
+    }
+
+    if (!nextPayload.eventId) {
+      nextPayload.eventId = generateEventId()
     }
 
     setStatus('loading')
@@ -138,6 +143,10 @@ export const createTrackPageViewHandler = ({
     const userData = buildUserData(overrides?.userData)
     if (userData) {
       nextPayload.userData = userData
+    }
+
+    if (!nextPayload.eventId) {
+      nextPayload.eventId = generateEventId()
     }
 
     return trackEvent(nextPayload)

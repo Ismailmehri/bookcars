@@ -147,6 +147,7 @@ test('normalizeMetaEventInput trims payload and applies defaults', () => {
   assert.equal(normalized.eventTime, 1722100000)
   assert.equal(normalized.actionSource, 'website')
   assert.equal(normalized.eventSourceUrl, 'https://example.com/path')
+  assert.match(normalized.eventId, /^plany-/)
   assert.deepEqual(normalized.userData, {
     email: 'user@test.com',
     phone: '+21612345678',
@@ -216,6 +217,7 @@ test('createMetaEventClient merges defaults and throws MetaEventRequestError on 
   assert.equal(calls[0].body.testEventCode, 'QA123')
   assert.deepEqual(calls[0].body.content, { ids: ['car42'], type: 'car' })
   assert.equal(calls[0].body.userData.userAgent, 'MetaTestAgent/1.0')
+  assert.match(calls[0].body.eventId, /^plany-/)
 
   const failingHttp = {
     async post() {
@@ -263,6 +265,7 @@ test('createTrackEventHandler updates status lifecycle and applies overrides', a
   const response = await handler({ eventName: 'Click' })
   assert.equal(response.success, true)
   assert.equal(recordedPayload.testEventCode, 'CODE-123')
+  assert.match(recordedPayload.eventId, /^plany-/)
   assert.deepEqual(statuses, ['loading', 'success'])
   assert.deepEqual(errors, [undefined])
 
@@ -313,6 +316,7 @@ test('createTrackPageViewHandler enriches payload with GTM parity', async () => 
   const payload = captured[0]
   assert.equal(payload.eventName, 'PageView')
   assert.equal(payload.eventSourceUrl, 'https://example.test/page?lang=fr')
+  assert.match(payload.eventId, /^plany-/)
   assert.deepEqual(payload.customData, {
     pageLocation: 'https://example.test/page?lang=fr',
     pageTitle: 'Checkout',

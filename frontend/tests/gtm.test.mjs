@@ -122,6 +122,7 @@ test('sendCheckoutEvent normalizes payload before pushing to data layer', () => 
   assert.equal(payload.num_items, 2)
   assert.equal(payload.currency, 'TND')
   assert.deepEqual(payload.content_ids, ['car-1'])
+  assert.match(payload.event_id, /^plany-/)
 })
 
 test('sendPurchaseEvent sends transaction metadata', () => {
@@ -137,6 +138,7 @@ test('sendPurchaseEvent sends transaction metadata', () => {
   assert.equal(dataLayerCalls[0].dataLayer.transaction_id, 'booking-123')
   assert.equal(dataLayerCalls[0].dataLayer.num_items, 1)
   assert.equal(dataLayerCalls[0].dataLayer.currency, 'TND')
+  assert.match(dataLayerCalls[0].dataLayer.event_id, /^plany-/)
 })
 
 test('sendSearchEvent forwards filters and dates', () => {
@@ -158,6 +160,7 @@ test('sendSearchEvent forwards filters and dates', () => {
   assert.equal(dataLayerCalls[0].dataLayer.pickup_location_id, 'pickup-1')
   assert.equal(dataLayerCalls[0].dataLayer.dropoff_location_id, 'drop-2')
   assert.equal(dataLayerCalls[0].dataLayer.same_location, false)
+  assert.match(dataLayerCalls[0].dataLayer.event_id, /^plany-/)
 })
 
 test('sendViewContentEvent tracks item details', () => {
@@ -173,6 +176,7 @@ test('sendViewContentEvent tracks item details', () => {
   assert.equal(payload.num_items, 1)
   assert.equal(payload.contents[0].item_price, 35)
   assert.equal(payload.currency, 'TND')
+  assert.match(payload.event_id, /^plany-/)
 })
 
 test('sendLeadEvent forwards metadata to data layer', () => {
@@ -191,6 +195,7 @@ test('sendLeadEvent forwards metadata to data layer', () => {
   assert.equal(dataLayerCalls[0].dataLayer.lead_source, 'contact-form')
   assert.equal(dataLayerCalls[0].dataLayer.value, 1)
   assert.equal(dataLayerCalls[0].dataLayer.currency, 'TND')
+  assert.match(dataLayerCalls[0].dataLayer.event_id, /^plany-/)
 })
 
 test('sendPageviewEvent relays page location', () => {
@@ -199,4 +204,5 @@ test('sendPageviewEvent relays page location', () => {
   assert.equal(dataLayerCalls[0].dataLayer.page_url, '/checkout')
   assert.equal(dataLayerCalls[0].dataLayer.page_location, '/checkout')
   assert.equal(dataLayerCalls[0].dataLayer.page_title, 'Checkout')
+  assert.match(dataLayerCalls[0].dataLayer.event_id, /^plany-/)
 })

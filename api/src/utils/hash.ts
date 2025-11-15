@@ -2,16 +2,32 @@ import crypto from 'node:crypto'
 
 const sha256 = (value: string): string => crypto.createHash('sha256').update(value, 'utf8').digest('hex')
 
-export const hashEmail = (email?: string | null): string | undefined => {
-  if (!email) {
+const removeDiacritics = (value: string): string =>
+  value
+    .normalize('NFKD')
+    .replace(/\p{Diacritic}/gu, '')
+
+const normalizeForHash = (value: string): string => {
+  const trimmed = value.trim().toLowerCase()
+  if (!trimmed) {
+    return ''
+  }
+  const withoutDiacritics = removeDiacritics(trimmed)
+  return withoutDiacritics.replace(/[^a-z0-9]/g, '')
+}
+
+const hashNormalized = (value?: string | null): string | undefined => {
+  if (!value) {
     return undefined
   }
-  const normalized = email.trim().toLowerCase()
+  const normalized = normalizeForHash(value)
   if (!normalized) {
     return undefined
   }
   return sha256(normalized)
 }
+
+export const hashEmail = (email?: string | null): string | undefined => hashNormalized(email)
 
 const stripPhone = (value: string): string => value.replace(/[^0-9+]/g, '')
 
@@ -117,15 +133,16 @@ export const sanitizeGender = (value?: string | null): string | undefined => {
   return undefined
 }
 
-export const hashName = (value?: string | null): string | undefined => {
-  if (!value) {
-    return undefined
-  }
-  const normalized = value.trim().toLowerCase()
-  if (!normalized) {
-    return undefined
-  }
-  return sha256(normalized)
-}
+export const hashName = (value?: string | null): string | undefined => hashNormalized(value)
+
+export const hashCity = (value?: string | null): string | undefined => hashNormalized(value)
+
+export const hashState = (value?: string | null): string | undefined => hashNormalized(value)
+
+export const hashPostalCode = (value?: string | null): string | undefined => hashNormalized(value)
+
+export const hashCountry = (value?: string | null): string | undefined => hashNormalized(value)
+
+export const hashExternalId = (value?: string | null): string | undefined => hashNormalized(value)
 
 export { sha256 }

@@ -84,6 +84,7 @@ export const metaEventSchema = z.object({
   eventTime: z.number().int().min(0).optional(),
   eventSourceUrl: z.string().trim().min(1).optional(),
   actionSource: z.string().trim().min(1).optional(),
+  eventId: z.string().trim().min(1).optional(),
   userData: userDataSchema.optional(),
   customData: customDataSchema.optional(),
   content: contentSchema.optional(),

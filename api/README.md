@@ -39,6 +39,35 @@ Example payload:
 
 The middleware automatically enriches the payload with the caller IP and user agent before it is validated and forwarded to Meta. Sensitive fields (email and phone) are normalised and hashed with SHA-256 on the server.
 
+## Required Meta fields
+
+| Field | Source | Notes |
+| --- | --- | --- |
+| `action_source` | Request payload (defaults to `website`) | Required by Meta for attribution. |
+| `event_source_url` | Request payload or inferred from the HTTP request | Must be an absolute URL pointing to the page where the action occurred. |
+| `client_user_agent` | HTTP headers (`user-agent`) | Forwarded without hashing for device matching. |
+| `event_id` | Generated server-side (`plany-<uuid>`) unless provided | Shared with the pixel to enable CAPI/pixel deduplication. |
+| `user_data.em`, `user_data.ph`, `user_data.fn`, `user_data.ln`, `user_data.ct`, `user_data.zp`, `user_data.country` | Request payload | Normalised (lowercase, diacritics stripped) then SHA-256 hashed. |
+| `user_data.fbp`, `user_data.fbc` | Cookies `_fbp` / `_fbc` (sent via frontend payload) | Passed in clear text to improve Event Match Quality. |
+| `client_ip_address` | Request metadata (supports `x-forwarded-for`) | Used as-is for matching. |
+
+## Event deduplication
+
+- Every call receives an `event_id` in the form `plany-<uuid>` if the caller does not supply one. The frontend uses the same helper to inject the identifier into both GTM/pixel events and the CAPI payload so Meta can deduplicate duplicates.
+- When integrating a custom tracker ensure the same `event_id` is forwarded alongside the browser event.
+
+## User data normalisation & hashing
+
+- Emails, phones, first/last names, city, postal code and country codes are normalised (trimmed, lowercased, diacritics removed) before being SHA-256 hashed.
+- Phone numbers are normalised to E.164 format prior to hashing. If a country code is provided it is used to infer the dialling prefix.
+- IP address and user agent are forwarded in clear text as required by Meta. Cookies `_fbp` and `_fbc` are passed through without hashing.
+
+## Retry and replay strategy
+
+- The service retries transient errors (HTTP ≥ 500, network timeouts) with exponential backoff (500ms base, up to five attempts).
+- After the synchronous retries are exhausted the event is queued in memory and retried in the background until the retry budget is consumed. Successful replays are logged together with the Meta `fbtrace_id`.
+- Queue metrics can be inspected via the exported test helpers to aid observability.
+
 ## Front-end usage
 
 A Next.js client can trigger events via `fetch`:
@@ -57,6 +86,11 @@ await fetch('/api/meta/events', {
 ```
 
 For test mode, add `testEventCode` to the payload to forward events to the Meta Test Events dashboard.
+
+## Testing & QA
+
+- Use the `testEventCode` field when working inside Meta Events Manager's “Test Events” tab. The frontend exposes a toggle in the Meta events context so QA can override it without code changes.
+- Automated tests cover hashing, deduplication and retry flows. Run `npm test --silent` inside both `api/` and `frontend/` to ensure regressions are caught.
 
 ## Frontend instrumentation
 

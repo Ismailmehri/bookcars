@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios'
 import type { AxiosResponse } from 'axios'
+import { randomUUID } from 'node:crypto'
 import { validateMetaEventPayload, type MetaEventPayload, ZodError } from '../utils/validation'
 import * as env from '../config/env.config'
 import * as logger from '../common/logger'
@@ -11,6 +12,11 @@ import {
   sanitizeCountry,
   sanitizeGender,
   hashName,
+  hashCity,
+  hashState,
+  hashPostalCode,
+  hashCountry,
+  hashExternalId,
 } from '../utils/hash'
 
 export type CanonicalEventName =
@@ -60,7 +66,7 @@ type MetaUserData = {
   client_ip_address?: string
   client_user_agent?: string
   fbp?: string
-  client_fbc?: string
+  fbc?: string
   fn?: string[]
   ln?: string[]
   external_id?: string[]
@@ -71,6 +77,7 @@ type MetaEventData = {
   event_time: number
   action_source: string
   event_source_url?: string
+  event_id: string
   user_data: MetaUserData
   custom_data?: Record<string, unknown>
   data_processing_options?: string[]
@@ -136,6 +143,147 @@ export class MetaConversionsError extends Error {
     super(message)
     this.statusCode = statusCode
   }
+}
+
+const EVENT_ID_PREFIX = 'plany'
+
+const sanitizeEventId = (value?: string | null): string | undefined => {
+  const sanitized = sanitizeString(value)?.replace(/\s+/g, '')
+  return sanitized || undefined
+}
+
+const generateEventId = (): string => `${EVENT_ID_PREFIX}-${randomUUID()}`
+
+const resolveEventId = (value?: string | null): string => sanitizeEventId(value) ?? generateEventId()
+
+const MAX_SYNC_ATTEMPTS = 3
+const MAX_QUEUE_ATTEMPTS = 5
+const BASE_BACKOFF_MS = 500
+const MAX_BACKOFF_MS = 15000
+
+let backoffBaseMs = BASE_BACKOFF_MS
+let backoffMaxMs = MAX_BACKOFF_MS
+
+const computeBackoffDelay = (attempt: number): number =>
+  Math.min(backoffMaxMs, backoffBaseMs * 2 ** (attempt - 1))
+
+type MetaRequestPayload = {
+  data: MetaEventData[]
+  test_event_code?: string
+}
+
+type QueuedEvent = {
+  payload: MetaRequestPayload
+  attempt: number
+  canonicalName: CanonicalEventName
+  endpoint: string
+  accessToken: string
+}
+
+const retryQueue: QueuedEvent[] = []
+let processingQueue = false
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const RETRYABLE_ERROR_CODES = new Set(['ECONNABORTED', 'ETIMEDOUT', 'EAI_AGAIN', 'ECONNRESET'])
+
+const shouldRetry = (error: AxiosError): boolean => {
+  const status = error.response?.status
+  if (status && status >= 500) {
+    return true
+  }
+  if (error.code && RETRYABLE_ERROR_CODES.has(error.code)) {
+    return true
+  }
+  if (!status && error.message && /timeout/i.test(error.message)) {
+    return true
+  }
+  return false
+}
+
+const postToMeta = (
+  endpoint: string,
+  payload: MetaRequestPayload,
+  accessToken: string,
+): Promise<AxiosResponse<MetaEventResponse>> =>
+  axios.post(endpoint, payload, {
+    params: { access_token: accessToken },
+  })
+
+const processQueue = async (): Promise<void> => {
+  if (processingQueue) {
+    return
+  }
+  processingQueue = true
+  try {
+    while (retryQueue.length > 0) {
+      const current = retryQueue[0]
+      if (!current) {
+        retryQueue.shift()
+        continue
+      }
+      const waitTime = computeBackoffDelay(current.attempt)
+      await delay(waitTime)
+      try {
+        const response = await postToMeta(current.endpoint, current.payload, current.accessToken)
+        logger.info(`[metaConversions] Retried ${current.canonicalName} succeeded`, {
+          attempt: current.attempt,
+          fbtrace_id: response.data?.fbtrace_id,
+        })
+        retryQueue.shift()
+      } catch (error) {
+        if (error instanceof AxiosError) {
+          const status = error.response?.status
+          const metaResponse = error.response?.data
+          if (shouldRetry(error) && current.attempt < MAX_QUEUE_ATTEMPTS) {
+            current.attempt += 1
+            logger.info(`[metaConversions] Retrying ${current.canonicalName} again`, {
+              attempt: current.attempt,
+              status,
+              message: error.message,
+            })
+            continue
+          }
+          logger.error(`[metaConversions] Dropping ${current.canonicalName} after retries`, {
+            attempt: current.attempt,
+            status,
+            response: metaResponse,
+            message: error.message,
+          })
+        } else {
+          logger.error(`[metaConversions] Dropping ${current.canonicalName} due to unexpected error`, error)
+        }
+        retryQueue.shift()
+      }
+    }
+  } finally {
+    processingQueue = false
+    if (retryQueue.length > 0) {
+      // In case new items were added while finishing, ensure processing resumes
+      void processQueue()
+    }
+  }
+}
+
+const enqueueForRetry = (item: QueuedEvent, error: AxiosError) => {
+  if (item.attempt > MAX_QUEUE_ATTEMPTS) {
+    logger.error(`[metaConversions] Dropping ${item.canonicalName}, exceeded retry budget`, {
+      attempt: item.attempt,
+      status: error.response?.status,
+      response: error.response?.data,
+      message: error.message,
+    })
+    return
+  }
+
+  retryQueue.push(item)
+  logger.info(`[metaConversions] Queued ${item.canonicalName} for retry`, {
+    attempt: item.attempt,
+    status: error.response?.status,
+    response: error.response?.data,
+    message: error.message,
+  })
+  void processQueue()
 }
 
 const removeEmpty = <T extends Record<string, unknown>>(value: T): T => {
@@ -299,33 +447,34 @@ const buildUserData = (payload?: MetaEventPayload['userData']): MetaUserData => 
   if (!payload) {
     return {}
   }
-  const country = sanitizeCountry(payload.country)
+  const countryCode = sanitizeCountry(payload.country)
   const emailHash = hashEmail(payload.email)
-  const phoneHash = hashPhone(payload.phone, country)
-  const zip = sanitizeString(payload.zip)
-  const city = sanitizeString(payload.city)
-  const state = sanitizeString(payload.state)
+  const phoneHash = hashPhone(payload.phone, countryCode)
+  const zipHash = hashPostalCode(payload.zip)
+  const cityHash = hashCity(payload.city)
+  const stateHash = hashState(payload.state)
+  const countryHash = hashCountry(countryCode)
   const gender = sanitizeGender(payload.gender)
   const dob = formatDob(payload.dob)
   const firstNameHash = hashName(payload.firstName)
   const lastNameHash = hashName(payload.lastName)
-  const externalId = sanitizeString(payload.externalId)
+  const externalIdHash = hashExternalId(payload.externalId)
   const userData: MetaUserData = {
     em: toMetaArray(emailHash),
     ph: toMetaArray(phoneHash),
-    zp: zip,
-    ct: city,
-    st: state,
-    country,
+    zp: zipHash,
+    ct: cityHash,
+    st: stateHash,
+    country: countryHash,
     ge: gender,
     db: dob,
     client_ip_address: sanitizeString(payload.ip),
     client_user_agent: sanitizeString(payload.userAgent),
     fbp: sanitizeString(payload.fbp),
-    client_fbc: sanitizeString(payload.fbc),
+    fbc: sanitizeString(payload.fbc),
     fn: toMetaArray(firstNameHash),
     ln: toMetaArray(lastNameHash),
-    external_id: toMetaArray(externalId),
+    external_id: toMetaArray(externalIdHash),
   }
   return removeEmpty(userData)
 }
@@ -499,11 +648,13 @@ const buildEvent = (canonicalName: CanonicalEventName, payload: MetaEventPayload
   const eventSourceUrl = sanitizeString(payload.eventSourceUrl)
   const userData = buildUserData(payload.userData)
   const { customData, dataProcessingOptions } = buildCustomData(payload)
+  const eventId = resolveEventId(payload.eventId)
 
   const event: MetaEventData = {
     event_name: canonicalName,
     event_time: eventTime,
     action_source: actionSource,
+    event_id: eventId,
     user_data: userData,
   }
 
@@ -589,6 +740,62 @@ const buildEvent = (canonicalName: CanonicalEventName, payload: MetaEventPayload
   return event
 }
 
+const sendWithRetry = async (
+  canonicalName: CanonicalEventName,
+  endpoint: string,
+  accessToken: string,
+  payload: MetaRequestPayload,
+  attempt = 1,
+): Promise<MetaEventResponse> => {
+  try {
+    const response = await postToMeta(endpoint, payload, accessToken)
+    logger.info(`[metaConversions] Event ${canonicalName} sent`, {
+      event: canonicalName,
+      endpoint,
+      attempt,
+      fbtrace_id: response.data?.fbtrace_id,
+    })
+    return response.data
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      const status = error.response?.status
+      const metaResponse = error.response?.data
+      logger.error(`[metaConversions] Failed to send ${canonicalName}`, {
+        attempt,
+        status,
+        response: metaResponse,
+        message: error.message,
+      })
+
+      if (shouldRetry(error)) {
+        if (attempt < MAX_SYNC_ATTEMPTS) {
+          const waitTime = computeBackoffDelay(attempt)
+          await delay(waitTime)
+          return sendWithRetry(canonicalName, endpoint, accessToken, payload, attempt + 1)
+        }
+
+        enqueueForRetry(
+          {
+            payload,
+            attempt: attempt + 1,
+            canonicalName,
+            endpoint,
+            accessToken,
+          },
+          error,
+        )
+
+        throw new MetaConversionsError('Meta Conversions API request failed (queued for retry)', status || 502)
+      }
+
+      throw new MetaConversionsError('Meta Conversions API request failed', status || 502)
+    }
+
+    logger.error(`[metaConversions] Unexpected error sending ${canonicalName}`, error)
+    throw new MetaConversionsError('Unexpected error when sending event', 500)
+  }
+}
+
 const getAccessToken = (): string => {
   const token = env.META_PIXEL_TOKEN
   if (!token) {
@@ -625,32 +832,37 @@ export const sendMetaEvent = async (input: MetaEventPayload): Promise<MetaEventR
   const pixelId = getPixelId()
   const endpoint = `https://graph.facebook.com/${getApiVersion()}/${pixelId}/events`
 
-  const payload = {
+  const payload: MetaRequestPayload = {
     data: [event],
   }
 
   if (parsed.testEventCode) {
-    Object.assign(payload, { test_event_code: parsed.testEventCode })
+    payload.test_event_code = parsed.testEventCode
   }
 
-  try {
-    const response: AxiosResponse<MetaEventResponse> = await axios.post(endpoint, payload, {
-      params: { access_token: accessToken },
-    })
-    logger.info(`[metaConversions] Event ${canonicalName} sent`, {
-      event: canonicalName,
-      endpoint,
-    })
-    return response.data
-  } catch (error) {
-    if (error instanceof AxiosError) {
-      const message = error.response?.data || error.message
-      logger.error(`[metaConversions] Failed to send ${canonicalName}`, message)
-      throw new MetaConversionsError('Meta Conversions API request failed', error.response?.status || 502)
+  return sendWithRetry(canonicalName, endpoint, accessToken, payload)
+}
+
+export const __internal = {
+  getRetryQueueSize: (): number => retryQueue.length,
+  clearRetryQueue: (): void => {
+    retryQueue.length = 0
+    processingQueue = false
+  },
+  setBackoff: (base?: number, max?: number): void => {
+    if (typeof base === 'number' && !Number.isNaN(base) && base > 0) {
+      backoffBaseMs = base
     }
-    logger.error(`[metaConversions] Unexpected error sending ${canonicalName}`, error)
-    throw new MetaConversionsError('Unexpected error when sending event', 500)
-  }
+    if (typeof max === 'number' && !Number.isNaN(max) && max > 0) {
+      backoffMaxMs = max
+    }
+  },
+  resetBackoff: (): void => {
+    backoffBaseMs = BASE_BACKOFF_MS
+    backoffMaxMs = MAX_BACKOFF_MS
+  },
+  isProcessing: (): boolean => processingQueue,
+  computeBackoffDelay,
 }
 
 export type SendMetaEventInput = MetaEventPayload

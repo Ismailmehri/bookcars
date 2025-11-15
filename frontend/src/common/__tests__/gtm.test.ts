@@ -11,7 +11,7 @@ import {
   sendSearchEvent,
   sendViewContentEvent,
 } from '@/common/gtm'
-import { sendMetaEvent, getWindowLocationHref } from '@/services/MetaEventService'
+import { sendMetaEvent, getWindowLocationHref, type MetaEventInput } from '@/services/MetaEventService'
 import * as UserService from '@/services/UserService'
 
 vi.mock('react-gtm-module', () => ({
@@ -45,6 +45,13 @@ const dataLayerMock = TagManager.dataLayer as unknown as vi.Mock
 const sendMetaEventMock = sendMetaEvent as unknown as vi.Mock
 const getCurrentUserMock = UserService.getCurrentUser as unknown as vi.Mock
 const getWindowHrefMock = getWindowLocationHref as unknown as vi.Mock
+
+const getLatestDataLayerPayload = () =>
+  (dataLayerMock.mock.calls[dataLayerMock.mock.calls.length - 1]?.[0] as { dataLayer?: Record<string, unknown> }) ||
+  undefined
+
+const getLatestMetaPayload = () =>
+  (sendMetaEventMock.mock.calls[sendMetaEventMock.mock.calls.length - 1]?.[0] as MetaEventInput) || undefined
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -137,6 +144,7 @@ describe('gtm events', () => {
               price: 50.23,
             },
           ],
+          event_id: expect.stringMatching(/^plany-/),
         }),
       }),
     )
@@ -144,6 +152,7 @@ describe('gtm events', () => {
     expect(sendMetaEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: 'InitiateCheckout',
+        eventId: expect.stringMatching(/^plany-/),
         customData: expect.objectContaining({
           value: 100.46,
           currency: 'TND',
@@ -154,6 +163,12 @@ describe('gtm events', () => {
         userData: expect.objectContaining({ email: 'user@test.com' }),
       }),
     )
+
+    const latestDataLayer = getLatestDataLayerPayload()
+    const latestMeta = getLatestMetaPayload()
+    const eventId = latestDataLayer?.dataLayer?.event_id as string | undefined
+    expect(eventId).toBeTruthy()
+    expect(latestMeta?.eventId).toBe(eventId)
   })
 
   it('sends purchase events with transaction details', () => {
@@ -171,6 +186,7 @@ describe('gtm events', () => {
         dataLayer: expect.objectContaining({
           event: 'Purchase',
           transaction_id: 'booking-123',
+          event_id: expect.stringMatching(/^plany-/),
         }),
       }),
     )
@@ -178,6 +194,7 @@ describe('gtm events', () => {
     expect(sendMetaEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: 'Purchase',
+        eventId: expect.stringMatching(/^plany-/),
         customData: expect.objectContaining({
           orderId: 'booking-123',
           transactionId: 'booking-123',
@@ -189,6 +206,12 @@ describe('gtm events', () => {
         userData: expect.objectContaining({ email: 'user@test.com' }),
       }),
     )
+
+    const latestDataLayer = getLatestDataLayerPayload()
+    const latestMeta = getLatestMetaPayload()
+    const eventId = latestDataLayer?.dataLayer?.event_id as string | undefined
+    expect(eventId).toBeTruthy()
+    expect(latestMeta?.eventId).toBe(eventId)
   })
 
   it('sends search events with filters and dates', () => {
@@ -215,6 +238,7 @@ describe('gtm events', () => {
           dropoff_location_id: 'drop-2',
           same_location: false,
           filters: { ranges: ['mini'] },
+          event_id: expect.stringMatching(/^plany-/),
         }),
       }),
     )
@@ -222,6 +246,7 @@ describe('gtm events', () => {
     expect(sendMetaEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: 'Search',
+        eventId: expect.stringMatching(/^plany-/),
         customData: expect.objectContaining({
           searchString: 'Tunis Airport',
           searchTerm: 'Tunis Airport',
@@ -233,6 +258,12 @@ describe('gtm events', () => {
         }),
       }),
     )
+
+    const latestDataLayer = getLatestDataLayerPayload()
+    const latestMeta = getLatestMetaPayload()
+    const eventId = latestDataLayer?.dataLayer?.event_id as string | undefined
+    expect(eventId).toBeTruthy()
+    expect(latestMeta?.eventId).toBe(eventId)
   })
 
   it('tracks view content events for individual items', () => {
@@ -256,6 +287,7 @@ describe('gtm events', () => {
               quantity: 1,
             }),
           ],
+          event_id: expect.stringMatching(/^plany-/),
         }),
       }),
     )
@@ -263,6 +295,7 @@ describe('gtm events', () => {
     expect(sendMetaEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: 'ViewContent',
+        eventId: expect.stringMatching(/^plany-/),
         customData: expect.objectContaining({
           contentIds: ['car-1'],
           value: 35,
@@ -272,6 +305,12 @@ describe('gtm events', () => {
         }),
       }),
     )
+
+    const latestDataLayer = getLatestDataLayerPayload()
+    const latestMeta = getLatestMetaPayload()
+    const eventId = latestDataLayer?.dataLayer?.event_id as string | undefined
+    expect(eventId).toBeTruthy()
+    expect(latestMeta?.eventId).toBe(eventId)
   })
 
   it('sends lead events with metadata', () => {
@@ -297,6 +336,7 @@ describe('gtm events', () => {
           message_length: 120,
           value: 1,
           currency: 'TND',
+          event_id: expect.stringMatching(/^plany-/),
         }),
       }),
     )
@@ -304,6 +344,7 @@ describe('gtm events', () => {
     expect(sendMetaEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: 'Lead',
+        eventId: expect.stringMatching(/^plany-/),
         customData: expect.objectContaining({
           leadSource: 'contact-form',
           hasEmail: true,
@@ -312,6 +353,12 @@ describe('gtm events', () => {
         userData: expect.objectContaining({ email: 'lead@test.com' }),
       }),
     )
+
+    const latestDataLayer = getLatestDataLayerPayload()
+    const latestMeta = getLatestMetaPayload()
+    const eventId = latestDataLayer?.dataLayer?.event_id as string | undefined
+    expect(eventId).toBeTruthy()
+    expect(latestMeta?.eventId).toBe(eventId)
   })
 
   it('tracks page views', () => {
@@ -324,6 +371,7 @@ describe('gtm events', () => {
           page_url: '/checkout',
           page_location: '/checkout',
           page_title: 'Checkout',
+          event_id: expect.stringMatching(/^plany-/),
         }),
       }),
     )
@@ -331,11 +379,18 @@ describe('gtm events', () => {
     expect(sendMetaEventMock).toHaveBeenCalledWith(
       expect.objectContaining({
         eventName: 'PageView',
+        eventId: expect.stringMatching(/^plany-/),
         customData: expect.objectContaining({
           pageTitle: 'Checkout',
           isAuthenticated: true,
         }),
       }),
     )
+
+    const latestDataLayer = getLatestDataLayerPayload()
+    const latestMeta = getLatestMetaPayload()
+    const eventId = latestDataLayer?.dataLayer?.event_id as string | undefined
+    expect(eventId).toBeTruthy()
+    expect(latestMeta?.eventId).toBe(eventId)
   })
 })

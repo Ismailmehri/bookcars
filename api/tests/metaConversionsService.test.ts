@@ -1,12 +1,13 @@
 import { jest } from '@jest/globals'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import type { AxiosResponse } from 'axios'
-import { sendMetaEvent, MetaConversionsError } from '../src/services/metaConversionsService'
-import { hashEmail, hashName } from '../src/utils/hash'
+import { sendMetaEvent, MetaConversionsError, __internal } from '../src/services/metaConversionsService'
+import { hashEmail, hashName, hashPostalCode, hashCity, hashCountry, hashExternalId } from '../src/utils/hash'
 
 type PostedPayload = {
   data: Array<{
     event_name: string
+    event_id?: string
     user_data: Record<string, unknown>
     custom_data?: Record<string, unknown>
     attribution_data?: Record<string, unknown>
@@ -22,6 +23,11 @@ type AxiosConfig = {
 }
 
 describe('Meta Conversions service', () => {
+  beforeEach(() => {
+    __internal.clearRetryQueue()
+    __internal.resetBackoff()
+  })
+
   afterEach(() => {
     jest.restoreAllMocks()
   })
@@ -35,6 +41,7 @@ describe('Meta Conversions service', () => {
     const response = await sendMetaEvent({
       eventName: 'Purchase',
       eventSourceUrl: 'https://plany.tn/reservation/123',
+      eventId: ' plany-test-123 ',
       userData: {
         email: 'Customer@Test.com ',
         phone: '+216 55 555 555',
@@ -45,6 +52,9 @@ describe('Meta Conversions service', () => {
         externalId: ' user-42 ',
         fbp: 'fb.1.123',
         fbc: 'fb.1.456',
+        city: ' Tunis ',
+        zip: ' 1050 ',
+        country: 'tn',
       },
       customData: {
         value: 150.126,
@@ -76,6 +86,7 @@ describe('Meta Conversions service', () => {
 
     expect(config?.params?.access_token).toBe('TEST_PIXEL_TOKEN')
     expect(event.event_name).toBe('Purchase')
+    expect(event.event_id).toBe('plany-test-123')
     expect(event.custom_data?.currency).toBe('TND')
     expect(event.custom_data?.value).toBe(150.13)
     expect(event.custom_data?.content_ids).toEqual(['car_1234'])
@@ -99,8 +110,13 @@ describe('Meta Conversions service', () => {
     expect(event.user_data.client_user_agent).toBe('Mozilla/5.0')
     expect(event.user_data.fn).toEqual([hashName('John')])
     expect(event.user_data.ln).toEqual([hashName('Doe')])
-    expect(event.user_data.external_id).toEqual(['user-42'])
-    expect(event.user_data.client_fbc).toBe('fb.1.456')
+    expect(event.user_data.external_id).toEqual([hashExternalId(' user-42 ')])
+    expect(event.user_data.fbc).toBe('fb.1.456')
+    expect(event.user_data.fbp).toBe('fb.1.123')
+    expect(event.user_data.client_ip_address).toBe('102.16.22.11')
+    expect(event.user_data.ct).toBe(hashCity(' Tunis '))
+    expect(event.user_data.zp).toBe(hashPostalCode(' 1050 '))
+    expect(event.user_data.country).toBe(hashCountry('tn'))
     expect(event.attribution_data?.attribution_share).toBe('0.3')
     expect(event.attribution_data?.ad_id).toBe('AD123')
     expect(event.original_event_data?.event_name).toBe('Purchase')
@@ -171,5 +187,66 @@ describe('Meta Conversions service', () => {
         customData: { leadSource: 'contact-form' },
       }),
     ).rejects.toThrow(MetaConversionsError)
+  })
+
+  it('retries transient failures before succeeding', async () => {
+    __internal.setBackoff(1, 1)
+
+    const errorResponse = {
+      status: 500,
+      statusText: 'Server Error',
+      headers: {},
+      config: {},
+      data: { error: 'server' },
+    } as AxiosResponse
+    const axiosError = new AxiosError('Server error', undefined, undefined, undefined, errorResponse)
+    const successResponse: Partial<AxiosResponse> = { data: { events_received: 1 } }
+
+    const spy = jest
+      .spyOn(axios, 'post')
+      .mockRejectedValueOnce(axiosError)
+      .mockRejectedValueOnce(axiosError)
+      .mockResolvedValue(successResponse as AxiosResponse)
+
+    const response = await sendMetaEvent({
+      eventName: 'PageView',
+      eventSourceUrl: 'https://plany.tn',
+      eventId: 'plany-retry',
+      userData: { userAgent: 'TestSuite/1.0' },
+    })
+
+    expect(response.events_received).toBe(1)
+    expect(spy).toHaveBeenCalledTimes(3)
+  })
+
+  it('queues events after exhausting retry attempts', async () => {
+    __internal.setBackoff(1, 1)
+
+    const errorResponse = {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: {},
+      config: {},
+      data: { error: 'maintenance' },
+    } as AxiosResponse
+    const axiosError = new AxiosError('Service unavailable', undefined, undefined, undefined, errorResponse)
+
+    const spy = jest.spyOn(axios, 'post').mockRejectedValue(axiosError)
+
+    await expect(
+      sendMetaEvent({
+        eventName: 'PageView',
+        eventSourceUrl: 'https://plany.tn',
+        eventId: 'plany-queue',
+        userData: { userAgent: 'TestSuite/1.0' },
+      }),
+    ).rejects.toThrow('queued for retry')
+
+    expect(__internal.isProcessing()).toBe(true)
+
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    expect(spy).toHaveBeenCalledTimes(5)
+    expect(__internal.isProcessing()).toBe(false)
   })
 })

@@ -51,13 +51,25 @@ await Promise.all([
   ensureCopiedFromFrontend('common/locationLinks.js'),
   ensureCopiedFromFrontend('common/locationPageRoutes.js'),
   ensureCopiedFromFrontend('common/supplier.js'),
+  ensureCopiedFromFrontend('context/metaEvents.helpers.js'),
+  ensureCopiedFromFrontend('services/MetaEventService.js'),
 ])
 
 const envFile = path.join(distRoot, 'config/env.config.js')
 let envSource = await readFile(envFile, 'utf8')
 envSource = envSource.replace(/import\.meta\.env/g, 'globalThis.__TEST_IMPORT_META_ENV')
-envSource = envSource.replace(/'\.\/const';/g, "'./const.js';")
+envSource = envSource.replace(/(['"])\.\/const\1/g, '$1./const.js$1')
 await writeFile(envFile, envSource)
+
+const compiledEnvFile = path.join(frontendSrcRoot, 'config/env.config.js')
+try {
+  let compiledEnvSource = await readFile(compiledEnvFile, 'utf8')
+  let compiledUpdated = compiledEnvSource.replace(/import\.meta\.env/g, 'globalThis.__TEST_IMPORT_META_ENV')
+  compiledUpdated = compiledUpdated.replace(/(['"])\.\/const\1/g, '$1./const.js$1')
+  if (compiledUpdated !== compiledEnvSource) {
+    await writeFile(compiledEnvFile, compiledUpdated)
+  }
+} catch {}
 
 const gtmFilePath = path.join(distRoot, 'common/gtm.js')
 let gtmSource = await readFile(gtmFilePath, 'utf8')
@@ -66,3 +78,30 @@ gtmUpdated = gtmUpdated.replace(/'\.\.\/config\/env\.config';/g, "'../config/env
 if (gtmUpdated !== gtmSource) {
   await writeFile(gtmFilePath, gtmUpdated)
 }
+
+const serviceFilePath = path.join(distRoot, 'frontend/src/services/MetaEventService.js')
+try {
+  let serviceSource = await readFile(serviceFilePath, 'utf8')
+  const serviceUpdated = serviceSource.replace("from '@/services/axiosInstance';", "from './axiosInstance.js';")
+  if (serviceUpdated !== serviceSource) {
+    await writeFile(serviceFilePath, serviceUpdated)
+  }
+} catch {}
+
+const helpersFilePath = path.join(distRoot, 'frontend/src/context/metaEvents.helpers.js')
+try {
+  let helpersSource = await readFile(helpersFilePath, 'utf8')
+  const helpersUpdated = helpersSource.replace("from '@/services/MetaEventService'", "from '../services/MetaEventService.js'")
+  if (helpersUpdated !== helpersSource) {
+    await writeFile(helpersFilePath, helpersUpdated)
+  }
+} catch {}
+
+const axiosFilePath = path.join(distRoot, 'frontend/src/services/axiosInstance.js')
+try {
+  let axiosSource = await readFile(axiosFilePath, 'utf8')
+  const axiosUpdated = axiosSource.replace("from '@/config/env.config'", "from '../config/env.config.js'")
+  if (axiosUpdated !== axiosSource) {
+    await writeFile(axiosFilePath, axiosUpdated)
+  }
+} catch {}

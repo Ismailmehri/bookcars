@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom'
 import SuspenseRouter from '@/components/SuspenseRouter'
 import env from '@/config/env.config'
 import { GlobalProvider } from '@/context/GlobalContext'
+import { MetaEventsProvider } from '@/context/MetaEventsContext'
 import { initGTM } from '@/common/gtm'
 import { lazyLocationPages } from '@/common/locationPageRoutes'
 
@@ -37,39 +38,41 @@ const Review = lazy(() => import('@/pages/Review'))
 const App = () => (
   <GlobalProvider>
     <SuspenseRouter window={window}>
-      <div className="app">
-        <Suspense fallback={<></>}>
-          <Routes>
-            <Route path="/sign-in" element={<SignIn />} />
-            <Route path="/sign-up" element={<SignUp />} />
-            <Route path="/activate" element={<Activate />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/" element={<Home />} />
-            <Route path="/search/:pickupLocationSlug?/:supplierSlug?" element={<Search />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/checkout-session/:sessionId" element={<CheckoutSession />} />
-            <Route path="/bookings" element={<Bookings />} />
-            <Route path="/booking" element={<Booking />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/change-password" element={<ChangePassword />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/tos" element={<ToS />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/locations" element={<Locations />} />
-            <Route path="/suppliers" element={<Suppliers />} />
-            <Route path="/review" element={<Review />} />
-            {lazyLocationPages.map(({ path, Component }) => (
-              <Route key={path} path={path} element={<Component />} />
-            ))}
-            <Route path="/location-voiture-tunisie-prix-dinars" element={<LocationVoitureTunisiePrixDinars />} />
+      <MetaEventsProvider testEventCode={env.META_TEST_EVENT_CODE}>
+        <div className="app">
+          <Suspense fallback={<></>}>
+            <Routes>
+              <Route path="/sign-in" element={<SignIn />} />
+              <Route path="/sign-up" element={<SignUp />} />
+              <Route path="/activate" element={<Activate />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/search/:pickupLocationSlug?/:supplierSlug?" element={<Search />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/checkout-session/:sessionId" element={<CheckoutSession />} />
+              <Route path="/bookings" element={<Bookings />} />
+              <Route path="/booking" element={<Booking />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/change-password" element={<ChangePassword />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/tos" element={<ToS />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/locations" element={<Locations />} />
+              <Route path="/suppliers" element={<Suppliers />} />
+              <Route path="/review" element={<Review />} />
+              {lazyLocationPages.map(({ path, Component }) => (
+                <Route key={path} path={path} element={<Component />} />
+              ))}
+              <Route path="/location-voiture-tunisie-prix-dinars" element={<LocationVoitureTunisiePrixDinars />} />
 
-            <Route path="*" element={<NoMatch />} />
-          </Routes>
-        </Suspense>
-      </div>
+              <Route path="*" element={<NoMatch />} />
+            </Routes>
+          </Suspense>
+        </div>
+      </MetaEventsProvider>
     </SuspenseRouter>
   </GlobalProvider>
 )

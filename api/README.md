@@ -57,3 +57,36 @@ await fetch('/api/meta/events', {
 ```
 
 For test mode, add `testEventCode` to the payload to forward events to the Meta Test Events dashboard.
+
+## Frontend instrumentation
+
+The public React client wraps the application with `MetaEventsProvider` (see `frontend/src/App.tsx`). The provider auto-tracks
+page views and exposes the `useMetaEvents` hook so features can submit additional conversions without leaking credentials.
+
+Example usage inside a component:
+
+```tsx
+import { useMetaEvents } from '@/context/MetaEventsContext'
+
+const CheckoutSummary = ({ bookingId, total }) => {
+  const { trackEvent, status, error } = useMetaEvents()
+
+  const handleConfirm = async () => {
+    await trackEvent({
+      eventName: 'Purchase',
+      customData: { value: total, currency: 'TND', orderId: bookingId },
+      content: { ids: [bookingId], type: 'car' },
+    })
+  }
+
+  return (
+    <button type="button" onClick={handleConfirm} disabled={status === 'loading'}>
+      {status === 'loading' ? 'Sending…' : 'Confirm purchase'}
+      {status === 'error' && <span role="alert">{error}</span>}
+    </button>
+  )
+}
+```
+
+The provider exposes screen-reader announcements and keeps track of loading/error states so the UI can remain accessible while
+events are dispatched from the backend.

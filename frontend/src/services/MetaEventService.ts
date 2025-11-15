@@ -18,6 +18,10 @@ export type MetaEventName =
   | 'purchase'
   | 'Click'
   | 'click'
+  | 'Search'
+  | 'search'
+  | 'Lead'
+  | 'lead'
 
 export interface MetaEventUserData {
   email?: string
@@ -31,6 +35,10 @@ export interface MetaEventUserData {
   ip?: string
   userAgent?: string
   fbp?: string
+  fbc?: string
+  firstName?: string
+  lastName?: string
+  externalId?: string
 }
 
 export interface MetaEventCustomData {
@@ -38,11 +46,54 @@ export interface MetaEventCustomData {
   currency?: string
   dataProcessingOptions?: string[]
   orderId?: string
+  transactionId?: string
+  contents?: MetaEventCustomDataContentItem[]
+  contentIds?: string[]
+  contentType?: string
+  numItems?: number
+  coupon?: string
+  pageLocation?: string
+  pageTitle?: string
+  searchString?: string
+  searchTerm?: string
+  pickupLocationId?: string
+  dropOffLocationId?: string
+  startDate?: string
+  endDate?: string
+  sameLocation?: boolean
+  filters?: Record<string, unknown>
+  leadSource?: string
+  hasEmail?: boolean
+  subject?: string
+  messageLength?: number
+  isAuthenticated?: boolean
 }
 
 export interface MetaEventContent {
   ids?: string[]
   type?: string
+}
+
+export interface MetaEventCustomDataContentItem {
+  id: string
+  quantity?: number
+  price?: number
+  itemPrice?: number
+  title?: string
+  category?: string
+}
+
+export interface MetaEventAttributionData {
+  attributionShare?: string | number
+  adId?: string
+  campaignId?: string
+  clickId?: string
+  engagementTime?: string | number
+}
+
+export interface MetaEventOriginalEventData {
+  eventName?: string
+  eventTime?: number
 }
 
 export interface MetaEventInput {
@@ -54,6 +105,8 @@ export interface MetaEventInput {
   customData?: MetaEventCustomData
   content?: MetaEventContent
   testEventCode?: string
+  attributionData?: MetaEventAttributionData
+  originalEventData?: MetaEventOriginalEventData
 }
 
 export interface MetaEventResponseBody {
@@ -151,6 +204,81 @@ const removeEmpty = <T extends object>(value?: T): T | undefined => {
   return Object.keys(result).length > 0 ? (result as T) : undefined
 }
 
+const sanitizeRecord = (value?: Record<string, unknown>): Record<string, unknown> | undefined => {
+  if (!value) {
+    return undefined
+  }
+  const cleaned: Record<string, unknown> = {}
+  Object.entries(value).forEach(([key, current]) => {
+    if (current !== undefined) {
+      cleaned[key] = current
+    }
+  })
+  return Object.keys(cleaned).length > 0 ? cleaned : undefined
+}
+
+const toFiniteNumber = (value?: number): number | undefined => {
+  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
+    return undefined
+  }
+  return value
+}
+
+const toPositiveInteger = (value?: number): number | undefined => {
+  const finite = toFiniteNumber(value)
+  if (finite === undefined) {
+    return undefined
+  }
+  const rounded = Math.round(Math.abs(finite))
+  return rounded > 0 ? rounded : undefined
+}
+
+const toPrice = (value?: number): number | undefined => {
+  const finite = toFiniteNumber(value)
+  if (finite === undefined) {
+    return undefined
+  }
+  const safe = Math.max(0, finite)
+  return Number(safe.toFixed(2))
+}
+
+const normaliseContents = (
+  items?: MetaEventCustomDataContentItem[],
+): MetaEventCustomDataContentItem[] | undefined => {
+  if (!items) {
+    return undefined
+  }
+  const mapped = items
+    .map((item) => {
+      const id = sanitizeString(item.id)
+      if (!id) {
+        return undefined
+      }
+      const quantity = toPositiveInteger(item.quantity)
+      const price = toPrice(item.itemPrice ?? item.price)
+      const content: MetaEventCustomDataContentItem = { id }
+      if (quantity) {
+        content.quantity = quantity
+      }
+      if (price !== undefined) {
+        content.price = price
+        content.itemPrice = price
+      }
+      const title = sanitizeString(item.title)
+      if (title) {
+        content.title = title
+      }
+      const category = sanitizeString(item.category)
+      if (category) {
+        content.category = category
+      }
+      return content
+    })
+    .filter((item): item is MetaEventCustomDataContentItem => Boolean(item))
+
+  return mapped.length > 0 ? mapped : undefined
+}
+
 const normaliseUserData = (
   userData?: MetaEventUserData,
   fallbackUserAgent?: string,
@@ -167,6 +295,10 @@ const normaliseUserData = (
     ip: sanitizeString(userData?.ip),
     userAgent: sanitizeString(userData?.userAgent) ?? sanitizeString(fallbackUserAgent),
     fbp: sanitizeString(userData?.fbp),
+    fbc: sanitizeString(userData?.fbc),
+    firstName: sanitizeString(userData?.firstName),
+    lastName: sanitizeString(userData?.lastName),
+    externalId: sanitizeString(userData?.externalId),
   }
 
   return removeEmpty(normalised)
@@ -178,14 +310,34 @@ const normaliseCustomData = (customData?: MetaEventCustomData): MetaEventCustomD
   }
 
   const dataProcessingOptions = sanitizeStringArray(customData.dataProcessingOptions)
+  const contents = normaliseContents(customData.contents)
 
   const normalised: MetaEventCustomData = {
-    value: typeof customData.value === 'number' && Number.isFinite(customData.value)
-      ? customData.value
-      : undefined,
+    value: toPrice(customData.value),
     currency: sanitizeString(customData.currency)?.toUpperCase(),
     dataProcessingOptions,
     orderId: sanitizeString(customData.orderId),
+    transactionId: sanitizeString(customData.transactionId),
+    contents,
+    contentIds: sanitizeStringArray(customData.contentIds),
+    contentType: sanitizeString(customData.contentType),
+    numItems: toPositiveInteger(customData.numItems),
+    coupon: sanitizeString(customData.coupon),
+    pageLocation: sanitizeString(customData.pageLocation),
+    pageTitle: sanitizeString(customData.pageTitle),
+    searchString: sanitizeString(customData.searchString),
+    searchTerm: sanitizeString(customData.searchTerm),
+    pickupLocationId: sanitizeString(customData.pickupLocationId),
+    dropOffLocationId: sanitizeString(customData.dropOffLocationId),
+    startDate: sanitizeString(customData.startDate),
+    endDate: sanitizeString(customData.endDate),
+    sameLocation: typeof customData.sameLocation === 'boolean' ? customData.sameLocation : undefined,
+    filters: sanitizeRecord(customData.filters),
+    leadSource: sanitizeString(customData.leadSource),
+    hasEmail: typeof customData.hasEmail === 'boolean' ? customData.hasEmail : undefined,
+    subject: sanitizeString(customData.subject),
+    messageLength: toPositiveInteger(customData.messageLength),
+    isAuthenticated: typeof customData.isAuthenticated === 'boolean' ? customData.isAuthenticated : undefined,
   }
 
   return removeEmpty(normalised)
@@ -202,6 +354,51 @@ const normaliseContent = (content?: MetaEventContent): MetaEventContent | undefi
   const normalised: MetaEventContent = {
     ids,
     type,
+  }
+
+  return removeEmpty(normalised)
+}
+
+const normaliseAttributionData = (
+  data?: MetaEventAttributionData,
+): MetaEventAttributionData | undefined => {
+  if (!data) {
+    return undefined
+  }
+
+  const numericShare = typeof data.attributionShare === 'number' && Number.isFinite(data.attributionShare)
+    ? data.attributionShare
+    : undefined
+  const attributionShare = numericShare ?? sanitizeString(typeof data.attributionShare === 'string' ? data.attributionShare : undefined)
+
+  const numericEngagement = typeof data.engagementTime === 'number' && Number.isFinite(data.engagementTime)
+    ? Math.floor(data.engagementTime)
+    : undefined
+  const engagementTime = numericEngagement ?? sanitizeString(typeof data.engagementTime === 'string' ? data.engagementTime : undefined)
+
+  const normalised: MetaEventAttributionData = {
+    attributionShare,
+    adId: sanitizeString(data.adId),
+    campaignId: sanitizeString(data.campaignId),
+    clickId: sanitizeString(data.clickId),
+    engagementTime,
+  }
+
+  return removeEmpty(normalised)
+}
+
+const normaliseOriginalEventData = (
+  data?: MetaEventOriginalEventData,
+): MetaEventOriginalEventData | undefined => {
+  if (!data) {
+    return undefined
+  }
+
+  const normalised: MetaEventOriginalEventData = {
+    eventName: sanitizeString(data.eventName),
+    eventTime: typeof data.eventTime === 'number' && Number.isFinite(data.eventTime)
+      ? Math.floor(data.eventTime)
+      : undefined,
   }
 
   return removeEmpty(normalised)
@@ -248,6 +445,8 @@ export const normalizeMetaEventInput = (
   const userData = normaliseUserData(payload.userData, userAgent)
   const customData = normaliseCustomData(payload.customData)
   const content = normaliseContent(payload.content)
+  const attributionData = normaliseAttributionData(payload.attributionData)
+  const originalEventData = normaliseOriginalEventData(payload.originalEventData)
   const testEventCode = sanitizeString(payload.testEventCode ?? options.defaultTestEventCode)
 
   const normalised: MetaEventInput = {
@@ -261,6 +460,14 @@ export const normalizeMetaEventInput = (
 
   if (eventSourceUrl) {
     normalised.eventSourceUrl = eventSourceUrl
+  }
+
+  if (attributionData) {
+    normalised.attributionData = attributionData
+  }
+
+  if (originalEventData) {
+    normalised.originalEventData = originalEventData
   }
 
   if (testEventCode) {

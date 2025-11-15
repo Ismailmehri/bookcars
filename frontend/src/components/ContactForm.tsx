@@ -109,6 +109,7 @@ const ContactForm = ({ user, className }: ContactFormProps) => {
           subject,
           messageLength: message.trim().length,
           isAuthenticated,
+          email,
         })
 
         if (!isAuthenticated) {

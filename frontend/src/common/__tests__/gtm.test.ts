@@ -11,6 +11,8 @@ import {
   sendSearchEvent,
   sendViewContentEvent,
 } from '@/common/gtm'
+import { sendMetaEvent, getWindowLocationHref } from '@/services/MetaEventService'
+import * as UserService from '@/services/UserService'
 
 vi.mock('react-gtm-module', () => ({
   default: {
@@ -19,17 +21,44 @@ vi.mock('react-gtm-module', () => ({
   },
 }))
 
+vi.mock('@/services/MetaEventService', () => ({
+  sendMetaEvent: vi.fn().mockResolvedValue({ success: true }),
+  getWindowLocationHref: vi.fn(() => 'https://plany.tn/checkout?lang=fr'),
+}))
+
+vi.mock('@/services/UserService', () => ({
+  getCurrentUser: vi.fn(() => ({
+    _id: 'user-1',
+    email: 'user@test.com',
+    phone: '+21655555555',
+    fullName: 'John Doe',
+    location: 'Tunis',
+  })),
+}))
+
 const originalGtmId = env.GOOGLE_ANALYTICS_ID
 const originalGaEnabled = env.GOOGLE_ANALYTICS_ENABLED
 const originalStripeCurrency = env.STRIPE_CURRENCY_CODE
 const originalDisplayCurrency = env.CURRENCY
 
 const dataLayerMock = TagManager.dataLayer as unknown as vi.Mock
+const sendMetaEventMock = sendMetaEvent as unknown as vi.Mock
+const getCurrentUserMock = UserService.getCurrentUser as unknown as vi.Mock
+const getWindowHrefMock = getWindowLocationHref as unknown as vi.Mock
 
 beforeEach(() => {
   vi.clearAllMocks()
   env.GOOGLE_ANALYTICS_ID = 'GTM-TEST'
   env.GOOGLE_ANALYTICS_ENABLED = true
+  sendMetaEventMock.mockClear()
+  getCurrentUserMock.mockReturnValue({
+    _id: 'user-1',
+    email: 'user@test.com',
+    phone: '+21655555555',
+    fullName: 'John Doe',
+    location: 'Tunis',
+  })
+  getWindowHrefMock.mockReturnValue('https://plany.tn/checkout?lang=fr')
 })
 
 afterEach(() => {
@@ -111,6 +140,20 @@ describe('gtm events', () => {
         }),
       }),
     )
+
+    expect(sendMetaEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: 'InitiateCheckout',
+        customData: expect.objectContaining({
+          value: 100.46,
+          currency: 'TND',
+          contentIds: ['car-1'],
+          numItems: 2,
+          isAuthenticated: true,
+        }),
+        userData: expect.objectContaining({ email: 'user@test.com' }),
+      }),
+    )
   })
 
   it('sends purchase events with transaction details', () => {
@@ -129,6 +172,21 @@ describe('gtm events', () => {
           event: 'Purchase',
           transaction_id: 'booking-123',
         }),
+      }),
+    )
+
+    expect(sendMetaEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: 'Purchase',
+        customData: expect.objectContaining({
+          orderId: 'booking-123',
+          transactionId: 'booking-123',
+          contentIds: ['car-9'],
+          value: 200,
+          currency: 'TND',
+          isAuthenticated: true,
+        }),
+        userData: expect.objectContaining({ email: 'user@test.com' }),
       }),
     )
   })
@@ -160,6 +218,21 @@ describe('gtm events', () => {
         }),
       }),
     )
+
+    expect(sendMetaEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: 'Search',
+        customData: expect.objectContaining({
+          searchString: 'Tunis Airport',
+          searchTerm: 'Tunis Airport',
+          pickupLocationId: 'pickup-1',
+          dropOffLocationId: 'drop-2',
+          sameLocation: false,
+          filters: { ranges: ['mini'] },
+          isAuthenticated: true,
+        }),
+      }),
+    )
   })
 
   it('tracks view content events for individual items', () => {
@@ -186,10 +259,25 @@ describe('gtm events', () => {
         }),
       }),
     )
+
+    expect(sendMetaEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: 'ViewContent',
+        customData: expect.objectContaining({
+          contentIds: ['car-1'],
+          value: 35,
+          currency: 'TND',
+          numItems: 1,
+          isAuthenticated: true,
+        }),
+      }),
+    )
   })
 
   it('sends lead events with metadata', () => {
     env.STRIPE_CURRENCY_CODE = 'tnd'
+
+    getCurrentUserMock.mockReturnValue(null)
 
     sendLeadEvent({
       source: 'contact-form',
@@ -197,6 +285,7 @@ describe('gtm events', () => {
       subject: 'Location longue durée',
       messageLength: 120,
       isAuthenticated: false,
+      email: 'lead@test.com',
     })
 
     expect(dataLayerMock).toHaveBeenCalledWith(
@@ -211,6 +300,18 @@ describe('gtm events', () => {
         }),
       }),
     )
+
+    expect(sendMetaEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: 'Lead',
+        customData: expect.objectContaining({
+          leadSource: 'contact-form',
+          hasEmail: true,
+          isAuthenticated: false,
+        }),
+        userData: expect.objectContaining({ email: 'lead@test.com' }),
+      }),
+    )
   })
 
   it('tracks page views', () => {
@@ -223,6 +324,16 @@ describe('gtm events', () => {
           page_url: '/checkout',
           page_location: '/checkout',
           page_title: 'Checkout',
+        }),
+      }),
+    )
+
+    expect(sendMetaEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: 'PageView',
+        customData: expect.objectContaining({
+          pageTitle: 'Checkout',
+          isAuthenticated: true,
         }),
       }),
     )

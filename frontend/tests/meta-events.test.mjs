@@ -52,6 +52,13 @@ const defaultNavigator = {
   userAgent: 'MetaTestAgent/1.0',
 }
 
+const createStorageStub = () => ({
+  getItem: () => null,
+  setItem: () => undefined,
+  removeItem: () => undefined,
+  clear: () => undefined,
+})
+
 const defineGlobal = (key, value) => {
   Object.defineProperty(globalThis, key, {
     configurable: true,
@@ -63,11 +70,15 @@ const defineGlobal = (key, value) => {
 beforeEach(() => {
   defineGlobal('window', { ...defaultWindow })
   defineGlobal('navigator', { ...defaultNavigator })
+  defineGlobal('document', { title: 'Checkout' })
+  defineGlobal('localStorage', createStorageStub())
 })
 
 afterEach(() => {
   delete globalThis.window
   delete globalThis.navigator
+  delete globalThis.document
+  delete globalThis.localStorage
 })
 
 after(() => {
@@ -90,6 +101,35 @@ test('normalizeMetaEventInput trims payload and applies defaults', () => {
         value: 199.99,
         currency: ' tnd ',
         dataProcessingOptions: [' LDU ', ' '],
+        contents: [
+          {
+            id: ' car_1 ',
+            quantity: 2.4,
+            price: 99.999,
+            title: ' Test Item ',
+            category: ' sedan ',
+          },
+        ],
+        contentIds: ['  car_2  ', ''],
+        contentType: ' rental ',
+        numItems: 4.8,
+        coupon: ' SUMMER ',
+        pageLocation: ' https://plany.tn/page ',
+        pageTitle: ' Checkout ',
+        searchString: ' Tunis ',
+        searchTerm: ' Tunis ',
+        pickupLocationId: ' pickup-1 ',
+        dropOffLocationId: ' drop-1 ',
+        startDate: '2025-01-01T10:00:00.000Z',
+        endDate: '2025-01-05T10:00:00.000Z',
+        sameLocation: true,
+        filters: { ranges: ['mini'], empty: undefined },
+        transactionId: ' TX-1 ',
+        leadSource: ' form ',
+        hasEmail: true,
+        subject: ' Inquiry ',
+        messageLength: 150.4,
+        isAuthenticated: true,
       },
       content: {
         ids: [' car_1 ', ''],
@@ -116,6 +156,36 @@ test('normalizeMetaEventInput trims payload and applies defaults', () => {
     value: 199.99,
     currency: 'TND',
     dataProcessingOptions: ['LDU'],
+    contents: [
+      {
+        id: 'car_1',
+        price: 100,
+        itemPrice: 100,
+        quantity: 2,
+        title: 'Test Item',
+        category: 'sedan',
+      },
+    ],
+    contentIds: ['car_2'],
+    contentType: 'rental',
+    numItems: 5,
+    coupon: 'SUMMER',
+    pageLocation: 'https://plany.tn/page',
+    pageTitle: 'Checkout',
+    searchString: 'Tunis',
+    searchTerm: 'Tunis',
+    pickupLocationId: 'pickup-1',
+    dropOffLocationId: 'drop-1',
+    startDate: '2025-01-01T10:00:00.000Z',
+    endDate: '2025-01-05T10:00:00.000Z',
+    sameLocation: true,
+    filters: { ranges: ['mini'] },
+    transactionId: 'TX-1',
+    leadSource: 'form',
+    hasEmail: true,
+    subject: 'Inquiry',
+    messageLength: 150,
+    isAuthenticated: true,
   })
   assert.deepEqual(normalized.content, {
     ids: ['car_1'],
@@ -216,24 +286,41 @@ test('createTrackEventHandler updates status lifecycle and applies overrides', a
   assert.equal(failureErrors.at(-1), 'Network down')
 })
 
-test('createTrackPageViewHandler derives source URL when missing', async () => {
+test('createTrackPageViewHandler enriches payload with GTM parity', async () => {
   const captured = []
   const handler = createTrackPageViewHandler({
     trackEvent: async (payload) => {
       captured.push(payload)
       return { success: true }
     },
-    resolveHref: () => 'https://example.test/page',
+    resolveHref: () => 'https://example.test/page?lang=fr',
+    buildUserData: (overrides) => ({
+      email: 'user@example.com',
+      ...(overrides?.phone ? { phone: overrides.phone.trim() } : {}),
+    }),
+    getUserContext: () => ({ isAuthenticated: false }),
+    resolveEventSourceUrl: () => undefined,
   })
 
-  await handler()
-  await handler({ userData: { email: 'user@example.com' } })
-  assert.equal(captured.length, 2)
-  assert.deepEqual(captured[0], { eventName: 'PageView', eventSourceUrl: 'https://example.test/page' })
-  assert.deepEqual(captured[1], {
-    eventName: 'PageView',
-    eventSourceUrl: 'https://example.test/page',
-    userData: { email: 'user@example.com' },
+  await handler({
+    customData: {
+      pageLocation: '   ',
+    },
+    userData: { phone: ' +111222333 ' },
+  })
+
+  assert.equal(captured.length, 1)
+  const payload = captured[0]
+  assert.equal(payload.eventName, 'PageView')
+  assert.equal(payload.eventSourceUrl, 'https://example.test/page?lang=fr')
+  assert.deepEqual(payload.customData, {
+    pageLocation: 'https://example.test/page?lang=fr',
+    pageTitle: 'Checkout',
+    isAuthenticated: false,
+  })
+  assert.deepEqual(payload.userData, {
+    email: 'user@example.com',
+    phone: '+111222333',
   })
 })
 

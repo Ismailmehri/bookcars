@@ -12,6 +12,7 @@ export interface CommerceEventInput {
   items: AnalyticsContent[]
   coupon?: string
   contentType?: string
+  customer?: AnalyticsCustomer
 }
 
 export interface PurchaseEventInput extends CommerceEventInput {
@@ -49,6 +50,20 @@ export interface LeadEventInput {
   isAuthenticated?: boolean
   value?: number
   currency?: string
+  email?: string
+  phone?: string
+  firstName?: string
+  lastName?: string
+  city?: string
+}
+
+export interface AnalyticsCustomer {
+  email?: string
+  phone?: string
+  firstName?: string
+  lastName?: string
+  city?: string
+  externalId?: string
 }
 
 export interface AnalyticsItem {

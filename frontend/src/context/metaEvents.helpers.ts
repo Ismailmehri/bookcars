@@ -5,6 +5,11 @@ import {
   type MetaEventInput,
   type MetaEventResponseBody,
 } from '@/services/MetaEventService'
+import {
+  buildMetaUserData as buildMetaUserDataFromGtm,
+  getCurrentUserContext as getCurrentUserContextFromGtm,
+  resolveEventSourceUrl as resolveEventSourceUrlFromGtm,
+} from '@/common/gtm'
 
 export type MetaEventStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -80,19 +85,62 @@ export const createTrackEventHandler = ({
 export type TrackPageViewDeps = {
   trackEvent: (payload: MetaEventInput) => Promise<MetaEventResponseBody>
   resolveHref: () => string
+  buildUserData?: (overrides?: MetaEventInput['userData']) => MetaEventInput['userData'] | undefined
+  getUserContext?: () => { isAuthenticated: boolean }
+  resolveEventSourceUrl?: (url?: string) => string | undefined
 }
 
 export const createTrackPageViewHandler = ({
   trackEvent,
   resolveHref,
+  buildUserData = buildMetaUserDataFromGtm,
+  getUserContext = getCurrentUserContextFromGtm,
+  resolveEventSourceUrl = resolveEventSourceUrlFromGtm,
 }: TrackPageViewDeps) =>
   async (overrides?: Partial<MetaEventInput>): Promise<MetaEventResponseBody> => {
-    const eventSourceUrl = overrides?.eventSourceUrl ?? resolveHref()
-    return trackEvent({
+    const baseHref = resolveHref()
+    const derivedEventSourceUrl = resolveEventSourceUrl(overrides?.eventSourceUrl ?? baseHref) ?? baseHref
+    const userContext = getUserContext()
+    const documentTitle =
+      typeof document !== 'undefined' && typeof document.title === 'string'
+        ? document.title.trim()
+        : undefined
+
+    const customData: MetaEventInput['customData'] = { ...(overrides?.customData ?? {}) }
+
+    const overridePageLocation = typeof customData.pageLocation === 'string' ? customData.pageLocation.trim() : undefined
+    if (overridePageLocation) {
+      customData.pageLocation = overridePageLocation
+    } else {
+      customData.pageLocation = derivedEventSourceUrl
+    }
+
+    const overridePageTitle = typeof customData.pageTitle === 'string' ? customData.pageTitle.trim() : undefined
+    if (overridePageTitle) {
+      customData.pageTitle = overridePageTitle
+    } else if (documentTitle) {
+      customData.pageTitle = documentTitle
+    } else {
+      delete customData.pageTitle
+    }
+
+    if (typeof customData.isAuthenticated !== 'boolean') {
+      customData.isAuthenticated = Boolean(userContext?.isAuthenticated)
+    }
+
+    const nextPayload: MetaEventInput = {
       ...overrides,
       eventName: 'PageView',
-      eventSourceUrl,
-    })
+      eventSourceUrl: derivedEventSourceUrl,
+      customData,
+    }
+
+    const userData = buildUserData(overrides?.userData)
+    if (userData) {
+      nextPayload.userData = userData
+    }
+
+    return trackEvent(nextPayload)
   }
 
 export { FALLBACK_ORIGIN }

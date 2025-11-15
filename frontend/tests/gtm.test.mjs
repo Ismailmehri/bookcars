@@ -11,6 +11,13 @@ const nodeModulesDist = path.join(distRoot, 'node_modules')
 
 const loadModule = async (filePath) => import(pathToFileURL(filePath))
 
+const createStorageStub = () => ({
+  getItem: () => null,
+  setItem: () => undefined,
+  removeItem: () => undefined,
+  clear: () => undefined,
+})
+
 globalThis.__TEST_IMPORT_META_ENV = {}
 
 const envModule = await loadModule(path.join(configDist, 'env.config.js'))
@@ -37,6 +44,7 @@ beforeEach(() => {
   env.GOOGLE_ANALYTICS_ENABLED = true
   env.STRIPE_CURRENCY_CODE = originalStripeCurrency
   env.CURRENCY = originalDisplayCurrency
+  globalThis.localStorage = createStorageStub()
 })
 
 afterEach(() => {
@@ -44,6 +52,7 @@ afterEach(() => {
   env.GOOGLE_ANALYTICS_ENABLED = originalGaEnabled
   env.STRIPE_CURRENCY_CODE = originalStripeCurrency
   env.CURRENCY = originalDisplayCurrency
+  delete globalThis.localStorage
 })
 
 test('getDefaultAnalyticsCurrency prefers Stripe currency when set', () => {

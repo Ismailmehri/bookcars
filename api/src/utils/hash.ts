@@ -117,4 +117,15 @@ export const sanitizeGender = (value?: string | null): string | undefined => {
   return undefined
 }
 
+export const hashName = (value?: string | null): string | undefined => {
+  if (!value) {
+    return undefined
+  }
+  const normalized = value.trim().toLowerCase()
+  if (!normalized) {
+    return undefined
+  }
+  return sha256(normalized)
+}
+
 export { sha256 }

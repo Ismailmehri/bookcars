@@ -38,7 +38,7 @@ const Review = lazy(() => import('@/pages/Review'))
 const App = () => (
   <GlobalProvider>
     <SuspenseRouter window={window}>
-      <MetaEventsProvider testEventCode={env.META_TEST_EVENT_CODE}>
+      <MetaEventsProvider autoTrackPageViews={false} testEventCode={env.META_TEST_EVENT_CODE}>
         <div className="app">
           <Suspense fallback={<></>}>
             <Routes>

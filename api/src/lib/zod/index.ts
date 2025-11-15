@@ -186,6 +186,15 @@ class NumberSchema extends BaseSchema<number> {
   }
 }
 
+class BooleanSchema extends BaseSchema<boolean> {
+  parse(input: unknown, path: ZodPath = []): boolean {
+    if (typeof input !== 'boolean') {
+      throw new ZodError([{ path, message: 'Expected boolean' }])
+    }
+    return input
+  }
+}
+
 class ArraySchema<T> extends BaseSchema<T[]> {
   private readonly element: Schema<T>
   private minLength?: number
@@ -275,6 +284,58 @@ class UnknownSchema extends BaseSchema<unknown> {
   }
 }
 
+class RecordSchema<Value> extends BaseSchema<Record<string, Value>> {
+  private readonly keySchema: Schema<string>
+
+  private readonly valueSchema: Schema<Value>
+
+  constructor(keySchema: Schema<string>, valueSchema: Schema<Value>) {
+    super()
+    this.keySchema = keySchema
+    this.valueSchema = valueSchema
+  }
+
+  parse(input: unknown, path: ZodPath = []): Record<string, Value> {
+    if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+      throw new ZodError([{ path, message: 'Expected object' }])
+    }
+    const result: Record<string, Value> = {}
+    for (const [rawKey, rawValue] of Object.entries(input as Record<string, unknown>)) {
+      const key = this.keySchema.parse(rawKey, [...path, rawKey])
+      result[key] = this.valueSchema.parse(rawValue, [...path, rawKey])
+    }
+    return result
+  }
+}
+
+type InferUnion<Options extends readonly Schema<any>[]> = Options[number] extends Schema<infer Output> ? Output : never
+
+class UnionSchema<Options extends readonly Schema<any>[]> extends BaseSchema<InferUnion<Options>> {
+  private readonly options: Options
+
+  constructor(options: Options) {
+    super()
+    this.options = options
+  }
+
+  parse(input: unknown, path: ZodPath = []): InferUnion<Options> {
+    const issues: ZodError[] = []
+    for (const schema of this.options) {
+      try {
+        return schema.parse(input, path) as InferUnion<Options>
+      } catch (error) {
+        if (error instanceof ZodError) {
+          issues.push(error)
+        }
+      }
+    }
+    if (issues.length > 0) {
+      throw issues[0]
+    }
+    throw new ZodError([{ path, message: 'No union branches matched' }])
+  }
+}
+
 export type Infer<TSchema extends Schema<unknown>> = TSchema extends Schema<infer Output> ? Output : never
 
 export const z = {
@@ -284,6 +345,9 @@ export const z = {
   enum: <Values extends readonly [string, ...string[]]>(values: Values) => new EnumSchema(values),
   object: <Shape extends Record<string, Schema<any>>>(shape: Shape) => new ObjectSchema(shape),
   unknown: () => new UnknownSchema(),
+  boolean: () => new BooleanSchema(),
+  record: <Value>(keySchema: Schema<string>, valueSchema: Schema<Value>) => new RecordSchema(keySchema, valueSchema),
+  union: <Options extends readonly [Schema<any>, Schema<any>, ...Schema<any>[]]>(options: Options) => new UnionSchema(options),
 }
 
 export type { Schema as ZodSchema }

@@ -49,8 +49,8 @@ const EVENT_NAME_MAP: Record<string, CanonicalEventName> = {
 }
 
 type MetaUserData = {
-  em?: string
-  ph?: string
+  em?: string[]
+  ph?: string[]
   zp?: string
   ct?: string
   st?: string
@@ -61,9 +61,9 @@ type MetaUserData = {
   client_user_agent?: string
   fbp?: string
   client_fbc?: string
-  fn?: string
-  ln?: string
-  external_id?: string
+  fn?: string[]
+  ln?: string[]
+  external_id?: string[]
 }
 
 type MetaEventData = {
@@ -118,6 +118,7 @@ type MetaContentItem = {
   id: string
   quantity?: number
   item_price?: number
+  price?: number
   title?: string
   category?: string
 }
@@ -167,6 +168,13 @@ const sanitizeStringArray = (values?: string[] | null): string[] | undefined => 
   return cleaned.length > 0 ? cleaned : undefined
 }
 
+const toMetaArray = (value?: string): string[] | undefined => {
+  if (!value) {
+    return undefined
+  }
+  return [value]
+}
+
 const toFiniteNumber = (value?: number): number | undefined => {
   if (typeof value !== 'number') {
     return undefined
@@ -213,6 +221,7 @@ const buildContents = (items?: CustomContentItem[]): MetaContentItem[] | undefin
       }
       if (price !== undefined) {
         metaItem.item_price = price
+        metaItem.price = price
       }
       const title = sanitizeString(item.title)
       if (title) {
@@ -291,22 +300,32 @@ const buildUserData = (payload?: MetaEventPayload['userData']): MetaUserData => 
     return {}
   }
   const country = sanitizeCountry(payload.country)
+  const emailHash = hashEmail(payload.email)
+  const phoneHash = hashPhone(payload.phone, country)
+  const zip = sanitizeString(payload.zip)
+  const city = sanitizeString(payload.city)
+  const state = sanitizeString(payload.state)
+  const gender = sanitizeGender(payload.gender)
+  const dob = formatDob(payload.dob)
+  const firstNameHash = hashName(payload.firstName)
+  const lastNameHash = hashName(payload.lastName)
+  const externalId = sanitizeString(payload.externalId)
   const userData: MetaUserData = {
-    em: hashEmail(payload.email),
-    ph: hashPhone(payload.phone, country),
-    zp: sanitizeString(payload.zip),
-    ct: sanitizeString(payload.city),
-    st: sanitizeString(payload.state),
+    em: toMetaArray(emailHash),
+    ph: toMetaArray(phoneHash),
+    zp: zip,
+    ct: city,
+    st: state,
     country,
-    ge: sanitizeGender(payload.gender),
-    db: formatDob(payload.dob),
+    ge: gender,
+    db: dob,
     client_ip_address: sanitizeString(payload.ip),
     client_user_agent: sanitizeString(payload.userAgent),
     fbp: sanitizeString(payload.fbp),
     client_fbc: sanitizeString(payload.fbc),
-    fn: hashName(payload.firstName),
-    ln: hashName(payload.lastName),
-    external_id: sanitizeString(payload.externalId),
+    fn: toMetaArray(firstNameHash),
+    ln: toMetaArray(lastNameHash),
+    external_id: toMetaArray(externalId),
   }
   return removeEmpty(userData)
 }

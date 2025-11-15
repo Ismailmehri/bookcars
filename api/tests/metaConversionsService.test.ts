@@ -80,7 +80,14 @@ describe('Meta Conversions service', () => {
     expect(event.custom_data?.value).toBe(150.13)
     expect(event.custom_data?.content_ids).toEqual(['car_1234'])
     expect(event.custom_data?.contents).toEqual([
-      expect.objectContaining({ id: 'car_1234', quantity: 2, item_price: 75.06, title: 'Economy', category: 'Car' }),
+      expect.objectContaining({
+        id: 'car_1234',
+        quantity: 2,
+        item_price: 75.06,
+        price: 75.06,
+        title: 'Economy',
+        category: 'Car',
+      }),
     ])
     expect(event.custom_data?.coupon).toBe('summer')
     expect(event.custom_data?.page_location).toBe('https://plany.tn/reservation/123')
@@ -88,11 +95,11 @@ describe('Meta Conversions service', () => {
     expect(event.custom_data?.transaction_id).toBe('txn-123')
     expect(event.custom_data?.order_id).toBe('order-99')
     expect(event.custom_data?.is_authenticated).toBe(true)
-    expect(event.user_data.em).toBe(hashEmail('Customer@Test.com '))
+    expect(event.user_data.em).toEqual([hashEmail('Customer@Test.com ')])
     expect(event.user_data.client_user_agent).toBe('Mozilla/5.0')
-    expect(event.user_data.fn).toBe(hashName('John'))
-    expect(event.user_data.ln).toBe(hashName('Doe'))
-    expect(event.user_data.external_id).toBe('user-42')
+    expect(event.user_data.fn).toEqual([hashName('John')])
+    expect(event.user_data.ln).toEqual([hashName('Doe')])
+    expect(event.user_data.external_id).toEqual(['user-42'])
     expect(event.user_data.client_fbc).toBe('fb.1.456')
     expect(event.attribution_data?.attribution_share).toBe('0.3')
     expect(event.attribution_data?.ad_id).toBe('AD123')

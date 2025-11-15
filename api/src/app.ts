@@ -22,9 +22,11 @@ import agencyVerificationRoutes from './routes/agencyVerificationRoutes'
 import commissionRoutes from './routes/commissionRoutes'
 import statsRoutes from './routes/statsRoutes'
 import insightRoutes from './routes/insightRoutes'
+import metaEventsRoute from './routes/metaEventsRoute'
 
 import * as helper from './common/helper'
 import { setClientId } from './middlewares/setClientId'
+import clientContext from './middlewares/clientContext'
 
 const app = express()
 
@@ -53,6 +55,7 @@ app.options('*', cors())
 app.use(cookieParser(env.COOKIE_SECRET))
 app.use(allowedMethods)
 app.use(setClientId)
+app.use(clientContext)
 
 app.use('/', supplierRoutes)
 app.use('/', bookingRoutes)
@@ -69,6 +72,7 @@ app.use('/', agencyVerificationRoutes)
 app.use('/', commissionRoutes)
 app.use('/', statsRoutes)
 app.use('/', insightRoutes)
+app.use('/', metaEventsRoute)
 
 i18n.locale = env.DEFAULT_LANGUAGE
 

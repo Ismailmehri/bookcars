@@ -51,18 +51,115 @@ await Promise.all([
   ensureCopiedFromFrontend('common/locationLinks.js'),
   ensureCopiedFromFrontend('common/locationPageRoutes.js'),
   ensureCopiedFromFrontend('common/supplier.js'),
+  ensureCopiedFromFrontend('context/metaEvents.helpers.js'),
+  ensureCopiedFromFrontend('services/MetaEventService.js'),
+  ensureCopiedFromFrontend('services/UserService.js'),
+  ensureCopiedFromFrontend('services/axiosInstance.js'),
 ])
 
 const envFile = path.join(distRoot, 'config/env.config.js')
 let envSource = await readFile(envFile, 'utf8')
 envSource = envSource.replace(/import\.meta\.env/g, 'globalThis.__TEST_IMPORT_META_ENV')
-envSource = envSource.replace(/'\.\/const';/g, "'./const.js';")
+envSource = envSource.replace(/(['"])\.\/const\1/g, '$1./const.js$1')
 await writeFile(envFile, envSource)
+
+const compiledEnvFile = path.join(frontendSrcRoot, 'config/env.config.js')
+try {
+  let compiledEnvSource = await readFile(compiledEnvFile, 'utf8')
+  let compiledUpdated = compiledEnvSource.replace(/import\.meta\.env/g, 'globalThis.__TEST_IMPORT_META_ENV')
+  compiledUpdated = compiledUpdated.replace(/(['"])\.\/const\1/g, '$1./const.js$1')
+  if (compiledUpdated !== compiledEnvSource) {
+    await writeFile(compiledEnvFile, compiledUpdated)
+  }
+} catch {}
 
 const gtmFilePath = path.join(distRoot, 'common/gtm.js')
 let gtmSource = await readFile(gtmFilePath, 'utf8')
-let gtmUpdated = gtmSource.replace(/from '\@\//g, "from '../")
-gtmUpdated = gtmUpdated.replace(/'\.\.\/config\/env\.config';/g, "'../config/env.config.js';")
+let gtmUpdated = gtmSource.replace(/@\/config\/env.config/g, '../config/env.config.js')
+gtmUpdated = gtmUpdated.replace(/@\/services\/MetaEventService/g, '../services/MetaEventService.js')
+gtmUpdated = gtmUpdated.replace(/@\/services\/UserService/g, '../services/UserService.js')
 if (gtmUpdated !== gtmSource) {
   await writeFile(gtmFilePath, gtmUpdated)
 }
+
+const serviceFilePath = path.join(distRoot, 'frontend/src/services/MetaEventService.js')
+try {
+  let serviceSource = await readFile(serviceFilePath, 'utf8')
+  let serviceUpdated = serviceSource.replace(/@\/services\/axiosInstance/g, './axiosInstance.js')
+  serviceUpdated = serviceUpdated.replace(/\.\/axiosInstance(?=['"])/g, './axiosInstance.js')
+  if (serviceUpdated !== serviceSource) {
+    await writeFile(serviceFilePath, serviceUpdated)
+  }
+} catch {}
+
+const compiledUserServicePath = path.join(frontendSrcRoot, 'services/UserService.js')
+try {
+  let compiledUserSource = await readFile(compiledUserServicePath, 'utf8')
+  let compiledUserUpdated = compiledUserSource.replace(/@\/services\/axiosInstance/g, './axiosInstance.js')
+  compiledUserUpdated = compiledUserUpdated.replace(/\.\/axiosInstance(?=['"])/g, './axiosInstance.js')
+  compiledUserUpdated = compiledUserUpdated.replace(/@\/config\/env.config/g, '../config/env.config.js')
+  if (compiledUserUpdated !== compiledUserSource) {
+    await writeFile(compiledUserServicePath, compiledUserUpdated)
+  }
+} catch {}
+
+const rootServiceFilePath = path.join(distRoot, 'services/MetaEventService.js')
+try {
+  let rootServiceSource = await readFile(rootServiceFilePath, 'utf8')
+  let rootServiceUpdated = rootServiceSource.replace(/@\/services\/axiosInstance/g, './axiosInstance.js')
+  rootServiceUpdated = rootServiceUpdated.replace(/\.\/axiosInstance(?=['"])/g, './axiosInstance.js')
+  rootServiceUpdated = rootServiceUpdated.replace(/@\/config\/env.config/g, '../config/env.config.js')
+  if (rootServiceUpdated !== rootServiceSource) {
+    await writeFile(rootServiceFilePath, rootServiceUpdated)
+  }
+} catch {}
+
+const rootUserServicePath = path.join(distRoot, 'services/UserService.js')
+try {
+  let rootUserSource = await readFile(rootUserServicePath, 'utf8')
+  let rootUserUpdated = rootUserSource.replace(/@\/services\/axiosInstance/g, './axiosInstance.js')
+  rootUserUpdated = rootUserUpdated.replace(/\.\/axiosInstance(?=['"])/g, './axiosInstance.js')
+  rootUserUpdated = rootUserUpdated.replace(/@\/config\/env.config/g, '../config/env.config.js')
+  if (rootUserUpdated !== rootUserSource) {
+    await writeFile(rootUserServicePath, rootUserUpdated)
+  }
+} catch {}
+
+const rootAxiosServicePath = path.join(distRoot, 'services/axiosInstance.js')
+try {
+  let rootAxiosSource = await readFile(rootAxiosServicePath, 'utf8')
+  const rootAxiosUpdated = rootAxiosSource.replace(/@\/config\/env.config/g, '../config/env.config.js')
+  if (rootAxiosUpdated !== rootAxiosSource) {
+    await writeFile(rootAxiosServicePath, rootAxiosUpdated)
+  }
+} catch {}
+
+const compiledGtmFilePath = path.join(frontendSrcRoot, 'common/gtm.js')
+try {
+  let compiledGtmSource = await readFile(compiledGtmFilePath, 'utf8')
+  let compiledGtmUpdated = compiledGtmSource.replace(/@\/config\/env.config/g, '../config/env.config.js')
+  compiledGtmUpdated = compiledGtmUpdated.replace(/@\/services\/MetaEventService/g, '../services/MetaEventService.js')
+  compiledGtmUpdated = compiledGtmUpdated.replace(/@\/services\/UserService/g, '../services/UserService.js')
+  if (compiledGtmUpdated !== compiledGtmSource) {
+    await writeFile(compiledGtmFilePath, compiledGtmUpdated)
+  }
+} catch {}
+
+const helpersFilePath = path.join(distRoot, 'frontend/src/context/metaEvents.helpers.js')
+try {
+  let helpersSource = await readFile(helpersFilePath, 'utf8')
+  let helpersUpdated = helpersSource.replace(/@\/services\/MetaEventService/g, '../services/MetaEventService.js')
+  helpersUpdated = helpersUpdated.replace(/@\/common\/gtm/g, '../common/gtm.js')
+  if (helpersUpdated !== helpersSource) {
+    await writeFile(helpersFilePath, helpersUpdated)
+  }
+} catch {}
+
+const axiosFilePath = path.join(distRoot, 'frontend/src/services/axiosInstance.js')
+try {
+  let axiosSource = await readFile(axiosFilePath, 'utf8')
+  const axiosUpdated = axiosSource.replace(/@\/config\/env.config/g, '../config/env.config.js')
+  if (axiosUpdated !== axiosSource) {
+    await writeFile(axiosFilePath, axiosUpdated)
+  }
+} catch {}

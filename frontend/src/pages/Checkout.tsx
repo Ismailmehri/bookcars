@@ -344,6 +344,19 @@ const Checkout = () => {
           const safePrice = Number.isFinite(finalPrice) && finalPrice > 0 ? finalPrice : 0
           const unitPrice = car.dailyPrice && car.dailyPrice > 0 ? car.dailyPrice : safePrice / rentalDays
 
+          const customerInfo = authenticated
+            ? {
+                email: user?.email ?? undefined,
+                phone: user?.phone ?? undefined,
+                firstName: user?.fullName ? user.fullName.split(' ')[0] : undefined,
+                lastName: user?.fullName && user.fullName.includes(' ')
+                  ? user.fullName.split(' ').slice(1).join(' ') || undefined
+                  : undefined,
+                city: user?.location ?? undefined,
+                externalId: user?._id ?? undefined,
+              }
+            : undefined
+
           sendPurchaseEvent({
             transactionId: _bookingId,
             value: safePrice,
@@ -358,6 +371,7 @@ const Checkout = () => {
               },
             ],
             contentType: car.range,
+            customer: customerInfo,
           })
           setVisible(false)
           setSuccess(true)

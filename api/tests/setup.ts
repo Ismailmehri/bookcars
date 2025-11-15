@@ -34,5 +34,8 @@ process.env.BC_SMS_API_URL = process.env.BC_SMS_API_URL || 'https://sms.test/api
 process.env.BC_SMS_SENDER = process.env.BC_SMS_SENDER || 'TEST'
 process.env.BC_INFO_EMAIL = process.env.BC_INFO_EMAIL || 'info@test'
 process.env.BC_SMS_ACTIVE = process.env.BC_SMS_ACTIVE || 'false'
+process.env.META_PIXEL_ID = process.env.META_PIXEL_ID || 'TEST_PIXEL_ID'
+process.env.META_PIXEL_TOKEN = process.env.META_PIXEL_TOKEN || 'TEST_PIXEL_TOKEN'
+process.env.META_API_VERSION = process.env.META_API_VERSION || 'v21.0'
 
 export {}

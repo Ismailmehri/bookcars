@@ -9,6 +9,7 @@ const babel = (api) => {
           // '@': './dist/src',
           ':bookcars-types': '../packages/bookcars-types',
           ':bookcars-helper': '../packages/bookcars-helper',
+          zod: '../lib/zod',
         },
       },
     ],

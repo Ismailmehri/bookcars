@@ -195,12 +195,51 @@ export const truncateText = (text: string, maxLength: number): string => {
   return `${text.substring(0, maxLength - 1).trimEnd()}…`
 }
 
+const normalizeRatingToFiveScale = (value?: number | string | null): number | null => {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  const numeric = typeof value === 'string' ? Number(value) : value
+
+  if (!Number.isFinite(numeric)) {
+    return null
+  }
+
+  const safeValue = Math.max(numeric as number, 0)
+  const normalized = safeValue > 5 ? safeValue / 20 : safeValue
+  const clamped = Math.min(Math.max(normalized, 0), 5)
+
+  return Math.round(clamped * 10) / 10
+}
+
+const buildReviewAuthor = (
+  fullAuthorName: string,
+  reviewType?: string,
+): { '@type': 'Person' | 'Organization'; name: string } => {
+  const trimmedName = fullAuthorName?.trim()
+  const fallbackName = reviewType === 'plany' ? 'Plany.tn' : 'Client Plany'
+  const resolvedName = trimmedName && trimmedName.length > 0 ? trimmedName : fallbackName
+
+  if (reviewType === 'plany') {
+    return {
+      '@type': 'Organization',
+      name: resolvedName,
+    }
+  }
+
+  return {
+    '@type': 'Person',
+    name: resolvedName,
+  }
+}
+
 export const buildSupplierStructuredData = (
   supplier: SupplierWithReviews,
 ): Record<string, unknown> => {
   const reviewCount = supplier.reviewCount ?? (Array.isArray(supplier.reviews) ? supplier.reviews.length : 0)
   const numericScore = typeof supplier.score === 'number' ? supplier.score : Number(supplier.score ?? 0)
-  const score = Number.isFinite(numericScore) ? numericScore : 0
+  const normalizedScore = normalizeRatingToFiveScale(numericScore)
   const url = supplier.slug ? `https://plany.tn/search/agence/${supplier.slug}` : undefined
   const reviews = getRecentReviews(supplier)
 
@@ -214,29 +253,40 @@ export const buildSupplierStructuredData = (
     structuredData.url = url
   }
 
-  if (reviewCount > 0) {
+  if (reviewCount > 0 && normalizedScore !== null) {
     structuredData.aggregateRating = {
       '@type': 'AggregateRating',
-      ratingValue: score,
+      ratingValue: normalizedScore,
       reviewCount,
       bestRating: 5,
-      worstRating: 1,
+      worstRating: 0,
     }
   }
 
   if (reviews.length > 0) {
-    structuredData.review = reviews.map((preview) => ({
-      '@type': 'Review',
-      author: preview.fullAuthorName,
-      reviewBody: preview.review.comments,
-      datePublished: new Date(parseDate(preview.review.createdAt) || Date.now()).toISOString(),
-      reviewRating: {
-        '@type': 'Rating',
-        ratingValue: preview.review.rating,
-        bestRating: 5,
-        worstRating: 1,
-      },
-    }))
+    structuredData.review = reviews.map((preview) => {
+      const normalizedReviewRating = normalizeRatingToFiveScale(preview.review.rating as number | string | null)
+      const reviewData: Record<string, unknown> = {
+        '@type': 'Review',
+        author: buildReviewAuthor(preview.fullAuthorName, preview.review.type),
+        datePublished: new Date(parseDate(preview.review.createdAt) || Date.now()).toISOString(),
+      }
+
+      if (preview.review.comments) {
+        reviewData.reviewBody = preview.review.comments
+      }
+
+      if (normalizedReviewRating !== null) {
+        reviewData.reviewRating = {
+          '@type': 'Rating',
+          ratingValue: normalizedReviewRating,
+          bestRating: 5,
+          worstRating: 0,
+        }
+      }
+
+      return reviewData
+    })
   }
 
   return structuredData

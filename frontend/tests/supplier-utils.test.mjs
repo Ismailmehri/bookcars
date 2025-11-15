@@ -105,7 +105,30 @@ test('buildSupplierStructuredData génère un schéma JSON-LD complet', () => {
   assert.equal(structured.url, 'https://plany.tn/search/agence/plany-cars')
   assert.equal(structured.aggregateRating.reviewCount, 3)
   assert.equal(structured.aggregateRating.ratingValue, 4.6)
+  assert.equal(structured.aggregateRating.worstRating, 0)
   assert.equal(structured.review.length, 2)
+  assert.equal(structured.review[0].author['@type'], 'Organization')
+  assert.equal(structured.review[1].author['@type'], 'Person')
+  assert.equal(structured.review[0].reviewRating.bestRating, 5)
+  assert.equal(structured.review[0].reviewRating.worstRating, 0)
+})
+
+test('buildSupplierStructuredData normalise les scores supérieurs à 5 sur une échelle 0-5', () => {
+  const supplier = createSupplier({
+    slug: 'score-eleve',
+    score: 96,
+    reviewCount: 4,
+    reviews: [
+      createReview({ _id: 'r5', user: 'u5', rating: 95, createdAt: '2024-04-01T08:00:00.000Z' }),
+      createReview({ _id: 'r6', user: 'u6', rating: 88, createdAt: '2024-04-02T08:00:00.000Z' }),
+    ],
+  })
+
+  const structured = buildSupplierStructuredData(supplier)
+
+  assert.equal(structured.aggregateRating.ratingValue, 4.8)
+  assert.equal(structured.review[0].reviewRating.ratingValue, 4.4)
+  assert.equal(structured.review[1].reviewRating.ratingValue, 4.8)
 })
 
 test('getReviewCount, getSortedReviews et getReviewAuthorName gèrent les cas limites', () => {

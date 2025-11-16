@@ -101,6 +101,7 @@ test('buildSupplierStructuredData génère un schéma JSON-LD complet', () => {
   const supplier = createSupplier({ slug: 'plany-cars', score: 4.6, reviewCount: 3 })
   const structured = buildSupplierStructuredData(supplier)
 
+  assert.equal(structured['@type'], 'Thing')
   assert.equal(structured.name, 'Agence Test')
   assert.equal(structured.url, 'https://plany.tn/search/agence/plany-cars')
   assert.equal(structured.aggregateRating.reviewCount, 3)

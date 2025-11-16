@@ -245,7 +245,7 @@ export const buildSupplierStructuredData = (
 
   const structuredData: Record<string, unknown> = {
     '@context': 'https://schema.org',
-    '@type': 'AutoRental',
+    '@type': 'Thing',
     name: supplier.fullName,
   }
 

@@ -46,7 +46,7 @@ const supplierListStructuredData = {
       '@type': 'ListItem',
       position: 1,
       item: {
-        '@type': 'Organization',
+        '@type': 'Thing',
         name: 'Agence de Location à Tunis',
         url: 'https://plany.tn/search?pickupLocation=675e8576f2a6e5a87913cfed&supplier=6788e4d2ffbf2c95bd897846',
         image: 'https://plany.tn/logo.png',
@@ -56,7 +56,7 @@ const supplierListStructuredData = {
       '@type': 'ListItem',
       position: 2,
       item: {
-        '@type': 'Organization',
+        '@type': 'Thing',
         name: 'Agence de Location à Sousse',
         url: 'https://plany.tn/search?pickupLocation=675e8b7ef2a6e5a87913d103&supplier=677bc1433a4d006a5d865660',
         image: 'https://plany.tn/logo.png',
@@ -66,7 +66,7 @@ const supplierListStructuredData = {
       '@type': 'ListItem',
       position: 3,
       item: {
-        '@type': 'Organization',
+        '@type': 'Thing',
         name: 'Agence de Location à Hammamet',
         url: 'https://plany.tn/search?pickupLocation=675e8689f2a6e5a87913d03c&supplier=6769b3d0f2a6e5a87913f29c',
         image: 'https://plany.tn/logo.png',

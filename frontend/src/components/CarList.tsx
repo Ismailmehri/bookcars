@@ -378,7 +378,7 @@ const CarList = ({
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   itemScope
-                                  itemType="https://schema.org/AutoRental"
+                                  itemType="https://schema.org/Thing"
                                 >
                                   <Avatar
                                     src={bookcarsHelper.joinURL(env.CDN_USERS, car.supplier.avatar)}

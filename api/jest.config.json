@@ -2,9 +2,7 @@
   "moduleNameMapper": {
     "^(\\.{1,2}/.*)\\.js$": "$1",
     "^:bookcars-types(.*)$": "<rootDir>/../packages/bookcars-types$1",
-    "^:bookcars-helper(.*)$": "<rootDir>/../packages/bookcars-helper$1",
-    "^zod$": "<rootDir>/src/lib/zod/index.ts",
-    "lib/zod$": "<rootDir>/src/lib/zod/index.ts"
+    "^:bookcars-helper(.*)$": "<rootDir>/../packages/bookcars-helper$1"
   },
   "testEnvironment": "node",
   "extensionsToTreatAsEsm": [

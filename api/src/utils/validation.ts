@@ -1,4 +1,4 @@
-import { z, ZodError, type Infer } from 'zod'
+import { z, ZodError, type Infer } from '../lib/zod'
 
 const userDataSchema = z.object({
   email: z.string().trim().email().optional(),

@@ -6,18 +6,6 @@ export interface AnalyticsContent {
   category?: string
 }
 
-export interface CommerceEventInput {
-  value: number
-  currency: string
-  items: AnalyticsContent[]
-  coupon?: string
-  contentType?: string
-}
-
-export interface PurchaseEventInput extends CommerceEventInput {
-  transactionId: string
-}
-
 export interface ViewContentEventInput {
   id: string
   name: string
@@ -49,6 +37,33 @@ export interface LeadEventInput {
   isAuthenticated?: boolean
   value?: number
   currency?: string
+  email?: string
+  phone?: string
+  firstName?: string
+  lastName?: string
+  city?: string
+}
+
+export interface AnalyticsCustomer {
+  email?: string
+  phone?: string
+  firstName?: string
+  lastName?: string
+  city?: string
+  externalId?: string
+}
+
+export interface CommerceEventInput {
+  value: number
+  currency: string
+  items: AnalyticsContent[]
+  coupon?: string
+  contentType?: string
+  customer?: AnalyticsCustomer
+}
+
+export interface PurchaseEventInput extends CommerceEventInput {
+  transactionId: string
 }
 
 export interface AnalyticsItem {

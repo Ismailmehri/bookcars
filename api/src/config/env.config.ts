@@ -211,6 +211,27 @@ export const SMTP_PASS = __env__('BC_SMTP_PASS', true)
 export const SMTP_FROM = __env__('BC_SMTP_FROM', true)
 
 /**
+ * Meta Pixel identifier used for Conversions API calls.
+ *
+ * @type {string}
+ */
+export const META_PIXEL_ID = __env__('META_PIXEL_ID', false, '')
+
+/**
+ * Meta Pixel access token used for Conversions API calls.
+ *
+ * @type {string}
+ */
+export const META_PIXEL_TOKEN = __env__('META_PIXEL_TOKEN', false, '')
+
+/**
+ * Meta Graph API version used for Conversions API calls.
+ *
+ * @type {string}
+ */
+export const META_API_VERSION = __env__('META_API_VERSION', false, 'v21.0')
+
+/**
  * Users' cdn folder path.
  *
  * @type {string}

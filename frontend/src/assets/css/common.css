@@ -10,6 +10,17 @@
   border: 1px solid #1976d2 !important;
 }
 
+.meta-event-announcement {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+}
+
 .btn-secondary:hover {
   background-color: #e3f2fd;
   color: #115293;

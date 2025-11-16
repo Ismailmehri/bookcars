@@ -164,8 +164,7 @@ const MAX_BACKOFF_MS = 15000
 let backoffBaseMs = BASE_BACKOFF_MS
 let backoffMaxMs = MAX_BACKOFF_MS
 
-const computeBackoffDelay = (attempt: number): number =>
-  Math.min(backoffMaxMs, backoffBaseMs * 2 ** (attempt - 1))
+const computeBackoffDelay = (attempt: number): number => Math.min(backoffMaxMs, backoffBaseMs * 2 ** (attempt - 1))
 
 type MetaRequestPayload = {
   data: MetaEventData[]
@@ -183,7 +182,11 @@ type QueuedEvent = {
 const retryQueue: QueuedEvent[] = []
 let processingQueue = false
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const delay = (ms: number) => new Promise<void>((resolve) => {
+  setTimeout(() => {
+    resolve()
+  }, ms)
+})
 
 const RETRYABLE_ERROR_CODES = new Set(['ECONNABORTED', 'ETIMEDOUT', 'EAI_AGAIN', 'ECONNRESET'])
 
@@ -205,10 +208,9 @@ const postToMeta = (
   endpoint: string,
   payload: MetaRequestPayload,
   accessToken: string,
-): Promise<AxiosResponse<MetaEventResponse>> =>
-  axios.post(endpoint, payload, {
-    params: { access_token: accessToken },
-  })
+): Promise<AxiosResponse<MetaEventResponse>> => axios.post(endpoint, payload, {
+  params: { access_token: accessToken },
+})
 
 const processQueue = async (): Promise<void> => {
   if (processingQueue) {
@@ -220,47 +222,53 @@ const processQueue = async (): Promise<void> => {
       const current = retryQueue[0]
       if (!current) {
         retryQueue.shift()
-        continue
-      }
-      const waitTime = computeBackoffDelay(current.attempt)
-      await delay(waitTime)
-      try {
-        const response = await postToMeta(current.endpoint, current.payload, current.accessToken)
-        logger.info(`[metaConversions] Retried ${current.canonicalName} succeeded`, {
-          attempt: current.attempt,
-          fbtrace_id: response.data?.fbtrace_id,
-        })
-        retryQueue.shift()
-      } catch (error) {
-        if (error instanceof AxiosError) {
-          const status = error.response?.status
-          const metaResponse = error.response?.data
-          if (shouldRetry(error) && current.attempt < MAX_QUEUE_ATTEMPTS) {
-            current.attempt += 1
-            logger.info(`[metaConversions] Retrying ${current.canonicalName} again`, {
-              attempt: current.attempt,
-              status,
-              message: error.message,
-            })
-            continue
-          }
-          logger.error(`[metaConversions] Dropping ${current.canonicalName} after retries`, {
+      } else {
+        const waitTime = computeBackoffDelay(current.attempt)
+        await delay(waitTime)
+        try {
+          const response = await postToMeta(current.endpoint, current.payload, current.accessToken)
+          logger.info(`[metaConversions] Retried ${current.canonicalName} succeeded`, {
             attempt: current.attempt,
-            status,
-            response: metaResponse,
-            message: error.message,
+            fbtrace_id: response.data?.fbtrace_id,
           })
-        } else {
-          logger.error(`[metaConversions] Dropping ${current.canonicalName} due to unexpected error`, error)
+          retryQueue.shift()
+        } catch (error) {
+          let shouldKeepQueued = false
+          if (error instanceof AxiosError) {
+            const status = error.response?.status
+            const metaResponse = error.response?.data
+            if (shouldRetry(error) && current.attempt < MAX_QUEUE_ATTEMPTS) {
+              current.attempt += 1
+              shouldKeepQueued = true
+              logger.info(`[metaConversions] Retrying ${current.canonicalName} again`, {
+                attempt: current.attempt,
+                status,
+                message: error.message,
+              })
+            } else {
+              logger.error(`[metaConversions] Dropping ${current.canonicalName} after retries`, {
+                attempt: current.attempt,
+                status,
+                response: metaResponse,
+                message: error.message,
+              })
+            }
+          } else {
+            logger.error(`[metaConversions] Dropping ${current.canonicalName} due to unexpected error`, error)
+          }
+          if (!shouldKeepQueued) {
+            retryQueue.shift()
+          }
         }
-        retryQueue.shift()
       }
     }
   } finally {
     processingQueue = false
     if (retryQueue.length > 0) {
       // In case new items were added while finishing, ensure processing resumes
-      void processQueue()
+      processQueue().catch((error) => {
+        logger.error('[metaConversions] Failed to resume retry queue', error)
+      })
     }
   }
 }
@@ -283,7 +291,9 @@ const enqueueForRetry = (item: QueuedEvent, error: AxiosError) => {
     response: error.response?.data,
     message: error.message,
   })
-  void processQueue()
+  processQueue().catch((queueError) => {
+    logger.error('[metaConversions] Failed to process retry queue', queueError)
+  })
 }
 
 const removeEmpty = <T extends Record<string, unknown>>(value: T): T => {

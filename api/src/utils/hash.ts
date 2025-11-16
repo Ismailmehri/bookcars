@@ -2,10 +2,7 @@ import crypto from 'node:crypto'
 
 const sha256 = (value: string): string => crypto.createHash('sha256').update(value, 'utf8').digest('hex')
 
-const removeDiacritics = (value: string): string =>
-  value
-    .normalize('NFKD')
-    .replace(/\p{Diacritic}/gu, '')
+const removeDiacritics = (value: string): string => value.normalize('NFKD').replace(/\p{Diacritic}/gu, '')
 
 const normalizeForHash = (value: string): string => {
   const trimmed = value.trim().toLowerCase()

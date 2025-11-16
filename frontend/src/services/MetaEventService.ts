@@ -41,6 +41,20 @@ export interface MetaEventUserData {
   externalId?: string
 }
 
+export interface MetaEventContent {
+  ids?: string[]
+  type?: string
+}
+
+export interface MetaEventCustomDataContentItem {
+  id: string
+  quantity?: number
+  price?: number
+  itemPrice?: number
+  title?: string
+  category?: string
+}
+
 export interface MetaEventCustomData {
   value?: number
   currency?: string
@@ -67,20 +81,6 @@ export interface MetaEventCustomData {
   subject?: string
   messageLength?: number
   isAuthenticated?: boolean
-}
-
-export interface MetaEventContent {
-  ids?: string[]
-  type?: string
-}
-
-export interface MetaEventCustomDataContentItem {
-  id: string
-  quantity?: number
-  price?: number
-  itemPrice?: number
-  title?: string
-  category?: string
 }
 
 export interface MetaEventAttributionData {
@@ -140,6 +140,24 @@ const DEFAULT_ACTION_SOURCE = 'website'
 const DEFAULT_ORIGIN = 'http://localhost'
 const EVENT_ID_PREFIX = 'plany'
 
+const sanitizeString = (value?: string | null): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
+
+const sanitizeStringArray = (items?: string[]): string[] | undefined => {
+  if (!items) {
+    return undefined
+  }
+  const cleaned = items
+    .map((item) => sanitizeString(item))
+    .filter((item): item is string => Boolean(item))
+  return cleaned.length > 0 ? cleaned : undefined
+}
+
 const sanitizeEventId = (value?: string | null): string | undefined => {
   const sanitized = sanitizeString(value)?.replace(/\s+/g, '')
   return sanitized || undefined
@@ -185,24 +203,6 @@ export const getWindowLocationHref = (): string | undefined => {
     return window.location.href
   }
   return undefined
-}
-
-const sanitizeString = (value?: string | null): string | undefined => {
-  if (typeof value !== 'string') {
-    return undefined
-  }
-  const trimmed = value.trim()
-  return trimmed.length > 0 ? trimmed : undefined
-}
-
-const sanitizeStringArray = (items?: string[]): string[] | undefined => {
-  if (!items) {
-    return undefined
-  }
-  const cleaned = items
-    .map((item) => sanitizeString(item))
-    .filter((item): item is string => Boolean(item))
-  return cleaned.length > 0 ? cleaned : undefined
 }
 
 const removeEmpty = <T extends object>(value?: T): T | undefined => {

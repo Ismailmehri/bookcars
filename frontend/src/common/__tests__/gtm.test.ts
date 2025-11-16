@@ -46,12 +46,15 @@ const sendMetaEventMock = sendMetaEvent as unknown as vi.Mock
 const getCurrentUserMock = UserService.getCurrentUser as unknown as vi.Mock
 const getWindowHrefMock = getWindowLocationHref as unknown as vi.Mock
 
-const getLatestDataLayerPayload = () =>
-  (dataLayerMock.mock.calls[dataLayerMock.mock.calls.length - 1]?.[0] as { dataLayer?: Record<string, unknown> }) ||
-  undefined
+const getLatestDataLayerPayload = () => {
+  const { calls } = dataLayerMock.mock
+  return calls[calls.length - 1]?.[0] as { dataLayer?: Record<string, unknown> } | undefined
+}
 
-const getLatestMetaPayload = () =>
-  (sendMetaEventMock.mock.calls[sendMetaEventMock.mock.calls.length - 1]?.[0] as MetaEventInput) || undefined
+const getLatestMetaPayload = () => {
+  const { calls } = sendMetaEventMock.mock
+  return calls[calls.length - 1]?.[0] as MetaEventInput | undefined
+}
 
 beforeEach(() => {
   vi.clearAllMocks()

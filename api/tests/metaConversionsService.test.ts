@@ -244,7 +244,11 @@ describe('Meta Conversions service', () => {
 
     expect(__internal.isProcessing()).toBe(true)
 
-    await new Promise((resolve) => setTimeout(resolve, 20))
+    await new Promise<void>((resolve) => {
+      setTimeout(() => {
+        resolve()
+      }, 20)
+    })
 
     expect(spy).toHaveBeenCalledTimes(5)
     expect(__internal.isProcessing()).toBe(false)

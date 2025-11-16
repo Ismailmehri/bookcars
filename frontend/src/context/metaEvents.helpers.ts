@@ -106,10 +106,9 @@ export const createTrackPageViewHandler = ({
     const baseHref = resolveHref()
     const derivedEventSourceUrl = resolveEventSourceUrl(overrides?.eventSourceUrl ?? baseHref) ?? baseHref
     const userContext = getUserContext()
-    const documentTitle =
-      typeof document !== 'undefined' && typeof document.title === 'string'
-        ? document.title.trim()
-        : undefined
+    const documentTitle = typeof document !== 'undefined' && typeof document.title === 'string'
+      ? document.title.trim()
+      : undefined
 
     const customData: MetaEventInput['customData'] = { ...(overrides?.customData ?? {}) }
 

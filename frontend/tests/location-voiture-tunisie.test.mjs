@@ -14,6 +14,7 @@ const expectedTitle = 'Location voiture Tunisie | Comparateur d’agences | Plan
 test('LocationVoitureTunisie exports component and SEO data', () => {
   assert.equal(typeof pageModule.default, 'function')
   assert.ok(pageModule.locationVoitureTunisiePageData)
+  assert.ok(pageModule.locationVoitureTunisieSeo)
 
   const pageData = pageModule.locationVoitureTunisiePageData
   assert.equal(pageData.title, expectedTitle)
@@ -22,6 +23,16 @@ test('LocationVoitureTunisie exports component and SEO data', () => {
   assert(pageData.metaDescription.length > 50)
   assert(Array.isArray(pageData.faqItems))
   assert(pageData.faqItems.length >= 5)
+})
+
+test('LocationVoitureTunisie SEO props are computed from page data', () => {
+  const seo = pageModule.locationVoitureTunisieSeo
+
+  assert.equal(seo.title, expectedTitle)
+  assert.ok(seo.description.includes('Comparez les prix'))
+  assert.equal(seo.canonical, 'https://plany.tn/location-voiture-tunisie')
+  assert.ok(Array.isArray(seo.keywords))
+  assert.ok(seo.keywords.includes('location voiture Tunisie'))
 })
 
 test('LocationVoitureTunisie FAQ content includes key questions', () => {

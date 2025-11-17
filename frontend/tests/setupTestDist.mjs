@@ -194,6 +194,7 @@ try {
   const compiledLocationPageUpdated = compiledLocationPage
     .replace(/@\/components\//g, '../components/')
     .replace(/@\/common\//g, '../common/')
+    .replace("../components/Seo'", "../components/Seo.js'")
     .replace("../components/location/LocationLandingPage'", "../components/location/LocationLandingPage.js'")
     .replace("../common/seo'", "../common/seo.js'")
     .replace("./locationData_SEO'", "./locationData_SEO.js'")

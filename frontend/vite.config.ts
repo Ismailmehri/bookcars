@@ -34,12 +34,18 @@ export default ({ mode }: { mode: string }) => {
       },
       cssCodeSplit: true,
       sourcemap: mode !== 'production',
+      reportCompressedSize: false,
       rollupOptions: {
         output: {
-          manualChunks: {
-            react: ['react', 'react-dom'],
-            leaflet: ['leaflet', 'react-leaflet', 'leaflet-boundary-canvas'],
-            mui: ['@mui/material', '@mui/icons-material', '@mui/x-date-pickers', '@mui/x-data-grid', '@mui/joy'],
+          manualChunks: (id) => {
+            if (id.includes('node_modules')) {
+              if (id.includes('react')) return 'react'
+              if (id.includes('leaflet')) return 'leaflet'
+              if (id.includes('@mui')) return 'mui'
+              return 'vendor'
+            }
+
+            return undefined
           },
         },
       },

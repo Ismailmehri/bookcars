@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Button, Tooltip, Card, CardContent, Typography, Avatar, Rating
@@ -33,6 +33,7 @@ import { getDefaultAnalyticsCurrency, sendCheckoutEvent } from '@/common/gtm'
 import ProfileAlert from './ProfileAlert'
 import { buildSupplierLinkMessage, getSupplierProfilePath } from '@/common/supplier'
 import { buildCarListSectionClassName } from './car-list.utils'
+import { shouldVirtualizeList } from '@/common/virtualization'
 
 interface CarListProps {
   from?: Date
@@ -108,11 +109,14 @@ const CarList = ({
   const [days, setDays] = useState(0)
 
   useEffect(() => {
- setLanguage(UserService.getLanguage())
-}, [])
+    setLanguage(UserService.getLanguage())
+  }, [])
+
   useEffect(() => {
- if (from && to) setDays(bookcarsHelper.days(from, to))
-}, [from, to])
+    if (from && to) {
+      setDays(bookcarsHelper.days(from, to))
+    }
+  }, [from, to])
 
   useEffect(() => {
     if (env.PAGINATION_MODE === Const.PAGINATION_MODE.INFINITE_SCROLL || env.isMobile()) {
@@ -253,6 +257,10 @@ const CarList = ({
   const transformScore = (score?: number) => (!score || score < 0 || score > 100 ? 0 : Math.round(((score / 100) * 5) * 10) / 10)
 
   const isMobileLayout = env.isMobile()
+  const virtualizationEnabled = useMemo(
+    () => shouldVirtualizeList(rows.length, { isMobile: isMobileLayout, threshold: 12, maxDomNodes: 30 }),
+    [isMobileLayout, rows.length],
+  )
   const sectionClassName = buildCarListSectionClassName({ className, isMobile: isMobileLayout })
 
   return (
@@ -321,7 +329,7 @@ const CarList = ({
                     })
 
                     return (
-                      <div key={car._id} className="car-list-container">
+                      <div key={car._id} className={`car-list-container${virtualizationEnabled ? ' virtualized-item' : ''}`}>
                         <script type="application/ld+json">{JSON.stringify(productData)}</script>
 
                         {pickupLocationName && (

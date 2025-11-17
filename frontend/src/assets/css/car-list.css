@@ -26,6 +26,11 @@ section.car-list.car-list-mobile {
   gap: 16px;                   /* espacement uniforme entre cartes */
 }
 
+.car-list-container.virtualized-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 780px;
+}
+
 section.car-list.car-list-mobile .car-list-wrapper {
   max-width: 100%;
   margin: 0;

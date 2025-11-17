@@ -64,6 +64,7 @@ import DoorsList from '@/components/DoorsList'
 import FuelPolicyList from '@/components/FuelPolicyList'
 import CarRangeList from '@/components/CarRangeList'
 import MultimediaList from '@/components/MultimediaList'
+import generateDefaultPricePeriods from '@/utils/defaultPricePeriods'
 
 import '@/assets/css/create-car.css'
 import { Discount } from ':bookcars-types'
@@ -300,21 +301,20 @@ const CreateCar = () => {
   const handleApplyDefaultPeriods = () => {
     const base = Number(dailyPrice)
     if (Number.isNaN(base)) {
- setPricePeriods([]); return
-}
+      setPricePeriods([])
+      return
+    }
 
-    const year = new Date().getFullYear()
-    const defaults: PricePeriod[] = [
-      { startDate: new Date(year, 0, 2), endDate: new Date(year, 2, 15), dailyPrice: base },
-      { startDate: new Date(year, 2, 16), endDate: new Date(year, 2, 25), dailyPrice: base + 50, reason: strings.EID_AL_FITR },
-      { startDate: new Date(year, 2, 26), endDate: new Date(year, 4, 20), dailyPrice: base },
-      { startDate: new Date(year, 4, 21), endDate: new Date(year, 4, 31), dailyPrice: base + 50, reason: strings.EID_AL_ADHA },
-      { startDate: new Date(year, 5, 1), endDate: new Date(year, 5, 30), dailyPrice: base + 50, reason: strings.SUMMER },
-      { startDate: new Date(year, 6, 1), endDate: new Date(year, 7, 31), dailyPrice: base + 80, reason: strings.SUMMER },
-      { startDate: new Date(year, 8, 1), endDate: new Date(year, 8, 30), dailyPrice: base + 50 },
-      { startDate: new Date(year, 9, 1), endDate: new Date(year, 11, 15), dailyPrice: base },
-      { startDate: new Date(year, 11, 15), endDate: new Date(year + 1, 0, 1), dailyPrice: base + 50, reason: strings.YEAR_END },
-    ]
+    const defaults = generateDefaultPricePeriods({
+      basePrice: base,
+      reasons: {
+        EID_AL_FITR: strings.EID_AL_FITR,
+        EID_AL_ADHA: strings.EID_AL_ADHA,
+        SUMMER: strings.SUMMER,
+        YEAR_END: strings.YEAR_END,
+      },
+    })
+
     setPricePeriods(defaults)
   }
 

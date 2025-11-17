@@ -64,7 +64,7 @@ const ZoomControlledLayer = ({ zoom, minZoom, children }: ZoomControlledLayerPro
   return null
 }
 
-interface MapProps {
+export interface MapProps {
   title?: string
   description?: string
   position?: LatLngExpression

@@ -32,6 +32,17 @@ export default ({ mode }: { mode: string }) => {
       modulePreload: {
         polyfill: true,
       },
+      cssCodeSplit: true,
+      sourcemap: mode !== 'production',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            react: ['react', 'react-dom'],
+            leaflet: ['leaflet', 'react-leaflet', 'leaflet-boundary-canvas'],
+            mui: ['@mui/material', '@mui/icons-material', '@mui/x-date-pickers', '@mui/x-data-grid', '@mui/joy'],
+          },
+        },
+      },
     },
   })
 }

@@ -14,6 +14,7 @@
     "src/common/pricing.ts",
     "src/common/locationLinks.ts",
     "src/common/locationPageRoutes.ts",
+    "src/common/visibility.ts",
     "src/common/supplier.ts",
     "src/context/MetaEventsContext.tsx",
     "src/context/metaEvents.helpers.ts",

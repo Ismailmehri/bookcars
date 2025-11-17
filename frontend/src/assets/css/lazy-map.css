@@ -1,0 +1,27 @@
+.lazy-map-wrapper {
+  width: 100%;
+}
+
+.map-skeleton {
+  width: 100%;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #f3f3f3 0%, #f8f8f8 50%, #f3f3f3 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (min-width: 769px) {
+  .map-skeleton {
+    min-height: 750px;
+  }
+}

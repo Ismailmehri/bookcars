@@ -89,6 +89,33 @@ try {
   }
 } catch {}
 
+const compiledLocationComponentPath = path.join(frontendSrcRoot, 'components/location/LocationLandingPage.js')
+try {
+  let compiledLocationComponent = await readFile(compiledLocationComponentPath, 'utf8')
+  const compiledLocationComponentUpdated = compiledLocationComponent
+    .replace(/@\/components\//g, '../')
+    .replace(/@\/common\//g, '../../common/')
+    .replace(/@\/services\//g, '../../services/')
+    .replace(/@\/assets\//g, '../../assets/')
+    .replace("../Layout'", "../Layout.js'")
+    .replace("../Footer'", "../Footer.js'")
+    .replace("../Seo'", "../Seo.js'")
+    .replace("../SearchForm'", "../SearchForm.js'")
+    .replace("../Map'", "../Map.js'")
+    .replace("../HowItWorks'", "../HowItWorks.js'")
+    .replace("../SupplierCarrousel'", "../SupplierCarrousel.js'")
+    .replace("../RentalAgencySection'", "../RentalAgencySection.js'")
+    .replace("../location/utils'", "../location/utils.js'")
+    .replace("../location/schema'", "../location/schema.js'")
+    .replace("../../services/SupplierService'", "../../services/SupplierService.js'")
+    .replace("import MiniImage from '../../assets/img/mini.png';", "const MiniImage = '/assets/img/mini.png';")
+    .replace("import MidiImage from '../../assets/img/midi.png';", "const MidiImage = '/assets/img/midi.png';")
+    .replace("import MaxiImage from '../../assets/img/maxi.png';", "const MaxiImage = '/assets/img/maxi.png';")
+  if (compiledLocationComponentUpdated !== compiledLocationComponent) {
+    await writeFile(compiledLocationComponentPath, compiledLocationComponentUpdated)
+  }
+} catch {}
+
 const gtmFilePath = path.join(distRoot, 'common/gtm.js')
 let gtmSource = await readFile(gtmFilePath, 'utf8')
 let gtmUpdated = gtmSource.replace(/@\/config\/env.config/g, '../config/env.config.js')
@@ -166,7 +193,10 @@ try {
   let compiledLocationPage = await readFile(compiledLocationPagePath, 'utf8')
   const compiledLocationPageUpdated = compiledLocationPage
     .replace(/@\/components\//g, '../components/')
-    .replace(/\.\.\/components\/(\w+)/g, '../components/$1.js')
+    .replace(/@\/common\//g, '../common/')
+    .replace("../components/location/LocationLandingPage'", "../components/location/LocationLandingPage.js'")
+    .replace("../common/seo'", "../common/seo.js'")
+    .replace("./locationData_SEO'", "./locationData_SEO.js'")
   if (compiledLocationPageUpdated !== compiledLocationPage) {
     await writeFile(compiledLocationPagePath, compiledLocationPageUpdated)
   }

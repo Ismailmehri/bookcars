@@ -11,22 +11,28 @@ const pageModule = await import(pathToFileURL(pagePath))
 
 const expectedTitle = 'Location voiture Tunisie | Comparateur d’agences | Plany.tn'
 
-test('LocationVoitureTunisie exports metadata and component', () => {
+test('LocationVoitureTunisie exports component and SEO data', () => {
   assert.equal(typeof pageModule.default, 'function')
-  assert.equal(pageModule.metaConfig.title, expectedTitle)
-  assert.equal(pageModule.metaConfig.canonical, 'https://plany.tn/location-voiture-tunisie')
-  assert.equal(typeof pageModule.metaConfig.description, 'string')
-  assert(pageModule.metaConfig.description.length > 50)
+  assert.ok(pageModule.locationVoitureTunisiePageData)
+
+  const pageData = pageModule.locationVoitureTunisiePageData
+  assert.equal(pageData.title, expectedTitle)
+  assert.equal(pageData.slug, '/location-voiture-tunisie')
+  assert.equal(typeof pageData.metaDescription, 'string')
+  assert(pageData.metaDescription.length > 50)
+  assert(Array.isArray(pageData.faqItems))
+  assert(pageData.faqItems.length >= 5)
 })
 
-test('LocationVoitureTunisie FAQ schema mirrors declared questions', () => {
-  assert(Array.isArray(pageModule.locationVoitureTunisieFaqs))
-  assert(pageModule.locationVoitureTunisieFaqs.length >= 5)
+test('LocationVoitureTunisie FAQ content includes key questions', () => {
+  const pageData = pageModule.locationVoitureTunisiePageData
+  const faqQuestions = pageData.faqItems.map((faq) => faq.question)
 
-  const faqQuestions = pageModule.locationVoitureTunisieFaqs.map((faq) => faq.question)
   assert(faqQuestions.includes('Faut-il une carte de crédit pour louer une voiture en Tunisie ?'))
   assert(faqQuestions.includes('Est-ce que la location inclut une assurance ?'))
 
-  const schemaQuestions = pageModule.faqJsonLd.mainEntity.map((entry) => entry.name)
-  assert.deepEqual(schemaQuestions.sort(), faqQuestions.sort())
+  const hasOneWayQuestion = faqQuestions.includes(
+    'Puis-je récupérer la voiture à l’aéroport et la rendre dans une autre ville ?',
+  )
+  assert.ok(hasOneWayQuestion)
 })

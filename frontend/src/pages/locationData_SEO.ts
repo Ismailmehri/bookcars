@@ -181,6 +181,151 @@ const locationDataSEO: Record<string, LocationSeoData> = {}
 
 export default locationDataSEO
 
+locationDataSEO.tunisie = {
+  city: 'Tunisie',
+  slug: '/location-voiture-tunisie',
+  title: 'Location voiture Tunisie | Comparateur d’agences | Plany.tn',
+  metaDescription:
+    'Comparez les prix de plusieurs agences de location voiture en Tunisie : véhicules récents, réservation en ligne, paiement directement sur place avec livraison aéroport ou hôtel.',
+  seoKeywords: {
+    principal: [
+      'location voiture Tunisie',
+      'location de voiture en Tunisie',
+      'location voiture pas cher Tunisie',
+    ],
+    secondaires: [
+      'louer une voiture en Tunisie',
+      'location voiture Tunisie aéroport',
+      'location voiture Tunisie sans carte de crédit',
+    ],
+    semantiques: [
+      ...commonKeywords,
+      'location voiture Tunisie Djerba',
+      'location voiture Tunisie Tunis',
+      'location voiture Tunisie Sousse',
+    ],
+  },
+  hero: heroFactory(
+    'Location voiture Tunisie : comparez les agences et réservez en ligne',
+    'Plany.tn compare les offres des loueurs tunisiens pour des vacances, un roadtrip ou un déplacement professionnel.',
+    [
+      'Choisissez votre ville, comparez les prix et les assurances, puis réservez sans prépaiement. Les agences locales vous livrent à l’aéroport, à l’hôtel ou en centre-ville.',
+      'Nos partenaires couvrent tout le pays : Tunis, Sousse, Sfax, Djerba, Monastir, Nabeul, Hammamet et bien plus. Les véhicules sont récents, climatisés et entretenus.',
+      'La plateforme met en avant le paiement sur place et la flexibilité : modification ou annulation simple en contact direct avec l’agence.',
+    ],
+  ),
+  advantages: [
+    {
+      icon: 'price',
+      title: 'Comparateur national',
+      description:
+        'Accédez en un clic aux meilleures agences de location voiture en Tunisie, avec des prix transparents et des conditions lisibles pour chaque offre.',
+    },
+    {
+      icon: 'car',
+      title: 'Flotte récente et variée',
+      description:
+        'Citadines pour les grandes villes, SUV et 4x4 pour explorer le Sud, monospaces pour les familles : chaque fiche détaille le kilométrage, la motorisation et les options.',
+    },
+    {
+      icon: 'support',
+      title: 'Paiement à la livraison',
+      description:
+        'Réservez en ligne sans carte bancaire obligatoire : vous réglez directement auprès de l’agence, en espèces ou selon les moyens proposés par le loueur.',
+    },
+    {
+      icon: 'experience',
+      title: 'Support Plany 7j/7',
+      description:
+        'Une équipe locale vous accompagne pour modifier vos horaires, ajouter des conducteurs ou clarifier les assurances avant votre départ.',
+    },
+  ],
+  nearbyDestinations: nearbyFactory('la Tunisie', [
+    {
+      name: 'Tunis & Carthage',
+      image: '/location-voiture-tunis-carthage.webp',
+      imageAlt: 'Location voiture Tunis Carthage avec Plany.tn',
+      link: '/location-voiture-pas-cher-a-tunis',
+      description: 'Découvrir la médina, Sidi Bou Saïd et le site de Carthage.',
+    },
+    {
+      name: 'Sousse & Monastir',
+      image: '/location-voiture-sousse-monastir.webp',
+      imageAlt: 'Location voiture Sousse Monastir avec Plany.tn',
+      link: '/location-voiture-pas-cher-a-sousse',
+      description: 'Port El Kantaoui, plages du Sahel et aéroport Monastir.',
+    },
+    {
+      name: 'Djerba & Sud tunisien',
+      image: '/location-voiture-djerba-sud.webp',
+      imageAlt: 'Location voiture Djerba et Sud tunisien avec Plany.tn',
+      link: '/location-voiture-pas-cher-a-djerba',
+      description: 'Plages, ksour et excursions vers Tataouine ou Douz.',
+    },
+  ]),
+  nearbyIntro:
+    'Depuis Tunis, Sousse, Djerba, Sfax ou Hammamet, louez une voiture et rejoignez facilement les aéroports, les stations balnéaires et les sites culturels tunisiens.',
+  vehicleIntro:
+    'Pour une location voiture pas cher Tunisie, privilégiez les citadines en ville, les berlines pour les trajets interurbains et les SUV pour les routes du Sud ou les régions montagneuses.',
+  vehicleCategories: createVehicleCategories('la Tunisie', 55),
+  map: mapConfig([34.0, 10.0], 'Les agences partenaires couvrent l’ensemble des grandes villes et aéroports tunisiens.'),
+  stats: statsFactory('Tunisie', '120+', '85k', '4.8/5', '250'),
+  statsIntro:
+    'Des milliers de conducteurs utilisent Plany.tn chaque année pour comparer les agences de location voiture en Tunisie et choisir l’assurance adaptée.',
+  faqItems: [
+    {
+      question: 'Faut-il une carte de crédit pour louer une voiture en Tunisie ?',
+      answer:
+        'Beaucoup d’agences partenaires permettent de réserver sans carte de crédit. Certaines demandent une carte pour la caution, mais des offres acceptent aussi les dépôts en espèces ou via carte de débit locale.',
+    },
+    {
+      question: 'Puis-je payer en espèces à l’agence de location ?',
+      answer:
+        'Oui. La réservation se fait en ligne sans prépaiement, puis vous payez directement à l’agence ou lors de la livraison. Les moyens de paiement acceptés sont précisés sur chaque offre.',
+    },
+    {
+      question: 'La caution est-elle bloquée sur la carte ou déposée en cash ?',
+      answer:
+        'La plupart des loueurs bloquent une préautorisation, mais certaines offres autorisent un dépôt en espèces. Consultez le montant et vérifiez les options d’assurance pour réduire ou supprimer la franchise.',
+    },
+    {
+      question: 'Quels documents sont nécessaires pour louer une voiture en Tunisie ?',
+      answer:
+        'Un permis de conduire valide (souvent avec 1 à 2 ans d’expérience), une pièce d’identité ou un passeport et votre confirmation Plany suffisent généralement. Ajoutez les documents des conducteurs additionnels si besoin.',
+    },
+    {
+      question: 'Est-ce que la location inclut une assurance ?',
+      answer:
+        'Les offres indiquent l’assurance incluse (tiers, tous risques) et les options complémentaires comme le rachat de franchise. Comparez les niveaux de couverture selon votre itinéraire.',
+    },
+    {
+      question: 'Puis-je récupérer la voiture à l’aéroport et la rendre dans une autre ville ?',
+      answer:
+        'Oui. Les livraisons à Tunis-Carthage, Enfidha, Monastir ou Djerba sont fréquentes. Plusieurs agences proposent le one-way avec des frais affichés à l’avance.',
+    },
+  ],
+  faqIntro: faqIntroFactory('la Tunisie'),
+  internalLinks: [
+    '/location-voiture-pas-cher-a-tunis',
+    '/location-voiture-pas-cher-a-sousse',
+    '/location-voiture-pas-cher-a-djerba',
+    '/location-voiture-pas-cher-a-monastir',
+    '/location-voiture-pas-cher-a-sfax',
+  ],
+  blogUrl,
+  cta: ctaFactory('la Tunisie'),
+  crosslinkIntro:
+    'Envie de comparer d’autres destinations tunisiennes avant de réserver ? Sélectionnez une ville pour filtrer les agences locales.',
+  jsonLd: createJsonLd(
+    'la Tunisie',
+    '/location-voiture-tunisie',
+    'Comparez les prix de plusieurs agences de location voiture en Tunisie : véhicules récents, réservation en ligne, paiement directement sur place avec livraison aéroport ou hôtel.',
+    34.0,
+    10.0,
+  ),
+  seoNote,
+}
+
 locationDataSEO.tunis = {
   city: 'Tunis',
   slug: '/location-voiture-pas-cher-a-tunis',

@@ -40,8 +40,24 @@ await Promise.all([
     "export default {\n  initialize: () => {},\n  dataLayer: () => {},\n}\n",
   ),
   ensureFile(
+    path.join(distRoot, 'node_modules/@/components/Layout.js'),
+    "export default function Layout({ children }) { return children ?? null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/SearchForm.js'),
+    "export default function SearchForm() { return null }\n",
+  ),
+  ensureFile(
     path.join(distRoot, 'node_modules/:bookcars-types/index.js'),
     "export const AppType = {\n  Frontend: 'frontend',\n  Backend: 'backend',\n}\n",
+  ),
+  ensureFile(
+    path.join(frontendSrcRoot, 'components/Layout.js'),
+    "export default function Layout({ children }) { return children ?? null }\n",
+  ),
+  ensureFile(
+    path.join(frontendSrcRoot, 'components/SearchForm.js'),
+    "export default function SearchForm() { return null }\n",
   ),
   ensureCopiedFromFrontend('config/env.config.js'),
   ensureCopiedFromFrontend('config/const.js'),
@@ -142,6 +158,17 @@ try {
   compiledGtmUpdated = compiledGtmUpdated.replace(/@\/services\/UserService/g, '../services/UserService.js')
   if (compiledGtmUpdated !== compiledGtmSource) {
     await writeFile(compiledGtmFilePath, compiledGtmUpdated)
+  }
+} catch {}
+
+const compiledLocationPagePath = path.join(frontendSrcRoot, 'pages/LocationVoitureTunisie.js')
+try {
+  let compiledLocationPage = await readFile(compiledLocationPagePath, 'utf8')
+  const compiledLocationPageUpdated = compiledLocationPage
+    .replace(/@\/components\//g, '../components/')
+    .replace(/\.\.\/components\/(\w+)/g, '../components/$1.js')
+  if (compiledLocationPageUpdated !== compiledLocationPage) {
+    await writeFile(compiledLocationPagePath, compiledLocationPageUpdated)
   }
 } catch {}
 

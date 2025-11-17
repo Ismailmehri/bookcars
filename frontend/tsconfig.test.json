@@ -15,6 +15,7 @@
     "src/common/locationLinks.ts",
     "src/common/locationPageRoutes.ts",
     "src/common/supplier.ts",
+    "src/pages/LocationVoitureTunisie.tsx",
     "src/context/MetaEventsContext.tsx",
     "src/context/metaEvents.helpers.ts",
     "src/components/car-list.utils.ts",

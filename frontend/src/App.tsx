@@ -33,6 +33,7 @@ const NoMatch = lazy(() => import('@/pages/NoMatch'))
 const Locations = lazy(() => import('@/pages/Locations'))
 const Suppliers = lazy(() => import('@/pages/Suppliers'))
 const LocationVoitureTunisiePrixDinars = lazy(() => import('@/pages/LocationVoitureTunisiePrixDinars'))
+const LocationVoitureTunisie = lazy(() => import('@/pages/LocationVoitureTunisie'))
 const Review = lazy(() => import('@/pages/Review'))
 
 const App = () => (
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="/locations" element={<Locations />} />
               <Route path="/suppliers" element={<Suppliers />} />
               <Route path="/review" element={<Review />} />
+              <Route path="/location-voiture-tunisie" element={<LocationVoitureTunisie />} />
               {lazyLocationPages.map(({ path, Component }) => (
                 <Route key={path} path={path} element={<Component />} />
               ))}

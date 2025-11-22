@@ -1,4 +1,3 @@
-import TagManager from 'react-gtm-module'
 import env from '@/config/env.config'
 import {
   AnalyticsCommercePayload,
@@ -23,9 +22,24 @@ import {
 } from '@/services/MetaEventService'
 import * as UserService from '@/services/UserService'
 
+type TagManagerModule = {
+  initialize: (config: { gtmId: string }) => void
+  dataLayer: (params: { dataLayer: Record<string, unknown> }) => void
+}
+
 const getTrackingId = () => env.GOOGLE_ANALYTICS_ID?.trim()
 
 const isAnalyticsEnabled = () => Boolean(env.GOOGLE_ANALYTICS_ENABLED && getTrackingId())
+
+let tagManagerPromise: Promise<TagManagerModule> | null = null
+
+const loadTagManager = () => {
+  if (!tagManagerPromise) {
+    tagManagerPromise = import('react-gtm-module').then((module) => (module as { default?: TagManagerModule }).default ?? module as TagManagerModule)
+  }
+
+  return tagManagerPromise
+}
 
 const FALLBACK_ANALYTICS_CURRENCY = 'USD'
 
@@ -217,7 +231,7 @@ export const initGTM = () => {
   const trackingId = getTrackingId()
 
   if (isAnalyticsEnabled()) {
-    const loadManager = () => TagManager.initialize({ gtmId: trackingId })
+    const loadManager = () => loadTagManager().then((tagManager) => tagManager.initialize({ gtmId: trackingId }))
 
     if ('requestIdleCallback' in window) {
       window.requestIdleCallback(() => loadManager())
@@ -230,12 +244,13 @@ export const initGTM = () => {
 }
 
 // Fonction générique pour envoyer des événements
-export const pushEvent = (eventName: string, eventData: Record<string, unknown>) => {
+export const pushEvent = async (eventName: string, eventData: Record<string, unknown>) => {
   if (!isAnalyticsEnabled()) {
     return
   }
 
-  TagManager.dataLayer({
+  const tagManager = await loadTagManager()
+  tagManager.dataLayer({
     dataLayer: {
       event: eventName,
       ...eventData,
@@ -257,7 +272,7 @@ export const sendPageviewEvent = (pageUrl: string, pageTitle: string) => {
     page_title: data.pageTitle,
   }
 
-  pushEvent('PageView', {
+  return pushEvent('PageView', {
     ...payload,
     page_url: data.pageUrl,
     event_id: eventId,
@@ -282,7 +297,7 @@ export const sendPageviewEvent = (pageUrl: string, pageTitle: string) => {
   sendMeta(metaPayload)
 }
 
-const pushCommerceEvent = (
+const pushCommerceEvent = async (
   eventName: 'InitiateCheckout' | 'Purchase' | 'ViewContent',
   payload: AnalyticsCommercePayload,
   items: AnalyticsContent[],
@@ -294,11 +309,11 @@ const pushCommerceEvent = (
     event_id: eventId,
   }
 
-  pushEvent(eventName, dataLayerPayload)
+  return pushEvent(eventName, dataLayerPayload)
 }
 
 // Événement InitiateCheckout (Pixel Facebook: `InitiateCheckout`)
-export const sendCheckoutEvent = (input: CommerceEventInput) => {
+export const sendCheckoutEvent = async (input: CommerceEventInput) => {
   const payload = createCommercePayload(input, 'product')
 
   if (!payload) {
@@ -307,7 +322,7 @@ export const sendCheckoutEvent = (input: CommerceEventInput) => {
 
   const eventId = generateEventId()
 
-  pushCommerceEvent('InitiateCheckout', payload, input.items, eventId)
+  const eventPromise = pushCommerceEvent('InitiateCheckout', payload, input.items, eventId)
 
   const { isAuthenticated } = getCurrentUserContext()
   const contents = mapItemsToMetaContents(input.items)
@@ -340,10 +355,12 @@ export const sendCheckoutEvent = (input: CommerceEventInput) => {
   }
 
   sendMeta(metaPayload)
+
+  return eventPromise
 }
 
 // Événement Purchase (Pixel Facebook: `Purchase`)
-export const sendPurchaseEvent = (input: PurchaseEventInput) => {
+export const sendPurchaseEvent = async (input: PurchaseEventInput) => {
   const payload = createCommercePayload(input, 'product')
 
   if (!payload) {
@@ -357,7 +374,7 @@ export const sendPurchaseEvent = (input: PurchaseEventInput) => {
 
   const eventId = generateEventId()
 
-  pushCommerceEvent('Purchase', purchasePayload, input.items, eventId)
+  const eventPromise = pushCommerceEvent('Purchase', purchasePayload, input.items, eventId)
 
   const { isAuthenticated } = getCurrentUserContext()
   const contents = mapItemsToMetaContents(input.items)
@@ -392,6 +409,8 @@ export const sendPurchaseEvent = (input: PurchaseEventInput) => {
   }
 
   sendMeta(metaPayload)
+
+  return eventPromise
 }
 
 // Événement Search (Pixel Facebook: `Search`)
@@ -409,7 +428,7 @@ export const sendSearchEvent = (input: SearchEventInput) => {
 
   const eventId = generateEventId()
 
-  pushEvent('Search', { ...searchData, event_id: eventId })
+  return pushEvent('Search', { ...searchData, event_id: eventId })
 
   const { isAuthenticated } = getCurrentUserContext()
   const userData = buildMetaUserData()
@@ -424,8 +443,8 @@ export const sendSearchEvent = (input: SearchEventInput) => {
       searchTerm: input.searchTerm,
       pickupLocationId: input.pickupLocationId,
       dropOffLocationId: input.dropOffLocationId,
-      startDate: input.startDate ? input.startDate.toISOString() : undefined,
-      endDate: input.endDate ? input.endDate.toISOString() : undefined,
+      startDate: input.startDate?.toISOString(),
+      endDate: input.endDate?.toISOString(),
       sameLocation: input.sameLocation,
       filters: input.filters,
       isAuthenticated,
@@ -456,7 +475,7 @@ export const sendViewContentEvent = (item: ViewContentEventInput) => {
 
   const eventId = generateEventId()
 
-  pushCommerceEvent('ViewContent', payload, [
+  const eventPromise = pushCommerceEvent('ViewContent', payload, [
     {
       id: item.id,
       name: item.name,
@@ -490,6 +509,8 @@ export const sendViewContentEvent = (item: ViewContentEventInput) => {
   }
 
   sendMeta(metaPayload)
+
+  return eventPromise
 }
 
 export const sendLeadEvent = (input: LeadEventInput) => {
@@ -507,7 +528,7 @@ export const sendLeadEvent = (input: LeadEventInput) => {
 
   const eventId = generateEventId()
 
-  pushEvent('Lead', { ...data, event_id: eventId })
+  const leadPromise = pushEvent('Lead', { ...data, event_id: eventId })
 
   const { isAuthenticated } = getCurrentUserContext()
   const userData = buildMetaUserData({
@@ -535,4 +556,6 @@ export const sendLeadEvent = (input: LeadEventInput) => {
   }
 
   sendMeta(metaPayload)
+
+  return leadPromise
 }

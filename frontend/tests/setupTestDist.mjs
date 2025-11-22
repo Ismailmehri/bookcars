@@ -7,6 +7,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distRoot = path.resolve(__dirname, '../.test-dist')
 const frontendSrcRoot = path.join(distRoot, 'frontend/src')
 
+globalThis.__TEST_IMPORT_META_ENV = {
+  VITE_BC_MAX_BOOKING_MONTHS: '6',
+  VITE_BC_DEFAULT_LANGUAGE: 'en',
+  VITE_BC_CURRENCY: '$',
+}
+
+const memoryStorage = new Map()
+globalThis.localStorage = {
+  getItem: (key) => (memoryStorage.has(key) ? memoryStorage.get(key) : null),
+  setItem: (key, value) => memoryStorage.set(key, String(value)),
+  removeItem: (key) => memoryStorage.delete(key),
+  clear: () => memoryStorage.clear(),
+}
+
+globalThis.window = {
+  location: {
+    search: '',
+  },
+}
+
 const ensureCopiedFromFrontend = async (relativePath) => {
   const targetPath = path.join(distRoot, relativePath)
 
@@ -40,6 +60,10 @@ await Promise.all([
     "export default {\n  initialize: () => {},\n  dataLayer: () => {},\n}\n",
   ),
   ensureFile(
+    path.join(distRoot, 'node_modules/react-localization/index.js'),
+    "export default class LocalizedStrings {\n  constructor(dict) { this.dict = dict }\n  setLanguage() {}\n}\n",
+  ),
+  ensureFile(
     path.join(distRoot, 'node_modules/@/components/Layout.js'),
     "export default function Layout({ children }) { return children ?? null }\n",
   ),
@@ -52,12 +76,85 @@ await Promise.all([
     "export const AppType = {\n  Frontend: 'frontend',\n  Backend: 'backend',\n}\n",
   ),
   ensureFile(
+    path.join(distRoot, 'node_modules/:bookcars-helper/index.js'),
+    "export const days = () => 1;\n"
+    + "export const calculateTotalPrice = (car, from, to) => {\n"
+    + "  const start = from ? new Date(from) : new Date();\n"
+    + "  const end = to ? new Date(to) : start;\n"
+    + "  const daysCount = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) || 1);\n"
+    + "  return (car?.dailyPrice ?? 0) * daysCount;\n"
+    + "};\n"
+    + "export const formatPrice = (value) => value?.toString() ?? '';\n"
+    + "export const joinURL = (base = '', path = '') => base + (path ? '/' + path : '');\n"
+    + "export const getLanguage = () => 'fr';\n",
+  ),
+  ensureFile(
     path.join(frontendSrcRoot, 'components/Layout.js'),
     "export default function Layout({ children }) { return children ?? null }\n",
   ),
   ensureFile(
     path.join(frontendSrcRoot, 'components/SearchForm.js'),
     "export default function SearchForm() { return null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/config/env.config.js'),
+    "export { default } from '../../../config/env.config.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/pricing.js'),
+    "export * from '../../../common/pricing.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/pricing'),
+    "export * from './pricing.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/helper.js'),
+    "export * from '../../../common/helper.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/helper'),
+    "export * from './helper.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/langHelper.js'),
+    "export * from '../../../common/langHelper.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/langHelper'),
+    "export * from './langHelper.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/supplier.js'),
+    "export * from '../../../common/supplier.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/supplier'),
+    "export * from './supplier.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/gtm.js'),
+    "export * from '../../../common/gtm.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/gtm'),
+    "export * from './gtm.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/common.js'),
+    "export { strings as default, strings } from '../../../lang/common.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/common'),
+    "export { strings as default, strings } from './common.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/cars.js'),
+    "export { strings as default, strings } from '../../../lang/cars.js'\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/cars'),
+    "export { strings as default, strings } from './cars.js'\n",
   ),
   ensureCopiedFromFrontend('config/env.config.js'),
   ensureCopiedFromFrontend('config/const.js'),
@@ -66,18 +163,24 @@ await Promise.all([
   ensureCopiedFromFrontend('common/pricing.js'),
   ensureCopiedFromFrontend('common/locationLinks.js'),
   ensureCopiedFromFrontend('common/locationPageRoutes.js'),
+  ensureCopiedFromFrontend('common/helper.js'),
+  ensureCopiedFromFrontend('common/langHelper.js'),
   ensureCopiedFromFrontend('common/supplier.js'),
   ensureCopiedFromFrontend('context/metaEvents.helpers.js'),
   ensureCopiedFromFrontend('services/MetaEventService.js'),
   ensureCopiedFromFrontend('services/UserService.js'),
   ensureCopiedFromFrontend('services/axiosInstance.js'),
   ensureCopiedFromFrontend('pages/auth.utils.js'),
+  ensureCopiedFromFrontend('lang/common.js'),
+  ensureCopiedFromFrontend('lang/cars.js'),
 ])
 
 const envFile = path.join(distRoot, 'config/env.config.js')
 let envSource = await readFile(envFile, 'utf8')
 envSource = envSource.replace(/import\.meta\.env/g, 'globalThis.__TEST_IMPORT_META_ENV')
 envSource = envSource.replace(/(['"])\.\/const\1/g, '$1./const.js$1')
+const envDefaults = `globalThis.__TEST_IMPORT_META_ENV = globalThis.__TEST_IMPORT_META_ENV || { VITE_BC_MAX_BOOKING_MONTHS: '6', VITE_BC_DEFAULT_LANGUAGE: 'en', VITE_BC_CURRENCY: '$' };\n`
+envSource = envDefaults + envSource
 await writeFile(envFile, envSource)
 
 const compiledEnvFile = path.join(frontendSrcRoot, 'config/env.config.js')
@@ -175,6 +278,54 @@ try {
   const rootAxiosUpdated = rootAxiosSource.replace(/@\/config\/env.config/g, '../config/env.config.js')
   if (rootAxiosUpdated !== rootAxiosSource) {
     await writeFile(rootAxiosServicePath, rootAxiosUpdated)
+  }
+} catch {}
+
+const helperPath = path.join(distRoot, 'common/helper.js')
+try {
+  let helperSource = await readFile(helperPath, 'utf8')
+  const helperUpdated = helperSource.replace(/@\/config\/env.config(?!\.js)/g, '@/config/env.config.js')
+  if (helperUpdated !== helperSource) {
+    await writeFile(helperPath, helperUpdated)
+  }
+} catch {}
+
+const langHelperPath = path.join(distRoot, 'common/langHelper.js')
+try {
+  let langHelperSource = await readFile(langHelperPath, 'utf8')
+  const langHelperUpdated = langHelperSource
+    .replace(/@\/config\/env.config(?!\.js)/g, '@/config/env.config.js')
+    .replace(/@\/services\//g, '../services/')
+    .replace(/\.\.\/services\/([^'"/]+?)(?:\.js)?(?=['"])/g, '../services/$1.js')
+    .replace(/\.js\.js/g, '.js')
+  if (langHelperUpdated !== langHelperSource) {
+    await writeFile(langHelperPath, langHelperUpdated)
+  }
+} catch {}
+
+const langCommonPath = path.join(distRoot, 'lang/common.js')
+try {
+  let langCommonSource = await readFile(langCommonPath, 'utf8')
+  const langCommonUpdated = langCommonSource
+    .replace(/@\/config\/env.config(?!\.js)/g, '@/config/env.config.js')
+    .replace(/@\/services\//g, '../services/')
+    .replace(/\.\.\/services\/([^'"/]+?)(?:\.js)?(?=['"])/g, '../services/$1.js')
+    .replace(/\.js\.js/g, '.js')
+  if (langCommonUpdated !== langCommonSource) {
+    await writeFile(langCommonPath, langCommonUpdated)
+  }
+} catch {}
+
+const langCarsPath = path.join(distRoot, 'lang/cars.js')
+try {
+  let langCarsSource = await readFile(langCarsPath, 'utf8')
+  const langCarsUpdated = langCarsSource
+    .replace(/@\/config\/env.config(?!\.js)/g, '@/config/env.config.js')
+    .replace(/@\/services\//g, '../services/')
+    .replace(/\.\.\/services\/([^'"/]+?)(?:\.js)?(?=['"])/g, '../services/$1.js')
+    .replace(/\.js\.js/g, '.js')
+  if (langCarsUpdated !== langCarsSource) {
+    await writeFile(langCarsPath, langCarsUpdated)
   }
 } catch {}
 

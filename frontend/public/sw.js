@@ -6,6 +6,7 @@ const STATIC_ASSETS = [
   '/index.html',
   '/favicon.ico',
 ]
+const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.avif']
 
 const cacheFirst = async (request) => {
   const cached = await caches.match(request)
@@ -31,6 +32,8 @@ const staleWhileRevalidate = async (request) => {
 
   return cached || networkPromise
 }
+
+const isImageRequest = (request) => IMAGE_EXTENSIONS.some((ext) => request.url.includes(ext))
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -58,6 +61,7 @@ self.addEventListener('fetch', (event) => {
 
   const isStaticAsset = STATIC_ASSETS.includes(new URL(request.url).pathname)
   const isApiCall = request.url.includes('/api/')
+  const isMapTile = request.url.includes('basemaps.cartocdn.com')
 
   if (isStaticAsset) {
     event.respondWith(cacheFirst(request))
@@ -65,6 +69,11 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (isApiCall) {
+    event.respondWith(staleWhileRevalidate(request))
+    return
+  }
+
+  if (isMapTile || isImageRequest(request)) {
     event.respondWith(staleWhileRevalidate(request))
     return
   }

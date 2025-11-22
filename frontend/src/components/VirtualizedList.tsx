@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useMemo } from 'react'
+import { FixedSizeList, type ListChildComponentProps } from 'react-window'
 
 interface VirtualizedListProps<T> {
   items: T[]
@@ -14,13 +15,12 @@ interface VirtualizedListProps<T> {
 }
 
 const DEFAULT_HEIGHT = 840
-const DEFAULT_OVERSCAN = 4
 
 const VirtualizedList = <T,>({
   items,
   itemHeight,
   containerHeight,
-  overscan = DEFAULT_OVERSCAN,
+  overscan,
   className,
   role = 'list',
   ariaLabel,
@@ -28,62 +28,21 @@ const VirtualizedList = <T,>({
   renderItem,
   emptyPlaceholder,
 }: VirtualizedListProps<T>) => {
-  const shellRef = useRef<HTMLDivElement | null>(null)
-  const [viewportHeight, setViewportHeight] = useState(containerHeight ?? DEFAULT_HEIGHT)
-  const [scrollTop, setScrollTop] = useState(0)
+  const itemData = useMemo(() => ({ items, itemKey, renderItem }), [items, itemKey, renderItem])
 
-  useEffect(() => {
-    if (containerHeight) {
-      return undefined
-    }
+  const renderRow = useCallback(
+    ({ index, style, data }: ListChildComponentProps<typeof itemData>) => {
+      const { items: sourceItems, renderItem: render, itemKey: keyBuilder } = data
+      const item = sourceItems[index]
+      const key = keyBuilder ? keyBuilder(item, index) : index
 
-    const updateHeight = () => {
-      if (shellRef.current) {
-        setViewportHeight(shellRef.current.clientHeight)
-      }
-    }
-
-    updateHeight()
-    window.addEventListener('resize', updateHeight)
-
-    return () => window.removeEventListener('resize', updateHeight)
-  }, [containerHeight])
-
-  const totalHeight = useMemo(() => items.length * itemHeight, [items.length, itemHeight])
-
-  const { start, end } = useMemo(() => {
-    const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan)
-    const endIndex = Math.min(items.length, Math.ceil((scrollTop + viewportHeight) / itemHeight) + overscan)
-
-    return { start: startIndex, end: endIndex }
-  }, [scrollTop, viewportHeight, itemHeight, overscan, items.length])
-
-  const onScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
-    setScrollTop(event.currentTarget.scrollTop)
-  }, [])
-
-  const children = useMemo(
-    () =>
-      items.slice(start, end).map((item, visibleIndex) => {
-        const absoluteIndex = start + visibleIndex
-        const key = itemKey ? itemKey(item, absoluteIndex) : absoluteIndex
-
-        return (
-          <div
-            key={key}
-            style={{
-              position: 'absolute',
-              top: absoluteIndex * itemHeight,
-              left: 0,
-              right: 0,
-              height: itemHeight,
-            }}
-          >
-            {renderItem(item, absoluteIndex)}
-          </div>
-        )
-      }),
-    [items, start, end, itemHeight, itemKey, renderItem],
+      return (
+        <div key={key} style={style} role="listitem">
+          {render(item, index)}
+        </div>
+      )
+    },
+    [],
   )
 
   if (!items.length && emptyPlaceholder) {
@@ -91,16 +50,19 @@ const VirtualizedList = <T,>({
   }
 
   return (
-    <div
-      ref={shellRef}
+    <FixedSizeList
       className={className}
-      style={{ position: 'relative', overflowY: 'auto', height: containerHeight ?? DEFAULT_HEIGHT }}
+      height={containerHeight ?? DEFAULT_HEIGHT}
+      itemCount={items.length}
+      itemSize={itemHeight}
+      width="100%"
+      overscanCount={overscan}
+      itemData={itemData}
       role={role}
       aria-label={ariaLabel}
-      onScroll={onScroll}
     >
-      <div style={{ height: totalHeight, position: 'relative' }}>{children}</div>
-    </div>
+      {renderRow}
+    </FixedSizeList>
   )
 }
 

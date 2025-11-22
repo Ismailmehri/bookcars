@@ -27,6 +27,7 @@
     "src/context/MetaEventsContext.tsx",
     "src/context/metaEvents.helpers.ts",
     "src/components/car-list.utils.ts",
+    "src/components/car-list.view-model.ts",
     "src/components/location/utils.ts",
     "src/config/**/*.ts",
     "src/services/axiosInstance.ts",

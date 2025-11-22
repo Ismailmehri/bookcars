@@ -6,6 +6,7 @@ import { GlobalProvider } from '@/context/GlobalContext'
 import { MetaEventsProvider } from '@/context/MetaEventsContext'
 import { initGTM } from '@/common/gtm'
 import { lazyLocationPages } from '@/common/locationPageRoutes'
+import { deferThirdPartyScripts } from '@/common/thirdPartyScripts'
 
 const SignIn = lazy(() => import('@/pages/SignIn'))
 const SignUp = lazy(() => import('@/pages/SignUp'))
@@ -34,19 +35,24 @@ const Review = lazy(() => import('@/pages/Review'))
 
 const App = () => {
   useEffect(() => {
+    const cancelThirdParty = deferThirdPartyScripts()
+
     if (!env.GOOGLE_ANALYTICS_ENABLED) {
-      return undefined
+      return cancelThirdParty
     }
 
     const timer = window.setTimeout(() => {
       if ('requestIdleCallback' in window) {
-        window.requestIdleCallback(() => initGTM())
+        window.requestIdleCallback(() => { initGTM() })
       } else {
         initGTM()
       }
     }, 2500)
 
-    return () => window.clearTimeout(timer)
+    return () => {
+      window.clearTimeout(timer)
+      cancelThirdParty?.()
+    }
   }, [])
 
   return (

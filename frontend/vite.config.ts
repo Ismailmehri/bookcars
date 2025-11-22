@@ -14,6 +14,7 @@ export default ({ mode }: { mode: string }) => {
         '@': path.resolve(__dirname, './src'),
         'react-helmet': path.resolve(__dirname, './src/shims/react-helmet.tsx'),
         'react-helmet-async': path.resolve(__dirname, './src/shims/react-helmet-async.ts'),
+        'react-window': path.resolve(__dirname, './src/vendor/react-window.tsx'),
         ':bookcars-types': path.resolve(__dirname, '../packages/bookcars-types'),
         ':bookcars-helper': path.resolve(__dirname, '../packages/bookcars-helper/index.ts'),
         ':disable-react-devtools': path.resolve(__dirname, '../packages/disable-react-devtools'),

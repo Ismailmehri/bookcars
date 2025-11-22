@@ -1,0 +1,55 @@
+.auth-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 auto 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #f4f6fb;
+  color: #1a2c3d;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.04);
+  max-width: 820px;
+  line-height: 1.4;
+}
+
+.auth-status[data-variant='info'] {
+  border: 1px solid #1a73e8;
+}
+
+.auth-status[data-variant='success'] {
+  border: 1px solid #2e7d32;
+}
+
+.auth-status[data-variant='error'] {
+  border: 1px solid #c62828;
+  background: #fdecea;
+  color: #4a0c0c;
+}
+
+.auth-status .status-indicator {
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.03);
+}
+
+.auth-status[data-variant='info'] .status-indicator {
+  background: #1a73e8;
+}
+
+.auth-status[data-variant='success'] .status-indicator {
+  background: #2e7d32;
+}
+
+.auth-status[data-variant='error'] .status-indicator {
+  background: #c62828;
+}
+
+@media (max-width: 600px) {
+  .auth-status {
+    margin: 0 16px 16px;
+    padding: 12px 14px;
+    font-size: 0.95rem;
+  }
+}

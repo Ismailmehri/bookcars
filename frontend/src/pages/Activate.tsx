@@ -20,8 +20,11 @@ import { strings as mStrings } from '@/lang/master'
 import { strings } from '@/lang/activate'
 import NoMatch from './NoMatch'
 import * as helper from '@/common/helper'
+import Backdrop from '@/components/SimpleBackdrop'
+import { TokenState, canSubmitPasswords, resolveTokenState, validatePasswords } from './auth.utils'
 
 import '@/assets/css/activate.css'
+import '@/assets/css/auth-status.css'
 
 const Activate = () => {
   const navigate = useNavigate()
@@ -37,6 +40,8 @@ const Activate = () => {
   const [confirmPasswordError, setConfirmPasswordError] = useState(false)
   const [passwordLengthError, setPasswordLengthError] = useState(false)
   const [reset, setReset] = useState(false)
+  const [tokenState, setTokenState] = useState<TokenState>('checking')
+  const [busy, setBusy] = useState(false)
 
   const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value)
@@ -49,23 +54,16 @@ const Activate = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement> | React.KeyboardEvent<HTMLElement>) => {
     try {
       e.preventDefault()
+      const validation = validatePasswords(password, confirmPassword)
+      setPasswordError(validation.tooShort)
+      setPasswordLengthError(validation.tooShort)
+      setConfirmPasswordError(validation.mismatch)
 
-      if (password.length < 6) {
-        setPasswordLengthError(true)
-        setConfirmPasswordError(false)
-        setPasswordError(false)
+      if (!canSubmitPasswords(validation, busy) || tokenState !== 'ready') {
         return
       }
-      setPasswordLengthError(false)
-      setPasswordError(false)
 
-      if (password !== confirmPassword) {
-        setConfirmPasswordError(true)
-        setPasswordError(false)
-        return
-      }
-      setConfirmPasswordError(false)
-      setPasswordError(false)
+      setBusy(true)
 
       const data: bookcarsTypes.ActivatePayload = { userId, token, password }
 
@@ -87,8 +85,11 @@ const Activate = () => {
       } else {
         helper.error()
       }
+
+      setBusy(false)
     } catch (err) {
       helper.error(err)
+      setBusy(false)
     }
   }
 
@@ -123,26 +124,32 @@ const Activate = () => {
         const _token = params.get('t')
         if (_userId && _email && _token) {
           try {
+            setTokenState('checking')
             const status = await UserService.checkToken(_userId, _email, _token)
+            const nextState = resolveTokenState(status)
 
-            if (status === 200) {
+            if (nextState === 'ready') {
               setUserId(_userId)
               setEmail(_email)
               setToken(_token)
               setVisible(true)
+              setTokenState(nextState)
 
               if (params.has('r')) {
                 const _reset = params.get('r') === 'true'
                 setReset(_reset)
               }
-            } else if (status === 204) {
+            } else if (nextState === 'expired') {
               setEmail(_email)
               setResend(true)
+              setTokenState(nextState)
             } else {
               setNoMatch(true)
+              setTokenState('invalid')
             }
           } catch {
             setNoMatch(true)
+            setTokenState('invalid')
           }
         } else {
           setNoMatch(true)
@@ -156,6 +163,12 @@ const Activate = () => {
   return (
     <Layout onLoad={onLoad} strict={false}>
       <Seo title="Activation du compte | Plany.tn" canonical="https://plany.tn/activate" robots="noindex,nofollow" />
+      {tokenState !== 'ready' && !noMatch && (
+        <div className="auth-status" data-variant={tokenState === 'invalid' ? 'error' : 'info'} role="status" aria-live="polite">
+          <span className="status-indicator" aria-hidden />
+          <span>{tokenState === 'checking' ? strings.LINK_CHECKING : strings.LINK_INVALID}</span>
+        </div>
+      )}
       {resend && (
         <div className="resend">
           <Paper className="resend-form" elevation={10}>
@@ -174,6 +187,10 @@ const Activate = () => {
       )}
       {visible && (
         <div className="activate">
+          <div className="auth-status" data-variant="success" role="status" aria-live="polite">
+            <span className="status-indicator" aria-hidden />
+            <span>{strings.LINK_READY}</span>
+          </div>
           <Paper className="activate-form" elevation={10}>
             <h1>{reset ? rpStrings.RESET_PASSWORD_HEADING : strings.ACTIVATE_HEADING}</h1>
             <form onSubmit={handleSubmit}>
@@ -181,7 +198,14 @@ const Activate = () => {
                 <InputLabel className="required" error={passwordError}>
                   {cpStrings.NEW_PASSWORD}
                 </InputLabel>
-                <Input id="password-new" onChange={handleNewPasswordChange} type="password" value={password} error={passwordError} required />
+                <Input
+                  id="password-new"
+                  onChange={handleNewPasswordChange}
+                  type="password"
+                  value={password}
+                  error={passwordError}
+                  required
+                />
                 <FormHelperText error={passwordError}>{(passwordError && cpStrings.NEW_PASSWORD_ERROR) || ''}</FormHelperText>
               </FormControl>
               <FormControl fullWidth margin="dense" error={confirmPasswordError}>
@@ -206,7 +230,13 @@ const Activate = () => {
                 </FormHelperText>
               </FormControl>
               <div className="buttons">
-                <Button type="submit" className="btn-primary btn-margin btn-margin-bottom" size="small" variant="contained">
+                <Button
+                  type="submit"
+                  className="btn-primary btn-margin btn-margin-bottom"
+                  size="small"
+                  variant="contained"
+                  disabled={!canSubmitPasswords(validatePasswords(password, confirmPassword), busy) || tokenState !== 'ready'}
+                >
                   {reset ? commonStrings.UPDATE : strings.ACTIVATE}
                 </Button>
                 <Button className="btn-secondary btn-margin-bottom" size="small" variant="contained" href="/">
@@ -218,6 +248,7 @@ const Activate = () => {
         </div>
       )}
       {noMatch && <NoMatch hideHeader />}
+      {(tokenState === 'checking' || busy) && <Backdrop text={strings.LINK_CHECKING} />}
     </Layout>
   )
 }

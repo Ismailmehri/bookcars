@@ -6,7 +6,6 @@ import {
   FormHelperText,
   Button,
   Paper,
-  Link
 } from '@mui/material'
 import validator from 'validator'
 import Seo from '@/components/Seo'
@@ -18,8 +17,10 @@ import { strings as commonStrings } from '@/lang/common'
 import { strings } from '@/lang/reset-password'
 import SocialLogin from '@/components/SocialLogin'
 import NoMatch from './NoMatch'
+import { canSendEmail } from './auth.utils'
 
 import '@/assets/css/forgot-password.css'
+import '@/assets/css/auth-status.css'
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('')
@@ -28,6 +29,7 @@ const ForgotPassword = () => {
   const [emailValid, setEmailValid] = useState(true)
   const [noMatch, setNoMatch] = useState(false)
   const [sent, setSent] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value)
@@ -80,10 +82,11 @@ const ForgotPassword = () => {
       e.preventDefault()
 
       const _emailValid = await validateEmail(email)
-      if (!_emailValid) {
+      if (!_emailValid || !canSendEmail(_emailValid, !!email, busy)) {
         return
       }
 
+      setBusy(true)
       const status = await UserService.resend(email, true)
       if (status === 200) {
         setError(false)
@@ -93,9 +96,11 @@ const ForgotPassword = () => {
         setError(true)
         setEmailValid(true)
       }
+      setBusy(false)
     } catch {
       setError(true)
       setEmailValid(true)
+      setBusy(false)
     }
   }
 
@@ -118,20 +123,24 @@ const ForgotPassword = () => {
       <Seo title="Mot de passe oublié | Plany.tn" canonical="https://plany.tn/forgot-password" robots="noindex,nofollow" />
       {visible && (
         <div className="forgot-password">
+          {busy && (
+            <div className="auth-status" data-variant="info" role="status" aria-live="polite">
+              <span className="status-indicator" aria-hidden />
+              <span>{commonStrings.PLEASE_WAIT}</span>
+            </div>
+          )}
+          {sent && (
+            <div className="auth-status" data-variant="success" role="status" aria-live="polite">
+              <span className="status-indicator" aria-hidden />
+              <span>{strings.EMAIL_SENT}</span>
+            </div>
+          )}
           <Paper className="forgot-password-form" elevation={10}>
             <h1 className="forgot-password-title">
               {' '}
               {strings.RESET_PASSWORD_HEADING}
               {' '}
             </h1>
-            {sent && (
-              <div>
-                <span>{strings.EMAIL_SENT}</span>
-                <p>
-                  <Link href="/">{commonStrings.GO_TO_HOME}</Link>
-                </p>
-              </div>
-            )}
             {!sent && (
               <form onSubmit={handleSubmit}>
                 <span>{strings.RESET_PASSWORD}</span>
@@ -147,7 +156,13 @@ const ForgotPassword = () => {
                 <SocialLogin />
 
                 <div className="forgot-password-buttons">
-                  <Button type="submit" className="btn-primary btn-margin btn-margin-bottom" size="small" variant="contained">
+                  <Button
+                    type="submit"
+                    className="btn-primary btn-margin btn-margin-bottom"
+                    size="small"
+                    variant="contained"
+                    disabled={!canSendEmail(emailValid, !!email, busy)}
+                  >
                     {strings.RESET}
                   </Button>
                   <Button className="btn-secondary btn-margin-bottom" size="small" variant="contained" href="/">

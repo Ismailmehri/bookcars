@@ -21,6 +21,7 @@
     "src/pages/home.utils.ts",
     "src/pages/bookings.utils.ts",
     "src/pages/suppliers.utils.ts",
+    "src/pages/auth.utils.ts",
     "src/context/MetaEventsContext.tsx",
     "src/context/metaEvents.helpers.ts",
     "src/components/car-list.utils.ts",

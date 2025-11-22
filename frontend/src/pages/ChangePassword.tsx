@@ -17,6 +17,7 @@ import * as UserService from '@/services/UserService'
 import Backdrop from '@/components/SimpleBackdrop'
 import Footer from '@/components/Footer'
 import * as helper from '@/common/helper'
+import { canSubmitPasswords, validatePasswords } from './auth.utils'
 
 import '@/assets/css/change-password.css'
 
@@ -34,6 +35,7 @@ const ChangePassword = () => {
   const [currentPassword, setCurrentPassword] = useState('')
   const [currentPasswordError, setCurrentPasswordError] = useState(false)
   const [hasPassword, setHasPassword] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewPassword(e.target.value)
@@ -61,22 +63,14 @@ const ChangePassword = () => {
       }
 
       const submit = async () => {
-        if (newPassword.length < 6) {
-          setPasswordLengthError(true)
-          setConfirmPasswordError(false)
-          setNewPasswordError(false)
-          return
-        }
-        setPasswordLengthError(false)
-        setNewPasswordError(false)
+        const validation = validatePasswords(newPassword, confirmPassword)
+        setPasswordLengthError(validation.tooShort)
+        setNewPasswordError(validation.tooShort)
+        setConfirmPasswordError(validation.mismatch)
 
-        if (newPassword !== confirmPassword) {
-          setConfirmPasswordError(true)
-          setNewPasswordError(false)
+        if (!canSubmitPasswords(validation, busy)) {
           return
         }
-        setConfirmPasswordError(false)
-        setNewPasswordError(false)
 
         const data: bookcarsTypes.ChangePasswordPayload = {
           _id: user._id as string,
@@ -85,6 +79,7 @@ const ChangePassword = () => {
           strict: hasPassword,
         }
 
+        setBusy(true)
         const status = await UserService.changePassword(data)
 
         if (status === 200) {
@@ -104,8 +99,11 @@ const ChangePassword = () => {
         } else {
           error()
         }
+
+        setBusy(false)
       }
 
+      setBusy(true)
       let status = 200
       if (hasPassword) {
         status = await UserService.checkPassword(user._id as string, currentPassword)
@@ -118,9 +116,12 @@ const ChangePassword = () => {
 
       if (status === 200) {
         submit()
+      } else {
+        setBusy(false)
       }
     } catch (err) {
       helper.error(err)
+      setBusy(false)
     }
   }
 
@@ -184,7 +185,12 @@ const ChangePassword = () => {
               <FormHelperText error={confirmPasswordError}>{confirmPasswordError && commonStrings.PASSWORDS_DONT_MATCH}</FormHelperText>
             </FormControl>
             <div className="buttons">
-              <Button type="submit" className="btn-primary btn-margin btn-margin-bottom btn-cp" variant="contained">
+              <Button
+                type="submit"
+                className="btn-primary btn-margin btn-margin-bottom btn-cp"
+                variant="contained"
+                disabled={!canSubmitPasswords(validatePasswords(newPassword, confirmPassword), busy)}
+              >
                 {commonStrings.RESET_PASSWORD}
               </Button>
               <Button

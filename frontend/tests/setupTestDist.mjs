@@ -71,6 +71,7 @@ await Promise.all([
   ensureCopiedFromFrontend('services/MetaEventService.js'),
   ensureCopiedFromFrontend('services/UserService.js'),
   ensureCopiedFromFrontend('services/axiosInstance.js'),
+  ensureCopiedFromFrontend('pages/auth.utils.js'),
 ])
 
 const envFile = path.join(distRoot, 'config/env.config.js')

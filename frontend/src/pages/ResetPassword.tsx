@@ -18,8 +18,11 @@ import { strings as rpStrings } from '@/lang/reset-password'
 import Error from './Error'
 import NoMatch from './NoMatch'
 import * as helper from '@/common/helper'
+import Backdrop from '@/components/SimpleBackdrop'
+import { TokenState, canSubmitPasswords, resolveTokenState, validatePasswords } from './auth.utils'
 
 import '@/assets/css/reset-password.css'
+import '@/assets/css/auth-status.css'
 
 const ResetPassword = () => {
   const navigate = useNavigate()
@@ -34,6 +37,8 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [confirmPasswordError, setConfirmPasswordError] = useState(false)
   const [passwordLengthError, setPasswordLengthError] = useState(false)
+  const [tokenState, setTokenState] = useState<TokenState>('checking')
+  const [busy, setBusy] = useState(false)
 
   const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value)
@@ -46,23 +51,16 @@ const ResetPassword = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement> | React.KeyboardEvent<HTMLElement>) => {
     try {
       e.preventDefault()
+      const validation = validatePasswords(password, confirmPassword)
+      setPasswordError(validation.tooShort)
+      setPasswordLengthError(validation.tooShort)
+      setConfirmPasswordError(validation.mismatch)
 
-      if (password.length < 6) {
-        setPasswordLengthError(true)
-        setConfirmPasswordError(false)
-        setPasswordError(false)
+      if (!canSubmitPasswords(validation, busy) || tokenState !== 'ready') {
         return
       }
-      setPasswordLengthError(false)
-      setPasswordError(false)
 
-      if (password !== confirmPassword) {
-        setConfirmPasswordError(true)
-        setPasswordError(false)
-        return
-      }
-      setConfirmPasswordError(false)
-      setPasswordError(false)
+      setBusy(true)
 
       const data = { userId, token, password }
 
@@ -85,8 +83,11 @@ const ResetPassword = () => {
       } else {
         helper.error()
       }
+
+      setBusy(false)
     } catch (err) {
       helper.error(err)
+      setBusy(false)
     }
   }
 
@@ -107,18 +108,23 @@ const ResetPassword = () => {
         const _token = params.get('t')
         if (_userId && _email && _token) {
           try {
+            setTokenState('checking')
             const status = await UserService.checkToken(_userId, _email, _token)
+            const nextState = resolveTokenState(status)
 
-            if (status === 200) {
+            if (nextState === 'ready') {
               setUserId(_userId)
               setEmail(_email)
               setToken(_token)
               setVisible(true)
+              setTokenState(nextState)
             } else {
               setNoMatch(true)
+              setTokenState('invalid')
             }
           } catch {
             setError(true)
+            setTokenState('invalid')
           }
         } else {
           setNoMatch(true)
@@ -132,8 +138,18 @@ const ResetPassword = () => {
   return (
     <Layout onLoad={onLoad} strict={false}>
       <Seo title="Réinitialiser le mot de passe | Plany.tn" canonical="https://plany.tn/reset-password" robots="noindex,nofollow" />
+      {tokenState !== 'ready' && !noMatch && (
+        <div className="auth-status" data-variant={tokenState === 'invalid' ? 'error' : 'info'} role="status" aria-live="polite">
+          <span className="status-indicator" aria-hidden />
+          <span>{tokenState === 'checking' ? rpStrings.LINK_CHECKING : rpStrings.LINK_INVALID}</span>
+        </div>
+      )}
       {visible && (
         <div className="reset-password">
+          <div className="auth-status" data-variant="success" role="status" aria-live="polite">
+            <span className="status-indicator" aria-hidden />
+            <span>{rpStrings.LINK_READY}</span>
+          </div>
           <Paper className="reset-password-form" elevation={10}>
             <h1>{rpStrings.RESET_PASSWORD_HEADING}</h1>
             <form onSubmit={handleSubmit}>
@@ -166,7 +182,13 @@ const ResetPassword = () => {
                 </FormHelperText>
               </FormControl>
               <div className="reset-password-buttons">
-                <Button type="submit" className="btn-primary btn-margin btn-margin-bottom" size="small" variant="contained">
+                <Button
+                  type="submit"
+                  className="btn-primary btn-margin btn-margin-bottom"
+                  size="small"
+                  variant="contained"
+                  disabled={!canSubmitPasswords(validatePasswords(password, confirmPassword), busy) || tokenState !== 'ready'}
+                >
                   {commonStrings.UPDATE}
                 </Button>
                 <Button className="btn-secondary btn-margin-bottom" size="small" variant="contained" href="/">
@@ -179,6 +201,7 @@ const ResetPassword = () => {
       )}
       {error && <Error />}
       {noMatch && <NoMatch hideHeader />}
+      {(tokenState === 'checking' || busy) && <Backdrop text={rpStrings.LINK_CHECKING} />}
     </Layout>
   )
 }

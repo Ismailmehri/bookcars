@@ -8,6 +8,9 @@ const strings = new LocalizedStrings({
     EMAIL_ERROR: 'Adresse e-mail non enregistrée',
     RESET: 'Réinitialiser',
     EMAIL_SENT: 'E-mail de réinitialisation du mot de passe envoyé.',
+    LINK_CHECKING: 'Vérification du lien de réinitialisation...',
+    LINK_INVALID: 'Le lien est invalide ou expiré.',
+    LINK_READY: 'Lien vérifié, vous pouvez réinitialiser votre mot de passe.',
   },
   en: {
     RESET_PASSWORD_HEADING: 'Password Reset',
@@ -15,6 +18,9 @@ const strings = new LocalizedStrings({
     EMAIL_ERROR: 'Email address not registered',
     RESET: 'Reset',
     EMAIL_SENT: 'Password reset email sent.',
+    LINK_CHECKING: 'Checking the reset link...',
+    LINK_INVALID: 'This link is invalid or expired.',
+    LINK_READY: 'Link verified, you can reset your password.',
   },
 })
 

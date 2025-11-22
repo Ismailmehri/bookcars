@@ -76,8 +76,9 @@ test('getDefaultAnalyticsCurrency returns USD when no configuration is available
   assert.equal(gtm.getDefaultAnalyticsCurrency(), 'USD')
 })
 
-test('pushEvent pushes data when tracking ID exists', () => {
-  gtm.pushEvent('TestEvent', { foo: 'bar' })
+test('pushEvent pushes data when tracking ID exists', async () => {
+  await gtm.pushEvent('TestEvent', { foo: 'bar' })
+  await new Promise((resolve) => setImmediate(resolve))
 
   assert.equal(dataLayerCalls.length, 1)
   assert.deepEqual(dataLayerCalls[0], {
@@ -97,8 +98,8 @@ test('pushEvent skips when tracking ID missing', () => {
   assert.equal(dataLayerCalls.length, 0)
 })
 
-test('sendCheckoutEvent normalizes payload before pushing to data layer', () => {
-  gtm.sendCheckoutEvent({
+test('sendCheckoutEvent normalizes payload before pushing to data layer', async () => {
+  await gtm.sendCheckoutEvent({
     value: 100.459,
     currency: 'tnd',
     items: [
@@ -125,8 +126,8 @@ test('sendCheckoutEvent normalizes payload before pushing to data layer', () => 
   assert.match(payload.event_id, /^plany-/)
 })
 
-test('sendPurchaseEvent sends transaction metadata', () => {
-  gtm.sendPurchaseEvent({
+test('sendPurchaseEvent sends transaction metadata', async () => {
+  await gtm.sendPurchaseEvent({
     transactionId: 'booking-123',
     value: 200,
     currency: 'tnd',
@@ -141,11 +142,11 @@ test('sendPurchaseEvent sends transaction metadata', () => {
   assert.match(dataLayerCalls[0].dataLayer.event_id, /^plany-/)
 })
 
-test('sendSearchEvent forwards filters and dates', () => {
+test('sendSearchEvent forwards filters and dates', async () => {
   const start = new Date('2025-01-01T10:00:00.000Z')
   const end = new Date('2025-01-05T10:00:00.000Z')
 
-  gtm.sendSearchEvent({
+  await gtm.sendSearchEvent({
     searchTerm: 'Tunis Airport',
     pickupLocationId: 'pickup-1',
     dropOffLocationId: 'drop-2',
@@ -163,8 +164,8 @@ test('sendSearchEvent forwards filters and dates', () => {
   assert.match(dataLayerCalls[0].dataLayer.event_id, /^plany-/)
 })
 
-test('sendViewContentEvent tracks item details', () => {
-  gtm.sendViewContentEvent({
+test('sendViewContentEvent tracks item details', async () => {
+  await gtm.sendViewContentEvent({
     id: 'car-3',
     name: 'Compact',
     price: 35,
@@ -179,10 +180,10 @@ test('sendViewContentEvent tracks item details', () => {
   assert.match(payload.event_id, /^plany-/)
 })
 
-test('sendLeadEvent forwards metadata to data layer', () => {
+test('sendLeadEvent forwards metadata to data layer', async () => {
   env.STRIPE_CURRENCY_CODE = 'tnd'
 
-  gtm.sendLeadEvent({
+  await gtm.sendLeadEvent({
     source: 'contact-form',
     hasEmail: true,
     subject: 'Inquiry',
@@ -198,8 +199,8 @@ test('sendLeadEvent forwards metadata to data layer', () => {
   assert.match(dataLayerCalls[0].dataLayer.event_id, /^plany-/)
 })
 
-test('sendPageviewEvent relays page location', () => {
-  gtm.sendPageviewEvent('/checkout', 'Checkout')
+test('sendPageviewEvent relays page location', async () => {
+  await gtm.sendPageviewEvent('/checkout', 'Checkout')
 
   assert.equal(dataLayerCalls[0].dataLayer.page_url, '/checkout')
   assert.equal(dataLayerCalls[0].dataLayer.page_location, '/checkout')

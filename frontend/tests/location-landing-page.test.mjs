@@ -13,6 +13,7 @@ const {
   buildFaqSchema,
   buildOfferCatalogSchema,
   buildLocalBusinessSchema,
+  buildBreadcrumbSchema,
 } = await loadModule('schema.js')
 
 test('buildFaqSchema formats FAQ items into structured data', () => {
@@ -44,4 +45,13 @@ test('buildLocalBusinessSchema references canonical url and blog', () => {
   assert.equal(schema['@type'], 'LocalBusiness')
   assert.equal(schema.areaServed.name, 'Tunis')
   assert(schema.sameAs.includes('https://blog.plany.tn'))
+})
+
+test('buildBreadcrumbSchema keeps a short structured trail', () => {
+  const schema = buildBreadcrumbSchema('Sousse', 'https://plany.tn/location-voiture-pas-cher-a-sousse')
+
+  assert.equal(schema['@type'], 'BreadcrumbList')
+  assert.equal(schema.itemListElement.length, 2)
+  assert.equal(schema.itemListElement[0].name, 'Accueil')
+  assert.equal(schema.itemListElement[1].item, 'https://plany.tn/location-voiture-pas-cher-a-sousse')
 })

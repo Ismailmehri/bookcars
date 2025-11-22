@@ -2,12 +2,21 @@ import React from 'react'
 import { Box, Button, Typography, Stack, Paper } from '@mui/material'
 import { EventNote, BarChart, Visibility, GroupAdd } from '@mui/icons-material'
 
-const RentalAgencySection = () => (
+interface RentalAgencySectionProps {
+  headingId?: string
+}
+
+const RentalAgencySection: React.FC<RentalAgencySectionProps> = ({ headingId }) => (
   <Box sx={{ padding: '40px 20px', textAlign: 'center' }}>
-    <Typography variant="h4" sx={{ fontWeight: 'bold', marginBottom: 3 }}>
+    <Typography
+      id={headingId}
+      variant="h4"
+      component="h2"
+      sx={{ fontWeight: 'bold', marginBottom: 3 }}
+    >
       Rejoignez Plany et boostez votre agence de location !
     </Typography>
-    <Typography variant="h6" sx={{ color: 'text.secondary', marginBottom: 4 }}>
+    <Typography variant="h6" component="p" sx={{ color: 'text.secondary', marginBottom: 4 }}>
       Profitez d&apos;une gestion simplifiée et d&apos;une meilleure visibilité pour vos voitures.
     </Typography>
 

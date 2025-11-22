@@ -1,4 +1,8 @@
-import type { LocationLandingPageProps, FaqItem, VehicleCategory } from '@/components/location/LocationLandingPage'
+import type {
+  LocationLandingPageProps,
+  FaqItem,
+  VehicleCategory,
+} from '@/components/location/LocationLandingPage'
 
 export type LocationSchemaInput = Pick<LocationLandingPageProps, 'city' | 'slug' | 'metaDescription' | 'blogUrl'>
 
@@ -61,4 +65,23 @@ export const buildLocalBusinessSchema = (
     ratingValue: '4.8',
     reviewCount: '1240',
   },
+})
+
+export const buildBreadcrumbSchema = (city: string, canonicalUrl: string) => ({
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Accueil',
+      item: 'https://plany.tn/',
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: `Location voiture ${city}`,
+      item: canonicalUrl,
+    },
+  ],
 })

@@ -18,6 +18,10 @@ const strings = new LocalizedStrings({
     MIDI: 'Voiture moyenne',
     MAXI: 'Grande voiture',
     SEARCH_FOR_CAR: 'Rechercher une voiture',
+    SUPPLIERS_EMPTY: 'Aucune agence partenaire disponible pour le moment.',
+    DESTINATIONS_EMPTY: 'Nous ajoutons de nouvelles destinations très bientôt.',
+    MAP_PLACEHOLDER: 'Activez la carte pour charger les agences proches seulement lorsque vous en avez besoin.',
+    MAP_CTA: 'Afficher la carte',
   },
   en: {
     PICK_UP_DATE: 'Pick-up Date',
@@ -35,6 +39,10 @@ const strings = new LocalizedStrings({
     MIDI: 'MIDI',
     MAXI: 'MAXI',
     SEARCH_FOR_CAR: 'Search for a car',
+    SUPPLIERS_EMPTY: 'No partner agencies are available right now.',
+    DESTINATIONS_EMPTY: 'New destinations are coming soon.',
+    MAP_PLACEHOLDER: 'Turn on the map to load nearby agencies only when you need it.',
+    MAP_CTA: 'Display the map',
   },
   es: {
     PICK_UP_DATE: 'Fecha de recogida',
@@ -52,6 +60,10 @@ const strings = new LocalizedStrings({
     MIDI: 'MIDI',
     MAXI: 'MAXI',
     SEARCH_FOR_CAR: 'Buscar un coche',
+    SUPPLIERS_EMPTY: 'No hay agencias asociadas disponibles por ahora.',
+    DESTINATIONS_EMPTY: 'Nuevos destinos estarán disponibles pronto.',
+    MAP_PLACEHOLDER: 'Activa el mapa para cargar las agencias cercanas solo cuando lo necesites.',
+    MAP_CTA: 'Mostrar el mapa',
   },
 })
 

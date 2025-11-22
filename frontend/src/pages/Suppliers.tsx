@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useMemo } from 'react'
+import React, { Suspense, lazy, useMemo, useState } from 'react'
 import {
   Accordion,
   AccordionDetails,
@@ -7,6 +7,7 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Container,
   Grid,
   Link as MuiLink,
@@ -24,8 +25,108 @@ import Layout from '@/components/Layout'
 import Footer from '@/components/Footer'
 import Seo from '@/components/Seo'
 import { buildDescription } from '@/common/seo'
+import * as helper from '@/common/helper'
+import { strings } from '@/lang/supplier-page'
+import { getSupplierFallbackCopy } from './suppliers.utils'
 
 const SupplierList = lazy(() => import('@/components/SupplierList'))
+
+type SupplierBoundaryProps = {
+  onRetry: () => void
+  children: React.ReactNode
+}
+
+type SupplierBoundaryState = {
+  hasError: boolean
+}
+
+class SupplierListBoundary extends React.Component<SupplierBoundaryProps, SupplierBoundaryState> {
+  constructor(props: SupplierBoundaryProps) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: unknown) {
+    helper.error(error, 'Failed to render supplier list')
+  }
+
+  handleRetry = () => {
+    const { onRetry } = this.props
+    this.setState({ hasError: false }, onRetry)
+  }
+
+  render() {
+    const { children } = this.props
+    const { hasError } = this.state
+
+    if (hasError) {
+      const fallbackCopy = getSupplierFallbackCopy('error', strings)
+
+      return (
+        <Paper
+          role="alert"
+          elevation={0}
+          sx={{
+            p: 6,
+            textAlign: 'center',
+            borderRadius: 4,
+            backgroundColor: '#fff1f0',
+            border: '1px solid #f7c4c1',
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            {fallbackCopy.title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {fallbackCopy.description}
+          </Typography>
+          <Button variant="contained" color="primary" onClick={this.handleRetry}>
+            {fallbackCopy.action}
+          </Button>
+        </Paper>
+      )
+    }
+
+    return children
+  }
+}
+
+type SupplierFallbackProps = {
+  state: 'loading' | 'error'
+}
+
+const SupplierListFallback = ({ state }: SupplierFallbackProps) => {
+  const fallbackCopy = getSupplierFallbackCopy(state, strings)
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 6,
+        textAlign: 'center',
+        borderRadius: 4,
+        backgroundColor: state === 'loading' ? '#f5f9ff' : '#fff1f0',
+        border: state === 'loading' ? '1px solid #d6e6ff' : '1px solid #f7c4c1',
+      }}
+    >
+      <Typography variant="h6" gutterBottom>
+        {fallbackCopy.title}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        {fallbackCopy.description}
+      </Typography>
+      {state === 'loading' && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+          <CircularProgress aria-label={strings.SUPPLIERS_LOADING} />
+        </Box>
+      )}
+    </Paper>
+  )
+}
 
 interface FaqItem {
   question: string
@@ -77,6 +178,9 @@ const supplierListStructuredData = {
 
 const Suppliers = () => {
   const onLoad = () => {}
+
+  const [supplierListRetry, setSupplierListRetry] = useState(0)
+  const handleSupplierListRetry = () => setSupplierListRetry((value) => value + 1)
 
   const description = buildDescription(
     'Découvrez les agences de location de voitures en Tunisie validées par Plany.tn. Comparez les services, consultez les avis récents et réservez votre véhicule en toute confiance.'
@@ -523,7 +627,7 @@ const Suppliers = () => {
 
       <Container id="liste-agences" maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
         <Stack spacing={4}>
-          <Box>
+          <Box component="header" aria-label={strings.SUPPLIERS_A11Y}>
             <Chip
               label="Nos partenaires certifiés"
               sx={{
@@ -535,27 +639,18 @@ const Suppliers = () => {
               }}
             />
             <Typography component="h2" variant="h3" sx={{ mt: 2, fontWeight: 700, color: '#062451' }}>
-              Découvrez les agences Plany.tn
+              {strings.SUPPLIERS_TITLE}
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 720, mt: 1 }}>
               Toutes les agences ci-dessous sont actives, vérifiées et disposent d’un parc de véhicules disponibles immédiatement. Filtrez, comparez et contactez l’agence qui répond à vos attentes.
             </Typography>
           </Box>
 
-          <Suspense
-            fallback={(
-              <Paper elevation={0} sx={{ p: 6, textAlign: 'center', borderRadius: 4, backgroundColor: '#f5f9ff' }}>
-                <Typography variant="h6" gutterBottom>
-                  Chargement des agences…
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Merci de patienter pendant que nous affichons la liste des agences partenaires Plany.tn.
-                </Typography>
-              </Paper>
-            )}
-          >
-            <SupplierList />
-          </Suspense>
+          <SupplierListBoundary onRetry={handleSupplierListRetry}>
+            <Suspense fallback={<SupplierListFallback state="loading" />}>
+              <SupplierList key={supplierListRetry} />
+            </Suspense>
+          </SupplierListBoundary>
         </Stack>
       </Container>
 

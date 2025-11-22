@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Button, Checkbox, Dialog, DialogContent, FormControlLabel, Tab, Tabs } from '@mui/material'
 import L from 'leaflet'
 import { Helmet } from 'react-helmet'
@@ -14,20 +14,23 @@ import * as SupplierService from '@/services/SupplierService'
 import * as CountryService from '@/services/CountryService'
 import * as LocationService from '@/services/LocationService'
 import Layout from '@/components/Layout'
-import SupplierCarrousel from '@/components/SupplierCarrousel'
 import TabPanel, { a11yProps } from '@/components/TabPanel'
-import LocationCarrousel from '@/components/LocationCarrousel'
 import SearchForm from '@/components/SearchForm'
-import Map from '@/components/Map'
 import Footer from '@/components/Footer'
+import { filterCountriesWithLocations, filterSuppliersWithAvatars } from './home.utils'
 
 import Mini from '@/assets/img/mini.png'
 import Midi from '@/assets/img/midi.png'
 import Maxi from '@/assets/img/maxi.png'
 
 import '@/assets/css/home.css'
-import HowItWorks from '@/components/HowItWorks'
-import RentalAgencySection from '@/components/RentalAgencySection'
+
+const SupplierCarrousel = React.lazy(() => import('@/components/SupplierCarrousel'))
+const LocationCarrousel = React.lazy(() => import('@/components/LocationCarrousel'))
+const Map = React.lazy(() => import('@/components/Map'))
+const HowItWorks = React.lazy(() => import('@/components/HowItWorks'))
+const RentalAgencySection = React.lazy(() => import('@/components/RentalAgencySection'))
+const MINIMUM_LOCATIONS = env.MIN_LOCATIONS
 
 const Home = () => {
   const [suppliers, setSuppliers] = useState<bookcarsTypes.User[]>([])
@@ -40,20 +43,143 @@ const Home = () => {
   const [locations, setLocations] = useState<bookcarsTypes.Location[]>([])
   const [ranges, setRanges] = useState([bookcarsTypes.CarRange.Mini, bookcarsTypes.CarRange.Midi])
   const [openRangeSearchFormDialog, setOpenRangeSearchFormDialog] = useState(false)
+  const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(true)
+  const [isLoadingDestinations, setIsLoadingDestinations] = useState(true)
+  const [isLoadingLocations, setIsLoadingLocations] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [mapReady, setMapReady] = useState(false)
+  const mapContainerRef = useRef<HTMLDivElement | null>(null)
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = useCallback((_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue)
+  }, [])
+
+  const onLoad = useCallback(async () => {
+    setLoadError('')
+    setIsLoadingSuppliers(true)
+    setIsLoadingDestinations(true)
+    setIsLoadingLocations(true)
+
+    try {
+      const [allSuppliers, countriesWithLocations, loadedLocations] = await Promise.all([
+        SupplierService.getAllSuppliers(),
+        CountryService.getCountriesWithLocations('', true, MINIMUM_LOCATIONS),
+        LocationService.getLocationsWithPosition(),
+      ])
+
+      const filteredSuppliers = filterSuppliersWithAvatars(allSuppliers)
+      const shuffledSuppliers = bookcarsHelper.cloneArray(filteredSuppliers) || []
+      bookcarsHelper.shuffle(shuffledSuppliers)
+      setSuppliers(shuffledSuppliers)
+      setCountries(filterCountriesWithLocations(countriesWithLocations, MINIMUM_LOCATIONS))
+      setLocations(loadedLocations)
+    } catch (err) {
+      console.error('Home load error', err)
+      setLoadError(commonStrings.GENERIC_ERROR)
+    } finally {
+      setIsLoadingSuppliers(false)
+      setIsLoadingDestinations(false)
+      setIsLoadingLocations(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (mapReady) {
+      return undefined
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setMapReady(true)
+          }
+        })
+      },
+      { rootMargin: '200px' }
+    )
+
+    if (mapContainerRef.current) {
+      observer.observe(mapContainerRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [mapReady])
+
+  const renderSuppliersSection = () => {
+    if (isLoadingSuppliers) {
+      return (
+        <div className="section-placeholder" aria-live="polite" aria-busy="true">
+          {commonStrings.LOADING}
+        </div>
+      )
+    }
+
+    if (loadError) {
+      return <div className="section-placeholder error">{loadError}</div>
+    }
+
+    if (suppliers.length === 0) {
+      return <div className="section-placeholder muted">{strings.SUPPLIERS_EMPTY}</div>
+    }
+
+    return (
+      <Suspense fallback={<div className="section-placeholder" aria-busy="true">{commonStrings.LOADING}</div>}>
+        <SupplierCarrousel suppliers={suppliers} />
+      </Suspense>
+    )
   }
 
-  const onLoad = async () => {
-    let _suppliers = await SupplierService.getAllSuppliers()
-    _suppliers = _suppliers.filter((supplier) => supplier.avatar && !/no-image/i.test(supplier.avatar))
-    bookcarsHelper.shuffle(_suppliers)
-    setSuppliers(_suppliers)
-    const _countries = await CountryService.getCountriesWithLocations('', true, env.MIN_LOCATIONS)
-    setCountries(_countries)
-    const _locations = await LocationService.getLocationsWithPosition()
-    setLocations(_locations)
+  const renderDestinationSection = () => {
+    if (isLoadingDestinations) {
+      return (
+        <div className="section-placeholder" aria-live="polite" aria-busy="true">
+          {commonStrings.LOADING}
+        </div>
+      )
+    }
+
+    if (loadError) {
+      return <div className="section-placeholder error">{loadError}</div>
+    }
+
+    if (countries.length === 0) {
+      return <div className="section-placeholder muted">{strings.DESTINATIONS_EMPTY}</div>
+    }
+
+    return (
+      <div className="tabs">
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          aria-label="destinations"
+          TabIndicatorProps={{ sx: { display: env.isMobile() ? 'none' : null } }}
+          sx={{
+            '& .MuiTabs-flexContainer': {
+              flexWrap: 'wrap',
+            },
+          }}
+        >
+          {countries.map((country, index) => (
+            <Tab key={country._id} label={country.name?.toUpperCase()} {...a11yProps(index)} />
+          ))}
+        </Tabs>
+
+        {countries.map((country, index) => (
+          <TabPanel key={country._id} value={tabValue} index={index}>
+            <Suspense fallback={<div className="section-placeholder" aria-busy="true">{commonStrings.LOADING}</div>}>
+              <LocationCarrousel
+                locations={country.locations!}
+                onSelect={(location) => {
+                  setPickupLocation(location._id)
+                  setOpenLocationSearchFormDialog(true)
+                }}
+              />
+            </Suspense>
+          </TabPanel>
+        ))}
+      </div>
+    )
   }
 
   const language = UserService.getLanguage()
@@ -221,53 +347,17 @@ const Home = () => {
         </div>
 
         <div className="home-suppliers">
-          {suppliers.length > 0 && (
-            <>
-              <h1>{strings.SUPPLIERS_TITLE}</h1>
-              <SupplierCarrousel suppliers={suppliers} />
-            </>
-          )}
+          <h1>{strings.SUPPLIERS_TITLE}</h1>
+          {renderSuppliersSection()}
         </div>
 
-        {countries.length > 0 && (
-          <div className="destinations">
-            <h1>{strings.DESTINATIONS_TITLE}</h1>
-            <div className="tabs">
-              <Tabs
-                value={tabValue}
-                onChange={handleTabChange}
-                aria-label="destinations"
-                TabIndicatorProps={{ sx: { display: env.isMobile() ? 'none' : null } }}
-                sx={{
-                  '& .MuiTabs-flexContainer': {
-                    flexWrap: 'wrap',
-                  },
-                }}
-              >
-                {
-                  countries.map((country, index) => (
-                    <Tab key={country._id} label={country.name?.toUpperCase()} {...a11yProps(index)} />
-                  ))
-                }
-              </Tabs>
-
-              {
-                countries.map((country, index) => (
-                  <TabPanel key={country._id} value={tabValue} index={index}>
-                    <LocationCarrousel
-                      locations={country.locations!}
-                      onSelect={(location) => {
-                        setPickupLocation(location._id)
-                        setOpenLocationSearchFormDialog(true)
-                      }}
-                    />
-                  </TabPanel>
-                ))
-              }
-            </div>
-          </div>
-        )}
-        <HowItWorks />
+        <div className="destinations">
+          <h1>{strings.DESTINATIONS_TITLE}</h1>
+          {renderDestinationSection()}
+        </div>
+        <Suspense fallback={<div className="section-placeholder" aria-busy="true">{commonStrings.LOADING}</div>}>
+          <HowItWorks />
+        </Suspense>
         <div className="car-size">
           <h1>{strings.CAR_SIZE_TITLE}</h1>
           <p>{strings.CAR_SIZE_TEXT}</p>
@@ -383,28 +473,47 @@ const Home = () => {
           </Button>
         </div>
         <div className="home-map">
-          <Map
-            title={strings.MAP_TITLE}
-            position={new L.LatLng(33.886917, 9.537499)}
-            initialZoom={env.isMobile() ? 6 : 7}
-            locations={locations}
-            onSelelectPickUpLocation={async (locationId) => {
-              setPickupLocation(locationId)
-              if (sameLocation) {
-                setDropOffLocation(locationId)
-              } else {
-                setSameLocation(dropOffLocation === locationId)
-              }
-              setOpenLocationSearchFormDialog(true)
-            }}
-          // onSelelectDropOffLocation={async (locationId) => {
-          //   setDropOffLocation(locationId)
-          //   setSameLocation(pickupLocation === locationId)
-          //   helper.info(strings.MAP_DROP_OFF_SELECTED)
-          // }}
-          />
+          <div ref={mapContainerRef} className="map-wrapper">
+            {!mapReady && (
+              <div className="map-placeholder" aria-live="polite">
+                <p>{strings.MAP_PLACEHOLDER}</p>
+                <Button variant="outlined" onClick={() => setMapReady(true)} className="btn-secondary">
+                  {strings.MAP_CTA}
+                </Button>
+              </div>
+            )}
+            {mapReady && (
+              <Suspense fallback={<div className="section-placeholder" aria-busy="true">{commonStrings.LOADING}</div>}>
+                <Map
+                  title={strings.MAP_TITLE}
+                  position={new L.LatLng(33.886917, 9.537499)}
+                  initialZoom={env.isMobile() ? 6 : 7}
+                  locations={locations}
+                  onSelelectPickUpLocation={async (locationId) => {
+                    setPickupLocation(locationId)
+                    if (sameLocation) {
+                      setDropOffLocation(locationId)
+                    } else {
+                      setSameLocation(dropOffLocation === locationId)
+                    }
+                    setOpenLocationSearchFormDialog(true)
+                  }}
+                />
+              </Suspense>
+            )}
+            {isLoadingLocations && !mapReady && (
+              <div className="section-placeholder" aria-busy="true">
+                {commonStrings.LOADING}
+              </div>
+            )}
+            {loadError && !isLoadingLocations && !mapReady && (
+              <div className="section-placeholder error">{loadError}</div>
+            )}
+          </div>
         </div>
-        <RentalAgencySection />
+        <Suspense fallback={<div className="section-placeholder" aria-busy="true">{commonStrings.LOADING}</div>}>
+          <RentalAgencySection />
+        </Suspense>
       </div>
 
       <Dialog

@@ -40,6 +40,48 @@ div.bookings div.col-2 {
   inset: 0 0 0 300px;
 }
 
+div.bookings .bookings__state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #f6f8fb;
+}
+
+div.bookings .bookings__state-card {
+  width: 100%;
+  max-width: 480px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 32px rgba(11, 63, 140, 0.08);
+  border: 1px solid #e6ecf5;
+}
+
+div.bookings .bookings__state-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #062451;
+  margin: 0 0 12px;
+}
+
+div.bookings .bookings__retry {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: #0b7eff;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+div.bookings .bookings__retry:hover,
+div.bookings .bookings__retry:focus-visible {
+  background: #0a6ed1;
+  outline: none;
+}
+
 /* Device width is lower than or equal to 960px */
 
 @media only screen and (width <=960px) {

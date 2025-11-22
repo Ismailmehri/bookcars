@@ -19,6 +19,12 @@ import * as UserService from '@/services/UserService'
 import ReCaptchaProvider from '@/components/ReCaptchaProvider'
 import * as helper from '@/common/helper'
 import { sendLeadEvent } from '@/common/gtm'
+import {
+  canSubmitContact,
+  isMessageValid,
+  isSubjectValid,
+  sanitizeContactMessage,
+} from '@/pages/contact.utils'
 
 import '@/assets/css/contact-form.css'
 
@@ -35,6 +41,8 @@ const ContactForm = ({ user, className }: ContactFormProps) => {
   const [emailValid, setEmailValid] = useState(true)
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
+  const [subjectValid, setSubjectValid] = useState(true)
+  const [messageValid, setMessageValid] = useState(true)
   const [recaptchaToken, setRecaptchaToken] = useState('')
   const [refreshReCaptcha, setRefreshReCaptcha] = useState(false)
   const [sending, setSending] = useState(false)
@@ -69,11 +77,15 @@ const ContactForm = ({ user, className }: ContactFormProps) => {
   }
 
   const handleSubjectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSubject(e.target.value)
+    const { value } = e.target
+    setSubject(value)
+    setSubjectValid(isSubjectValid(value))
   }
 
   const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMessage(e.target.value)
+    const { value } = e.target
+    setMessage(value)
+    setMessageValid(isMessageValid(value))
   }
 
   const handleRecaptchaVerify = useCallback(async (token: string) => {
@@ -90,13 +102,25 @@ const ContactForm = ({ user, className }: ContactFormProps) => {
         return
       }
 
+      const _subjectValid = isSubjectValid(subject)
+      setSubjectValid(_subjectValid)
+      if (!_subjectValid) {
+        return
+      }
+
+      const _messageValid = isMessageValid(message)
+      setMessageValid(_messageValid)
+      if (!_messageValid) {
+        return
+      }
+
       const ip = await UserService.getIP()
 
       const payload: bookcarsTypes.SendEmailPayload = {
         from: email,
         to: env.CONTACT_EMAIL,
-        subject,
-        message,
+        subject: subject.trim(),
+        message: sanitizeContactMessage(message),
         recaptchaToken,
         ip
       }
@@ -117,6 +141,8 @@ const ContactForm = ({ user, className }: ContactFormProps) => {
         }
         setSubject('')
         setMessage('')
+        setSubjectValid(true)
+        setMessageValid(true)
         helper.info(strings.MESSAGE_SENT)
       } else {
         helper.error()
@@ -163,7 +189,19 @@ const ContactForm = ({ user, className }: ContactFormProps) => {
 
           <FormControl fullWidth margin="dense">
             <InputLabel className="required">{strings.SUBJECT}</InputLabel>
-            <OutlinedInput type="text" label={strings.SUBJECT} value={subject} required onChange={handleSubjectChange} autoComplete="off" />
+            <OutlinedInput
+              type="text"
+              label={strings.SUBJECT}
+              value={subject}
+              required
+              error={!subjectValid}
+              onChange={handleSubjectChange}
+              autoComplete="off"
+              inputProps={{ 'aria-describedby': 'contact-subject-helper' }}
+            />
+            <FormHelperText id="contact-subject-helper" error={!subjectValid}>
+              {!subjectValid ? strings.SUBJECT_HELP : strings.SUBJECT_HELP}
+            </FormHelperText>
           </FormControl>
 
           <FormControl fullWidth margin="dense">
@@ -178,7 +216,12 @@ const ContactForm = ({ user, className }: ContactFormProps) => {
               multiline
               minRows={7}
               maxRows={7}
+              error={!messageValid}
+              inputProps={{ 'aria-describedby': 'contact-message-helper' }}
             />
+            <FormHelperText id="contact-message-helper" error={!messageValid}>
+              {!messageValid ? strings.MESSAGE_HELP : strings.MESSAGE_HELP}
+            </FormHelperText>
           </FormControl>
 
           <div className="recaptcha">
@@ -189,7 +232,19 @@ const ContactForm = ({ user, className }: ContactFormProps) => {
           </div>
 
           <div className="buttons">
-            <Button type="submit" variant="contained" className="btn-primary btn-margin-bottom btn" size="small" disabled={sending}>
+            <Button
+              type="submit"
+              variant="contained"
+              className="btn-primary btn-margin-bottom btn"
+              size="small"
+              disabled={!canSubmitContact({
+                emailValid,
+                subject,
+                message,
+                sending,
+                recaptchaToken,
+              })}
+            >
               {
                 sending
                   ? <CircularProgress color="inherit" size={24} />

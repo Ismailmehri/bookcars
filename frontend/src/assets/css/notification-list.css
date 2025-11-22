@@ -27,6 +27,23 @@ div.notifications .empty-list {
   text-align: center;
 }
 
+.notification-state {
+  margin: 20px 12px;
+  max-width: 420px;
+  width: calc(100% - 24px);
+}
+
+.notification-state.error {
+  border-color: #f44336;
+}
+
+.notification-state-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+}
+
 div.notifications div.header-container {
   position: absolute;
   top: 0;
@@ -138,4 +155,24 @@ div.notifications div.notifications-list div.notification-container div.notifica
   display: flex;
   flex-direction: row;
   margin-left: 5px;
+}
+
+.refresh-spinner {
+  visibility: hidden;
+}
+
+.refresh-spinner.spinning,
+.header-actions .MuiIconButton-root:hover .refresh-spinner,
+.header-actions .MuiIconButton-root:focus-visible .refresh-spinner {
+  visibility: visible;
+}
+
+@media only screen and (width <=600px) {
+  .notification-state {
+    margin-top: 80px;
+  }
+
+  div.notifications div.notifications-list {
+    padding: 15px 10px 65px;
+  }
 }

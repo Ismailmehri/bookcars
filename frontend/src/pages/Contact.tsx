@@ -6,14 +6,21 @@ import ContactForm from '@/components/ContactForm'
 import Footer from '@/components/Footer'
 import Seo from '@/components/Seo'
 import { buildDescription } from '@/common/seo'
+import env from '@/config/env.config'
+import { strings as commonStrings } from '@/lang/common'
+import { strings as contactFormStrings } from '@/lang/contact-form'
+import Loading from '@/components/Loading'
+import Info from '@/components/Info'
 
 import '@/assets/css/contact.css'
 
 const Contact = () => {
   const [user, setUser] = useState<bookcarsTypes.User>()
+  const [loading, setLoading] = useState(true)
 
   const onLoad = (_user?: bookcarsTypes.User) => {
     setUser(_user)
+    setLoading(false)
   }
 
   const description = buildDescription(
@@ -72,7 +79,24 @@ const Contact = () => {
         </script>
       </Helmet>
       <div className="contact">
-        <ContactForm user={user} className="form" />
+        {loading && (
+          <div className="contact-state">
+            <Loading text={commonStrings.LOADING} />
+          </div>
+        )}
+
+        {!loading && !env.RECAPTCHA_ENABLED && (
+          <Info
+            className="contact-state"
+            message={contactFormStrings.RECAPTCHA_DISABLED}
+            hideLink
+            type="warning"
+          />
+        )}
+
+        {!loading && env.RECAPTCHA_ENABLED && (
+          <ContactForm user={user} className="form" />
+        )}
       </div>
       <Footer />
     </Layout>

@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  CircularProgress,
   Tooltip,
   Typography
 } from '@mui/material'
@@ -32,6 +33,7 @@ import * as helper from '@/common/helper'
 import env from '@/config/env.config'
 import Backdrop from '@/components/SimpleBackdrop'
 import { useGlobalContext, GlobalContextType } from '@/context/GlobalContext'
+import { buildRangeLabel, getNotificationsState } from './notification-list.utils'
 
 import '@/assets/css/notification-list.css'
 
@@ -50,6 +52,8 @@ const NotificationList = ({ user }: NotificationListProps) => {
   const [totalRecords, setTotalRecords] = useState(-1)
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
   const [selectedRows, setSelectedRows] = useState<bookcarsTypes.Notification[]>([])
+  const [hasError, setHasError] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const notificationsListRef = useRef<HTMLDivElement>(null)
 
   const _fr = user && user.language === 'fr'
@@ -60,6 +64,7 @@ const NotificationList = ({ user }: NotificationListProps) => {
     if (user && user._id) {
       try {
         setLoading(true)
+        setHasError(false)
         const data = await NotificationService.getNotifications(user._id, page)
         const _data = data && data.length > 0 ? data[0] : { pageInfo: { totalRecord: 0 }, resultData: [] }
         if (!_data) {
@@ -77,10 +82,15 @@ const NotificationList = ({ user }: NotificationListProps) => {
         if (notificationsListRef.current) {
           notificationsListRef.current.scrollTo(0, 0)
         }
-        setLoading(false)
       } catch (err) {
+        setHasError(true)
         helper.error(err)
+      } finally {
+        setLoading(false)
+        setRefreshing(false)
       }
+    } else {
+      setLoading(false)
     }
   }, [user, page])
 
@@ -91,22 +101,66 @@ const NotificationList = ({ user }: NotificationListProps) => {
   const checkedRows = rows.filter((row) => row.checked)
   const allChecked = rows.length > 0 && checkedRows.length === rows.length
   const indeterminate = checkedRows.length > 0 && checkedRows.length < rows.length
+  const state = getNotificationsState(loading, totalRecords, hasError)
 
   return (
     <>
       <div className="notifications">
-        {totalRecords === 0 && (
-          <Card variant="outlined" className="empty-list">
-            <CardContent>
-              <Typography color="textSecondary">{strings.EMPTY_LIST}</Typography>
+        {state === 'loading' && (
+          <Card variant="outlined" className="notification-state">
+            <CardContent className="notification-state-content">
+              <CircularProgress size={28} aria-label={strings.LOADING} />
+              <Typography component="p" color="textSecondary">
+                {strings.LOADING}
+              </Typography>
             </CardContent>
           </Card>
         )}
 
-        {totalRecords > 0 && (
+        {state === 'error' && (
+          <Card variant="outlined" className="notification-state error">
+            <CardContent className="notification-state-content">
+              <Typography component="p" color="error">
+                {strings.FETCH_ERROR}
+              </Typography>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => {
+                  setRefreshing(true)
+                  fetch()
+                }}
+                className="btn-primary"
+              >
+                {strings.RETRY}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {state === 'empty' && (
+          <Card variant="outlined" className="empty-list">
+            <CardContent>
+              <Typography color="textSecondary">{strings.EMPTY_LIST}</Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                className="btn-secondary"
+                onClick={() => {
+                  setRefreshing(true)
+                  fetch()
+                }}
+              >
+                {strings.REFRESH}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {state === 'ready' && (
           <>
             <div className="header-container">
-              <div className="header">
+              <div className="header" aria-live="polite">
                 <div className="header-checkbox">
                   <Checkbox
                     checked={allChecked}
@@ -123,6 +177,7 @@ const NotificationList = ({ user }: NotificationListProps) => {
                       }
                       setRows(bookcarsHelper.clone(rows))
                     }}
+                    inputProps={{ 'aria-label': 'toggle all notifications' }}
                   />
                 </div>
                 {checkedRows.length > 0 && (
@@ -199,6 +254,17 @@ const NotificationList = ({ user }: NotificationListProps) => {
                         <DeleteIcon />
                       </IconButton>
                     </Tooltip>
+                    <Tooltip title={strings.REFRESH}>
+                      <IconButton
+                        disabled={refreshing}
+                        onClick={() => {
+                          setRefreshing(true)
+                          fetch()
+                        }}
+                      >
+                        <CircularProgress size={20} className={`refresh-spinner${refreshing ? ' spinning' : ''}`} />
+                      </IconButton>
+                    </Tooltip>
                   </div>
                 )}
               </div>
@@ -213,6 +279,7 @@ const NotificationList = ({ user }: NotificationListProps) => {
                         row.checked = event.target.checked
                         setRows(bookcarsHelper.clone(rows))
                       }}
+                      inputProps={{ 'aria-label': strings.VIEW }}
                     />
                   </div>
                   <div className={`notification${!row.isRead ? ' unread' : ''}`}>
@@ -335,7 +402,11 @@ const NotificationList = ({ user }: NotificationListProps) => {
               ))}
             </div>
             <div className="notifications-footer">
-              {rowCount > -1 && <div className="row-count">{`${(page - 1) * env.PAGE_SIZE + 1}-${rowCount} ${commonStrings.OF} ${totalRecords}`}</div>}
+              {rowCount > -1 && (
+                <div className="row-count">
+                  {`${buildRangeLabel(page, totalRecords, env.PAGE_SIZE, rows.length)} ${commonStrings.OF} ${totalRecords}`}
+                </div>
+              )}
 
               <div className="actions">
                 <IconButton

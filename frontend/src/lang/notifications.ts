@@ -4,6 +4,10 @@ import * as langHelper from '@/common/langHelper'
 const strings = new LocalizedStrings({
   fr: {
     EMPTY_LIST: 'Pas de notifications',
+    LOADING: 'Chargement des notifications...',
+    FETCH_ERROR: 'Une erreur est survenue lors du chargement des notifications.',
+    RETRY: 'Réessayer',
+    REFRESH: 'Actualiser',
     VIEW: 'Consulter',
     MARK_AS_READ: 'Marquer comme lu',
     MARK_AS_UNREAD: 'Marquer comme non lu',
@@ -15,6 +19,10 @@ const strings = new LocalizedStrings({
   },
   en: {
     EMPTY_LIST: 'No notifications',
+    LOADING: 'Loading notifications...',
+    FETCH_ERROR: 'Something went wrong while loading notifications.',
+    RETRY: 'Retry',
+    REFRESH: 'Refresh',
     VIEW: 'View',
     MARK_AS_READ: 'Mark as read',
     MARK_AS_UNREAD: 'Mark as unread',

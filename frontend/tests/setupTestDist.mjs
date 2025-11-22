@@ -40,8 +40,24 @@ await Promise.all([
     "export default {\n  initialize: () => {},\n  dataLayer: () => {},\n}\n",
   ),
   ensureFile(
+    path.join(distRoot, 'node_modules/@/components/Layout.js'),
+    "export default function Layout({ children }) { return children ?? null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/SearchForm.js'),
+    "export default function SearchForm() { return null }\n",
+  ),
+  ensureFile(
     path.join(distRoot, 'node_modules/:bookcars-types/index.js'),
     "export const AppType = {\n  Frontend: 'frontend',\n  Backend: 'backend',\n}\n",
+  ),
+  ensureFile(
+    path.join(frontendSrcRoot, 'components/Layout.js'),
+    "export default function Layout({ children }) { return children ?? null }\n",
+  ),
+  ensureFile(
+    path.join(frontendSrcRoot, 'components/SearchForm.js'),
+    "export default function SearchForm() { return null }\n",
   ),
   ensureCopiedFromFrontend('config/env.config.js'),
   ensureCopiedFromFrontend('config/const.js'),
@@ -70,6 +86,33 @@ try {
   compiledUpdated = compiledUpdated.replace(/(['"])\.\/const\1/g, '$1./const.js$1')
   if (compiledUpdated !== compiledEnvSource) {
     await writeFile(compiledEnvFile, compiledUpdated)
+  }
+} catch {}
+
+const compiledLocationComponentPath = path.join(frontendSrcRoot, 'components/location/LocationLandingPage.js')
+try {
+  let compiledLocationComponent = await readFile(compiledLocationComponentPath, 'utf8')
+  const compiledLocationComponentUpdated = compiledLocationComponent
+    .replace(/@\/components\//g, '../')
+    .replace(/@\/common\//g, '../../common/')
+    .replace(/@\/services\//g, '../../services/')
+    .replace(/@\/assets\//g, '../../assets/')
+    .replace("../Layout'", "../Layout.js'")
+    .replace("../Footer'", "../Footer.js'")
+    .replace("../Seo'", "../Seo.js'")
+    .replace("../SearchForm'", "../SearchForm.js'")
+    .replace("../Map'", "../Map.js'")
+    .replace("../HowItWorks'", "../HowItWorks.js'")
+    .replace("../SupplierCarrousel'", "../SupplierCarrousel.js'")
+    .replace("../RentalAgencySection'", "../RentalAgencySection.js'")
+    .replace("../location/utils'", "../location/utils.js'")
+    .replace("../location/schema'", "../location/schema.js'")
+    .replace("../../services/SupplierService'", "../../services/SupplierService.js'")
+    .replace("import MiniImage from '../../assets/img/mini.png';", "const MiniImage = '/assets/img/mini.png';")
+    .replace("import MidiImage from '../../assets/img/midi.png';", "const MidiImage = '/assets/img/midi.png';")
+    .replace("import MaxiImage from '../../assets/img/maxi.png';", "const MaxiImage = '/assets/img/maxi.png';")
+  if (compiledLocationComponentUpdated !== compiledLocationComponent) {
+    await writeFile(compiledLocationComponentPath, compiledLocationComponentUpdated)
   }
 } catch {}
 
@@ -142,6 +185,21 @@ try {
   compiledGtmUpdated = compiledGtmUpdated.replace(/@\/services\/UserService/g, '../services/UserService.js')
   if (compiledGtmUpdated !== compiledGtmSource) {
     await writeFile(compiledGtmFilePath, compiledGtmUpdated)
+  }
+} catch {}
+
+const compiledLocationPagePath = path.join(frontendSrcRoot, 'pages/LocationVoitureTunisie.js')
+try {
+  let compiledLocationPage = await readFile(compiledLocationPagePath, 'utf8')
+  const compiledLocationPageUpdated = compiledLocationPage
+    .replace(/@\/components\//g, '../components/')
+    .replace(/@\/common\//g, '../common/')
+    .replace("../components/Seo'", "../components/Seo.js'")
+    .replace("../components/location/LocationLandingPage'", "../components/location/LocationLandingPage.js'")
+    .replace("../common/seo'", "../common/seo.js'")
+    .replace("./locationData_SEO'", "./locationData_SEO.js'")
+  if (compiledLocationPageUpdated !== compiledLocationPage) {
+    await writeFile(compiledLocationPagePath, compiledLocationPageUpdated)
   }
 } catch {}
 

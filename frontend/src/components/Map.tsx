@@ -64,7 +64,7 @@ const ZoomControlledLayer = ({ zoom, minZoom, children }: ZoomControlledLayerPro
   return null
 }
 
-interface MapProps {
+export interface MapProps {
   title?: string
   description?: string
   position?: LatLngExpression
@@ -193,10 +193,14 @@ const Map = ({
         zoom={_initialZoom}
         className={`${className ? `${className} ` : ''}map`}
         ref={setMap}
+        preferCanvas
       >
         <TileLayer
           // attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url={tileURL}
+          crossOrigin="anonymous"
+          updateWhenIdle
+          updateWhenZooming={false}
         />
         <ZoomTracker setZoom={setZoom} />
         <ZoomControlledLayer zoom={zoom} minZoom={7.5}>

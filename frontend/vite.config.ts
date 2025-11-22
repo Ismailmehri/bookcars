@@ -32,6 +32,23 @@ export default ({ mode }: { mode: string }) => {
       modulePreload: {
         polyfill: true,
       },
+      cssCodeSplit: true,
+      sourcemap: mode !== 'production',
+      reportCompressedSize: false,
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            if (id.includes('node_modules')) {
+              if (id.includes('react')) return 'react'
+              if (id.includes('leaflet')) return 'leaflet'
+              if (id.includes('@mui')) return 'mui'
+              return 'vendor'
+            }
+
+            return undefined
+          },
+        },
+      },
     },
   })
 }

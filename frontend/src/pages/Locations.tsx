@@ -7,7 +7,7 @@ import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import * as LocationService from '@/services/LocationService'
 import Layout from '@/components/Layout'
-import Map from '@/components/Map'
+import MapLazy from '@/components/MapLazy'
 import SearchForm from '@/components/SearchForm'
 import Footer from '@/components/Footer'
 import Seo from '@/components/Seo'
@@ -18,6 +18,7 @@ const Locations = () => {
   const [locations, setLocations] = useState<bookcarsTypes.Location[]>([])
   const [pickupLocation, setPickupLocation] = useState('')
   const [openSearchFormDialog, setOpenSearchFormDialog] = useState(false)
+  const [showMap, setShowMap] = useState(false)
 
   // Fonction pour charger les emplacements au chargement du composant
   const onLoad = async () => {
@@ -92,10 +93,17 @@ const Locations = () => {
 
       {/* Contenu principal */}
       <div className="locations">
-        <Map
+        {!showMap && (
+          <button type="button" className="map-activate" onClick={() => setShowMap(true)}>
+            Afficher la carte
+          </button>
+        )}
+        <MapLazy
+          show={showMap}
           position={new L.LatLng(34.0268755, 1.6528399999999976)}
           initialZoom={5}
           locations={locations}
+          placeholderLabel="Carte en cours de chargement"
           onSelelectPickUpLocation={async (locationId) => {
             setPickupLocation(locationId)
             setOpenSearchFormDialog(true)

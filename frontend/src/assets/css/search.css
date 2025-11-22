@@ -18,6 +18,11 @@ div.search div.col-1 .map {
   margin-bottom: 3px;
 }
 
+.map-section {
+  position: relative;
+  width: 100%;
+}
+
 div.search div.col-1 .map .view-on-map {
   position: absolute;
   top: 10px;

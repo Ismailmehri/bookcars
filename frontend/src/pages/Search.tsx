@@ -22,7 +22,7 @@ import GearboxFilter from '@/components/GearboxFilter'
 import MileageFilter from '@/components/MileageFilter'
 import DepositFilter from '@/components/DepositFilter'
 import CarList from '@/components/CarList'
-import Map from '@/components/Map'
+import MapLazy from '@/components/MapLazy'
 
 import ViewOnMap from '@/assets/img/view-on-map.png'
 
@@ -56,6 +56,7 @@ const Search = () => {
   const [rating] = useState(-1)
   const [seats] = useState(-1)
   const [openMapDialog, setOpenMapDialog] = useState(false)
+  const [mapReady, setMapReady] = useState(false)
   const [minMax, setMinMAx] = useState<number[]>([40, 1000])
 
   // const [distance, setDistance] = useState('')
@@ -435,23 +436,38 @@ const Search = () => {
             {!loading && (
               <>
                 {pickupLocation.latitude && pickupLocation.longitude && (
-                  <Map
-                    position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
-                    initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
-                    parkingSpots={pickupLocation.parkingSpots}
-                    className="map"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOpenMapDialog(true)
-                      }}
-                      className="view-on-map"
+                  <div className="map-section">
+                    {!mapReady && (
+                      <button
+                        type="button"
+                        className="view-on-map"
+                        onClick={() => setMapReady(true)}
+                      >
+                        <img alt="View On Map" src={ViewOnMap} loading="lazy" />
+                        <span>{strings.VIEW_ON_MAP}</span>
+                      </button>
+                    )}
+                    <MapLazy
+                      show={mapReady}
+                      position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
+                      initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
+                      parkingSpots={pickupLocation.parkingSpots}
+                      className="map"
+                      placeholderLabel={strings.VIEW_ON_MAP}
                     >
-                      <img alt="View On Map" src={ViewOnMap} />
-                      <span>{strings.VIEW_ON_MAP}</span>
-                    </button>
-                  </Map>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMapReady(true)
+                          setOpenMapDialog(true)
+                        }}
+                        className="view-on-map"
+                      >
+                        <img alt="View On Map" src={ViewOnMap} loading="lazy" />
+                        <span>{strings.VIEW_ON_MAP}</span>
+                      </button>
+                    </MapLazy>
+                  </div>
                 )}
                 <CarFilter
                   className="filter"
@@ -611,21 +627,25 @@ const Search = () => {
         </DialogTitle>
         <DialogContent className="map-dialog-content">
           {pickupLocation && (
-            <Map
+            <MapLazy
+              show={openMapDialog && mapReady}
               position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
               initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
               parkingSpots={pickupLocation.parkingSpots}
               className="map"
+              placeholderLabel={strings.VIEW_ON_MAP}
             >
               <button
                 type="button"
-                onClick={() => { }}
+                onClick={() => {
+                  setOpenMapDialog(false)
+                }}
                 className="view-on-map"
               >
-                <img alt="View On Map" src={ViewOnMap} />
+                <img alt="View On Map" src={ViewOnMap} loading="lazy" />
                 <span>{strings.VIEW_ON_MAP}</span>
               </button>
-            </Map>
+            </MapLazy>
           )}
         </DialogContent>
       </Dialog>

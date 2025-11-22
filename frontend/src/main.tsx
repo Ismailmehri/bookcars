@@ -204,6 +204,18 @@ const renderApp = (language: string) => {
   )
 }
 
+const registerServiceWorker = () => {
+  if (!('serviceWorker' in navigator)) {
+    return
+  }
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .catch((error) => console.error('Service worker registration failed', error))
+  })
+}
+
 const bootstrap = async () => {
   if (env.isProduction) {
     disableDevTools()
@@ -287,6 +299,7 @@ const bootstrap = async () => {
   const language = UserService.getLanguage() || env.DEFAULT_LANGUAGE
   applyLanguage(language)
   renderApp(language)
+  registerServiceWorker()
 }
 
 bootstrap().catch((error) => {

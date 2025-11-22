@@ -217,7 +217,13 @@ export const initGTM = () => {
   const trackingId = getTrackingId()
 
   if (isAnalyticsEnabled()) {
-    TagManager.initialize({ gtmId: trackingId })
+    const loadManager = () => TagManager.initialize({ gtmId: trackingId })
+
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(() => loadManager())
+    } else {
+      setTimeout(() => loadManager(), 1500)
+    }
   } else {
     console.warn('GTM is not enabled or GTM ID is missing.')
   }

@@ -9,3 +9,23 @@ div.locations {
 div.locations .map {
   height: 800px;
 }
+
+.map-activate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f3b64;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(15, 59, 100, 0.14);
+  margin-bottom: 16px;
+}
+
+.map-activate:focus-visible {
+  outline: 3px solid #faad43;
+  outline-offset: 2px;
+}

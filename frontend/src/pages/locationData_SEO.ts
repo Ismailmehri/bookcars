@@ -243,21 +243,21 @@ locationDataSEO.tunisie = {
   nearbyDestinations: nearbyFactory('la Tunisie', [
     {
       name: 'Tunis & Carthage',
-      image: '/location-voiture-tunis-carthage.webp',
+      image: '/location-voiture-tunis-medina.webp',
       imageAlt: 'Location voiture Tunis Carthage avec Plany.tn',
       link: '/location-voiture-pas-cher-a-tunis',
       description: 'Découvrir la médina, Sidi Bou Saïd et le site de Carthage.',
     },
     {
       name: 'Sousse & Monastir',
-      image: '/location-voiture-sousse-monastir.webp',
+      image: '/location-voiture-sousse-unesco.webp',
       imageAlt: 'Location voiture Sousse Monastir avec Plany.tn',
       link: '/location-voiture-pas-cher-a-sousse',
       description: 'Port El Kantaoui, plages du Sahel et aéroport Monastir.',
     },
     {
       name: 'Djerba & Sud tunisien',
-      image: '/location-voiture-djerba-sud.webp',
+      image: '/location-voiture-jerba-midoun.webp',
       imageAlt: 'Location voiture Djerba et Sud tunisien avec Plany.tn',
       link: '/location-voiture-pas-cher-a-djerba',
       description: 'Plages, ksour et excursions vers Tataouine ou Douz.',

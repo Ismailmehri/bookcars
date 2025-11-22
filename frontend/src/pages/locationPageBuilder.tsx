@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { Suspense, lazy } from 'react'
 import { buildDescription } from '../common/seo.js'
 import type { LocationLandingPageProps } from '../components/location/LocationLandingPage'

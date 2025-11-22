@@ -1,4 +1,4 @@
-import React from 'react'
+/* eslint-disable react-refresh/only-export-components */
 import { buildLocationSeo, createLocationPage, resolveLocationPage } from './locationPageBuilder.js'
 
 const locationPageKey = 'tunisie'

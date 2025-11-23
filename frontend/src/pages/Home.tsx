@@ -13,6 +13,7 @@ import * as UserService from '@/services/UserService'
 import * as SupplierService from '@/services/SupplierService'
 import * as CountryService from '@/services/CountryService'
 import * as LocationService from '@/services/LocationService'
+import * as helper from '@/common/helper'
 import Layout from '@/components/Layout'
 import SupplierCarrousel from '@/components/SupplierCarrousel'
 import TabPanel, { a11yProps } from '@/components/TabPanel'
@@ -43,20 +44,49 @@ const Home = () => {
   const [ranges, setRanges] = useState([bookcarsTypes.CarRange.Mini, bookcarsTypes.CarRange.Midi])
   const [openRangeSearchFormDialog, setOpenRangeSearchFormDialog] = useState(false)
   const [showMap, setShowMap] = useState(false)
+  const [supplierState, setSupplierState] = useState<'idle' | 'loading' | 'error' | 'success'>('idle')
+  const [locationState, setLocationState] = useState<'idle' | 'loading' | 'error' | 'success'>('idle')
+  const [supplierError, setSupplierError] = useState('')
+  const [locationError, setLocationError] = useState('')
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue)
   }
 
   const onLoad = async () => {
-    let _suppliers = await SupplierService.getAllSuppliers()
-    _suppliers = _suppliers.filter((supplier) => supplier.avatar && !/no-image/i.test(supplier.avatar))
-    bookcarsHelper.shuffle(_suppliers)
-    setSuppliers(_suppliers)
-    const _countries = await CountryService.getCountriesWithLocations('', true, env.MIN_LOCATIONS)
-    setCountries(_countries)
-    const _locations = await LocationService.getLocationsWithPosition()
-    setLocations(_locations)
+    setSupplierState('loading')
+    setLocationState('loading')
+    setSupplierError('')
+    setLocationError('')
+
+    try {
+      let _suppliers = await SupplierService.getAllSuppliers()
+      _suppliers = _suppliers.filter((supplier) => supplier.avatar && !/no-image/i.test(supplier.avatar))
+      bookcarsHelper.shuffle(_suppliers)
+      setSuppliers(_suppliers)
+      setSupplierState('success')
+    } catch (error) {
+      helper.error(error)
+      setSupplierState('error')
+      setSupplierError(commonStrings.GENERIC_ERROR)
+    }
+
+    try {
+      const _countries = await CountryService.getCountriesWithLocations('', true, env.MIN_LOCATIONS)
+      setCountries(_countries)
+      setLocationState('success')
+    } catch (error) {
+      helper.error(error)
+      setLocationState('error')
+      setLocationError(commonStrings.GENERIC_ERROR)
+    }
+
+    try {
+      const _locations = await LocationService.getLocationsWithPosition()
+      setLocations(_locations)
+    } catch (error) {
+      helper.error(error)
+    }
   }
 
   const language = UserService.getLanguage()
@@ -224,17 +254,31 @@ const Home = () => {
         </div>
 
         <div className="home-suppliers">
-          {suppliers.length > 0 && (
-            <>
-              <h1>{strings.SUPPLIERS_TITLE}</h1>
-              <SupplierCarrousel suppliers={suppliers} />
-            </>
-          )}
+          <h1>{strings.SUPPLIERS_TITLE}</h1>
+          <SupplierCarrousel
+            suppliers={suppliers}
+            loading={supplierState === 'loading'}
+            error={supplierState === 'error' ? supplierError : undefined}
+            onRetry={onLoad}
+          />
         </div>
 
-        {countries.length > 0 && (
-          <div className="destinations">
-            <h1>{strings.DESTINATIONS_TITLE}</h1>
+        <div className="destinations">
+          <h1>{strings.DESTINATIONS_TITLE}</h1>
+          {locationState === 'error' && (
+            <div className="destinations__status" role="alert">
+              {locationError}
+              <button type="button" onClick={onLoad}>
+                {commonStrings.TRY_AGAIN}
+              </button>
+            </div>
+          )}
+          {locationState === 'loading' && (
+            <div className="destinations__status" aria-live="polite" role="status">
+              {strings.DESTINATIONS_LOADING}
+            </div>
+          )}
+          {countries.length > 0 && (
             <div className="tabs">
               <Tabs
                 value={tabValue}
@@ -247,29 +291,28 @@ const Home = () => {
                   },
                 }}
               >
-                {
-                  countries.map((country, index) => (
-                    <Tab key={country._id} label={country.name?.toUpperCase()} {...a11yProps(index)} />
-                  ))
-                }
+                {countries.map((country, index) => (
+                  <Tab key={country._id} label={country.name?.toUpperCase()} {...a11yProps(index)} />
+                ))}
               </Tabs>
 
-              {
-                countries.map((country, index) => (
-                  <TabPanel key={country._id} value={tabValue} index={index}>
-                    <LocationCarrousel
-                      locations={country.locations!}
-                      onSelect={(location) => {
-                        setPickupLocation(location._id)
-                        setOpenLocationSearchFormDialog(true)
-                      }}
-                    />
-                  </TabPanel>
-                ))
-              }
+              {countries.map((country, index) => (
+                <TabPanel key={country._id} value={tabValue} index={index}>
+                  <LocationCarrousel
+                    locations={country.locations!}
+                    loading={locationState === 'loading'}
+                    error={locationState === 'error' ? locationError : undefined}
+                    onRetry={onLoad}
+                    onSelect={(location) => {
+                      setPickupLocation(location._id)
+                      setOpenLocationSearchFormDialog(true)
+                    }}
+                  />
+                </TabPanel>
+              ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
         <HowItWorks />
         <div className="car-size">
           <h1>{strings.CAR_SIZE_TITLE}</h1>

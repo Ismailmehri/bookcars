@@ -1,54 +1,47 @@
 import React from 'react'
-import { Link } from '@mui/material'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
-import ErrorIcon from '@mui/icons-material/Error'
-import InfoIcon from '@mui/icons-material/Info'
 import Seo from '@/components/Seo'
 import { strings as commonStrings } from '@/lang/common'
 
 import '@/assets/css/info.css'
 
+type InfoTone = 'success' | 'warning' | 'info'
+
 interface InfoProps {
-  className?: string;
-  message: string;
-  hideLink?: boolean;
-  style?: React.CSSProperties;
-  type?: 'success' | 'warning' | 'info'; // Type pour afficher une icône spécifique
+  className?: string
+  message: string
+  hideLink?: boolean
+  style?: React.CSSProperties
+  type?: InfoTone
 }
 
-const Info = ({ className, message, hideLink, style, type }: InfoProps) => {
-  // Détermine l'icône à afficher en fonction du type
-  const renderIcon = () => {
-    switch (type) {
-      case 'success':
-        return <CheckCircleIcon style={{ color: 'green', fontSize: '3rem', marginRight: '10px' }} />
-      case 'warning':
-        return <ErrorIcon style={{ color: 'orange', fontSize: '3rem', marginRight: '10px' }} />
-      case 'info':
-        return <InfoIcon style={{ color: 'blue', fontSize: '3rem', marginRight: '10px' }} />
-      default:
-        return null
-    }
-  }
+const toneIcon = {
+  success: '✓',
+  warning: '!',
+  info: 'i',
+} satisfies Record<InfoTone, string>
 
-  return (
-    <>
-      <Seo robots="noindex,nofollow" />
-      <div style={style} className={`${className ? `${className} ` : ''}info-overlay`}>
-        <div className="info-container">
-          <div className="info-content">
-            {renderIcon()}
-            <p className="info-message">{message}</p>
-          </div>
-          {!hideLink && (
-            <Link href="/" className="info-link">
-              {commonStrings.GO_TO_HOME}
-            </Link>
-          )}
+const Info = ({ className, message, hideLink, style, type = 'info' }: InfoProps) => (
+  <>
+    <Seo robots="noindex,nofollow" />
+    <section
+      style={style}
+      className={`${className ? `${className} ` : ''}info-overlay`}
+      role="status"
+      aria-live="polite"
+    >
+      <div className={`info-panel info-panel--${type}`}>
+        <div className="info-panel__icon" aria-hidden>
+          {toneIcon[type]}
         </div>
+        <p className="info-panel__message">{message}</p>
+        {!hideLink && (
+          <a href="/" className="info-panel__link">
+            {commonStrings.GO_TO_HOME}
+          </a>
+        )}
       </div>
-    </>
-  )
-}
+    </section>
+  </>
+)
 
 export default Info

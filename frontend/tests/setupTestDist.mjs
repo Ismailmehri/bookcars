@@ -72,7 +72,12 @@ await Promise.all([
   ),
   ensureFile(
     path.join(distRoot, 'node_modules/:bookcars-helper/index.js'),
-    'export const clone = (value) => JSON.parse(JSON.stringify(value ?? null))\nexport const days = () => 0\n',
+    [
+      'export const clone = (value) => JSON.parse(JSON.stringify(value ?? null))',
+      'export const days = () => 0',
+      "export const joinURL = (...parts) => parts.filter(Boolean).join('/')",
+      '',
+    ].join('\n'),
   ),
   ensureFile(
     path.join(distRoot, 'node_modules/react-localization/index.js'),
@@ -80,7 +85,14 @@ await Promise.all([
   ),
   ensureFile(
     path.join(distRoot, 'node_modules/@mui/icons-material/index.js'),
-    'export const MailOutline = () => null\nexport default { MailOutline }\n',
+    [
+      'export const MailOutline = () => null',
+      'export const ArrowLeft = () => null',
+      'export const ArrowRight = () => null',
+      'export const LocationOn = () => null',
+      'export default { MailOutline, ArrowLeft, ArrowRight, LocationOn }',
+      '',
+    ].join('\n'),
   ),
   ensureFile(
     path.join(frontendSrcRoot, 'components/Layout.js'),
@@ -218,6 +230,18 @@ await patchAliases(path.join(frontendSrcRoot, 'pages/Contact.js'), [
   ['import[^\\n]*contact\\.css[^\\n]*\\n', ''],
 ])
 
+await patchAliases(path.join(frontendSrcRoot, 'pages/Error.js'), [
+  ['@/components/Seo', '../components/Seo.js'],
+  ['@/lang/common', '../lang/common.js'],
+  ['import[^\\n]*error\\.css[^\\n]*\\n', ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/Info.js'), [
+  ['@/components/Seo', '../components/Seo.js'],
+  ['@/lang/common', '../lang/common.js'],
+  ['import[^\\n]*info\\.css[^\\n]*\\n', ''],
+])
+
 await patchAliases(path.join(frontendSrcRoot, 'components/ContactForm.js'), [
   ['@/config/env.config', '../config/env.config.js'],
   ['@/lang/common', '../lang/common.js'],
@@ -236,8 +260,37 @@ await patchAliases(path.join(frontendSrcRoot, 'components/Footer.js'), [
   ['import SecurePayment[^\\n]*\n', "const SecurePayment = '/assets/img/secure-payment.png'\n"],
 ])
 
+await patchAliases(path.join(frontendSrcRoot, 'components/SupplierCarrousel.js'), [
+  ["import Slider from 'react-slick';", 'const Slider = ({ children }) => children'],
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/assets/css/supplier-carrousel.css', ''],
+  ["import 'slick-carousel/slick/slick.css';", ''],
+  ["import 'slick-carousel/slick/slick-theme.css';", ''],
+  ["import '';", ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'components/LocationCarrousel.js'), [
+  ["import Slider from 'react-slick';", 'const Slider = ({ children }) => children'],
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/lang/location-carrousel', '../lang/location-carrousel.js'],
+  ['@/lang/common', '../lang/common.js'],
+  ['import[^\\n]*location-carrousel\\.css[^\\n]*\\n', ''],
+  ['./Badge', './Badge.js'],
+  ["import 'slick-carousel/slick/slick.css';", ''],
+  ["import 'slick-carousel/slick/slick-theme.css';", ''],
+  ["import '';", ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'components/Badge.js'), [
+  ['import[^\\n]*badge\\.css[^\\n]*\\n', ''],
+])
+
 await patchAliases(path.join(frontendSrcRoot, 'lang/common.js'), [
   ['@/config/env.config', '../config/env.config.js'],
+  ['@/common/langHelper', '../common/langHelper.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'lang/location-carrousel.js'), [
   ['@/common/langHelper', '../common/langHelper.js'],
 ])
 

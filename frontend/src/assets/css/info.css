@@ -1,52 +1,82 @@
 .info-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 10px;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(12, 34, 64, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.info-panel {
+  background: #fff;
+  border-radius: 16px;
+  padding: 22px 24px;
+  box-shadow: 0 18px 40px rgba(0, 37, 90, 0.12);
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  min-width: min(520px, 100%);
+  text-align: center;
+  animation: fadeIn 0.25s ease;
+}
+
+.info-panel__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 18px;
+  color: #0f4c81;
+  background: #e6f2ff;
+}
+
+.info-panel__message {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #0f172a;
+  line-height: 1.6;
+}
+
+.info-panel__link {
+  color: #0f4c81;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid #0f4c81;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.info-panel__link:hover,
+.info-panel__link:focus-visible {
+  background: #0f4c81;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.info-panel--success .info-panel__icon {
+  background: #e5f6e8;
+  color: #1b8e3e;
+}
+
+.info-panel--warning .info-panel__icon {
+  background: #fff4e5;
+  color: #c76a15;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
   }
-  .info-container {
-    background: #fff;
-    padding: 20px 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    text-align: center;
-    max-width: 600px;
-    width: 100%;
-    animation: fadeIn 0.3s ease-in-out;
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
-  .info-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 15px;
-  }
-  .info-message {
-    font-size: 1.2rem;
-    color: #333;
-    margin: 0;
-  }
-  .info-link {
-    color: #007bff;
-    text-decoration: none;
-    font-weight: bold;
-  }
-  .info-link:hover {
-    text-decoration: underline;
-  }
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.9);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
+}

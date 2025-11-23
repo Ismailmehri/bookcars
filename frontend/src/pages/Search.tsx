@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { Suspense, useEffect, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 import { Box, Dialog, DialogContent, DialogTitle, IconButton, Paper, Slider, Typography } from '@mui/material'
 import { Close as CloseIcon } from '@mui/icons-material'
@@ -22,12 +22,14 @@ import GearboxFilter from '@/components/GearboxFilter'
 import MileageFilter from '@/components/MileageFilter'
 import DepositFilter from '@/components/DepositFilter'
 import CarList from '@/components/CarList'
-import Map from '@/components/Map'
+import MapPlaceholder from '@/components/MapPlaceholder'
 
 import ViewOnMap from '@/assets/img/view-on-map.png'
 
 import '@/assets/css/search.css'
 import LocationHeader from '@/components/LocationHeader'
+
+const MapView = React.lazy(() => import('@/components/Map'))
 
 const Search = () => {
   const location = useLocation()
@@ -56,6 +58,8 @@ const Search = () => {
   const [rating] = useState(-1)
   const [seats] = useState(-1)
   const [openMapDialog, setOpenMapDialog] = useState(false)
+  const [showMap, setShowMap] = useState(false)
+  const [showDialogMap, setShowDialogMap] = useState(false)
   const [minMax, setMinMAx] = useState<number[]>([40, 1000])
 
   // const [distance, setDistance] = useState('')
@@ -105,6 +109,12 @@ const Search = () => {
 
     updateSuppliers()
   }, [pickupLocation, carSpecs, carType, gearbox, mileage, fuelPolicy, deposit, ranges, multimedia, rating, seats, from, to, supplierSlug])
+
+  useEffect(() => {
+    if (openMapDialog) {
+      setShowDialogMap(true)
+    }
+  }, [openMapDialog])
 
   const supplier = supplierSlug ? suppliers.find((s) => s.slug === supplierSlug) : undefined
 
@@ -435,23 +445,31 @@ const Search = () => {
             {!loading && (
               <>
                 {pickupLocation.latitude && pickupLocation.longitude && (
-                  <Map
-                    position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
-                    initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
-                    parkingSpots={pickupLocation.parkingSpots}
-                    className="map"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOpenMapDialog(true)
-                      }}
-                      className="view-on-map"
-                    >
-                      <img alt="View On Map" src={ViewOnMap} />
-                      <span>{strings.VIEW_ON_MAP}</span>
-                    </button>
-                  </Map>
+                  <>
+                    {!showMap && <MapPlaceholder onShowMap={() => setShowMap(true)} label={strings.VIEW_ON_MAP} />}
+                    {showMap && (
+                      <Suspense fallback="Chargement…">
+                        <MapView
+                          position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
+                          initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
+                          parkingSpots={pickupLocation.parkingSpots}
+                          className="map"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowDialogMap(true)
+                              setOpenMapDialog(true)
+                            }}
+                            className="view-on-map"
+                          >
+                            <img alt="View On Map" src={ViewOnMap} />
+                            <span>{strings.VIEW_ON_MAP}</span>
+                          </button>
+                        </MapView>
+                      </Suspense>
+                    )}
+                  </>
                 )}
                 <CarFilter
                   className="filter"
@@ -609,26 +627,35 @@ const Search = () => {
             </Box>
           </Box>
         </DialogTitle>
-        <DialogContent className="map-dialog-content">
-          {pickupLocation && (
-            <Map
-              position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
-              initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
-              parkingSpots={pickupLocation.parkingSpots}
-              className="map"
-            >
-              <button
-                type="button"
-                onClick={() => { }}
-                className="view-on-map"
-              >
-                <img alt="View On Map" src={ViewOnMap} />
-                <span>{strings.VIEW_ON_MAP}</span>
-              </button>
-            </Map>
-          )}
-        </DialogContent>
-      </Dialog>
+      <DialogContent className="map-dialog-content">
+        {pickupLocation && (
+          <>
+            {!showDialogMap && (
+              <MapPlaceholder onShowMap={() => setShowDialogMap(true)} label={strings.VIEW_ON_MAP} />
+            )}
+            {showDialogMap && (
+              <Suspense fallback="Chargement…">
+                <MapView
+                  position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
+                  initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
+                  parkingSpots={pickupLocation.parkingSpots}
+                  className="map"
+                >
+                  <button
+                    type="button"
+                    onClick={() => { setOpenMapDialog(false) }}
+                    className="view-on-map"
+                  >
+                    <img alt="View On Map" src={ViewOnMap} />
+                    <span>{strings.VIEW_ON_MAP}</span>
+                  </button>
+                </MapView>
+              </Suspense>
+            )}
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
 
       {noMatch && <NoMatch hideHeader />}
     </Layout>

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { Suspense, useEffect, useMemo, useState } from 'react'
 import {
   Container,
   Box,
@@ -32,7 +32,7 @@ import Layout from '@/components/Layout'
 import Footer from '@/components/Footer'
 import Seo from '@/components/Seo'
 import SearchForm from '@/components/SearchForm'
-import Map from '@/components/Map'
+import MapPlaceholder from '@/components/MapPlaceholder'
 import HowItWorks from '@/components/HowItWorks'
 import SupplierCarrousel from '@/components/SupplierCarrousel'
 import RentalAgencySection from '@/components/RentalAgencySection'
@@ -47,6 +47,8 @@ import {
   buildOfferCatalogSchema,
   buildLocalBusinessSchema,
 } from '@/components/location/schema'
+
+const MapView = React.lazy(() => import('@/components/Map'))
 
 export type AdvantageIcon = 'price' | 'car' | 'support' | 'experience' | 'comfort'
 
@@ -198,6 +200,7 @@ const LocationLandingPage: React.FC<LocationLandingPageProps> = ({
   const canonicalUrl = useMemo(() => `https://plany.tn${slug}`, [slug])
   const [suppliers, setSuppliers] = useState<bookcarsTypes.User[]>([])
   const [supplierState, setSupplierState] = useState<'idle' | 'loading' | 'error' | 'success'>('idle')
+  const [showMap, setShowMap] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -496,7 +499,12 @@ const LocationLandingPage: React.FC<LocationLandingPageProps> = ({
             {map.description}
           </Typography>
           <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 3 }}>
-            <Map position={map.position} initialZoom={map.zoom ?? 11} className="location-map" />
+            {!showMap && <MapPlaceholder onShowMap={() => setShowMap(true)} label="Afficher la carte" />}
+            {showMap && (
+              <Suspense fallback="Chargement…">
+                <MapView position={map.position} initialZoom={map.zoom ?? 11} className="location-map" />
+              </Suspense>
+            )}
           </Paper>
         </Container>
       </Box>

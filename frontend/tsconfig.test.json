@@ -16,6 +16,7 @@
     "src/common/locationPageRoutes.ts",
     "src/common/seo.ts",
     "src/common/supplier.ts",
+    "src/components/MapPlaceholder.tsx",
     "src/pages/LocationVoitureTunisie.tsx",
     "src/pages/locationPageBuilder.tsx",
     "src/context/MetaEventsContext.tsx",

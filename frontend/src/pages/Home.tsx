@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { Suspense, useState } from 'react'
 import { Button, Checkbox, Dialog, DialogContent, FormControlLabel, Tab, Tabs } from '@mui/material'
 import L from 'leaflet'
 import { Helmet } from 'react-helmet'
@@ -18,7 +18,7 @@ import SupplierCarrousel from '@/components/SupplierCarrousel'
 import TabPanel, { a11yProps } from '@/components/TabPanel'
 import LocationCarrousel from '@/components/LocationCarrousel'
 import SearchForm from '@/components/SearchForm'
-import Map from '@/components/Map'
+import MapPlaceholder from '@/components/MapPlaceholder'
 import Footer from '@/components/Footer'
 
 import Mini from '@/assets/img/mini.png'
@@ -28,6 +28,8 @@ import Maxi from '@/assets/img/maxi.png'
 import '@/assets/css/home.css'
 import HowItWorks from '@/components/HowItWorks'
 import RentalAgencySection from '@/components/RentalAgencySection'
+
+const MapView = React.lazy(() => import('@/components/Map'))
 
 const Home = () => {
   const [suppliers, setSuppliers] = useState<bookcarsTypes.User[]>([])
@@ -40,6 +42,7 @@ const Home = () => {
   const [locations, setLocations] = useState<bookcarsTypes.Location[]>([])
   const [ranges, setRanges] = useState([bookcarsTypes.CarRange.Mini, bookcarsTypes.CarRange.Midi])
   const [openRangeSearchFormDialog, setOpenRangeSearchFormDialog] = useState(false)
+  const [showMap, setShowMap] = useState(false)
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue)
@@ -383,26 +386,31 @@ const Home = () => {
           </Button>
         </div>
         <div className="home-map">
-          <Map
-            title={strings.MAP_TITLE}
-            position={new L.LatLng(33.886917, 9.537499)}
-            initialZoom={env.isMobile() ? 6 : 7}
-            locations={locations}
-            onSelelectPickUpLocation={async (locationId) => {
-              setPickupLocation(locationId)
-              if (sameLocation) {
-                setDropOffLocation(locationId)
-              } else {
-                setSameLocation(dropOffLocation === locationId)
-              }
-              setOpenLocationSearchFormDialog(true)
-            }}
-          // onSelelectDropOffLocation={async (locationId) => {
-          //   setDropOffLocation(locationId)
-          //   setSameLocation(pickupLocation === locationId)
-          //   helper.info(strings.MAP_DROP_OFF_SELECTED)
-          // }}
-          />
+          {!showMap && <MapPlaceholder onShowMap={() => setShowMap(true)} />}
+          {showMap && (
+            <Suspense fallback="Chargement…">
+              <MapView
+                title={strings.MAP_TITLE}
+                position={new L.LatLng(33.886917, 9.537499)}
+                initialZoom={env.isMobile() ? 6 : 7}
+                locations={locations}
+                onSelelectPickUpLocation={async (locationId) => {
+                  setPickupLocation(locationId)
+                  if (sameLocation) {
+                    setDropOffLocation(locationId)
+                  } else {
+                    setSameLocation(dropOffLocation === locationId)
+                  }
+                  setOpenLocationSearchFormDialog(true)
+                }}
+              // onSelelectDropOffLocation={async (locationId) => {
+              //   setDropOffLocation(locationId)
+              //   setSameLocation(pickupLocation === locationId)
+              //   helper.info(strings.MAP_DROP_OFF_SELECTED)
+              // }}
+              />
+            </Suspense>
+          )}
         </div>
         <RentalAgencySection />
       </div>

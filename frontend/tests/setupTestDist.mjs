@@ -7,6 +7,25 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distRoot = path.resolve(__dirname, '../.test-dist')
 const frontendSrcRoot = path.join(distRoot, 'frontend/src')
 
+globalThis.__TEST_IMPORT_META_ENV = globalThis.__TEST_IMPORT_META_ENV || {}
+globalThis.localStorage = globalThis.localStorage || {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+}
+
+const iconNames = [
+  'LocationOn',
+  'DirectionsCar',
+  'Payment',
+  'CheckCircle',
+  'EventNote',
+  'BarChart',
+  'Visibility',
+  'GroupAdd',
+  'MailOutline',
+]
+
 const ensureCopiedFromFrontend = async (relativePath) => {
   const targetPath = path.join(distRoot, relativePath)
 
@@ -52,6 +71,18 @@ await Promise.all([
     "export const AppType = {\n  Frontend: 'frontend',\n  Backend: 'backend',\n}\n",
   ),
   ensureFile(
+    path.join(distRoot, 'node_modules/:bookcars-helper/index.js'),
+    'export const clone = (value) => JSON.parse(JSON.stringify(value ?? null))\nexport const days = () => 0\n',
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/react-localization/index.js'),
+    'export default class LocalizedStrings { constructor(dict){Object.assign(this, dict)} setLanguage(){} }\n',
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@mui/icons-material/index.js'),
+    'export const MailOutline = () => null\nexport default { MailOutline }\n',
+  ),
+  ensureFile(
     path.join(frontendSrcRoot, 'components/Layout.js'),
     "export default function Layout({ children }) { return children ?? null }\n",
   ),
@@ -71,7 +102,18 @@ await Promise.all([
   ensureCopiedFromFrontend('services/MetaEventService.js'),
   ensureCopiedFromFrontend('services/UserService.js'),
   ensureCopiedFromFrontend('services/axiosInstance.js'),
+  ensureFile(path.join(frontendSrcRoot, 'assets/css/how-it-works.css'), ''),
+  ensureFile(path.join(frontendSrcRoot, 'assets/css/rental-agency-section.css'), ''),
 ])
+
+await Promise.all(
+  iconNames.map((icon) =>
+    ensureFile(
+      path.join(distRoot, `node_modules/@mui/icons-material/${icon}.js`),
+      'export default function Icon() { return null }\n'
+    )
+  )
+)
 
 const envFile = path.join(distRoot, 'config/env.config.js')
 let envSource = await readFile(envFile, 'utf8')
@@ -116,6 +158,130 @@ try {
   }
 } catch {}
 
+const compiledHowItWorksPath = path.join(frontendSrcRoot, 'components/HowItWorks.js')
+try {
+  const compiledHowItWorks = await readFile(compiledHowItWorksPath, 'utf8')
+  const iconStub = `const LocationOnIcon = () => null\nconst DirectionsCarIcon = () => null\nconst PaymentIcon = () => null\nconst CheckCircleIcon = () => null\n`
+  const cleanedHowItWorks = compiledHowItWorks
+    .replace(/import[^\n]*how-it-works\.css['"];?\s*/g, '')
+    .replace(/import[^\n]*@mui\/icons-material[^\n]*\n/g, '')
+  const patchedHowItWorks = cleanedHowItWorks.includes('const steps = [')
+    ? cleanedHowItWorks.replace('const steps = [', `${iconStub}const steps = [`)
+    : cleanedHowItWorks
+  if (patchedHowItWorks !== compiledHowItWorks) {
+    await writeFile(compiledHowItWorksPath, patchedHowItWorks)
+  }
+} catch {}
+
+const compiledRentalAgencyPath = path.join(frontendSrcRoot, 'components/RentalAgencySection.js')
+try {
+  const compiledRentalAgency = await readFile(compiledRentalAgencyPath, 'utf8')
+  const iconStub = `const EventNote = () => null\nconst BarChart = () => null\nconst Visibility = () => null\nconst GroupAdd = () => null\n`
+  const cleanedRentalAgency = compiledRentalAgency
+    .replace(/import[^\n]*rental-agency-section\.css['"];?\s*/g, '')
+    .replace(/import[^\n]*@mui\/icons-material[^\n]*\n/g, '')
+  const patchedRentalAgency = cleanedRentalAgency.includes('const advantages')
+    ? cleanedRentalAgency.replace('const advantages = [', `${iconStub}const advantages = [`)
+    : cleanedRentalAgency
+  if (patchedRentalAgency !== compiledRentalAgency) {
+    await writeFile(compiledRentalAgencyPath, patchedRentalAgency)
+  }
+} catch {}
+
+const patchAliases = async (filePath, replacements) => {
+  try {
+    let source = await readFile(filePath, 'utf8')
+    let updated = source
+    replacements.forEach(([find, replace]) => {
+      updated = updated.replace(new RegExp(find, 'g'), replace)
+    })
+    if (updated !== source) {
+      await writeFile(filePath, updated)
+    }
+  } catch {}
+}
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/About.js'), [
+  ['@/components/Layout', '../components/Layout.js'],
+  ['@/components/Footer', '../components/Footer.js'],
+  ['@/components/Seo', '../components/Seo.js'],
+  ['@/common/seo', '../common/seo.js'],
+  ['import[^\\n]*about\\.css[^\\n]*\\n', ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/Contact.js'), [
+  ['@/components/Layout', '../components/Layout.js'],
+  ['@/components/Footer', '../components/Footer.js'],
+  ['@/components/ContactForm', '../components/ContactForm.js'],
+  ['@/components/Seo', '../components/Seo.js'],
+  ['@/common/seo', '../common/seo.js'],
+  ['import[^\\n]*contact\\.css[^\\n]*\\n', ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'components/ContactForm.js'), [
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/lang/common', '../lang/common.js'],
+  ['@/lang/contact-form', '../lang/contact-form.js'],
+  ['@/services/UserService', '../services/UserService.js'],
+  ['@/components/ReCaptchaProvider', './ReCaptchaProvider.js'],
+  ['@/common/helper', '../common/helper.js'],
+  ['@/common/gtm', '../common/gtm.js'],
+  ['import[^\\n]*contact-form\\.css[^\\n]*\\n', ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'components/Footer.js'), [
+  ['@/lang/footer', '../lang/footer.js'],
+  ['@/services/LocationService', '../services/LocationService.js'],
+  ['import[^\\n]*footer\\.css[^\\n]*\\n', ''],
+  ['import SecurePayment[^\\n]*\n', "const SecurePayment = '/assets/img/secure-payment.png'\n"],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'lang/common.js'), [
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/common/langHelper', '../common/langHelper.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'lang/footer.js'), [
+  ['@/common/langHelper', '../common/langHelper.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'lang/contact-form.js'), [
+  ['@/common/langHelper', '../common/langHelper.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'services/LocationService.js'), [
+  ['@/services/axiosInstance', './axiosInstance.js'],
+  ['@/config/env.config', '../config/env.config.js'],
+  ['./axiosInstance', './axiosInstance.js'],
+  ['./UserService', './UserService.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'components/ReCaptchaProvider.js'), [
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/services/UserService', '../services/UserService.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'common/helper.js'), [
+  ['@/lang/cars', '../lang/cars.js'],
+  ['@/lang/common', '../lang/common.js'],
+  ['@/config/env.config', '../config/env.config.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'common/langHelper.js'), [
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/services/', '../services/'],
+  ['@/services/UserService', '../services/UserService.js'],
+  ['\.\./services/UserService', '../services/UserService.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'lang/cars.js'), [
+  ['@/common/langHelper', '../common/langHelper.js'],
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/services/', '../services/'],
+  ['@/services/UserService', '../services/UserService.js'],
+  ['\.\./services/UserService', '../services/UserService.js'],
+])
+
 const gtmFilePath = path.join(distRoot, 'common/gtm.js')
 let gtmSource = await readFile(gtmFilePath, 'utf8')
 let gtmUpdated = gtmSource.replace(/@\/config\/env.config/g, '../config/env.config.js')
@@ -141,6 +307,7 @@ try {
   let compiledUserUpdated = compiledUserSource.replace(/@\/services\/axiosInstance/g, './axiosInstance.js')
   compiledUserUpdated = compiledUserUpdated.replace(/\.\/axiosInstance(?=['"])/g, './axiosInstance.js')
   compiledUserUpdated = compiledUserUpdated.replace(/@\/config\/env.config/g, '../config/env.config.js')
+  compiledUserUpdated = compiledUserUpdated.replace(/new URLSearchParams\(window.location.search\)/g, 'new URLSearchParams("")')
   if (compiledUserUpdated !== compiledUserSource) {
     await writeFile(compiledUserServicePath, compiledUserUpdated)
   }

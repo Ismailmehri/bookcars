@@ -71,7 +71,7 @@ const Contact = () => {
           })}
         </script>
       </Helmet>
-      <div className="contact">
+      <div className="contact-page" role="main">
         <ContactForm user={user} className="form" />
       </div>
       <Footer />

@@ -1,11 +1,14 @@
-div.contact {
+.contact-page {
   display: flex;
   flex-direction: column;
   flex: 1 0 auto;
   align-items: center;
   transform: translate3d(0, 0, 0);
+  padding: 48px 0 24px;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 30%);
 }
 
-div.contact .form {
-  margin: 100px 0;
+.contact-page .form {
+  margin: 32px 12px 72px;
+  width: 100%;
 }

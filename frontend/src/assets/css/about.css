@@ -1,3 +1,127 @@
-.about {
-    padding: 15px;
+.about-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 64px 20px 96px;
+  color: #1f2937;
+}
+
+.about-page__hero {
+  text-align: center;
+  background: linear-gradient(135deg, #f4fbfd, #eef6ff);
+  border: 1px solid #e5eef6;
+  border-radius: 16px;
+  padding: 32px 24px;
+  box-shadow: 0 10px 24px rgba(0, 46, 77, 0.06);
+}
+
+.about-page__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: #0f766e;
+  margin: 0 0 8px;
+}
+
+.about-page__title {
+  margin: 0 0 12px;
+  font-size: clamp(1.9rem, 2.5vw, 2.4rem);
+  font-weight: 800;
+  color: #0b2f44;
+}
+
+.about-page__lead {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.about-page__card {
+  background: #ffffff;
+  border: 1px solid #e6edf5;
+  border-radius: 14px;
+  padding: 24px 22px;
+  box-shadow: 0 8px 18px rgba(12, 74, 110, 0.06);
+}
+
+.about-page__card h2 {
+  margin: 0 0 12px;
+  font-size: 1.35rem;
+  color: #0f172a;
+}
+
+.about-page__card h3 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.about-page__card p,
+.about-page__card li {
+  margin: 0 0 10px;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.about-page__card ul {
+  padding-left: 20px;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.about-page__values {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.about-page__values-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.about-page__coverage {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.about-page__coverage-item {
+  background: #f7f9fb;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.about-page__card--team {
+  background: linear-gradient(120deg, #f7fbff, #f6fffb);
+  border-color: #dbeafe;
+}
+
+.about-page__note {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #0f766e0d;
+  border: 1px solid #0f766e33;
+  color: #0f172a;
+}
+
+@media (max-width: 640px) {
+  .about-page {
+    padding: 40px 16px 72px;
+    gap: 18px;
+  }
+
+  .about-page__card {
+    padding: 18px 16px;
+  }
 }

@@ -11,11 +11,22 @@ const componentDist = path.join(distRoot, 'frontend/src/components')
 
 const loadModule = async (relativePath) => import(pathToFileURL(path.join(componentDist, relativePath)))
 
-const { default: MapPlaceholder } = await loadModule('MapPlaceholder.js')
+const { default: PriceRangeFilter } = await loadModule('PriceRangeFilter.js')
 
-test('MapPlaceholder renders CTA with provided label', () => {
-  const html = renderToString(React.createElement(MapPlaceholder, { onShowMap: () => null, label: 'Afficher la carte' }))
+test('PriceRangeFilter exposes current values', () => {
+  const marks = [
+    { value: 40, label: '40DT' },
+    { value: 1000, label: '1000DT' },
+  ]
 
-  assert.ok(html.includes('map-placeholder'))
-  assert.ok(html.includes('Afficher la carte'))
+  const html = renderToString(React.createElement(PriceRangeFilter, {
+    value: [50, 200],
+    min: 40,
+    max: 1000,
+    marks,
+    onChange: () => null,
+  }))
+
+  assert.ok(html.includes('50DT'))
+  assert.ok(html.includes('200DT'))
 })

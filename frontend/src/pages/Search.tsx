@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
-import { Box, Dialog, DialogContent, DialogTitle, IconButton, Paper, Slider, Typography } from '@mui/material'
+import { Dialog, DialogContent, DialogTitle } from '@mui/material'
 import { Close as CloseIcon } from '@mui/icons-material'
 import { Helmet } from 'react-helmet'
 import Seo from '@/components/Seo'
@@ -23,6 +23,8 @@ import MileageFilter from '@/components/MileageFilter'
 import DepositFilter from '@/components/DepositFilter'
 import CarList from '@/components/CarList'
 import MapPlaceholder from '@/components/MapPlaceholder'
+import PriceRangeFilter from '@/components/PriceRangeFilter'
+import SearchStatus from '@/components/SearchStatus'
 
 import ViewOnMap from '@/assets/img/view-on-map.png'
 
@@ -47,6 +49,8 @@ const Search = () => {
   const [suppliers, setSuppliers] = useState<bookcarsTypes.User[]>([])
   const [supplierIds, setSupplierIds] = useState<string[]>()
   const [loading, setLoading] = useState(true)
+  const [pageStatus, setPageStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [statusMessage, setStatusMessage] = useState<string>()
   const [carSpecs] = useState<bookcarsTypes.CarSpecs>({})
   const [carType, setCarType] = useState(bookcarsHelper.getAllCarTypes())
   const [gearbox, setGearbox] = useState([bookcarsTypes.GearboxType.Automatic, bookcarsTypes.GearboxType.Manual])
@@ -66,6 +70,7 @@ const Search = () => {
 
   useEffect(() => {
     const fetchSuppliers = async () => {
+      setPageStatus('loading')
       try {
         let fetchedSuppliers = await SupplierService.getAllSuppliers()
         setAllSuppliers(fetchedSuppliers)
@@ -75,6 +80,8 @@ const Search = () => {
         setAllSuppliersIds(bookcarsHelper.flattenSuppliers(fetchedSuppliers))
       } catch (err) {
         helper.error(err, 'Failed to fetch suppliers')
+        setStatusMessage(strings.SEARCH_ERROR_SUPPLIERS)
+        setPageStatus('error')
       }
     }
 
@@ -84,26 +91,32 @@ const Search = () => {
   useEffect(() => {
     const updateSuppliers = async () => {
       if (pickupLocation) {
-        const payload: bookcarsTypes.GetCarsPayload = {
-          pickupLocation: pickupLocation._id,
-          carSpecs,
-          carType,
-          gearbox,
-          mileage,
-          fuelPolicy,
-          deposit,
-          ranges,
-          multimedia,
-          rating,
-          seats,
-          startDate: from,
-          endDate: to
+        try {
+          const payload: bookcarsTypes.GetCarsPayload = {
+            pickupLocation: pickupLocation._id,
+            carSpecs,
+            carType,
+            gearbox,
+            mileage,
+            fuelPolicy,
+            deposit,
+            ranges,
+            multimedia,
+            rating,
+            seats,
+            startDate: from,
+            endDate: to
+          }
+          let _suppliers = await SupplierService.getFrontendSuppliers(payload)
+          if (supplierSlug) {
+            _suppliers = _suppliers.filter((s) => s.slug === supplierSlug)
+          }
+          setSuppliers(_suppliers)
+        } catch (err) {
+          helper.error(err)
+          setStatusMessage(strings.SEARCH_ERROR_SUPPLIERS)
+          setPageStatus('error')
         }
-        let _suppliers = await SupplierService.getFrontendSuppliers(payload)
-        if (supplierSlug) {
-          _suppliers = _suppliers.filter((s) => s.slug === supplierSlug)
-        }
-        setSuppliers(_suppliers)
       }
     }
 
@@ -152,11 +165,10 @@ const Search = () => {
     setSelectedSupplier(filteredSuppliers.length === suppliers.length ? [] : filteredSuppliers)
   }
 
-  const handleChange = (_event: Event, newValue: number | number[]) => {
-    setMinMAx(newValue as number[])
-  }
-
-  const handleCarFilterMinMax = () => {
+  const handleCarFilterMinMax = (value?: number[]) => {
+    if (value) {
+      setMinMAx(value)
+    }
     // Vérifier que les valeurs obligatoires sont définies
     if (!pickupLocation || !dropOffLocation || !from || !to) {
       console.error('Certains filtres obligatoires sont manquants.')
@@ -185,8 +197,6 @@ const Search = () => {
       value: 1000,
       label: '1000DT',
     }]
-
-  const valuetext = (value: number) => `${value}DT`
 
   const handleCarTypeFilterChange = (values: bookcarsTypes.CarType[]) => {
     setCarType(values)
@@ -294,6 +304,7 @@ const Search = () => {
       if (!_pickupLocation) {
         setLoading(false)
         setNoMatch(true)
+        setPageStatus('error')
         return
       }
 
@@ -304,6 +315,7 @@ const Search = () => {
       if (!_dropOffLocation) {
         setLoading(false)
         setNoMatch(true)
+        setPageStatus('error')
         return
       }
 
@@ -348,8 +360,11 @@ const Search = () => {
       if (!user || user.verified) {
         setVisible(true)
       }
+      setPageStatus('ready')
     } catch (err) {
       helper.error(err)
+      setStatusMessage(strings.SEARCH_ERROR_GENERIC)
+      setPageStatus('error')
     }
   }
 
@@ -431,6 +446,12 @@ const Search = () => {
     }
   }
 
+  const handleRetry = () => {
+    setPageStatus('loading')
+    setStatusMessage(undefined)
+    onLoad()
+  }
+
   return (
     <Layout onLoad={onLoad} strict={false}>
       <Seo title={title} description={description} canonical={canonical} robots={robots} />
@@ -439,7 +460,11 @@ const Search = () => {
           {JSON.stringify(structuredData)}
         </script>
       </Helmet>
-      {visible && supplierIds && pickupLocation && dropOffLocation && from && to && (
+      {pageStatus === 'error' && <SearchStatus status="error" message={statusMessage} onRetry={handleRetry} />}
+
+      {pageStatus === 'loading' && <SearchStatus status="loading" message={strings.SEARCH_LOADING} />}
+
+      {visible && supplierIds && pickupLocation && dropOffLocation && from && to && pageStatus === 'ready' && (
         <div className="search">
           <div className="col-1">
             {!loading && (
@@ -500,78 +525,14 @@ const Search = () => {
             <LocationHeader
               location={pickupLocation}
             />
-            <CarList
-              carSpecs={carSpecs}
-              suppliers={supplierIds}
-              carType={carType}
-              gearbox={gearbox}
-              mileage={mileage}
-              fuelPolicy={fuelPolicy}
-              deposit={deposit}
-              pickupLocation={pickupLocation._id}
-              dropOffLocation={dropOffLocation._id}
-              // pickupLocationName={pickupLocation.name}
-              loading={loading}
-              from={from}
-              to={to}
-              ranges={ranges}
-              multimedia={multimedia}
-              rating={rating}
-              seats={seats}
-              minPrice={minMax[0]}
-              maxPrice={minMax[1]}
-              boost
-            // distance={distance}
+            <PriceRangeFilter
+              value={minMax}
+              min={marks[0].value}
+              max={marks[1].value}
+              marks={marks}
+              onChange={(value) => setMinMAx(value)}
+              onChangeCommitted={handleCarFilterMinMax}
             />
-            <Paper
-              elevation={3}
-              sx={{
-                padding: 3,
-                marginBottom: 4,
-                borderRadius: 2,
-                width: '100%',
-                maxWidth: '888px',
-                mx: 'auto',
-              }}
-            >
-              <Typography
-                variant="h2"
-                sx={{
-                  fontWeight: 'bold',
-                  fontSize: '20px',
-                  color: '#333',
-                  textAlign: 'center',
-                  mb: 2,
-                }}
-              >
-                Filtrer par prix par jour
-              </Typography>
-
-              <Box sx={{ width: '90%', mx: 'auto', mb: 2 }}>
-                <Slider
-                  getAriaLabel={() => 'Prix par jour'}
-                  value={minMax}
-                  onChange={handleChange}
-                  onChangeCommitted={handleCarFilterMinMax}
-                  getAriaValueText={valuetext}
-                  valueLabelFormat={valuetext}
-                  step={10}
-                  min={40}
-                  max={1000}
-                  marks={marks}
-                  valueLabelDisplay="on"
-                />
-              </Box>
-
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  mt: 2,
-                  px: 2,
-                }}
-              />
-            </Paper>
             <CarList
               carSpecs={carSpecs}
               suppliers={supplierIds}
@@ -614,18 +575,10 @@ const Search = () => {
           },
         }}
       >
-        <DialogTitle>
-          <Box display="flex" justifyContent="flex-end">
-            <Box>
-              <IconButton
-                onClick={() => {
-                  setOpenMapDialog(false)
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </Box>
-          </Box>
+        <DialogTitle className="map-dialog-title">
+          <button type="button" className="map-dialog-close" onClick={() => setOpenMapDialog(false)} aria-label="Fermer la carte">
+            <CloseIcon />
+          </button>
         </DialogTitle>
       <DialogContent className="map-dialog-content">
         {pickupLocation && (

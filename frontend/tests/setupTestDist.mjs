@@ -290,6 +290,10 @@ await Promise.all([
   ensureFile(path.join(distRoot, 'node_modules/@/assets/css/forgot-password.css'), ''),
   ensureFile(path.join(distRoot, 'node_modules/@/assets/css/signup.css'), ''),
   ensureFile(path.join(distRoot, 'node_modules/@/assets/css/reset-password.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/map-placeholder.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/price-range-filter.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/search-status.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/location-header.css'), ''),
   ensureFile(
     path.join(distRoot, 'node_modules/@/services/UserService.js'),
     [
@@ -447,6 +451,27 @@ try {
     await writeFile(compiledRentalAgencyPath, patchedRentalAgency)
   }
 } catch {}
+
+const cssCleanups = [
+  { file: 'components/MapPlaceholder.js', patterns: [/import[^\n]*map-placeholder\.css['"];?\s*/g] },
+  { file: 'components/LocationHeader.js', patterns: [/import[^\n]*location-header\.css['"];?\s*/g] },
+  { file: 'components/PriceRangeFilter.js', patterns: [/import[^\n]*price-range-filter\.css['"];?\s*/g] },
+  { file: 'components/SearchStatus.js', patterns: [/import[^\n]*search-status\.css['"];?\s*/g] },
+]
+
+for (const cleanup of cssCleanups) {
+  const targetPath = path.join(frontendSrcRoot, cleanup.file)
+  try {
+    let source = await readFile(targetPath, 'utf8')
+    let updated = source
+    cleanup.patterns.forEach((pattern) => {
+      updated = updated.replace(pattern, '')
+    })
+    if (updated !== source) {
+      await writeFile(targetPath, updated)
+    }
+  } catch {}
+}
 
 const patchAliases = async (filePath, replacements) => {
   try {

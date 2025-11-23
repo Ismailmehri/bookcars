@@ -11,11 +11,12 @@ const componentDist = path.join(distRoot, 'frontend/src/components')
 
 const loadModule = async (relativePath) => import(pathToFileURL(path.join(componentDist, relativePath)))
 
-const { default: MapPlaceholder } = await loadModule('MapPlaceholder.js')
+const { default: LocationHeader } = await loadModule('LocationHeader.js')
 
-test('MapPlaceholder renders CTA with provided label', () => {
-  const html = renderToString(React.createElement(MapPlaceholder, { onShowMap: () => null, label: 'Afficher la carte' }))
+test('LocationHeader highlights the selected city', () => {
+  const location = { name: 'Tunis' }
+  const html = renderToString(React.createElement(LocationHeader, { location }))
 
-  assert.ok(html.includes('map-placeholder'))
-  assert.ok(html.includes('Afficher la carte'))
+  assert.ok(html.includes('location-header__title'))
+  assert.ok(html.includes('Tunis'))
 })

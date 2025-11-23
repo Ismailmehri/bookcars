@@ -5,7 +5,6 @@ import {
   FormControl,
   FormHelperText,
   Button,
-  Paper,
   Link
 } from '@mui/material'
 import validator from 'validator'
@@ -19,6 +18,7 @@ import { strings } from '@/lang/reset-password'
 import SocialLogin from '@/components/SocialLogin'
 import NoMatch from './NoMatch'
 
+import '@/assets/css/auth-forms.css'
 import '@/assets/css/forgot-password.css'
 
 const ForgotPassword = () => {
@@ -28,6 +28,7 @@ const ForgotPassword = () => {
   const [emailValid, setEmailValid] = useState(true)
   const [noMatch, setNoMatch] = useState(false)
   const [sent, setSent] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value)
@@ -79,6 +80,8 @@ const ForgotPassword = () => {
     try {
       e.preventDefault()
 
+      setSubmitting(true)
+
       const _emailValid = await validateEmail(email)
       if (!_emailValid) {
         return
@@ -96,6 +99,8 @@ const ForgotPassword = () => {
     } catch {
       setError(true)
       setEmailValid(true)
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -117,27 +122,34 @@ const ForgotPassword = () => {
     <Layout onLoad={onLoad} strict={false}>
       <Seo title="Mot de passe oublié | Plany.tn" canonical="https://plany.tn/forgot-password" robots="noindex,nofollow" />
       {visible && (
-        <div className="forgot-password">
-          <Paper className="forgot-password-form" elevation={10}>
-            <h1 className="forgot-password-title">
-              {' '}
-              {strings.RESET_PASSWORD_HEADING}
-              {' '}
-            </h1>
+        <section className="auth-shell">
+          <div className="auth-card auth-card--narrow forgot-password-card" aria-live="polite" aria-busy={submitting}>
+            <h1 className="auth-title">{strings.RESET_PASSWORD_HEADING}</h1>
+            <p className="auth-subtitle">{strings.RESET_PASSWORD}</p>
+
             {sent && (
-              <div>
+              <div className="auth-status" role="status">
                 <span>{strings.EMAIL_SENT}</span>
-                <p>
+                <p className="auth-note">
                   <Link href="/">{commonStrings.GO_TO_HOME}</Link>
                 </p>
               </div>
             )}
+
             {!sent && (
-              <form onSubmit={handleSubmit}>
-                <span>{strings.RESET_PASSWORD}</span>
+              <form className="auth-form-grid" onSubmit={handleSubmit}>
                 <FormControl fullWidth margin="dense">
                   <InputLabel className="required">{commonStrings.EMAIL}</InputLabel>
-                  <Input onChange={handleEmailChange} onKeyDown={handleEmailKeyDown} onBlur={handleEmailBlur} type="text" error={error || !emailValid} autoComplete="off" required />
+                  <Input
+                    onChange={handleEmailChange}
+                    onKeyDown={handleEmailKeyDown}
+                    onBlur={handleEmailBlur}
+                    type="text"
+                    error={error || !emailValid}
+                    autoComplete="off"
+                    required
+                    disabled={submitting}
+                  />
                   <FormHelperText error={error || !emailValid}>
                     {(!emailValid && commonStrings.EMAIL_NOT_VALID) || ''}
                     {(error && strings.EMAIL_ERROR) || ''}
@@ -146,18 +158,24 @@ const ForgotPassword = () => {
 
                 <SocialLogin />
 
-                <div className="forgot-password-buttons">
-                  <Button type="submit" className="btn-primary btn-margin btn-margin-bottom" size="small" variant="contained">
-                    {strings.RESET}
+                <div className="auth-actions">
+                  <Button
+                    type="submit"
+                    className="btn-primary"
+                    size="small"
+                    variant="contained"
+                    disabled={submitting}
+                  >
+                    {submitting ? commonStrings.PLEASE_WAIT : strings.RESET}
                   </Button>
-                  <Button className="btn-secondary btn-margin-bottom" size="small" variant="contained" href="/">
+                  <Button className="btn-secondary" size="small" variant="contained" href="/" disabled={submitting}>
                     {commonStrings.CANCEL}
                   </Button>
                 </div>
               </form>
             )}
-          </Paper>
-        </div>
+          </div>
+        </section>
       )}
       {noMatch && <NoMatch hideHeader />}
     </Layout>

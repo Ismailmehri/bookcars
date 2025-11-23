@@ -1,126 +1,53 @@
-/* Signup */
-div.signup {
+.signup-card {
+  gap: 14px;
+}
+
+.signup-card .auth-form-grid {
+  gap: 12px;
+}
+
+.signup-tos {
   display: flex;
-  display: -webkit-flex;
-  flex-direction: row;
-  -webkit-flex-direction: row;
-  flex: 1 0 auto;
-  -webkit-flex: 1 0 auto;
-  justify-content: center;
-  -webkit-justify-content: center;
-  margin: 45px 0;
-  padding: 0 16px;
-  transform: translate3d(0, 0, 0);
-  -webkit-transform: translate3d(0, 0, 0);
-}
-
-div.signup .signup-form {
-  box-sizing: border-box;
-  padding: 30px;
-  width: 100%;
-  max-width: 560px;
-}
-
-div.signup .signup-form-title {
-  text-align: center;
-  text-transform: capitalize;
-  color: #232323;
-}
-
-div.signup .signup-portal-alert {
-  margin: 16px 0 24px;
-}
-
-div.signup div.signup-tos {
-  margin-top: 10px;
-}
-
-/* Device width is less than or equal to 960px */
-
-@media only screen and (max-width: 960px) {
-  div.signup {
-    flex-direction: column;
-    -webkit-flex-direction: column;
-    margin: 32px 0;
-  }
-
-  div.signup .signup-form {
-    max-width: 420px;
-    padding: 24px;
-  }
-
-  div.signup .recaptcha {
-    margin-top: 25px;
-    margin-left: -10px;
-  }
-}
-
-@media only screen and (max-width: 600px) {
-  div.signup {
-    margin: 20px 0;
-    padding: 0 12px;
-  }
-
-  div.signup .signup-form {
-    max-width: none;
-    padding: 20px;
-  }
-
-  div.signup .recaptcha {
-    margin-left: 0;
-  }
-}
-
-div.signup div.signup-buttons {
-  display: flex;
-  display: -webkit-flex;
+  align-items: center;
   gap: 10px;
-  -webkit-gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f3f6fb;
+}
+
+.signup-tos .MuiCheckbox-root {
+  padding: 0;
+}
+
+.signup-actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.signup-actions .MuiButton-root {
+  font-weight: 700;
+}
+
+.signup-divider {
+  margin: 6px 0 2px;
+}
+
+.recaptcha {
+  display: flex;
   justify-content: center;
-  -webkit-justify-content: center;
-  margin-top: 20px;
 }
 
-div.signup div.signup-buttons a,
-div.signup div.signup-buttons button {
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  padding: 8px 16px;
-  -webkit-transition: background-color 0.3s ease, color 0.3s ease;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  width: 135px;
+.form-error {
+  min-height: 32px;
 }
 
-/* Device width is greater than or equal to 960px */
-
-@media only screen and (min-width: 960px) {
-  div.signup .signup-form {
-    max-width: 550px;
+@media (max-width: 600px) {
+  .signup-tos {
+    align-items: flex-start;
   }
 
-  div.signup .recaptcha {
-    margin-top: 25px;
-    margin-left: 85px;
+  .signup-actions {
+    grid-template-columns: 1fr;
   }
-}
-
-.phone-input {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 8px;
-  width: 100%;
-}
-
-.phone-input input {
-  border: none;
-  outline: none;
-  width: 100%;
-  height: 35px;
-  color: #3f3f3f;
-  font-size: 15px;
-}
-
-.phone-input .react-phone-number-input__country {
-  margin-right: 8px;
 }

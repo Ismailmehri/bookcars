@@ -6,8 +6,8 @@ import {
   FormControl,
   FormHelperText,
   Button,
-  Paper,
   CircularProgress,
+  Alert,
 } from '@mui/material'
 import validator from 'validator'
 import { useNavigate } from 'react-router-dom'
@@ -38,6 +38,12 @@ const ContactForm = ({ user, className }: ContactFormProps) => {
   const [recaptchaToken, setRecaptchaToken] = useState('')
   const [refreshReCaptcha, setRefreshReCaptcha] = useState(false)
   const [sending, setSending] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'empty' | 'success' | 'error' | 'disabled'>(
+    env.RECAPTCHA_ENABLED ? 'idle' : 'disabled'
+  )
+  const [statusMessage, setStatusMessage] = useState(
+    env.RECAPTCHA_ENABLED ? '' : strings.RECAPTCHA_DISABLED
+  )
 
   useEffect(() => {
     if (user) {
@@ -83,10 +89,20 @@ const ContactForm = ({ user, className }: ContactFormProps) => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     try {
       setSending(true)
+      setStatus('idle')
+      setStatusMessage('')
       e.preventDefault()
+
+      if (!subject.trim() || !message.trim()) {
+        setStatus('empty')
+        setStatusMessage(strings.EMPTY_STATE)
+        return
+      }
 
       const _emailValid = await validateEmail(email)
       if (!_emailValid) {
+        setStatus('error')
+        setStatusMessage(commonStrings.EMAIL_NOT_VALID)
         return
       }
 
@@ -117,99 +133,109 @@ const ContactForm = ({ user, className }: ContactFormProps) => {
         }
         setSubject('')
         setMessage('')
+        setStatus('success')
+        setStatusMessage(strings.MESSAGE_SENT)
         helper.info(strings.MESSAGE_SENT)
       } else {
         helper.error()
+        setStatus('error')
+        setStatusMessage(commonStrings.GENERIC_ERROR)
       }
     } catch (err) {
       helper.error(err)
+      setStatus('error')
+      setStatusMessage(commonStrings.GENERIC_ERROR)
     } finally {
       setSending(false)
       setRefreshReCaptcha((refresh) => !refresh)
     }
   }
 
-  if (!env.RECAPTCHA_ENABLED) {
-    return null
-  }
-
   return (
     <ReCaptchaProvider>
-      <Paper className={`${className ? `${className} ` : ''}contact-form`} elevation={10}>
-        <h1 className="contact-form-title">
-          {' '}
-          {strings.CONTACT_HEADING}
-          {' '}
-        </h1>
-        <form onSubmit={handleSubmit}>
-          {!isAuthenticated && (
+      <section className={`contact-form ${className ? `${className} ` : ''}${!env.RECAPTCHA_ENABLED ? 'contact-form--disabled' : ''}`}>
+        <div className="contact-form__heading">
+          <h1 className="contact-form__title">{strings.CONTACT_HEADING}</h1>
+          <p className="contact-form__subtitle">{strings.CTA}</p>
+        </div>
+
+        <div className="contact-form__card">
+          <form onSubmit={handleSubmit} aria-live="polite">
+            {!isAuthenticated && (
+              <FormControl fullWidth margin="dense">
+                <InputLabel className="required">{commonStrings.EMAIL}</InputLabel>
+                <OutlinedInput
+                  type="text"
+                  label={commonStrings.EMAIL}
+                  error={!emailValid}
+                  value={email}
+                  onBlur={handleEmailBlur}
+                  onChange={handleEmailChange}
+                  required
+                  autoComplete="off"
+                  aria-invalid={!emailValid}
+                />
+                <FormHelperText error={!emailValid}>
+                  {(!emailValid && commonStrings.EMAIL_NOT_VALID) || ''}
+                </FormHelperText>
+              </FormControl>
+            )}
+
             <FormControl fullWidth margin="dense">
-              <InputLabel className="required">{commonStrings.EMAIL}</InputLabel>
+              <InputLabel className="required">{strings.SUBJECT}</InputLabel>
+              <OutlinedInput type="text" label={strings.SUBJECT} value={subject} required onChange={handleSubjectChange} autoComplete="off" />
+            </FormControl>
+
+            <FormControl fullWidth margin="dense">
+              <InputLabel className="required">{strings.MESSAGE}</InputLabel>
               <OutlinedInput
                 type="text"
-                label={commonStrings.EMAIL}
-                error={!emailValid}
-                value={email}
-                onBlur={handleEmailBlur}
-                onChange={handleEmailChange}
-                required
+                label={strings.MESSAGE}
+                onChange={handleMessageChange}
                 autoComplete="off"
+                value={message}
+                required
+                multiline
+                minRows={7}
+                maxRows={7}
               />
-              <FormHelperText error={!emailValid}>
-                {(!emailValid && commonStrings.EMAIL_NOT_VALID) || ''}
-              </FormHelperText>
             </FormControl>
-          )}
 
-          <FormControl fullWidth margin="dense">
-            <InputLabel className="required">{strings.SUBJECT}</InputLabel>
-            <OutlinedInput type="text" label={strings.SUBJECT} value={subject} required onChange={handleSubjectChange} autoComplete="off" />
-          </FormControl>
+            <div className="contact-form__recaptcha">
+              {env.RECAPTCHA_ENABLED ? (
+                <GoogleReCaptcha
+                  refreshReCaptcha={refreshReCaptcha}
+                  onVerify={handleRecaptchaVerify}
+                />
+              ) : (
+                <span className="contact-form__recaptcha-placeholder">{strings.RECAPTCHA_DISABLED}</span>
+              )}
+            </div>
 
-          <FormControl fullWidth margin="dense">
-            <InputLabel className="required">{strings.MESSAGE}</InputLabel>
-            <OutlinedInput
-              type="text"
-              label={strings.MESSAGE}
-              onChange={handleMessageChange}
-              autoComplete="off"
-              value={message}
-              required
-              multiline
-              minRows={7}
-              maxRows={7}
-            />
-          </FormControl>
+            <div className="contact-form__status" role="status" aria-live="polite">
+              {status !== 'idle' && statusMessage && (
+                <Alert severity={status === 'success' ? 'success' : status === 'empty' ? 'warning' : 'error'}>{statusMessage}</Alert>
+              )}
+            </div>
 
-          <div className="recaptcha">
-            <GoogleReCaptcha
-              refreshReCaptcha={refreshReCaptcha}
-              onVerify={handleRecaptchaVerify}
-            />
-          </div>
-
-          <div className="buttons">
-            <Button type="submit" variant="contained" className="btn-primary btn-margin-bottom btn" size="small" disabled={sending}>
-              {
-                sending
-                  ? <CircularProgress color="inherit" size={24} />
-                  : strings.SEND
-              }
-            </Button>
-            <Button
-              variant="contained"
-              className="btn-secondary btn-margin-bottom btn"
-              size="small"
-              onClick={() => {
-                navigate('/')
-              }}
-            >
-              {' '}
-              {commonStrings.CANCEL}
-            </Button>
-          </div>
-        </form>
-      </Paper>
+            <div className="contact-form__actions">
+              <Button type="submit" variant="contained" className="btn-primary" size="small" disabled={sending || status === 'disabled'}>
+                {sending ? <CircularProgress color="inherit" size={24} /> : strings.SEND}
+              </Button>
+              <Button
+                variant="outlined"
+                className="btn-secondary"
+                size="small"
+                onClick={() => {
+                  navigate('/')
+                }}
+              >
+                {commonStrings.CANCEL}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </section>
     </ReCaptchaProvider>
   )
 }

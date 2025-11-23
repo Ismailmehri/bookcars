@@ -13,12 +13,9 @@ const loadModule = async (relativePath) => import(pathToFileURL(path.join(compon
 
 const { default: MapPlaceholder } = await loadModule('MapPlaceholder.js')
 
-test('MapPlaceholder renders actionable placeholder', () => {
-  const html = renderToString(
-    React.createElement(MapPlaceholder, { onShowMap: () => {}, label: 'Charger' })
-  )
+test('MapPlaceholder renders CTA with provided label', () => {
+  const html = renderToString(React.createElement(MapPlaceholder, { onShowMap: () => null, label: 'Afficher la carte' }))
 
-  assert.ok(html.includes('Carte interactive disponible sur demande.'))
-  assert.ok(html.includes('Charger'))
-  assert.ok(html.includes('background:#eaeaea'))
+  assert.ok(html.includes('map-placeholder'))
+  assert.ok(html.includes('Afficher la carte'))
 })

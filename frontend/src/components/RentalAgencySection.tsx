@@ -1,121 +1,75 @@
 import React from 'react'
-import { Box, Button, Typography, Stack, Paper } from '@mui/material'
+import { Button, Typography } from '@mui/material'
 import { EventNote, BarChart, Visibility, GroupAdd } from '@mui/icons-material'
 
+import '../assets/css/rental-agency-section.css'
+
+const advantages = [
+  {
+    id: 'booking',
+    title: 'Gestion facile des réservations',
+    description: 'Gérez toutes vos réservations depuis une plateforme unique, simple et rapide.',
+    icon: <EventNote fontSize="inherit" />, 
+  },
+  {
+    id: 'analytics',
+    title: 'Statistiques détaillées',
+    description: 'Suivez la performance de vos voitures avec des statistiques sur les locations.',
+    icon: <BarChart fontSize="inherit" />, 
+  },
+  {
+    id: 'visibility',
+    title: 'Plus de visibilité',
+    description: "Augmentez la visibilité de vos véhicules auprès d'un large public de clients potentiels.",
+    icon: <Visibility fontSize="inherit" />, 
+  },
+  {
+    id: 'bookingFlow',
+    title: 'Réservation simplifiée',
+    description: 'Facilitez la réservation pour vos clients avec une interface conviviale.',
+    icon: <GroupAdd fontSize="inherit" />, 
+  },
+]
+
 const RentalAgencySection = () => (
-  <Box sx={{ padding: '40px 20px', textAlign: 'center' }}>
-    <Typography variant="h4" sx={{ fontWeight: 'bold', marginBottom: 3 }}>
-      Rejoignez Plany et boostez votre agence de location !
-    </Typography>
-    <Typography variant="h6" sx={{ color: 'text.secondary', marginBottom: 4 }}>
-      Profitez d&apos;une gestion simplifiée et d&apos;une meilleure visibilité pour vos voitures.
-    </Typography>
+  <section className="rental-agency" aria-labelledby="rental-agency-title">
+    <div className="rental-agency__header">
+      <Typography id="rental-agency-title" variant="h4" component="h2">
+        Rejoignez Plany et boostez votre agence de location !
+      </Typography>
+      <Typography variant="h6" color="text.secondary" component="p">
+        Profitez d&apos;une gestion simplifiée et d&apos;une meilleure visibilité pour vos voitures.
+      </Typography>
+    </div>
 
-    {/* Grid for advantages with icons */}
-    <Stack
-      direction={{ xs: 'column', sm: 'row' }}
-      spacing={4}
-      justifyContent="center"
-      alignItems="center"
-      sx={{ marginBottom: 4 }}
-    >
-      <Paper
-        sx={{
-          padding: 3,
-          width: '100%',
-          maxWidth: 360,
-          textAlign: 'center',
-          borderRadius: 2,
-          boxShadow: 3,
-        }}
-      >
-        <EventNote sx={{ fontSize: 80, color: 'primary.main', marginBottom: 2 }} />
-        <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: 1 }}>
-          Gestion facile des réservations
-        </Typography>
-        <Typography variant="body2">
-          Gérez toutes vos réservations depuis une plateforme unique, simple et rapide.
-        </Typography>
-      </Paper>
+    <div className="rental-agency__grid" role="list">
+      {advantages.map((advantage) => (
+        <article key={advantage.id} className="rental-agency__card" role="listitem">
+          <div className="rental-agency__icon" aria-hidden="true">
+            {advantage.icon}
+          </div>
+          <Typography variant="h6" component="h3" className="rental-agency__title">
+            {advantage.title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" className="rental-agency__description">
+            {advantage.description}
+          </Typography>
+        </article>
+      ))}
+    </div>
 
-      <Paper
-        sx={{
-          padding: 3,
-          width: '100%',
-          maxWidth: 360,
-          textAlign: 'center',
-          borderRadius: 2,
-          boxShadow: 3,
-        }}
-      >
-        <BarChart sx={{ fontSize: 80, color: 'primary.main', marginBottom: 2 }} />
-        <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: 1 }}>
-          Statistiques détaillées
-        </Typography>
-        <Typography variant="body2">
-          Suivez la performance de vos voitures avec des statistiques sur les locations.
-        </Typography>
-      </Paper>
-    </Stack>
-
-    <Stack
-      direction={{ xs: 'column', sm: 'row' }}
-      spacing={4}
-      justifyContent="center"
-      alignItems="center"
-    >
-      <Paper
-        sx={{
-          padding: 3,
-          width: '100%',
-          maxWidth: 360,
-          textAlign: 'center',
-          borderRadius: 2,
-          boxShadow: 3,
-        }}
-      >
-        <Visibility sx={{ fontSize: 80, color: 'primary.main', marginBottom: 2 }} />
-        <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: 1 }}>
-          Plus de visibilité
-        </Typography>
-        <Typography variant="body2">
-          Augmentez la visibilité de vos véhicules auprès d&apos;un large public de clients potentiels.
-        </Typography>
-      </Paper>
-
-      <Paper
-        sx={{
-          padding: 3,
-          width: '100%',
-          maxWidth: 360,
-          textAlign: 'center',
-          borderRadius: 2,
-          boxShadow: 3,
-        }}
-      >
-        <GroupAdd sx={{ fontSize: 80, color: 'primary.main', marginBottom: 2 }} />
-        <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: 1 }}>
-          Réservation simplifiée
-        </Typography>
-        <Typography variant="body2">
-          Facilitez la réservation pour vos clients avec une interface conviviale.
-        </Typography>
-      </Paper>
-    </Stack>
-
-    {/* CTA Button */}
-    <Box sx={{ marginTop: 4 }}>
+    <div className="rental-agency__cta">
       <Button
         variant="contained"
         color="primary"
         size="large"
         href="https://admin.plany.tn/sign-up"
-        sx={{ padding: '10px 20px', fontSize: '16px', borderRadius: '10px' }}
+        className="rental-agency__cta-button"
       >
         Inscrivez votre agence maintenant
       </Button>
-    </Box>
-  </Box>
+    </div>
+  </section>
 )
 
 export default RentalAgencySection

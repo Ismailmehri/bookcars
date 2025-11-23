@@ -1,0 +1,28 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import path from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import React from 'react'
+import { renderToString } from 'react-dom/server'
+import { MemoryRouter } from 'react-router-dom'
+
+globalThis.__TEST_IMPORT_META_ENV = globalThis.__TEST_IMPORT_META_ENV || {}
+globalThis.localStorage = globalThis.localStorage || {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+}
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const distRoot = path.resolve(__dirname, '../.test-dist')
+const pagesDist = path.join(distRoot, 'frontend/src/pages')
+
+const loadModule = async (relativePath) => import(pathToFileURL(path.join(pagesDist, relativePath)))
+
+const { default: Contact } = await loadModule('Contact.js')
+
+test('Contact page wraps the form in the streamlined container', () => {
+  const html = renderToString(React.createElement(MemoryRouter, null, React.createElement(Contact)))
+
+  assert.match(html, /contact-page/)
+})

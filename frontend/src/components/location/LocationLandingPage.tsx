@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useMemo, useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Container,
   Box,
@@ -17,7 +17,6 @@ import {
   Chip,
   Avatar,
   Button,
-  CircularProgress,
 } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar'
@@ -201,31 +200,31 @@ const LocationLandingPage: React.FC<LocationLandingPageProps> = ({
   const [suppliers, setSuppliers] = useState<bookcarsTypes.User[]>([])
   const [supplierState, setSupplierState] = useState<'idle' | 'loading' | 'error' | 'success'>('idle')
   const [showMap, setShowMap] = useState(false)
+  const supplierMountedRef = useRef(true)
 
-  useEffect(() => {
-    let mounted = true
-    const loadSuppliers = async () => {
-      setSupplierState('loading')
-      try {
-        const result = await SupplierService.getAllSuppliers()
-        if (!mounted) {
-          return
-        }
-        setSuppliers(result)
-        setSupplierState('success')
-      } catch {
-        if (mounted) {
-          setSupplierState('error')
-        }
+  const loadSuppliers = useCallback(async () => {
+    setSupplierState('loading')
+    try {
+      const result = await SupplierService.getAllSuppliers()
+      if (!supplierMountedRef.current) {
+        return
+      }
+      setSuppliers(result)
+      setSupplierState('success')
+    } catch {
+      if (supplierMountedRef.current) {
+        setSupplierState('error')
       }
     }
+  }, [])
 
+  useEffect(() => {
     loadSuppliers()
 
     return () => {
-      mounted = false
+      supplierMountedRef.current = false
     }
-  }, [])
+  }, [loadSuppliers])
 
   const defaultJsonLd = useMemo(() => {
     const faqSchema = buildFaqSchema(faqItems)
@@ -467,25 +466,12 @@ const LocationLandingPage: React.FC<LocationLandingPageProps> = ({
             {`Nos partenaires partagent leurs flottes afin d'offrir le meilleur choix à ${city}. Découvrez-les ci-dessous.`}
           </Typography>
           <Paper sx={{ p: 3, borderRadius: 3, backgroundColor: 'rgba(15,23,42,0.6)' }}>
-            {supplierState === 'loading' && (
-              <Stack alignItems="center" spacing={2}>
-                <CircularProgress color="inherit" />
-                <Typography variant="body2">Chargement des agences partenaires...</Typography>
-              </Stack>
-            )}
-            {supplierState === 'error' && (
-              <Typography variant="body2" color="error" textAlign="center">
-                Impossible de charger les logos des partenaires pour le moment. Réessayez plus tard.
-              </Typography>
-            )}
-            {supplierState === 'success' && suppliers.length === 0 && (
-              <Typography variant="body2" textAlign="center">
-                Les agences locales seront bientôt affichées ici.
-              </Typography>
-            )}
-            {supplierState === 'success' && suppliers.length > 0 && (
-              <SupplierCarrousel suppliers={suppliers} />
-            )}
+            <SupplierCarrousel
+              suppliers={suppliers}
+              loading={supplierState === 'loading'}
+              error={supplierState === 'error' ? 'Impossible de charger les logos des partenaires pour le moment.' : undefined}
+              onRetry={loadSuppliers}
+            />
           </Paper>
         </Container>
       </Box>

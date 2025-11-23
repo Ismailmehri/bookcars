@@ -1,6 +1,5 @@
-import React, { ReactNode, useRef } from 'react'
+import React, { ReactNode, useMemo, useRef } from 'react'
 import Slider from 'react-slick'
-import { Button } from '@mui/material'
 import {
   ArrowRight,
   ArrowLeft,
@@ -19,34 +18,36 @@ import '@/assets/css/location-carrousel.css'
 
 interface LocationCarrouselProps {
   locations: bookcarsTypes.Location[]
+  loading?: boolean
+  error?: string
+  onRetry?: () => void
   onSelect?: (location: bookcarsTypes.Location) => void
 }
 
 const LocationCarrousel = ({
   locations,
+  loading = false,
+  error,
+  onRetry,
   onSelect,
 }: LocationCarrouselProps) => {
   const slider = useRef<Slider>(null)
 
-  const sliderSettings = {
+  const sliderSettings = useMemo(() => ({
     arrows: false,
     dots: true,
     // eslint-disable-next-line react/no-unstable-nested-components
     appendDots: (dots: ReactNode) => (
-      <div>
-        <ul style={{ margin: '0px', padding: '0px' }}>
-          <Button variant="text" className="btn-slider btn-slider-prev" onClick={() => slider?.current?.slickPrev()}>
-            <ArrowLeft />
-            {commonStrings.BACK}
-          </Button>
-          {' '}
-          {dots}
-          {' '}
-          <Button variant="text" className="btn-slider btn-slider-next" onClick={() => slider?.current?.slickNext()}>
-            {commonStrings.NEXT}
-            <ArrowRight />
-          </Button>
-        </ul>
+      <div className="location-carousel__pagination">
+        <button type="button" className="location-carousel__pager" onClick={() => slider?.current?.slickPrev()}>
+          <ArrowLeft />
+          {commonStrings.BACK}
+        </button>
+        {dots}
+        <button type="button" className="location-carousel__pager" onClick={() => slider?.current?.slickNext()}>
+          {commonStrings.NEXT}
+          <ArrowRight />
+        </button>
       </div>
     ),
     infinite: true,
@@ -64,44 +65,72 @@ const LocationCarrousel = ({
         }
       }
     ]
+  }), [])
+
+  if (loading) {
+    return (
+      <div className="location-carousel__status" aria-live="polite" role="status">
+        <div className="location-carousel__spinner" />
+        <span>{strings.LOADING}</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="location-carousel__status location-carousel__status--error" role="alert">
+        <span>{error}</span>
+        {onRetry && (
+          <button type="button" className="location-carousel__retry" onClick={onRetry}>
+            {commonStrings.TRY_AGAIN}
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  if (locations.length === 0) {
+    return (
+      <div className="location-carousel__status" aria-live="polite">
+        {strings.EMPTY_STATE}
+      </div>
+    )
   }
 
   return (
-    <div className="location-caroussel">
+    <section className="location-carousel" aria-label={strings.ARIA_LABEL}>
       <Slider ref={slider} {...sliderSettings}>
         {locations.map((location) => (
-          <div key={location._id} className="box">
-            <div className="location-image">
-              {
-                location.image ? (
-                  <img alt="Tirana" src={bookcarsHelper.joinURL(env.CDN_LOCATIONS, location.image)} />
-                )
-                  : <LocationIcon className="location-icon" />
-              }
+          <div key={location._id} className="location-carousel__card">
+            <div className="location-carousel__media">
+              {location.image ? (
+                <img
+                  alt={location.name}
+                  src={bookcarsHelper.joinURL(env.CDN_LOCATIONS, location.image)}
+                  loading="lazy"
+                />
+              ) : (
+                <LocationIcon className="location-carousel__icon" />
+              )}
             </div>
-            <div className="title">
+            <div className="location-carousel__header">
               <h2>{location.name}</h2>
               <Badge backgroundColor="#B3E5FC" color="#2D7AB3" text="New" />
-              {/* <Badge backgroundColor="#FFE0B2" color="#EF8743" text="200 m from you" />
-              <Badge backgroundColor="#FEEBEE" color="#F37977" text="-20% sale" /> */}
             </div>
-            <p>{`${location.name}${location.parkingSpots && location.parkingSpots?.length > 0 ? ` · ${location.parkingSpots?.length} ${location.parkingSpots?.length === 1 ? strings.AVALIABLE_LOCATION : strings.AVALIABLE_LOCATIONS}` : ''}`}</p>
-            <Button
-              variant="text"
-              color="inherit"
-              className="btn-location"
-              onClick={() => {
-                if (onSelect) {
-                  onSelect(location)
-                }
-              }}
+            <p className="location-carousel__meta">
+              {`${location.name}${location.parkingSpots && location.parkingSpots?.length > 0 ? ` · ${location.parkingSpots?.length} ${location.parkingSpots?.length === 1 ? strings.AVALIABLE_LOCATION : strings.AVALIABLE_LOCATIONS}` : ''}`}
+            </p>
+            <button
+              type="button"
+              className="location-carousel__cta"
+              onClick={() => onSelect?.(location)}
             >
               {strings.SELECT_LOCATION}
-            </Button>
+            </button>
           </div>
         ))}
       </Slider>
-    </div>
+    </section>
   )
 }
 

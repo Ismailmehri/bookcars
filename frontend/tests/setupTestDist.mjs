@@ -7,6 +7,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distRoot = path.resolve(__dirname, '../.test-dist')
 const frontendSrcRoot = path.join(distRoot, 'frontend/src')
 
+globalThis.__TEST_IMPORT_META_ENV = globalThis.__TEST_IMPORT_META_ENV || {}
+globalThis.localStorage = globalThis.localStorage || {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+}
+globalThis.window = globalThis.window || { location: { search: '' } }
+
+const iconNames = [
+  'LocationOn',
+  'DirectionsCar',
+  'Payment',
+  'CheckCircle',
+  'EventNote',
+  'BarChart',
+  'Visibility',
+  'GroupAdd',
+  'MailOutline',
+]
+
 const ensureCopiedFromFrontend = async (relativePath) => {
   const targetPath = path.join(distRoot, relativePath)
 
@@ -41,7 +61,257 @@ await Promise.all([
   ),
   ensureFile(
     path.join(distRoot, 'node_modules/@/components/Layout.js'),
-    "export default function Layout({ children }) { return children ?? null }\n",
+    "export default function Layout({ children, onLoad }) { if (typeof onLoad === 'function') { onLoad(); } return children ?? null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/Seo.js'),
+    "export default function Seo() { return null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/SocialLogin.js'),
+    "export default function SocialLogin() { return null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/Error.js'),
+    "export default function Error() { return null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/SimpleBackdrop.js'),
+    "export default function SimpleBackdrop({ text }) { return text ? null : null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/DatePicker.js'),
+    "export default function DatePicker() { return null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/ReCaptchaProvider.js'),
+    "export default function ReCaptchaProvider({ children }) { return children ?? null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/NoMatch.js'),
+    "export default function NoMatch() { return null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/seo.js'),
+    'export const buildDescription = (value) => String(value ?? "")\n',
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/helper.js'),
+    [
+      'export const error = () => {}',
+      'export const info = () => {}',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/package.json'),
+    JSON.stringify({
+      name: '@/common',
+      type: 'module',
+      exports: {
+        './seo': './seo.js',
+        './helper': './helper.js',
+        './*': './*.js',
+      },
+    }),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/package.json'),
+    JSON.stringify({
+      name: '@/components',
+      type: 'module',
+      version: '0.0.0',
+      exports: {
+        './Layout': './Layout.js',
+        './Seo': './Seo.js',
+        './SocialLogin': './SocialLogin.js',
+        './Error': './Error.js',
+        './SimpleBackdrop': './SimpleBackdrop.js',
+        './DatePicker': './DatePicker.js',
+        './ReCaptchaProvider': './ReCaptchaProvider.js',
+        './NoMatch': './NoMatch.js',
+        './SearchForm': './SearchForm.js',
+        '../services/UserService': '../services/UserService.js',
+      },
+    }),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/package.json'),
+    JSON.stringify({
+      name: '@',
+      type: 'module',
+      exports: {
+        './components/*': './components/*.js',
+        './services/UserService': './services/UserService.js',
+        './services/*': '../frontend/src/services/*',
+        './common/*': './common/*.js',
+        './lang/*': '../frontend/src/lang/*.js',
+        './config/*': '../frontend/src/config/*.js',
+        './assets/css/*': '../frontend/src/assets/css/*',
+      },
+    }),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/services/package.json'),
+    JSON.stringify({
+      name: '@/services',
+      type: 'module',
+      exports: {
+        './UserService': './UserService.js',
+        './*': './*.js',
+      },
+    }),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/package.json'),
+    JSON.stringify({
+      name: '@/lang',
+      type: 'module',
+      exports: {
+        './common': './common.js',
+        './sign-in': './sign-in.js',
+        './sign-up': './sign-up.js',
+        './reset-password': './reset-password.js',
+        './change-password': './change-password.js',
+        './*': './*.js',
+      },
+    }),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/common.js'),
+    [
+      "export const strings = {",
+      "  EMAIL: 'Email',",
+      "  PASSWORD: 'Password',",
+      "  FULL_NAME: 'Nom complet',",
+      "  PHONE: 'Téléphone',",
+      "  PHONE_NOT_VALID: 'Téléphone invalide',",
+      "  BIRTH_DATE: 'Date de naissance',",
+      "  BIRTH_DATE_NOT_VALID: 'Date invalide',",
+      "  CONFIRM_PASSWORD: 'Confirmez le mot de passe',",
+      "  PASSWORDS_DONT_MATCH: 'Les mots de passe ne correspondent pas',",
+      "  PASSWORD_ERROR: 'Mot de passe invalide',",
+      "  EMAIL_NOT_VALID: 'Email invalide',",
+      "  EMAIL_ALREADY_REGISTERED: 'Email déjà enregistré',",
+      "  TOS: \"Conditions d'utilisation\",",
+      "  TOS_ERROR: 'Veuillez accepter les conditions',",
+      "  PLEASE_WAIT: 'Veuillez patienter...',",
+      "  CANCEL: 'Annuler',",
+      "  GO_TO_HOME: 'Accueil',",
+      "  UPDATE: 'Mettre à jour',",
+      '}\n',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/sign-in.js'),
+    [
+      "export const strings = {",
+      "  SIGN_IN_HEADING: 'Connexion',",
+      "  SIGN_UP: " + "'Inscription',",
+      "  SIGN_IN: 'Se connecter',",
+      "  STAY_CONNECTED: 'Se souvenir de moi',",
+      "  RESET_PASSWORD: 'Mot de passe oublié',",
+      "  ERROR_IN_SIGN_IN: 'Erreur de connexion',",
+      "  IS_BLACKLISTED: 'Compte bloqué',",
+      '}\n',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/sign-up.js'),
+    [
+      "export const strings = {",
+      "  SIGN_UP_HEADING: 'Inscription',",
+      "  SIGN_UP: " + "'Inscription',",
+      "  SIGN_UP_ERROR: \"Erreur lors de l'inscription\",",
+      "  AGENCY_SIGNUP_INFO: 'Portail agence',",
+      "  AGENCY_SIGNUP_BUTTON: 'Inscrire mon agence',",
+      '}\n',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/reset-password.js'),
+    [
+      "export const strings = {",
+      "  RESET_PASSWORD_HEADING: 'Réinitialiser',",
+      "  RESET_PASSWORD: 'Réinitialisez votre mot de passe',",
+      "  EMAIL_SENT: 'Email envoyé',",
+      "  EMAIL_ERROR: 'Email introuvable',",
+      "  RESET: 'Réinitialiser',",
+      '}\n',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/change-password.js'),
+    [
+      "export const strings = {",
+      "  NEW_PASSWORD: 'Nouveau mot de passe',",
+      "  NEW_PASSWORD_ERROR: 'Mot de passe requis',",
+      '}\n',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/config/package.json'),
+    JSON.stringify({
+      name: '@/config',
+      type: 'module',
+      exports: {
+        './env.config': './env.config.js',
+        './*': './*.js',
+      },
+    }),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/config/env.config.js'),
+    [
+      "const env = {",
+      "  DEFAULT_LANGUAGE: 'fr',",
+      "  PAGINATION_MODE: 'CLASSIC',",
+      '  INFINITE_SCROLL_OFFSET: 0,',
+      '  CARS_PAGE_SIZE: 12,',
+      '  PAGE_SIZE: 20,',
+      "  RECAPTCHA_ENABLED: false,",
+      "  isMobile: () => false,",
+      "  isProduction: false,",
+    '}',
+      '\nexport default env\n',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/assets/package.json'),
+    JSON.stringify({
+      name: '@/assets',
+      type: 'module',
+      exports: {
+        './css/*': './css/*',
+      },
+    }),
+  ),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/auth-forms.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/signin.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/forgot-password.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/signup.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/reset-password.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/map-placeholder.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/price-range-filter.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/search-status.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/location-header.css'), ''),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/services/UserService.js'),
+    [
+      "export const getLanguage = () => 'fr'",
+      'export const getCurrentUser = () => undefined',
+      'export const getStayConnected = () => false',
+      'export const setStayConnected = () => {}',
+      'export const validateEmail = async () => 200',
+      'export const resend = async () => 200',
+      'export const signup = async () => 200',
+      'export const signin = async () => ({ status: 200, data: {} })',
+      'export const signout = async () => ({})',
+      'export const verifyRecaptcha = async () => 200',
+      "export const getIP = async () => '0.0.0.0'",
+      'export const checkToken = async () => 200',
+      'export const activate = async () => 200',
+      'export const deleteTokens = async () => 200',
+    ].join('\n'),
   ),
   ensureFile(
     path.join(distRoot, 'node_modules/@/components/SearchForm.js'),
@@ -50,6 +320,30 @@ await Promise.all([
   ensureFile(
     path.join(distRoot, 'node_modules/:bookcars-types/index.js'),
     "export const AppType = {\n  Frontend: 'frontend',\n  Backend: 'backend',\n}\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/:bookcars-helper/index.js'),
+    [
+      'export const clone = (value) => JSON.parse(JSON.stringify(value ?? null))',
+      'export const days = () => 0',
+      "export const joinURL = (...parts) => parts.filter(Boolean).join('/')",
+      '',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/react-localization/index.js'),
+    'export default class LocalizedStrings { constructor(dict){Object.assign(this, dict)} setLanguage(){} }\n',
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@mui/icons-material/index.js'),
+    [
+      'export const MailOutline = () => null',
+      'export const ArrowLeft = () => null',
+      'export const ArrowRight = () => null',
+      'export const LocationOn = () => null',
+      'export default { MailOutline, ArrowLeft, ArrowRight, LocationOn }',
+      '',
+    ].join('\n'),
   ),
   ensureFile(
     path.join(frontendSrcRoot, 'components/Layout.js'),
@@ -71,7 +365,19 @@ await Promise.all([
   ensureCopiedFromFrontend('services/MetaEventService.js'),
   ensureCopiedFromFrontend('services/UserService.js'),
   ensureCopiedFromFrontend('services/axiosInstance.js'),
+  ensureFile(path.join(frontendSrcRoot, 'pages/NoMatch.js'), 'export default function NoMatch() { return null }\n'),
+  ensureFile(path.join(frontendSrcRoot, 'assets/css/how-it-works.css'), ''),
+  ensureFile(path.join(frontendSrcRoot, 'assets/css/rental-agency-section.css'), ''),
 ])
+
+await Promise.all(
+  iconNames.map((icon) =>
+    ensureFile(
+      path.join(distRoot, `node_modules/@mui/icons-material/${icon}.js`),
+      'export default function Icon() { return null }\n'
+    )
+  )
+)
 
 const envFile = path.join(distRoot, 'config/env.config.js')
 let envSource = await readFile(envFile, 'utf8')
@@ -116,6 +422,223 @@ try {
   }
 } catch {}
 
+const compiledHowItWorksPath = path.join(frontendSrcRoot, 'components/HowItWorks.js')
+try {
+  const compiledHowItWorks = await readFile(compiledHowItWorksPath, 'utf8')
+  const iconStub = `const LocationOnIcon = () => null\nconst DirectionsCarIcon = () => null\nconst PaymentIcon = () => null\nconst CheckCircleIcon = () => null\n`
+  const cleanedHowItWorks = compiledHowItWorks
+    .replace(/import[^\n]*how-it-works\.css['"];?\s*/g, '')
+    .replace(/import[^\n]*@mui\/icons-material[^\n]*\n/g, '')
+  const patchedHowItWorks = cleanedHowItWorks.includes('const steps = [')
+    ? cleanedHowItWorks.replace('const steps = [', `${iconStub}const steps = [`)
+    : cleanedHowItWorks
+  if (patchedHowItWorks !== compiledHowItWorks) {
+    await writeFile(compiledHowItWorksPath, patchedHowItWorks)
+  }
+} catch {}
+
+const compiledRentalAgencyPath = path.join(frontendSrcRoot, 'components/RentalAgencySection.js')
+try {
+  const compiledRentalAgency = await readFile(compiledRentalAgencyPath, 'utf8')
+  const iconStub = `const EventNote = () => null\nconst BarChart = () => null\nconst Visibility = () => null\nconst GroupAdd = () => null\n`
+  const cleanedRentalAgency = compiledRentalAgency
+    .replace(/import[^\n]*rental-agency-section\.css['"];?\s*/g, '')
+    .replace(/import[^\n]*@mui\/icons-material[^\n]*\n/g, '')
+  const patchedRentalAgency = cleanedRentalAgency.includes('const advantages')
+    ? cleanedRentalAgency.replace('const advantages = [', `${iconStub}const advantages = [`)
+    : cleanedRentalAgency
+  if (patchedRentalAgency !== compiledRentalAgency) {
+    await writeFile(compiledRentalAgencyPath, patchedRentalAgency)
+  }
+} catch {}
+
+const cssCleanups = [
+  { file: 'components/MapPlaceholder.js', patterns: [/import[^\n]*map-placeholder\.css['"];?\s*/g] },
+  { file: 'components/LocationHeader.js', patterns: [/import[^\n]*location-header\.css['"];?\s*/g] },
+  { file: 'components/PriceRangeFilter.js', patterns: [/import[^\n]*price-range-filter\.css['"];?\s*/g] },
+  { file: 'components/SearchStatus.js', patterns: [/import[^\n]*search-status\.css['"];?\s*/g] },
+]
+
+for (const cleanup of cssCleanups) {
+  const targetPath = path.join(frontendSrcRoot, cleanup.file)
+  try {
+    let source = await readFile(targetPath, 'utf8')
+    let updated = source
+    cleanup.patterns.forEach((pattern) => {
+      updated = updated.replace(pattern, '')
+    })
+    if (updated !== source) {
+      await writeFile(targetPath, updated)
+    }
+  } catch {}
+}
+
+const patchAliases = async (filePath, replacements) => {
+  try {
+    let source = await readFile(filePath, 'utf8')
+    let updated = source
+    replacements.forEach(([find, replace]) => {
+      updated = updated.replace(new RegExp(find, 'g'), replace)
+    })
+    if (updated !== source) {
+      await writeFile(filePath, updated)
+    }
+  } catch {}
+}
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/About.js'), [
+  ['@/components/Layout', '../components/Layout.js'],
+  ['@/components/Footer', '../components/Footer.js'],
+  ['@/components/Seo', '../components/Seo.js'],
+  ['@/common/seo', '../common/seo.js'],
+  ['import[^\\n]*about\\.css[^\\n]*\\n', ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/Contact.js'), [
+  ['@/components/Layout', '../components/Layout.js'],
+  ['@/components/Footer', '../components/Footer.js'],
+  ['@/components/ContactForm', '../components/ContactForm.js'],
+  ['@/components/Seo', '../components/Seo.js'],
+  ['@/common/seo', '../common/seo.js'],
+  ['import[^\\n]*contact\\.css[^\\n]*\\n', ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/ForgotPassword.js'), [
+  ['./NoMatch"', './NoMatch.js"'],
+  ["./NoMatch'", "./NoMatch.js'"],
+  ['import[^\\n]*auth-forms\\.css[^\\n]*\\n', ''],
+  ['import[^\\n]*forgot-password\\.css[^\\n]*\\n', ''],
+  ['const\\s*\\[visible, setVisible\\]\\s*=\\s*useState\\(false\\)', 'const [visible, setVisible] = useState(true)'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/Error.js'), [
+  ['@/components/Seo', '../components/Seo.js'],
+  ['@/lang/common', '../lang/common.js'],
+  ['import[^\\n]*error\\.css[^\\n]*\\n', ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/Info.js'), [
+  ['@/components/Seo', '../components/Seo.js'],
+  ['@/lang/common', '../lang/common.js'],
+  ['import[^\\n]*info\\.css[^\\n]*\\n', ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/ResetPassword.js'), [
+  ['./NoMatch"', './NoMatch.js"'],
+  ["./NoMatch'", "./NoMatch.js'"],
+  ['./Error"', './Error.js"'],
+  ["./Error'", "./Error.js'"],
+  ['import[^\\n]*auth-forms\\.css[^\\n]*\\n', ''],
+  ['import[^\\n]*reset-password\\.css[^\\n]*\\n', ''],
+  ['const\\s*\\[visible, setVisible\\]\\s*=\\s*useState\\(false\\)', 'const [visible, setVisible] = useState(true)'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/SignIn.js'), [
+  ['import[^\\n]*auth-forms\\.css[^\\n]*\\n', ''],
+  ['import[^\\n]*signin\\.css[^\\n]*\\n', ''],
+  ['const\\s*\\[visible, setVisible\\]\\s*=\\s*useState\\(false\\)', 'const [visible, setVisible] = useState(true)'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/SignUp.js'), [
+  ['import[^\\n]*auth-forms\\.css[^\\n]*\\n', ''],
+  ['import[^\\n]*signup\\.css[^\\n]*\\n', ''],
+  ['import[^\\n]*react-phone-number-input/style\\.css[^\\n]*\\n', ''],
+  ['const\\s*\\[visible, setVisible\\]\\s*=\\s*useState\\(false\\)', 'const [visible, setVisible] = useState(true)'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'components/ContactForm.js'), [
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/lang/common', '../lang/common.js'],
+  ['@/lang/contact-form', '../lang/contact-form.js'],
+  ['@/services/UserService', '../services/UserService.js'],
+  ['@/components/ReCaptchaProvider', './ReCaptchaProvider.js'],
+  ['@/common/helper', '../common/helper.js'],
+  ['@/common/gtm', '../common/gtm.js'],
+  ['import[^\\n]*contact-form\\.css[^\\n]*\\n', ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'components/Footer.js'), [
+  ['@/lang/footer', '../lang/footer.js'],
+  ['@/services/LocationService', '../services/LocationService.js'],
+  ['import[^\\n]*footer\\.css[^\\n]*\\n', ''],
+  ['import SecurePayment[^\\n]*\n', "const SecurePayment = '/assets/img/secure-payment.png'\n"],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'components/SupplierCarrousel.js'), [
+  ["import Slider from 'react-slick';", 'const Slider = ({ children }) => children'],
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/assets/css/supplier-carrousel.css', ''],
+  ["import 'slick-carousel/slick/slick.css';", ''],
+  ["import 'slick-carousel/slick/slick-theme.css';", ''],
+  ["import '';", ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'components/LocationCarrousel.js'), [
+  ["import Slider from 'react-slick';", 'const Slider = ({ children }) => children'],
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/lang/location-carrousel', '../lang/location-carrousel.js'],
+  ['@/lang/common', '../lang/common.js'],
+  ['import[^\\n]*location-carrousel\\.css[^\\n]*\\n', ''],
+  ['./Badge', './Badge.js'],
+  ["import 'slick-carousel/slick/slick.css';", ''],
+  ["import 'slick-carousel/slick/slick-theme.css';", ''],
+  ["import '';", ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'components/Badge.js'), [
+  ['import[^\\n]*badge\\.css[^\\n]*\\n', ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'lang/common.js'), [
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/common/langHelper', '../common/langHelper.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'lang/location-carrousel.js'), [
+  ['@/common/langHelper', '../common/langHelper.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'lang/footer.js'), [
+  ['@/common/langHelper', '../common/langHelper.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'lang/contact-form.js'), [
+  ['@/common/langHelper', '../common/langHelper.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'services/LocationService.js'), [
+  ['@/services/axiosInstance', './axiosInstance.js'],
+  ['@/config/env.config', '../config/env.config.js'],
+  ['./axiosInstance', './axiosInstance.js'],
+  ['./UserService', './UserService.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'components/ReCaptchaProvider.js'), [
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/services/UserService', '../services/UserService.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'common/helper.js'), [
+  ['@/lang/cars', '../lang/cars.js'],
+  ['@/lang/common', '../lang/common.js'],
+  ['@/config/env.config', '../config/env.config.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'common/langHelper.js'), [
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/services/', '../services/'],
+  ['@/services/UserService', '../services/UserService.js'],
+  ['\.\./services/UserService', '../services/UserService.js'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'lang/cars.js'), [
+  ['@/common/langHelper', '../common/langHelper.js'],
+  ['@/config/env.config', '../config/env.config.js'],
+  ['@/services/', '../services/'],
+  ['@/services/UserService', '../services/UserService.js'],
+  ['\.\./services/UserService', '../services/UserService.js'],
+])
+
 const gtmFilePath = path.join(distRoot, 'common/gtm.js')
 let gtmSource = await readFile(gtmFilePath, 'utf8')
 let gtmUpdated = gtmSource.replace(/@\/config\/env.config/g, '../config/env.config.js')
@@ -141,6 +664,7 @@ try {
   let compiledUserUpdated = compiledUserSource.replace(/@\/services\/axiosInstance/g, './axiosInstance.js')
   compiledUserUpdated = compiledUserUpdated.replace(/\.\/axiosInstance(?=['"])/g, './axiosInstance.js')
   compiledUserUpdated = compiledUserUpdated.replace(/@\/config\/env.config/g, '../config/env.config.js')
+  compiledUserUpdated = compiledUserUpdated.replace(/new URLSearchParams\(window.location.search\)/g, 'new URLSearchParams("")')
   if (compiledUserUpdated !== compiledUserSource) {
     await writeFile(compiledUserServicePath, compiledUserUpdated)
   }

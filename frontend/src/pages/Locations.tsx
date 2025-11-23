@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { Suspense, useEffect, useState } from 'react'
 import { Dialog, DialogContent } from '@mui/material'
 import L from 'leaflet'
 import { Helmet } from 'react-helmet'
@@ -7,17 +7,20 @@ import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import * as LocationService from '@/services/LocationService'
 import Layout from '@/components/Layout'
-import Map from '@/components/Map'
+import MapPlaceholder from '@/components/MapPlaceholder'
 import SearchForm from '@/components/SearchForm'
 import Footer from '@/components/Footer'
 import Seo from '@/components/Seo'
 import { buildDescription } from '@/common/seo'
 import '@/assets/css/locations.css'
 
+const MapView = React.lazy(() => import('@/components/Map'))
+
 const Locations = () => {
   const [locations, setLocations] = useState<bookcarsTypes.Location[]>([])
   const [pickupLocation, setPickupLocation] = useState('')
   const [openSearchFormDialog, setOpenSearchFormDialog] = useState(false)
+  const [showMap, setShowMap] = useState(false)
 
   // Fonction pour charger les emplacements au chargement du composant
   const onLoad = async () => {
@@ -92,15 +95,20 @@ const Locations = () => {
 
       {/* Contenu principal */}
       <div className="locations">
-        <Map
-          position={new L.LatLng(34.0268755, 1.6528399999999976)}
-          initialZoom={5}
-          locations={locations}
-          onSelelectPickUpLocation={async (locationId) => {
-            setPickupLocation(locationId)
-            setOpenSearchFormDialog(true)
-          }}
-        />
+        {!showMap && <MapPlaceholder onShowMap={() => setShowMap(true)} />}
+        {showMap && (
+          <Suspense fallback="Chargement…">
+            <MapView
+              position={new L.LatLng(34.0268755, 1.6528399999999976)}
+              initialZoom={5}
+              locations={locations}
+              onSelelectPickUpLocation={async (locationId) => {
+                setPickupLocation(locationId)
+                setOpenSearchFormDialog(true)
+              }}
+            />
+          </Suspense>
+        )}
       </div>
 
       {/* Formulaire de recherche dans un dialogue modal */}

@@ -13,6 +13,7 @@ globalThis.localStorage = globalThis.localStorage || {
   setItem: () => {},
   removeItem: () => {},
 }
+globalThis.window = globalThis.window || { location: { search: '' } }
 
 const iconNames = [
   'LocationOn',
@@ -60,7 +61,253 @@ await Promise.all([
   ),
   ensureFile(
     path.join(distRoot, 'node_modules/@/components/Layout.js'),
-    "export default function Layout({ children }) { return children ?? null }\n",
+    "export default function Layout({ children, onLoad }) { if (typeof onLoad === 'function') { onLoad(); } return children ?? null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/Seo.js'),
+    "export default function Seo() { return null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/SocialLogin.js'),
+    "export default function SocialLogin() { return null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/Error.js'),
+    "export default function Error() { return null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/SimpleBackdrop.js'),
+    "export default function SimpleBackdrop({ text }) { return text ? null : null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/DatePicker.js'),
+    "export default function DatePicker() { return null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/ReCaptchaProvider.js'),
+    "export default function ReCaptchaProvider({ children }) { return children ?? null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/NoMatch.js'),
+    "export default function NoMatch() { return null }\n",
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/seo.js'),
+    'export const buildDescription = (value) => String(value ?? "")\n',
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/helper.js'),
+    [
+      'export const error = () => {}',
+      'export const info = () => {}',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/common/package.json'),
+    JSON.stringify({
+      name: '@/common',
+      type: 'module',
+      exports: {
+        './seo': './seo.js',
+        './helper': './helper.js',
+        './*': './*.js',
+      },
+    }),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/components/package.json'),
+    JSON.stringify({
+      name: '@/components',
+      type: 'module',
+      version: '0.0.0',
+      exports: {
+        './Layout': './Layout.js',
+        './Seo': './Seo.js',
+        './SocialLogin': './SocialLogin.js',
+        './Error': './Error.js',
+        './SimpleBackdrop': './SimpleBackdrop.js',
+        './DatePicker': './DatePicker.js',
+        './ReCaptchaProvider': './ReCaptchaProvider.js',
+        './NoMatch': './NoMatch.js',
+        './SearchForm': './SearchForm.js',
+        '../services/UserService': '../services/UserService.js',
+      },
+    }),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/package.json'),
+    JSON.stringify({
+      name: '@',
+      type: 'module',
+      exports: {
+        './components/*': './components/*.js',
+        './services/UserService': './services/UserService.js',
+        './services/*': '../frontend/src/services/*',
+        './common/*': './common/*.js',
+        './lang/*': '../frontend/src/lang/*.js',
+        './config/*': '../frontend/src/config/*.js',
+        './assets/css/*': '../frontend/src/assets/css/*',
+      },
+    }),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/services/package.json'),
+    JSON.stringify({
+      name: '@/services',
+      type: 'module',
+      exports: {
+        './UserService': './UserService.js',
+        './*': './*.js',
+      },
+    }),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/package.json'),
+    JSON.stringify({
+      name: '@/lang',
+      type: 'module',
+      exports: {
+        './common': './common.js',
+        './sign-in': './sign-in.js',
+        './sign-up': './sign-up.js',
+        './reset-password': './reset-password.js',
+        './change-password': './change-password.js',
+        './*': './*.js',
+      },
+    }),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/common.js'),
+    [
+      "export const strings = {",
+      "  EMAIL: 'Email',",
+      "  PASSWORD: 'Password',",
+      "  FULL_NAME: 'Nom complet',",
+      "  PHONE: 'Téléphone',",
+      "  PHONE_NOT_VALID: 'Téléphone invalide',",
+      "  BIRTH_DATE: 'Date de naissance',",
+      "  BIRTH_DATE_NOT_VALID: 'Date invalide',",
+      "  CONFIRM_PASSWORD: 'Confirmez le mot de passe',",
+      "  PASSWORDS_DONT_MATCH: 'Les mots de passe ne correspondent pas',",
+      "  PASSWORD_ERROR: 'Mot de passe invalide',",
+      "  EMAIL_NOT_VALID: 'Email invalide',",
+      "  EMAIL_ALREADY_REGISTERED: 'Email déjà enregistré',",
+      "  TOS: \"Conditions d'utilisation\",",
+      "  TOS_ERROR: 'Veuillez accepter les conditions',",
+      "  PLEASE_WAIT: 'Veuillez patienter...',",
+      "  CANCEL: 'Annuler',",
+      "  GO_TO_HOME: 'Accueil',",
+      "  UPDATE: 'Mettre à jour',",
+      '}\n',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/sign-in.js'),
+    [
+      "export const strings = {",
+      "  SIGN_IN_HEADING: 'Connexion',",
+      "  SIGN_UP: " + "'Inscription',",
+      "  SIGN_IN: 'Se connecter',",
+      "  STAY_CONNECTED: 'Se souvenir de moi',",
+      "  RESET_PASSWORD: 'Mot de passe oublié',",
+      "  ERROR_IN_SIGN_IN: 'Erreur de connexion',",
+      "  IS_BLACKLISTED: 'Compte bloqué',",
+      '}\n',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/sign-up.js'),
+    [
+      "export const strings = {",
+      "  SIGN_UP_HEADING: 'Inscription',",
+      "  SIGN_UP: " + "'Inscription',",
+      "  SIGN_UP_ERROR: \"Erreur lors de l'inscription\",",
+      "  AGENCY_SIGNUP_INFO: 'Portail agence',",
+      "  AGENCY_SIGNUP_BUTTON: 'Inscrire mon agence',",
+      '}\n',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/reset-password.js'),
+    [
+      "export const strings = {",
+      "  RESET_PASSWORD_HEADING: 'Réinitialiser',",
+      "  RESET_PASSWORD: 'Réinitialisez votre mot de passe',",
+      "  EMAIL_SENT: 'Email envoyé',",
+      "  EMAIL_ERROR: 'Email introuvable',",
+      "  RESET: 'Réinitialiser',",
+      '}\n',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/lang/change-password.js'),
+    [
+      "export const strings = {",
+      "  NEW_PASSWORD: 'Nouveau mot de passe',",
+      "  NEW_PASSWORD_ERROR: 'Mot de passe requis',",
+      '}\n',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/config/package.json'),
+    JSON.stringify({
+      name: '@/config',
+      type: 'module',
+      exports: {
+        './env.config': './env.config.js',
+        './*': './*.js',
+      },
+    }),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/config/env.config.js'),
+    [
+      "const env = {",
+      "  DEFAULT_LANGUAGE: 'fr',",
+      "  PAGINATION_MODE: 'CLASSIC',",
+      '  INFINITE_SCROLL_OFFSET: 0,',
+      '  CARS_PAGE_SIZE: 12,',
+      '  PAGE_SIZE: 20,',
+      "  RECAPTCHA_ENABLED: false,",
+      "  isMobile: () => false,",
+      "  isProduction: false,",
+    '}',
+      '\nexport default env\n',
+    ].join('\n'),
+  ),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/assets/package.json'),
+    JSON.stringify({
+      name: '@/assets',
+      type: 'module',
+      exports: {
+        './css/*': './css/*',
+      },
+    }),
+  ),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/auth-forms.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/signin.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/forgot-password.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/signup.css'), ''),
+  ensureFile(path.join(distRoot, 'node_modules/@/assets/css/reset-password.css'), ''),
+  ensureFile(
+    path.join(distRoot, 'node_modules/@/services/UserService.js'),
+    [
+      "export const getLanguage = () => 'fr'",
+      'export const getCurrentUser = () => undefined',
+      'export const getStayConnected = () => false',
+      'export const setStayConnected = () => {}',
+      'export const validateEmail = async () => 200',
+      'export const resend = async () => 200',
+      'export const signup = async () => 200',
+      'export const signin = async () => ({ status: 200, data: {} })',
+      'export const signout = async () => ({})',
+      'export const verifyRecaptcha = async () => 200',
+      "export const getIP = async () => '0.0.0.0'",
+      'export const checkToken = async () => 200',
+      'export const activate = async () => 200',
+      'export const deleteTokens = async () => 200',
+    ].join('\n'),
   ),
   ensureFile(
     path.join(distRoot, 'node_modules/@/components/SearchForm.js'),
@@ -114,6 +361,7 @@ await Promise.all([
   ensureCopiedFromFrontend('services/MetaEventService.js'),
   ensureCopiedFromFrontend('services/UserService.js'),
   ensureCopiedFromFrontend('services/axiosInstance.js'),
+  ensureFile(path.join(frontendSrcRoot, 'pages/NoMatch.js'), 'export default function NoMatch() { return null }\n'),
   ensureFile(path.join(frontendSrcRoot, 'assets/css/how-it-works.css'), ''),
   ensureFile(path.join(frontendSrcRoot, 'assets/css/rental-agency-section.css'), ''),
 ])
@@ -230,6 +478,14 @@ await patchAliases(path.join(frontendSrcRoot, 'pages/Contact.js'), [
   ['import[^\\n]*contact\\.css[^\\n]*\\n', ''],
 ])
 
+await patchAliases(path.join(frontendSrcRoot, 'pages/ForgotPassword.js'), [
+  ['./NoMatch"', './NoMatch.js"'],
+  ["./NoMatch'", "./NoMatch.js'"],
+  ['import[^\\n]*auth-forms\\.css[^\\n]*\\n', ''],
+  ['import[^\\n]*forgot-password\\.css[^\\n]*\\n', ''],
+  ['const\\s*\\[visible, setVisible\\]\\s*=\\s*useState\\(false\\)', 'const [visible, setVisible] = useState(true)'],
+])
+
 await patchAliases(path.join(frontendSrcRoot, 'pages/Error.js'), [
   ['@/components/Seo', '../components/Seo.js'],
   ['@/lang/common', '../lang/common.js'],
@@ -240,6 +496,29 @@ await patchAliases(path.join(frontendSrcRoot, 'pages/Info.js'), [
   ['@/components/Seo', '../components/Seo.js'],
   ['@/lang/common', '../lang/common.js'],
   ['import[^\\n]*info\\.css[^\\n]*\\n', ''],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/ResetPassword.js'), [
+  ['./NoMatch"', './NoMatch.js"'],
+  ["./NoMatch'", "./NoMatch.js'"],
+  ['./Error"', './Error.js"'],
+  ["./Error'", "./Error.js'"],
+  ['import[^\\n]*auth-forms\\.css[^\\n]*\\n', ''],
+  ['import[^\\n]*reset-password\\.css[^\\n]*\\n', ''],
+  ['const\\s*\\[visible, setVisible\\]\\s*=\\s*useState\\(false\\)', 'const [visible, setVisible] = useState(true)'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/SignIn.js'), [
+  ['import[^\\n]*auth-forms\\.css[^\\n]*\\n', ''],
+  ['import[^\\n]*signin\\.css[^\\n]*\\n', ''],
+  ['const\\s*\\[visible, setVisible\\]\\s*=\\s*useState\\(false\\)', 'const [visible, setVisible] = useState(true)'],
+])
+
+await patchAliases(path.join(frontendSrcRoot, 'pages/SignUp.js'), [
+  ['import[^\\n]*auth-forms\\.css[^\\n]*\\n', ''],
+  ['import[^\\n]*signup\\.css[^\\n]*\\n', ''],
+  ['import[^\\n]*react-phone-number-input/style\\.css[^\\n]*\\n', ''],
+  ['const\\s*\\[visible, setVisible\\]\\s*=\\s*useState\\(false\\)', 'const [visible, setVisible] = useState(true)'],
 ])
 
 await patchAliases(path.join(frontendSrcRoot, 'components/ContactForm.js'), [

@@ -6,7 +6,6 @@ import {
   FormControl,
   FormHelperText,
   Button,
-  Paper,
   Checkbox,
   Link,
   Alert,
@@ -34,6 +33,7 @@ import ReCaptchaProvider from '@/components/ReCaptchaProvider'
 import SocialLogin from '@/components/SocialLogin'
 import 'react-phone-number-input/style.css' // Import du style
 
+import '@/assets/css/auth-forms.css'
 import '@/assets/css/signup.css' // Votre fichier CSS personnalisé
 
 const SignUp = () => {
@@ -334,9 +334,9 @@ const SignUp = () => {
           </script>
         </Helmet>
         {visible && (
-          <div className="signup">
-            <Paper className="signup-form" elevation={10}>
-              <h1 className="signup-form-title">{strings.SIGN_UP_HEADING}</h1>
+          <section className="auth-shell">
+            <div className="auth-card signup-card" aria-live="polite" aria-busy={loading}>
+              <h1 className="auth-title">{strings.SIGN_UP_HEADING}</h1>
               <Alert
                 severity="info"
                 className="signup-portal-alert"
@@ -345,6 +345,7 @@ const SignUp = () => {
                     color="inherit"
                     size="small"
                     href="https://admin.plany.tn/sign-up"
+                    disabled={loading}
                   >
                     {strings.AGENCY_SIGNUP_BUTTON}
                   </Button>
@@ -352,136 +353,130 @@ const SignUp = () => {
               >
                 {strings.AGENCY_SIGNUP_INFO}
               </Alert>
-              <form onSubmit={handleSubmit}>
-                <div>
-                  <FormControl fullWidth margin="dense">
-                    <InputLabel className="required">{commonStrings.FULL_NAME}</InputLabel>
-                    <OutlinedInput
-                      type="text"
-                      label={commonStrings.FULL_NAME}
-                      value={fullName}
-                      required
-                      onChange={handleFullNameChange}
-                      autoComplete="off"
-                    />
-                  </FormControl>
-                  <FormControl fullWidth margin="dense">
-                    <InputLabel className="required">{commonStrings.EMAIL}</InputLabel>
-                    <OutlinedInput
-                      type="text"
-                      label={commonStrings.EMAIL}
-                      error={!emailValid || emailError}
-                      value={email}
-                      onBlur={handleEmailBlur}
-                      onChange={handleEmailChange}
-                      required
-                      autoComplete="off"
-                    />
-                    <FormHelperText error={!emailValid || emailError}>
-                      {(!emailValid && commonStrings.EMAIL_NOT_VALID) || ''}
-                      {(emailError && commonStrings.EMAIL_ALREADY_REGISTERED) || ''}
-                    </FormHelperText>
-                  </FormControl>
-                  <InputLabel htmlFor="phone-input" className="required">{commonStrings.PHONE}</InputLabel>
-                  <FormControl fullWidth margin="dense">
-                    <PhoneInput
-                      labels={fr}
-                      placeholder={commonStrings.PHONE}
-                      international
-                      defaultCountry="TN"
-                      value={phone}
-                      onChange={handlePhoneChange}
-                      onBlur={handlePhoneBlur}
-                      className="phone-input" // Appliquez la classe personnalisée
-                    />
-                    <FormHelperText error={!phoneValid}>{(!phoneValid && commonStrings.PHONE_NOT_VALID) || ''}</FormHelperText>
-                  </FormControl>
-                  <FormControl fullWidth margin="dense">
-                    <DatePicker
-                      label={commonStrings.BIRTH_DATE}
-                      value={birthDate}
-                      variant="outlined"
-                      required
-                      onChange={(_birthDate) => {
-                        if (_birthDate) {
-                          const _birthDateValid = validateBirthDate(_birthDate)
+              <form className="auth-form-grid" onSubmit={handleSubmit}>
+                <FormControl fullWidth margin="dense">
+                  <InputLabel className="required">{commonStrings.FULL_NAME}</InputLabel>
+                  <OutlinedInput
+                    type="text"
+                    label={commonStrings.FULL_NAME}
+                    value={fullName}
+                    required
+                    onChange={handleFullNameChange}
+                    autoComplete="off"
+                    disabled={loading}
+                  />
+                </FormControl>
+                <FormControl fullWidth margin="dense">
+                  <InputLabel className="required">{commonStrings.EMAIL}</InputLabel>
+                  <OutlinedInput
+                    type="text"
+                    label={commonStrings.EMAIL}
+                    error={!emailValid || emailError}
+                    value={email}
+                    onBlur={handleEmailBlur}
+                    onChange={handleEmailChange}
+                    required
+                    autoComplete="off"
+                    disabled={loading}
+                  />
+                  <FormHelperText error={!emailValid || emailError}>
+                    {(!emailValid && commonStrings.EMAIL_NOT_VALID) || ''}
+                    {(emailError && commonStrings.EMAIL_ALREADY_REGISTERED) || ''}
+                  </FormHelperText>
+                </FormControl>
+                <InputLabel htmlFor="phone-input" className="required">{commonStrings.PHONE}</InputLabel>
+                <FormControl fullWidth margin="dense">
+                  <PhoneInput
+                    labels={fr}
+                    placeholder={commonStrings.PHONE}
+                    international
+                    defaultCountry="TN"
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    onBlur={handlePhoneBlur}
+                    className="phone-input"
+                    disabled={loading}
+                  />
+                  <FormHelperText error={!phoneValid}>{(!phoneValid && commonStrings.PHONE_NOT_VALID) || ''}</FormHelperText>
+                </FormControl>
+                <FormControl fullWidth margin="dense">
+                  <DatePicker
+                    label={commonStrings.BIRTH_DATE}
+                    value={birthDate}
+                    variant="outlined"
+                    required
+                    onChange={(_birthDate) => {
+                      if (_birthDate) {
+                        const _birthDateValid = validateBirthDate(_birthDate)
 
-                          setBirthDate(_birthDate)
-                          setBirthDateValid(_birthDateValid)
-                        }
-                      }}
-                      language={language}
-                    />
-                    <FormHelperText error={!birthDateValid}>{(!birthDateValid && commonStrings.BIRTH_DATE_NOT_VALID) || ''}</FormHelperText>
-                  </FormControl>
-                  <FormControl fullWidth margin="dense">
-                    <InputLabel className="required">{commonStrings.PASSWORD}</InputLabel>
-                    <OutlinedInput
-                      label={commonStrings.PASSWORD}
-                      value={password}
-                      onChange={handlePasswordChange}
-                      required
-                      type="password"
-                      inputProps={{
-                        autoComplete: 'new-password',
-                        form: {
-                          autoComplete: 'off',
-                        },
-                      }}
-                    />
-                  </FormControl>
-                  <FormControl fullWidth margin="dense">
-                    <InputLabel className="required">{commonStrings.CONFIRM_PASSWORD}</InputLabel>
-                    <OutlinedInput
-                      label={commonStrings.CONFIRM_PASSWORD}
-                      value={confirmPassword}
-                      onChange={handleConfirmPasswordChange}
-                      required
-                      type="password"
-                      inputProps={{
-                        autoComplete: 'new-password',
-                        form: {
-                          autoComplete: 'off',
-                        },
-                      }}
-                    />
-                  </FormControl>
+                        setBirthDate(_birthDate)
+                        setBirthDateValid(_birthDateValid)
+                      }
+                    }}
+                    language={language}
+                  />
+                  <FormHelperText error={!birthDateValid}>{(!birthDateValid && commonStrings.BIRTH_DATE_NOT_VALID) || ''}</FormHelperText>
+                </FormControl>
+                <FormControl fullWidth margin="dense">
+                  <InputLabel className="required">{commonStrings.PASSWORD}</InputLabel>
+                  <OutlinedInput
+                    label={commonStrings.PASSWORD}
+                    value={password}
+                    onChange={handlePasswordChange}
+                    required
+                    type="password"
+                    disabled={loading}
+                    inputProps={{
+                      autoComplete: 'new-password',
+                      form: {
+                        autoComplete: 'off',
+                      },
+                    }}
+                  />
+                </FormControl>
+                <FormControl fullWidth margin="dense">
+                  <InputLabel className="required">{commonStrings.CONFIRM_PASSWORD}</InputLabel>
+                  <OutlinedInput
+                    label={commonStrings.CONFIRM_PASSWORD}
+                    value={confirmPassword}
+                    onChange={handleConfirmPasswordChange}
+                    required
+                    type="password"
+                    disabled={loading}
+                    inputProps={{
+                      autoComplete: 'new-password',
+                      form: {
+                        autoComplete: 'off',
+                      },
+                    }}
+                  />
+                </FormControl>
 
-                  {env.RECAPTCHA_ENABLED && (
-                    <div className="recaptcha">
-                      <GoogleReCaptcha onVerify={handleRecaptchaVerify} />
-                    </div>
-                  )}
-
-                  <div className="signup-tos">
-                    <table>
-                      <tbody>
-                        <tr>
-                          <td aria-label="tos">
-                            <Checkbox checked={tosChecked} onChange={handleTosChange} color="primary" />
-                          </td>
-                          <td>
-                            <Link href="/tos" target="_blank" rel="noreferrer">
-                              {commonStrings.TOS}
-                            </Link>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                {env.RECAPTCHA_ENABLED && (
+                  <div className="recaptcha">
+                    <GoogleReCaptcha onVerify={handleRecaptchaVerify} />
                   </div>
+                )}
 
-                  <SocialLogin />
-
-                  <div className="signup-buttons">
-                    <Button type="submit" variant="contained" className="btn-primary btn-margin-bottom" size="small">
-                      {strings.SIGN_UP}
-                    </Button>
-                    <Button variant="contained" className="btn-secondary btn-margin-bottom" size="small" href="/">
-                      {commonStrings.CANCEL}
-                    </Button>
-                  </div>
+                <div className="signup-tos auth-inline">
+                  <Checkbox checked={tosChecked} onChange={handleTosChange} color="primary" disabled={loading} />
+                  <Link href="/tos" target="_blank" rel="noreferrer">
+                    {commonStrings.TOS}
+                  </Link>
                 </div>
-                <div className="form-error">
+
+                <SocialLogin />
+
+                <div className="signup-actions">
+                  <Button type="submit" variant="contained" className="btn-primary" size="small" disabled={loading}>
+                    {loading ? commonStrings.PLEASE_WAIT : strings.SIGN_UP}
+                  </Button>
+                  <Button variant="contained" className="btn-secondary" size="small" href="/" disabled={loading}>
+                    {commonStrings.CANCEL}
+                  </Button>
+                </div>
+
+                <div className="auth-messages form-error" role="status">
                   {passwordError && <Error message={commonStrings.PASSWORD_ERROR} />}
                   {passwordsDontMatch && <Error message={commonStrings.PASSWORDS_DONT_MATCH} />}
                   {recaptchaError && <Error message={commonStrings.RECAPTCHA_ERROR} />}
@@ -489,8 +484,8 @@ const SignUp = () => {
                   {error && <Error message={strings.SIGN_UP_ERROR} />}
                 </div>
               </form>
-            </Paper>
-          </div>
+            </div>
+          </section>
         )}
         {loading && <Backdrop text={commonStrings.PLEASE_WAIT} />}
       </Layout>

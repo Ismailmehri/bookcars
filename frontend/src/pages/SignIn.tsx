@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import {
-  Paper,
   FormControl,
   InputLabel,
   Input,
@@ -19,6 +18,7 @@ import Error from '@/components/Error'
 import Layout from '@/components/Layout'
 import SocialLogin from '@/components/SocialLogin'
 
+import '@/assets/css/auth-forms.css'
 import '@/assets/css/signin.css'
 
 const SignIn = () => {
@@ -28,6 +28,7 @@ const SignIn = () => {
   const [error, setError] = useState(false)
   const [visible, setVisible] = useState(false)
   const [blacklisted, setBlacklisted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value)
@@ -41,10 +42,12 @@ const SignIn = () => {
     try {
       e.preventDefault()
 
+      setSubmitting(true)
+
       const data: bookcarsTypes.SignInPayload = {
         email,
         password,
-        stayConnected: UserService.getStayConnected()
+        stayConnected: UserService.getStayConnected(),
       }
 
       const res = await UserService.signin(data)
@@ -71,6 +74,8 @@ const SignIn = () => {
     } catch {
       setError(true)
       setBlacklisted(false)
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -155,67 +160,92 @@ const SignIn = () => {
         </script>
       </Helmet>
       {visible && (
-        <div className="signin">
-          <Paper className="signin-form" elevation={10}>
-            <form onSubmit={handleSubmit}>
-              <h1 className="signin-form-title">{strings.SIGN_IN_HEADING}</h1>
-              <FormControl fullWidth margin="dense">
-                <InputLabel>{commonStrings.EMAIL}</InputLabel>
-                <Input type="text" onChange={handleEmailChange} autoComplete="email" required />
-              </FormControl>
-              <FormControl fullWidth margin="dense">
-                <InputLabel>{commonStrings.PASSWORD}</InputLabel>
-                <Input onChange={handlePasswordChange} onKeyDown={handlePasswordKeyDown} autoComplete="password" type="password" required />
-              </FormControl>
+        <section className="auth-shell">
+          <form
+            className="auth-card auth-card--narrow signin-card"
+            onSubmit={handleSubmit}
+            aria-live="polite"
+            aria-busy={submitting}
+          >
+            <h1 className="auth-title">{strings.SIGN_IN_HEADING}</h1>
+            <p className="auth-subtitle">{strings.SIGN_IN_HEADING}</p>
 
-              <div className="stay-connected">
-                <input
-                  id="stay-connected"
-                  type="checkbox"
-                  onChange={(e) => {
-                    UserService.setStayConnected(e.currentTarget.checked)
-                  }}
-                />
-                <label
-                  htmlFor="stay-connected"
-                >
-                  {strings.STAY_CONNECTED}
-                </label>
-              </div>
+            <FormControl fullWidth margin="dense">
+              <InputLabel>{commonStrings.EMAIL}</InputLabel>
+              <Input type="text" onChange={handleEmailChange} autoComplete="email" required disabled={submitting} />
+            </FormControl>
+            <FormControl fullWidth margin="dense">
+              <InputLabel>{commonStrings.PASSWORD}</InputLabel>
+              <Input
+                onChange={handlePasswordChange}
+                onKeyDown={handlePasswordKeyDown}
+                autoComplete="password"
+                type="password"
+                required
+                disabled={submitting}
+              />
+            </FormControl>
 
-              <div className="forgot-password">
-                <Link href="/forgot-password">{strings.RESET_PASSWORD}</Link>
-              </div>
+            <div className="stay-connected auth-inline">
+              <input
+                id="stay-connected"
+                type="checkbox"
+                disabled={submitting}
+                onChange={(e) => {
+                  UserService.setStayConnected(e.currentTarget.checked)
+                }}
+              />
+              <label htmlFor="stay-connected">{strings.STAY_CONNECTED}</label>
+            </div>
 
-              <SocialLogin />
+            <div className="auth-footer-links">
+              <Link href="/forgot-password">{strings.RESET_PASSWORD}</Link>
+              <Link href="/sign-up">{strings.SIGN_UP}</Link>
+            </div>
 
-              <div className="signin-buttons">
-                <Button variant="contained" size="small" href="/sign-up" className="btn-secondary btn-margin btn-margin-bottom">
-                  {strings.SIGN_UP}
-                </Button>
-                <Button type="submit" variant="contained" size="small" className="btn-primary btn-margin btn-margin-bottom">
-                  {strings.SIGN_IN}
-                </Button>
-              </div>
-              <div className="separator" />
-              <div className="signin-button">
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  href="https://admin.plany.tn/sign-up"
-                  sx={{ padding: '10px 20px', fontSize: '16px', borderRadius: '10px' }}
-                >
-                  Inscrivez votre agence maintenant
-                </Button>
-              </div>
-              <div className="form-error">
-                {error && <Error message={strings.ERROR_IN_SIGN_IN} />}
-                {blacklisted && <Error message={strings.IS_BLACKLISTED} />}
-              </div>
-            </form>
-          </Paper>
-        </div>
+            <SocialLogin />
+
+            <div className="signin-actions">
+              <Button
+                variant="contained"
+                size="small"
+                href="/sign-up"
+                className="btn-secondary"
+                disabled={submitting}
+              >
+                {strings.SIGN_UP}
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                size="small"
+                className="btn-primary"
+                disabled={submitting}
+              >
+                {submitting ? commonStrings.PLEASE_WAIT : strings.SIGN_IN}
+              </Button>
+            </div>
+
+            <div className="signin-divider auth-divider" />
+
+            <div className="signin-cta">
+              <Button
+                variant="contained"
+                color="primary"
+                size="large"
+                href="https://admin.plany.tn/sign-up"
+                disabled={submitting}
+              >
+                Inscrivez votre agence maintenant
+              </Button>
+            </div>
+
+            <div className="auth-messages" role="status">
+              {error && <Error message={strings.ERROR_IN_SIGN_IN} />}
+              {blacklisted && <Error message={strings.IS_BLACKLISTED} />}
+            </div>
+          </form>
+        </section>
       )}
     </Layout>
   )

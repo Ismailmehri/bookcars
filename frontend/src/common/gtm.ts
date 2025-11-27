@@ -23,9 +23,98 @@ import {
 } from '@/services/MetaEventService'
 import * as UserService from '@/services/UserService'
 
+const GTM_SCRIPT_ID = 'plany-gtm-script'
+const GTM_NOSCRIPT_ID = 'plany-gtm-noscript'
+const MIN_GTM_DELAY_MS = 2500
+const MAX_GTM_DELAY_MS = 3500
+
 const getTrackingId = () => env.GOOGLE_ANALYTICS_ID?.trim()
 
 const isAnalyticsEnabled = () => Boolean(env.GOOGLE_ANALYTICS_ENABLED && getTrackingId())
+
+const hasBrowserContext = () => typeof window !== 'undefined' && typeof document !== 'undefined'
+
+type DataLayerHost = { dataLayer?: Record<string, unknown>[] }
+
+const getDataLayerHost = (): DataLayerHost | undefined => {
+  if (typeof window !== 'undefined') {
+    return window as typeof window & DataLayerHost
+  }
+
+  if (typeof globalThis !== 'undefined') {
+    return globalThis as typeof globalThis & DataLayerHost
+  }
+
+  return undefined
+}
+
+const ensureDataLayer = () => {
+  const host = getDataLayerHost()
+
+  if (!host) {
+    return undefined
+  }
+
+  if (!Array.isArray(host.dataLayer)) {
+    host.dataLayer = []
+  }
+
+  return host.dataLayer
+}
+
+const computeDelay = () => MIN_GTM_DELAY_MS + Math.floor(Math.random() * (MAX_GTM_DELAY_MS - MIN_GTM_DELAY_MS + 1))
+
+const appendGtmScript = (gtmId: string) => {
+  if (!hasBrowserContext() || document.getElementById(GTM_SCRIPT_ID)) {
+    return
+  }
+
+  const script = document.createElement('script')
+  script.id = GTM_SCRIPT_ID
+  script.async = true
+  script.src = `https://www.googletagmanager.com/gtm.js?id=${gtmId}`
+  document.body.appendChild(script)
+}
+
+const appendGtmNoscript = (gtmId: string) => {
+  if (!hasBrowserContext() || document.getElementById(GTM_NOSCRIPT_ID)) {
+    return
+  }
+
+  const noscript = document.createElement('noscript')
+  noscript.id = GTM_NOSCRIPT_ID
+  noscript.innerHTML = `<iframe src="https://www.googletagmanager.com/ns.html?id=${gtmId}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`
+  document.body.prepend(noscript)
+}
+
+const scheduleGtmLoad = (gtmId: string) => {
+  if (!hasBrowserContext()) {
+    return
+  }
+
+  const loader = () => {
+    const delay = computeDelay()
+
+    window.setTimeout(() => {
+      if (document.getElementById(GTM_SCRIPT_ID)) {
+        return
+      }
+
+      const dataLayer = ensureDataLayer()
+
+      dataLayer?.push({ 'gtm.start': Date.now(), event: 'gtm.js' })
+
+      appendGtmScript(gtmId)
+      appendGtmNoscript(gtmId)
+    }, delay)
+  }
+
+  if (document.readyState === 'complete') {
+    loader()
+  } else {
+    window.addEventListener('load', loader, { once: true })
+  }
+}
 
 const FALLBACK_ANALYTICS_CURRENCY = 'USD'
 
@@ -216,8 +305,8 @@ const createCommercePayload = (
 export const initGTM = () => {
   const trackingId = getTrackingId()
 
-  if (isAnalyticsEnabled()) {
-    TagManager.initialize({ gtmId: trackingId })
+  if (isAnalyticsEnabled() && trackingId) {
+    scheduleGtmLoad(trackingId)
   } else {
     console.warn('GTM is not enabled or GTM ID is missing.')
   }
@@ -226,6 +315,12 @@ export const initGTM = () => {
 // Fonction générique pour envoyer des événements
 export const pushEvent = (eventName: string, eventData: Record<string, unknown>) => {
   if (!isAnalyticsEnabled()) {
+    return
+  }
+
+  const dataLayer = ensureDataLayer()
+
+  if (!dataLayer) {
     return
   }
 

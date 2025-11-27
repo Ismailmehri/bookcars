@@ -22,7 +22,7 @@ import GearboxFilter from '@/components/GearboxFilter'
 import MileageFilter from '@/components/MileageFilter'
 import DepositFilter from '@/components/DepositFilter'
 import CarList from '@/components/CarList'
-import Map from '@/components/Map'
+import LazyMap from '@/components/LazyMap'
 
 import ViewOnMap from '@/assets/img/view-on-map.png'
 
@@ -435,7 +435,7 @@ const Search = () => {
             {!loading && (
               <>
                 {pickupLocation.latitude && pickupLocation.longitude && (
-                  <Map
+                  <LazyMap
                     position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
                     initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
                     parkingSpots={pickupLocation.parkingSpots}
@@ -451,7 +451,7 @@ const Search = () => {
                       <img alt="View On Map" src={ViewOnMap} />
                       <span>{strings.VIEW_ON_MAP}</span>
                     </button>
-                  </Map>
+                  </LazyMap>
                 )}
                 <CarFilter
                   className="filter"
@@ -611,7 +611,7 @@ const Search = () => {
         </DialogTitle>
         <DialogContent className="map-dialog-content">
           {pickupLocation && (
-            <Map
+            <LazyMap
               position={[pickupLocation.latitude || 36.966428, pickupLocation.longitude || -95.844032]}
               initialZoom={pickupLocation.latitude && pickupLocation.longitude ? 10 : 2.5}
               parkingSpots={pickupLocation.parkingSpots}
@@ -625,7 +625,7 @@ const Search = () => {
                 <img alt="View On Map" src={ViewOnMap} />
                 <span>{strings.VIEW_ON_MAP}</span>
               </button>
-            </Map>
+            </LazyMap>
           )}
         </DialogContent>
       </Dialog>

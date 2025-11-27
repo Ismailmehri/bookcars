@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Checkbox, Dialog, DialogContent, FormControlLabel, Tab, Tabs } from '@mui/material'
-import L from 'leaflet'
+import type { LatLngExpression } from 'leaflet'
 import { Helmet } from 'react-helmet'
 import Seo from '@/components/Seo'
 import { buildDescription } from '@/common/seo'
@@ -18,7 +18,7 @@ import SupplierCarrousel from '@/components/SupplierCarrousel'
 import TabPanel, { a11yProps } from '@/components/TabPanel'
 import LocationCarrousel from '@/components/LocationCarrousel'
 import SearchForm from '@/components/SearchForm'
-import Map from '@/components/Map'
+import LazyMap from '@/components/LazyMap'
 import Footer from '@/components/Footer'
 
 import Mini from '@/assets/img/mini.png'
@@ -30,6 +30,7 @@ import HowItWorks from '@/components/HowItWorks'
 import RentalAgencySection from '@/components/RentalAgencySection'
 
 const Home = () => {
+  const defaultCenter: LatLngExpression = [33.886917, 9.537499]
   const [suppliers, setSuppliers] = useState<bookcarsTypes.User[]>([])
   const [countries, setCountries] = useState<bookcarsTypes.CountryInfo[]>([])
   const [pickupLocation, setPickupLocation] = useState('')
@@ -383,9 +384,9 @@ const Home = () => {
           </Button>
         </div>
         <div className="home-map">
-          <Map
+          <LazyMap
             title={strings.MAP_TITLE}
-            position={new L.LatLng(33.886917, 9.537499)}
+            position={defaultCenter}
             initialZoom={env.isMobile() ? 6 : 7}
             locations={locations}
             onSelelectPickUpLocation={async (locationId) => {

@@ -29,9 +29,40 @@ export default ({ mode }: { mode: string }) => {
       outDir: 'build',
       target: 'es2015',
       cssTarget: 'chrome61',
+      cssCodeSplit: true,
+      sourcemap: mode === 'development',
       modulePreload: {
         polyfill: true,
       },
+      rollupOptions: {
+        output: {
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash][extname]',
+          manualChunks: {
+            react: ['react', 'react-dom'],
+            mui: [
+              '@mui/material',
+              '@mui/icons-material',
+              '@mui/joy',
+              '@emotion/react',
+              '@emotion/styled',
+              '@mui/x-date-pickers',
+              '@mui/x-data-grid',
+            ],
+            leaflet: ['leaflet', 'react-leaflet', 'leaflet-boundary-canvas'],
+            vendor: [
+              'axios',
+              'history',
+              'react-router-dom',
+              'react-toastify',
+              'react-gtm-module',
+              'react-ga4',
+            ],
+          },
+        },
+      },
+      reportCompressedSize: false,
     },
   })
 }

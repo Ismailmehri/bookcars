@@ -1,4 +1,4 @@
-import React, { Dispatch, ReactNode, SetStateAction, useState } from 'react'
+import React, { Dispatch, ReactNode, SetStateAction, useEffect, useState } from 'react'
 import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from 'react-leaflet'
 import L, { LatLngExpression } from 'leaflet'
 import icon from 'leaflet/dist/images/marker-icon.png'
@@ -10,7 +10,6 @@ import * as LocationService from '@/services/LocationService'
 import * as helper from '@/common/helper'
 
 import 'leaflet-boundary-canvas'
-import 'leaflet/dist/leaflet.css'
 import '@/assets/css/map.css'
 
 const DefaultIcon = L.icon({
@@ -64,7 +63,7 @@ const ZoomControlledLayer = ({ zoom, minZoom, children }: ZoomControlledLayerPro
   return null
 }
 
-interface MapProps {
+export interface MapProps {
   title?: string
   description?: string
   position?: LatLngExpression
@@ -77,7 +76,7 @@ interface MapProps {
   // onSelelectDropOffLocation?: (locationId: string) => void
 }
 
-const Map = ({
+const Map: React.FC<MapProps> = ({
   title,
   description,
   position = new L.LatLng(33.886917, 9.537499),
@@ -93,9 +92,11 @@ const Map = ({
   const [zoom, setZoom] = useState(_initialZoom)
   const [map, setMap] = useState<L.Map | null>(null)
 
-  if (map) {
-    map.attributionControl.setPrefix('')
-  }
+  useEffect(() => {
+    if (map) {
+      map.attributionControl.setPrefix('')
+    }
+  }, [map])
 
   //
   // Tile server
@@ -197,6 +198,7 @@ const Map = ({
         <TileLayer
           // attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url={tileURL}
+          crossOrigin="anonymous"
         />
         <ZoomTracker setZoom={setZoom} />
         <ZoomControlledLayer zoom={zoom} minZoom={7.5}>

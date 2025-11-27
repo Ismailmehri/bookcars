@@ -9,9 +9,35 @@
   width: 100%;
 }
 
+.map-lazy-wrapper {
+  position: relative;
+  width: 100%;
+  isolation: isolate;
+}
+
+.map-skeleton {
+  width: 100%;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%);
+  padding: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+}
+
+.map-skeleton__header {
+  margin-bottom: 8px;
+}
+
+.map-skeleton__placeholder {
+  border-radius: 10px;
+}
+
 @media (max-width: 768px) {
   .map {
     min-height: 540px;
+  }
+
+  .map-skeleton__placeholder {
+    height: 420px;
   }
 }
 

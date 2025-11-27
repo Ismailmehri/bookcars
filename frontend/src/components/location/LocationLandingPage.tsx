@@ -32,7 +32,7 @@ import Layout from '@/components/Layout'
 import Footer from '@/components/Footer'
 import Seo from '@/components/Seo'
 import SearchForm from '@/components/SearchForm'
-import Map from '@/components/Map'
+import LazyMap from '@/components/LazyMap'
 import HowItWorks from '@/components/HowItWorks'
 import SupplierCarrousel from '@/components/SupplierCarrousel'
 import RentalAgencySection from '@/components/RentalAgencySection'
@@ -496,7 +496,7 @@ const LocationLandingPage: React.FC<LocationLandingPageProps> = ({
             {map.description}
           </Typography>
           <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 3 }}>
-            <Map position={map.position} initialZoom={map.zoom ?? 11} className="location-map" />
+            <LazyMap position={map.position} initialZoom={map.zoom ?? 11} className="location-map" />
           </Paper>
         </Container>
       </Box>

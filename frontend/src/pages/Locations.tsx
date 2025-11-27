@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { Dialog, DialogContent } from '@mui/material'
-import L from 'leaflet'
+import type { LatLngExpression } from 'leaflet'
 import { Helmet } from 'react-helmet'
 import env from '@/config/env.config'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import * as LocationService from '@/services/LocationService'
 import Layout from '@/components/Layout'
-import Map from '@/components/Map'
+import LazyMap from '@/components/LazyMap'
 import SearchForm from '@/components/SearchForm'
 import Footer from '@/components/Footer'
 import Seo from '@/components/Seo'
@@ -15,6 +15,7 @@ import { buildDescription } from '@/common/seo'
 import '@/assets/css/locations.css'
 
 const Locations = () => {
+  const defaultCenter: LatLngExpression = [34.0268755, 1.65284]
   const [locations, setLocations] = useState<bookcarsTypes.Location[]>([])
   const [pickupLocation, setPickupLocation] = useState('')
   const [openSearchFormDialog, setOpenSearchFormDialog] = useState(false)
@@ -92,8 +93,8 @@ const Locations = () => {
 
       {/* Contenu principal */}
       <div className="locations">
-        <Map
-          position={new L.LatLng(34.0268755, 1.6528399999999976)}
+        <LazyMap
+          position={defaultCenter}
           initialZoom={5}
           locations={locations}
           onSelelectPickUpLocation={async (locationId) => {

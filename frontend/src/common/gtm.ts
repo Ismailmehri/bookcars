@@ -35,6 +35,26 @@ const isAnalyticsEnabled = () => Boolean(env.GOOGLE_ANALYTICS_ENABLED && getTrac
 const hasBrowserContext = () => typeof window !== 'undefined' && typeof document !== 'undefined'
 
 type DataLayerHost = { dataLayer?: Record<string, unknown>[] }
+type PixelHost = { fbq?: FacebookPixel }
+
+type FacebookPixelAction = 'track' | 'trackCustom'
+type FacebookPixel = (action: FacebookPixelAction | string, eventName?: string, params?: Record<string, unknown>) => void
+
+declare global {
+  interface Window {
+    fbq?: FacebookPixel
+  }
+}
+
+const STANDARD_PIXEL_EVENTS = new Set([
+  'pageview',
+  'viewcontent',
+  'purchase',
+  'addtocart',
+  'initiatecheckout',
+  'lead',
+  'search',
+])
 
 const getDataLayerHost = (): DataLayerHost | undefined => {
   if (typeof window !== 'undefined') {
@@ -60,6 +80,46 @@ const ensureDataLayer = () => {
   }
 
   return host.dataLayer
+}
+
+const sanitizeEventPayload = (payload: Record<string, unknown>) =>
+  Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => value !== undefined && value !== null),
+  ) as Record<string, unknown>
+
+const getFacebookPixel = (): FacebookPixel | undefined => {
+  const browserHost = typeof window !== 'undefined' ? (window as typeof window & PixelHost) : undefined
+  if (browserHost?.fbq && typeof browserHost.fbq === 'function') {
+    return browserHost.fbq
+  }
+
+  const globalHost = (globalThis as PixelHost | undefined) ?? undefined
+  if (globalHost?.fbq && typeof globalHost.fbq === 'function') {
+    return globalHost.fbq
+  }
+
+  return undefined
+}
+
+// Facebook Pixel expects custom events (like form submissions or scroll depth) to be sent with
+// `trackCustom` to avoid warning logs in the console.
+const trackFacebookPixel = (eventName: string, eventData: Record<string, unknown>) => {
+  const fbq = getFacebookPixel()
+  if (!fbq) {
+    return
+  }
+
+  const normalizedName = eventName.trim()
+  if (!normalizedName) {
+    return
+  }
+
+  const normalizedPayload = sanitizeEventPayload(eventData)
+  const action: FacebookPixelAction = STANDARD_PIXEL_EVENTS.has(normalizedName.toLowerCase())
+    ? 'track'
+    : 'trackCustom'
+
+  fbq(action, normalizedName, normalizedPayload)
 }
 
 const computeDelay = () => MIN_GTM_DELAY_MS + Math.floor(Math.random() * (MAX_GTM_DELAY_MS - MIN_GTM_DELAY_MS + 1))
@@ -318,6 +378,10 @@ export const pushEvent = (eventName: string, eventData: Record<string, unknown>)
     return
   }
 
+  const sanitizedEventData = sanitizeEventPayload(eventData)
+
+  trackFacebookPixel(eventName, sanitizedEventData)
+
   const dataLayer = ensureDataLayer()
 
   if (!dataLayer) {
@@ -327,7 +391,7 @@ export const pushEvent = (eventName: string, eventData: Record<string, unknown>)
   TagManager.dataLayer({
     dataLayer: {
       event: eventName,
-      ...eventData,
+      ...sanitizedEventData,
     },
   })
 }

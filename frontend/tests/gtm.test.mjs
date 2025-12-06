@@ -32,13 +32,21 @@ const originalStripeCurrency = env.STRIPE_CURRENCY_CODE
 const originalDisplayCurrency = env.CURRENCY
 
 const dataLayerCalls = []
+const fbqCalls = []
 
 beforeEach(() => {
   dataLayerCalls.length = 0
+  fbqCalls.length = 0
 
   tagManagerModule.default.dataLayer = (payload) => {
     dataLayerCalls.push(payload)
   }
+
+  globalThis.fbq = (...args) => {
+    fbqCalls.push(args)
+  }
+
+  globalThis.window = { fbq: globalThis.fbq }
 
   env.GOOGLE_ANALYTICS_ID = 'GTM-TEST'
   env.GOOGLE_ANALYTICS_ENABLED = true
@@ -53,6 +61,8 @@ afterEach(() => {
   env.STRIPE_CURRENCY_CODE = originalStripeCurrency
   env.CURRENCY = originalDisplayCurrency
   delete globalThis.localStorage
+  delete globalThis.fbq
+  delete globalThis.window
 })
 
 test('getDefaultAnalyticsCurrency prefers Stripe currency when set', () => {
@@ -86,6 +96,24 @@ test('pushEvent pushes data when tracking ID exists', () => {
       foo: 'bar',
     },
   })
+})
+
+test('pushEvent uses trackCustom for non-standard pixel events', () => {
+  gtm.pushEvent('form_submit', { foo: 'bar' })
+
+  assert.equal(fbqCalls.length, 1)
+  assert.equal(fbqCalls[0][0], 'trackCustom')
+  assert.equal(fbqCalls[0][1], 'form_submit')
+  assert.deepEqual(fbqCalls[0][2], { foo: 'bar' })
+})
+
+test('pushEvent uses track for standard pixel events', () => {
+  gtm.pushEvent('PageView', { page_url: 'https://example.com' })
+
+  assert.equal(fbqCalls.length, 1)
+  assert.equal(fbqCalls[0][0], 'track')
+  assert.equal(fbqCalls[0][1], 'PageView')
+  assert.deepEqual(fbqCalls[0][2], { page_url: 'https://example.com' })
 })
 
 test('pushEvent skips when tracking ID missing', () => {

@@ -7,9 +7,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distRoot = path.resolve(__dirname, '../.test-dist')
 const loadModule = async (relativePath) => import(pathToFileURL(path.join(distRoot, relativePath)))
 
-const { createDeferredLoader, isIntersectionObserverAvailable } = await loadModule(
-  'frontend/src/components/map/lazyMap.utils.js'
-)
+const {
+  createDeferredLoader,
+  isIntersectionObserverAvailable,
+  shouldLoadMapImmediately,
+} = await loadModule('frontend/src/components/map/lazyMap.utils.js')
 
 afterEach(() => {
   delete globalThis.window
@@ -21,6 +23,14 @@ test('isIntersectionObserverAvailable returns false without window and true with
 
   globalThis.window = { IntersectionObserver: function Stub() {} }
   assert.equal(isIntersectionObserverAvailable(), true)
+})
+
+test('shouldLoadMapImmediately forces eager load regardless of IntersectionObserver availability', () => {
+  delete globalThis.window
+  assert.equal(shouldLoadMapImmediately(), true)
+
+  globalThis.window = { IntersectionObserver: function Stub() {} }
+  assert.equal(shouldLoadMapImmediately(), true)
 })
 
 test('createDeferredLoader triggers timeout when observer is missing', () => {

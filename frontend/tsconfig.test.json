@@ -15,6 +15,7 @@
     "src/common/locationLinks.ts",
     "src/common/locationPageRoutes.ts",
     "src/common/seo.ts",
+    "src/common/chunkErrorHandler.ts",
     "src/common/supplier.ts",
     "src/pages/LocationVoitureTunisie.tsx",
     "src/pages/locationPageBuilder.tsx",

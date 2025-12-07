@@ -2,7 +2,11 @@ import React, { Suspense, lazy, useEffect, useRef, useState } from 'react'
 
 import MapSkeleton from './MapSkeleton'
 import type { MapProps } from './Map'
-import { createDeferredLoader, isIntersectionObserverAvailable } from './map/lazyMap.utils'
+import {
+  createDeferredLoader,
+  isIntersectionObserverAvailable,
+  shouldLoadMapImmediately,
+} from './map/lazyMap.utils'
 
 const LeafletMap = lazy(async () => {
   const module = await import('./Map')
@@ -15,7 +19,9 @@ interface LazyMapProps extends MapProps {
 }
 
 const LazyMap: React.FC<LazyMapProps> = ({ rootMargin = '320px', ...props }) => {
-  const [shouldLoad, setShouldLoad] = useState(!isIntersectionObserverAvailable())
+  const [shouldLoad, setShouldLoad] = useState(
+    shouldLoadMapImmediately() || !isIntersectionObserverAvailable()
+  )
   const wrapperRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {

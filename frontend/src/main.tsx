@@ -12,6 +12,7 @@ import { frFR as dataGridfrFR, enUS as dataGridenUS, elGR as dataGridelGR } from
 import { disableDevTools } from ':disable-react-devtools'
 import { initializeLegacyPolyfills, normalizeLanguage, setCommissionConfig } from ':bookcars-helper'
 import * as helper from '@/common/helper'
+import { setupChunkErrorHandler } from '@/common/chunkErrorHandler'
 import * as UserService from '@/services/UserService'
 import env from '@/config/env.config'
 import App from '@/App'
@@ -55,6 +56,7 @@ import '@/assets/css/common.css'
 import '@/assets/css/index.css'
 
 initializeLegacyPolyfills()
+setupChunkErrorHandler()
 
 const applyLanguage = (target: string) => {
   UserService.setLanguage(target)

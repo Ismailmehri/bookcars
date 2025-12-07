@@ -14,6 +14,8 @@ export interface DeferredLoaderResult {
 export const isIntersectionObserverAvailable = () =>
   typeof window !== 'undefined' && typeof window.IntersectionObserver !== 'undefined'
 
+export const shouldLoadMapImmediately = () => true
+
 export const createDeferredLoader = ({
   target,
   onIntersect,

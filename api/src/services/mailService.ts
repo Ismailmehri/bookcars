@@ -24,6 +24,8 @@ let cachedMailjet: ReturnType<MailjetModule['apiConnect']> | null = null
 let testMailjetClient: ReturnType<MailjetModule['apiConnect']> | null | undefined
 let testTransportFactory: (() => { sendMail: (options: nodemailer.SendMailOptions) => Promise<unknown> }) | null | undefined
 
+const isMailjetProvider = () => env.EMAIL_PROVIDER?.toLowerCase() === 'mailjet'
+
 const getTemplate = async (): Promise<string> => {
   if (cachedTemplate) {
     return cachedTemplate
@@ -84,11 +86,15 @@ const canSendMoreToday = async () => {
 }
 
 const buildMailjetClient = async () => {
+  if (!isMailjetProvider()) {
+    return null
+  }
+
   if (typeof testMailjetClient !== 'undefined') {
     return testMailjetClient
   }
 
-  if (!env.ENABLE_MAIL_SENDING || !env.MJ_APIKEY_PUBLIC || !env.MJ_APIKEY_PRIVATE) {
+  if (!env.MJ_APIKEY_PUBLIC || !env.MJ_APIKEY_PRIVATE) {
     return null
   }
 
@@ -181,7 +187,7 @@ export const sendMarketingEmail = async (to: string, variables: StringMap): Prom
 
   const subject = `Plany - Nouvelle offre sur ${variables.voiture || 'votre prochaine location'}`
 
-  if (env.ENABLE_MAIL_SENDING) {
+  if (isMailjetProvider()) {
     const response = await sendThroughMailjet(to, enrichedVariables, subject)
     if (response) {
       return
@@ -191,12 +197,19 @@ export const sendMarketingEmail = async (to: string, variables: StringMap): Prom
   await sendThroughSmtp(to, enrichedVariables, subject)
 }
 
-const getQualifiedRecipients = async () => User.find({
-  verified: true,
-  enableEmailNotifications: true,
-  blacklisted: false,
-  type: bookcarsTypes.UserType.User,
-}).lean()
+type QualifiedRecipient = Pick<bookcarsTypes.User, '_id' | 'email' | 'fullName'>
+
+const getQualifiedRecipient = async () => User.findOneAndUpdate(
+  {
+    verified: true,
+    enableEmailNotifications: true,
+    blacklisted: false,
+    type: bookcarsTypes.UserType.User,
+    lastMarketingEmailDate: { $exists: false },
+  },
+  { $set: { lastMarketingEmailDate: new Date() } },
+  { new: true },
+).lean() as Promise<QualifiedRecipient | null>
 
 const buildMarketingVariables = (user: Pick<bookcarsTypes.User, 'fullName'>): StringMap => ({
   prenom: user.fullName?.split(' ')[0] || 'client',
@@ -205,53 +218,31 @@ const buildMarketingVariables = (user: Pick<bookcarsTypes.User, 'fullName'>): St
   lien: `${env.FRONTEND_HOST}cars`,
 })
 
-export const dispatchDailyCampaign = async () => {
-  if (!env.ENABLE_MAIL_SENDING) {
-    logger.info('Marketing emails disabled; skipping daily campaign')
-    return
-  }
+export const dispatchCampaign = async () => {
+  let sent = 0
 
-  const recipients = await getQualifiedRecipients()
+  while (await canSendMoreToday()) {
+    const recipient = await getQualifiedRecipient()
+    if (!recipient) {
+      break
+    }
 
-  for (const recipient of recipients) {
     if (!recipient.email) {
+      await User.updateOne({ _id: recipient._id }, { $unset: { lastMarketingEmailDate: '' } })
       // eslint-disable-next-line no-continue
       continue
     }
 
-    const remaining = await canSendMoreToday()
-    if (!remaining) {
-      logger.info('Daily email limit reached, stopping campaign')
-      break
-    }
-
     try {
       await sendMarketingEmail(recipient.email, buildMarketingVariables(recipient))
+      sent += 1
     } catch (err) {
       logger.error('Failed to send marketing email', err)
+      await User.updateOne({ _id: recipient._id }, { $unset: { lastMarketingEmailDate: '' } })
     }
   }
-}
 
-export const scheduleDailyMarketingEmails = () => {
-  if (!env.ENABLE_MAIL_SENDING) {
-    logger.info('Email sending disabled; cron job not scheduled')
-    return
-  }
-
-  import('node-cron')
-    .then((cron) => {
-      cron.schedule('0 8 * * *', () => {
-        dispatchDailyCampaign().catch((err) => logger.error('Scheduled marketing dispatch failed', err))
-      }, { timezone: 'Etc/UTC' })
-    })
-    .catch((err) => {
-      logger.error('node-cron unavailable, falling back to interval scheduling', err)
-      const dayInMs = 24 * 60 * 60 * 1000
-      setInterval(() => {
-        dispatchDailyCampaign().catch((error) => logger.error('Interval marketing dispatch failed', error))
-      }, dayInMs)
-    })
+  return { sent }
 }
 
 export const getEmailStats = async (): Promise<bookcarsTypes.EmailStatsResponse> => {

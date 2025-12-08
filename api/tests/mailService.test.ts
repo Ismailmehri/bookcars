@@ -8,10 +8,15 @@ const mockHistoryLean = jest.fn(async (): Promise<HistoryRow[]> => ([
   { date: new Date(), sentCount: 0, openCount: 0, clickCount: 0 },
 ]))
 
-const mockFindOneAndUpdate = jest.fn(() => ({ lean: jest.fn(async () => ({ sentCount: 0 })) }))
-const mockUpdateOne = jest.fn(async () => ({} as unknown))
-const mockFind = jest.fn(() => ({ sort: () => ({ limit: () => ({ lean: mockHistoryLean }) }) }))
-const mockFindUsers = jest.fn(() => ({ lean: jest.fn(async () => [] as unknown[]) }))
+const mockStatFindOneAndUpdate = jest.fn(() => ({ lean: jest.fn(async () => ({ sentCount: 0 })) }))
+const mockStatUpdateOne = jest.fn(async () => ({} as unknown))
+const mockStatFind = jest.fn(() => ({ sort: () => ({ limit: () => ({ lean: mockHistoryLean }) }) }))
+
+type TestRecipient = { _id?: string; email?: string; fullName?: string } | null
+
+const mockUserLean = jest.fn(async () => null as TestRecipient)
+const mockUserFindOneAndUpdate: jest.MockedFunction<() => { lean: typeof mockUserLean }> = jest.fn(() => ({ lean: mockUserLean }))
+const mockUserUpdateOne: jest.MockedFunction<() => Promise<unknown>> = jest.fn(async () => null)
 
 const baseEnv = {
   BC_SMTP_HOST: '0.0.0.0',
@@ -23,6 +28,8 @@ const baseEnv = {
   MJ_SENDER_NAME: 'Plany',
   EMAIL_DAILY_LIMIT: '5',
   FRONTEND_HOST: 'http://localhost:3000/',
+  EMAIL_PROVIDER: 'smtp-local',
+  MARKETING_API_KEY: 'test-key',
 }
 
 describe('mailService', () => {
@@ -32,24 +39,34 @@ describe('mailService', () => {
     mockRequest.mockClear()
     mockPost.mockClear()
     mockApiConnect.mockClear()
+    mockUserFindOneAndUpdate.mockReset()
+    mockUserUpdateOne.mockReset()
+    mockUserLean.mockReset()
+    mockUserFindOneAndUpdate.mockImplementation(() => ({ lean: mockUserLean }))
+    mockUserLean.mockImplementation(async () => null)
   })
 
-  it('falls back to SMTP when sending is disabled', async () => {
-    process.env = { ...process.env, ...baseEnv, ENABLE_MAIL_SENDING: 'false' }
-
+  const mockModels = async () => {
     await jest.unstable_mockModule('../src/models/MarketingEmailStat', () => ({
       __esModule: true,
       default: {
-        findOneAndUpdate: mockFindOneAndUpdate,
-        updateOne: mockUpdateOne,
-        find: mockFind,
+        findOneAndUpdate: mockStatFindOneAndUpdate,
+        updateOne: mockStatUpdateOne,
+        find: mockStatFind,
       },
     }))
 
     await jest.unstable_mockModule('../src/models/User', () => ({
       __esModule: true,
-      default: { find: mockFindUsers },
+      default: { findOneAndUpdate: mockUserFindOneAndUpdate, updateOne: mockUserUpdateOne },
     }))
+  }
+
+  it('falls back to SMTP when Mailjet provider is not selected', async () => {
+    process.env = { ...process.env, ...baseEnv, EMAIL_PROVIDER: 'smtp-local' }
+    mockUserLean.mockResolvedValue(null)
+
+    await mockModels()
 
     const mailService = await import('../src/services/mailService')
 
@@ -66,28 +83,18 @@ describe('mailService', () => {
     expect(mockPost).not.toHaveBeenCalled()
   })
 
-  it('uses Mailjet when sending is enabled', async () => {
+  it('uses Mailjet when provider is configured', async () => {
     process.env = {
       ...process.env,
       ...baseEnv,
-      ENABLE_MAIL_SENDING: 'true',
+      EMAIL_PROVIDER: 'mailjet',
       MJ_APIKEY_PUBLIC: 'public',
       MJ_APIKEY_PRIVATE: 'private',
     }
 
-    await jest.unstable_mockModule('../src/models/MarketingEmailStat', () => ({
-      __esModule: true,
-      default: {
-        findOneAndUpdate: mockFindOneAndUpdate,
-        updateOne: mockUpdateOne,
-        find: mockFind,
-      },
-    }))
+    mockUserLean.mockResolvedValue(null)
 
-    await jest.unstable_mockModule('../src/models/User', () => ({
-      __esModule: true,
-      default: { find: mockFindUsers },
-    }))
+    await mockModels()
 
     const mailService = await import('../src/services/mailService')
 
@@ -104,5 +111,44 @@ describe('mailService', () => {
     expect(mockPost).toHaveBeenCalled()
     expect(mockRequest).toHaveBeenCalled()
     expect(mockSendMail).not.toHaveBeenCalled()
+  })
+
+  it('stops dispatch when no recipients are eligible', async () => {
+    process.env = { ...process.env, ...baseEnv, EMAIL_PROVIDER: 'smtp-local' }
+    mockUserLean.mockResolvedValue(null)
+
+    await mockModels()
+
+    const mailService = await import('../src/services/mailService')
+    await mailService.__setTestTransportFactory(() => ({ sendMail: mockSendMail }))
+
+    const result = await mailService.dispatchCampaign()
+
+    expect(result.sent).toBe(0)
+    expect(mockUserFindOneAndUpdate).toHaveBeenCalled()
+    expect(mockSendMail).not.toHaveBeenCalled()
+  })
+
+  it('sends to a single qualified recipient and marks them as processed', async () => {
+    process.env = { ...process.env, ...baseEnv, EMAIL_PROVIDER: 'smtp-local' }
+    mockUserFindOneAndUpdate
+      .mockImplementationOnce(() => ({ lean: jest.fn(async () => ({ _id: 'user-1', email: 'user@example.com', fullName: 'Test User' })) }))
+      .mockImplementationOnce(() => ({ lean: jest.fn(async () => null) }))
+
+    await mockModels()
+
+    const mailService = await import('../src/services/mailService')
+    await mailService.__setTestTransportFactory(() => ({ sendMail: mockSendMail }))
+
+    const result = await mailService.dispatchCampaign()
+
+    expect(result.sent).toBe(1)
+    expect(mockSendMail).toHaveBeenCalledTimes(1)
+    expect(mockUserFindOneAndUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ lastMarketingEmailDate: { $exists: false } }),
+      expect.objectContaining({ $set: { lastMarketingEmailDate: expect.any(Date) } }),
+      { new: true },
+    )
+    expect(mockUserUpdateOne).not.toHaveBeenCalled()
   })
 })

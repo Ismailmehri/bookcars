@@ -720,6 +720,7 @@ export interface User {
   active?: boolean
   language?: string
   enableEmailNotifications?: boolean
+  lastMarketingEmailDate?: Date | string | null
   avatar?: string
   bio?: string
   location?: string

@@ -79,6 +79,10 @@ const userSchema = new Schema<env.User>(
       type: Boolean,
       default: true,
     },
+    lastMarketingEmailDate: {
+      type: Date,
+      index: true,
+    },
     avatar: {
       type: String,
     },

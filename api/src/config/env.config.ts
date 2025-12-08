@@ -211,6 +211,14 @@ export const SMTP_PASS = __env__('BC_SMTP_PASS', true)
 export const SMTP_FROM = __env__('BC_SMTP_FROM', true)
 
 /**
+ * Email provider used for transactional and marketing emails.
+ * Supported values: mailjet, smtp-local, mailtrap.
+ *
+ * @type {string}
+ */
+export const EMAIL_PROVIDER = __env__('EMAIL_PROVIDER', false, 'smtp-local')
+
+/**
  * Mailjet public API key.
  *
  * @type {string}
@@ -239,11 +247,11 @@ export const MJ_SENDER_EMAIL = __env__('MJ_SENDER_EMAIL', false, '')
 export const MJ_SENDER_NAME = __env__('MJ_SENDER_NAME', false, 'Plany')
 
 /**
- * Enable outbound email sending. Intended to be true only in production.
+ * Marketing trigger API key used by GitHub Actions.
  *
- * @type {boolean}
+ * @type {string}
  */
-export const ENABLE_MAIL_SENDING = helper.StringToBoolean(__env__('ENABLE_MAIL_SENDING', false, 'false'))
+export const MARKETING_API_KEY = __env__('MARKETING_API_KEY', false, '')
 
 /**
  * Daily marketing email limit.
@@ -541,6 +549,7 @@ export interface User extends Document {
   language: string
   lastLoginAt?: Date
   enableEmailNotifications?: boolean
+  lastMarketingEmailDate?: Date
   avatar?: string
   bio?: string
   location?: string

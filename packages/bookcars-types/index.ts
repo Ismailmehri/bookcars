@@ -1378,6 +1378,26 @@ export interface AdminStatsResponse {
   topModels: TopModelStat[];
 }
 
+export interface EmailStatsSnapshot {
+  date: string;
+  sent: number;
+  opens: number;
+  clicks: number;
+}
+
+export interface EmailStats {
+  totalSent: number;
+  totalOpens: number;
+  totalClicks: number;
+  last24hSent: number;
+  dailyLimit: number;
+}
+
+export interface EmailStatsResponse {
+  stats: EmailStats;
+  history: EmailStatsSnapshot[];
+}
+
 export interface SuppliersStat {
   supplierId: string;
   supplierName: string;

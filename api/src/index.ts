@@ -8,6 +8,7 @@ import { setCommissionConfig } from ':bookcars-helper'
 import * as databaseHelper from './common/databaseHelper'
 import app from './app'
 import * as logger from './common/logger'
+import { scheduleDailyMarketingEmails } from './services/mailService'
 
 setCommissionConfig({
   enabled: env.COMMISSION_ENABLED,
@@ -30,10 +31,12 @@ if (
 
     server.listen(env.PORT, () => {
       logger.info('HTTPS server is running on Port', env.PORT)
+      scheduleDailyMarketingEmails()
     })
   } else {
     server = app.listen(env.PORT, () => {
       logger.info('HTTP server is running on Port', env.PORT)
+      scheduleDailyMarketingEmails()
     })
   }
 

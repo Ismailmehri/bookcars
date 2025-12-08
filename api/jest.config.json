@@ -2,7 +2,9 @@
   "moduleNameMapper": {
     "^(\\.{1,2}/.*)\\.js$": "$1",
     "^:bookcars-types(.*)$": "<rootDir>/../packages/bookcars-types$1",
-    "^:bookcars-helper(.*)$": "<rootDir>/../packages/bookcars-helper$1"
+    "^:bookcars-helper(.*)$": "<rootDir>/../packages/bookcars-helper$1",
+    "^node-mailjet$": "<rootDir>/tests/mocks/node-mailjet.ts",
+    "^nodemailer$": "<rootDir>/tests/mocks/nodemailer.ts"
   },
   "testEnvironment": "node",
   "extensionsToTreatAsEsm": [

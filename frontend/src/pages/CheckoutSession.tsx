@@ -6,6 +6,7 @@ import Layout from '@/components/Layout'
 import NoMatch from './NoMatch'
 import * as StripeService from '@/services/StripeService'
 import Info from './Info'
+import { getCheckoutSessionSeo } from '@/common/pageSeo'
 
 const CheckoutSession = () => {
   const { sessionId } = useParams()
@@ -38,11 +39,7 @@ const CheckoutSession = () => {
 
   return (
     <Layout>
-      <Seo
-        title="Statut du paiement | Plany.tn"
-        canonical={`https://plany.tn/checkout-session/${sessionId ?? ''}`}
-        robots="noindex,nofollow"
-      />
+      <Seo {...getCheckoutSessionSeo(sessionId ?? '')} />
       {
         loading
           ? <Info message={strings.CHECKING} hideLink />

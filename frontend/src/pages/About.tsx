@@ -34,16 +34,24 @@ const structuredData = {
 }
 
 const description = buildDescription(
-  'Plany.tn, la plateforme leader de location de voitures en Tunisie. Explorez nos services, notre mission et pourquoi choisir Plany.tn pour vos besoins de mobilité.'
+  'À propos de Plany.tn : comparateur de location voiture en Tunisie. Découvrez notre mission, notre réseau d’agences locales et comment réserver en ligne en toute confiance.'
 )
+
+const keywords = [
+  'à propos Plany',
+  'location voiture Tunisie',
+  'comparateur agences locales',
+  'réserver voiture en ligne',
+]
 
 const About = () => (
   <Layout>
     {/* SEO et données structurées */}
     <Seo
-      title="À Propos de Plany.tn - Votre Plateforme de Location de Voitures"
+      title="À propos de Plany.tn – Location de voitures en Tunisie"
       description={description}
       canonical="https://plany.tn/about"
+      keywords={keywords}
     />
     <Helmet>
       <meta charSet="utf-8" />

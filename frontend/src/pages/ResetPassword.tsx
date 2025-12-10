@@ -18,6 +18,7 @@ import { strings as rpStrings } from '@/lang/reset-password'
 import Error from './Error'
 import NoMatch from './NoMatch'
 import * as helper from '@/common/helper'
+import { getStaticPageSeo } from '@/common/pageSeo'
 
 import '@/assets/css/reset-password.css'
 
@@ -131,7 +132,7 @@ const ResetPassword = () => {
 
   return (
     <Layout onLoad={onLoad} strict={false}>
-      <Seo title="Réinitialiser le mot de passe | Plany.tn" canonical="https://plany.tn/reset-password" robots="noindex,nofollow" />
+      <Seo {...getStaticPageSeo('resetPassword')} />
       {visible && (
         <div className="reset-password">
           <Paper className="reset-password-form" elevation={10}>

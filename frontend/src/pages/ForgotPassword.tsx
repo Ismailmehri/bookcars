@@ -13,6 +13,7 @@ import Seo from '@/components/Seo'
 import * as bookcarsTypes from ':bookcars-types'
 import * as UserService from '@/services/UserService'
 import * as helper from '@/common/helper'
+import { getStaticPageSeo } from '@/common/pageSeo'
 import Layout from '@/components/Layout'
 import { strings as commonStrings } from '@/lang/common'
 import { strings } from '@/lang/reset-password'
@@ -115,7 +116,7 @@ const ForgotPassword = () => {
 
   return (
     <Layout onLoad={onLoad} strict={false}>
-      <Seo title="Mot de passe oublié | Plany.tn" canonical="https://plany.tn/forgot-password" robots="noindex,nofollow" />
+      <Seo {...getStaticPageSeo('forgotPassword')} />
       {visible && (
         <div className="forgot-password">
           <Paper className="forgot-password-form" elevation={10}>

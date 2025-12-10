@@ -20,6 +20,7 @@ import { strings as mStrings } from '@/lang/master'
 import { strings } from '@/lang/activate'
 import NoMatch from './NoMatch'
 import * as helper from '@/common/helper'
+import { getStaticPageSeo } from '@/common/pageSeo'
 
 import '@/assets/css/activate.css'
 
@@ -155,7 +156,7 @@ const Activate = () => {
 
   return (
     <Layout onLoad={onLoad} strict={false}>
-      <Seo title="Activation du compte | Plany.tn" canonical="https://plany.tn/activate" robots="noindex,nofollow" />
+      <Seo {...getStaticPageSeo('activate')} />
       {resend && (
         <div className="resend">
           <Paper className="resend-form" elevation={10}>

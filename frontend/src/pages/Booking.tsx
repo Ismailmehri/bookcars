@@ -15,6 +15,7 @@ import { strings as bfStrings } from '@/lang/booking-filter'
 import { strings as csStrings } from '@/lang/cars'
 import env from '@/config/env.config'
 import * as helper from '@/common/helper'
+import { getStaticPageSeo } from '@/common/pageSeo'
 import Layout from '@/components/Layout'
 import * as UserService from '@/services/UserService'
 import * as BookingService from '@/services/BookingService'
@@ -345,7 +346,7 @@ const Booking = () => {
 
   return (
     <Layout onLoad={onLoad} strict>
-      <Seo title="Créer une réservation | Plany.tn" canonical="https://plany.tn/booking" robots="noindex,nofollow" />
+      <Seo {...getStaticPageSeo('booking')} />
       {visible && booking && (
         <div className="booking">
           <div className="col-1">

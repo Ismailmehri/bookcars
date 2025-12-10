@@ -111,14 +111,26 @@ const Search = () => {
   const canonical = `https://plany.tn${stripQuery(location.pathname)}`
 
   let title = 'Location Voiture en Tunisie - Comparez et Réservez | Plany.tn'
-  let desc = 'Location de voiture en Tunisie ✓ Prix bas garantis ✓ Réservation en ligne ✓ Large choix de véhicules ✓ Agences locales vérifiées. Comparez et réservez sur Plany.tn !'
+  let desc = 'Location voiture en Tunisie – comparez les prix et réservez en ligne.'
+  let keywords: string[] | undefined = ['location voiture Tunisie', 'comparateur location voiture', 'réservation en ligne']
 
   if (pickupLocation && supplier) {
     title = `Location voiture – ${supplier.fullName} (${pickupLocation.name}) | Plany.tn`
-    desc = `Découvrez les voitures de ${supplier.fullName} à ${pickupLocation.name}. Comparez les prix et réservez en ligne sur Plany.tn.`
+    desc = `Location voiture à ${pickupLocation.name} chez ${supplier.fullName} – comparez les prix et réservez en ligne.`
+    keywords = [
+      `location voiture ${pickupLocation.name}`,
+      supplier.fullName,
+      'comparateur location voiture',
+      'réservation en ligne',
+    ]
   } else if (pickupLocation) {
     title = `Location voiture ${pickupLocation.name} – Prix & agences | Plany.tn`
-    desc = `Comparez les agences à ${pickupLocation.name} et réservez au meilleur prix.`
+    desc = `Location voiture à ${pickupLocation.name} – comparez les agences locales et réservez en ligne.`
+    keywords = [
+      `location voiture ${pickupLocation.name}`,
+      'agence location locale',
+      'comparateur prix location voiture',
+    ]
   }
 
   const description = buildDescription(desc)
@@ -423,7 +435,7 @@ const Search = () => {
 
   return (
     <Layout onLoad={onLoad} strict={false}>
-      <Seo title={title} description={description} canonical={canonical} robots={robots} />
+      <Seo title={title} description={description} canonical={canonical} keywords={keywords} robots={robots} />
       <Helmet>
         <script type="application/ld+json">
           {JSON.stringify(structuredData)}

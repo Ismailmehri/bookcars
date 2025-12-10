@@ -534,7 +534,9 @@ export const getFrontendSuppliers = async (req: Request, res: Response) => {
     if (seats) {
       if (seats > -1) {
         if (seats === 6) {
-          $match.$and!.push({ seats: { $gte: 5 } })
+          $match.$and!.push({ seats: { $gte: 6 } })
+        } else if (seats === 9) {
+          $match.$and!.push({ seats: { $gte: 9 } })
         } else {
           $match.$and!.push({ seats })
         }
@@ -676,7 +678,9 @@ export const getBackendSuppliers = async (req: Request, res: Response) => {
     if (seats) {
       if (seats > -1) {
         if (seats === 6) {
-          $match.$and!.push({ seats: { $gte: 5 } })
+          $match.$and!.push({ seats: { $gte: 6 } })
+        } else if (seats === 9) {
+          $match.$and!.push({ seats: { $gte: 9 } })
         } else {
           $match.$and!.push({ seats })
         }

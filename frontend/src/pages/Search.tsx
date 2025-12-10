@@ -5,6 +5,7 @@ import { Close as CloseIcon } from '@mui/icons-material'
 import { Helmet } from 'react-helmet'
 import Seo from '@/components/Seo'
 import { buildDescription, stripQuery, isParamSearch } from '@/common/seo'
+import { normalizeSeatsFilter } from '@/common/filters'
 import * as bookcarsTypes from ':bookcars-types'
 import * as bookcarsHelper from ':bookcars-helper'
 import env from '@/config/env.config'
@@ -21,6 +22,7 @@ import CarType from '@/components/CarTypeFilter'
 import GearboxFilter from '@/components/GearboxFilter'
 import MileageFilter from '@/components/MileageFilter'
 import DepositFilter from '@/components/DepositFilter'
+import CarSeatsFilter from '@/components/CarSeatsFilter'
 import CarList from '@/components/CarList'
 import LazyMap from '@/components/LazyMap'
 
@@ -54,7 +56,7 @@ const Search = () => {
   const [ranges, setRanges] = useState(bookcarsHelper.getAllRanges())
   const [multimedia] = useState<bookcarsTypes.CarMultimedia[]>([])
   const [rating] = useState(-1)
-  const [seats] = useState(-1)
+  const [seats, setSeats] = useState(-1)
   const [openMapDialog, setOpenMapDialog] = useState(false)
   const [minMax, setMinMAx] = useState<number[]>([40, 1000])
 
@@ -204,6 +206,10 @@ const Search = () => {
 
   const handleDepositFilterChange = (value: number) => {
     setDeposit(value)
+  }
+
+  const handleSeatsFilterChange = (value: number) => {
+    setSeats(normalizeSeatsFilter(value))
   }
 
   const onLoad = async (user?: bookcarsTypes.User) => {
@@ -480,9 +486,9 @@ const Search = () => {
                 { /* <CarRatingFilter className="filter" onChange={handleRatingFilterChange} />
                 <CarRangeFilter className="filter" onChange={handleRangeFilterChange} />
                 <CarMultimediaFilter className="filter" onChange={handleMultimediaFilterChange} />
-                <CarSeatsFilter className="filter" onChange={handleSeatsFilterChange} />
                 <FuelPolicyFilter className="filter" onChange={handleFuelPolicyFilterChange} />
                 <CarSpecsFilter className="filter" onChange={handleCarSpecsFilterChange} /> */}
+                <CarSeatsFilter className="filter" onChange={handleSeatsFilterChange} />
                 <CarType className="filter" onChange={handleCarTypeFilterChange} />
                 <GearboxFilter className="filter" onChange={handleGearboxFilterChange} />
                 <MileageFilter className="filter" onChange={handleMileageFilterChange} />

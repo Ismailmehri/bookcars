@@ -14,6 +14,7 @@
     "src/common/pricing.ts",
     "src/common/locationLinks.ts",
     "src/common/locationPageRoutes.ts",
+    "src/common/pageSeo.ts",
     "src/common/seo.ts",
     "src/common/supplier.ts",
     "src/pages/LocationVoitureTunisie.tsx",

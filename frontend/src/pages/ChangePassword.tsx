@@ -17,6 +17,7 @@ import * as UserService from '@/services/UserService'
 import Backdrop from '@/components/SimpleBackdrop'
 import Footer from '@/components/Footer'
 import * as helper from '@/common/helper'
+import { getStaticPageSeo } from '@/common/pageSeo'
 
 import '@/assets/css/change-password.css'
 
@@ -142,7 +143,7 @@ const ChangePassword = () => {
 
   return (
     <Layout onLoad={onLoad} strict>
-      <Seo title="Changer le mot de passe | Plany.tn" canonical="https://plany.tn/change-password" robots="noindex,nofollow" />
+      <Seo {...getStaticPageSeo('changePassword')} />
       <div className="password-reset" style={visible ? {} : { display: 'none' }}>
         <Paper className="password-reset-form password-reset-form-wrapper" elevation={10}>
           <h1 className="password-reset-form-title">

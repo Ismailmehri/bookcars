@@ -24,6 +24,7 @@ import * as bookcarsTypes from ':bookcars-types'
 import * as UserService from '@/services/UserService'
 import * as BookingService from '@/services/BookingService'
 import * as helper from '@/common/helper'
+import { getStaticPageSeo } from '@/common/pageSeo'
 import Layout from '@/components/Layout'
 import Avatar from '@/components/Avatar'
 import Backdrop from '@/components/SimpleBackdrop'
@@ -240,7 +241,7 @@ const DriverReviewPage = () => {
 
   return (
     <Layout>
-      <Seo title="Donner un avis | Plany.tn" canonical="https://plany.tn/review" robots="noindex,nofollow" />
+      <Seo {...getStaticPageSeo('review')} />
       <Container>
         <Box sx={{ mt: 4 }}>
           <Grid container spacing={4}>

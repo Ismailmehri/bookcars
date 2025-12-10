@@ -26,6 +26,7 @@ import DatePicker from '@/components/DatePicker'
 import Avatar from '@/components/Avatar'
 import Seo from '@/components/Seo'
 import * as helper from '@/common/helper'
+import { getStaticPageSeo } from '@/common/pageSeo'
 import 'react-phone-number-input/style.css' // Import du style
 
 import '@/assets/css/settings.css'
@@ -188,7 +189,7 @@ const Settings = () => {
 
   return (
     <Layout onLoad={onLoad} user={user} strict>
-      <Seo title="Paramètres du compte | Plany.tn" canonical="https://plany.tn/settings" robots="noindex,nofollow" />
+      <Seo {...getStaticPageSeo('settings')} />
       {visible && user && (
         <div className="settings">
           <Paper className="settings-form settings-form-wrapper" elevation={10}>

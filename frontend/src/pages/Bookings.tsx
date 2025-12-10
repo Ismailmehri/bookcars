@@ -10,6 +10,7 @@ import SupplierFilter from '@/components/SupplierFilter'
 import StatusFilter from '@/components/StatusFilter'
 import BookingFilter from '@/components/BookingFilter'
 import * as SupplierService from '@/services/SupplierService'
+import { getStaticPageSeo } from '@/common/pageSeo'
 
 import '@/assets/css/bookings.css'
 
@@ -45,7 +46,7 @@ const Bookings = () => {
 
   return (
     <Layout onLoad={onLoad} strict>
-      <Seo title="Mes réservations | Plany.tn" canonical="https://plany.tn/bookings" robots="noindex,nofollow" />
+      <Seo {...getStaticPageSeo('bookings')} />
       {user && (
         <div className="bookings">
           <div className="col-1">

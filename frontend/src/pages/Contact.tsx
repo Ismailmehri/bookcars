@@ -17,15 +17,22 @@ const Contact = () => {
   }
 
   const description = buildDescription(
-    'Contactez-nous pour toute question ou demande concernant la location de voitures en Tunisie. Notre équipe est là pour vous aider !'
+    'Contactez Plany.tn pour vos demandes de location voiture en Tunisie. Notre équipe vous aide à comparer les offres et à réserver en ligne en toute sérénité.'
   )
+
+  const keywords = [
+    'contact location voiture Tunisie',
+    'assistance réservation voiture',
+    'comparateur agence locale',
+  ]
 
   return (
     <Layout onLoad={onLoad} strict={false}>
       <Seo
-        title="Contactez-Nous - Plany.tn"
+        title="Contactez-nous – Location de voitures en Tunisie | Plany.tn"
         description={description}
         canonical="https://plany.tn/contact"
+        keywords={keywords}
       />
       <Helmet>
         <meta charSet="utf-8" />

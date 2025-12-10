@@ -32,16 +32,24 @@ const structuredData = {
   },
 }
 const description = buildDescription(
-  "Consultez les Conditions Générales d'Utilisation de Plany.tn pour la location de voiture en Tunisie. Découvrez nos politiques de réservation, de paiement et d'annulation."
+  "Conditions d'utilisation de Plany.tn pour la location voiture en Tunisie : réservation, paiement, annulation et sécurité des utilisateurs."
 )
+
+const keywords = [
+  "conditions d'utilisation Plany",
+  'location voiture Tunisie',
+  'politique réservation',
+  'annulation location auto',
+]
 
 const ToS = () => (
   <Layout>
     {/* SEO et données structurées */}
     <Seo
-      title="Conditions Générales d'Utilisation - Plany.tn"
+      title="Conditions générales – Location de voitures en Tunisie | Plany.tn"
       description={description}
       canonical="https://plany.tn/tos"
+      keywords={keywords}
     />
     <Helmet>
       <meta charSet="utf-8" />

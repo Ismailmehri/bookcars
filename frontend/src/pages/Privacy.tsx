@@ -32,16 +32,23 @@ const structuredData = {
   },
 }
 const description = buildDescription(
-  'Consultez la politique de confidentialité de Plany.tn pour comprendre comment nous collectons, utilisons et protégeons vos données personnelles conformément au RGPD.'
+  'Politique de confidentialité Plany.tn : données personnelles, sécurité et confidentialité pour la location voiture en Tunisie.'
 )
+
+const keywords = [
+  'politique confidentialité Plany',
+  'données personnelles location voiture',
+  'sécurité réservation Tunisie',
+]
 
 const PrivacyPolicy = () => (
   <Layout>
     {/* SEO et données structurées */}
     <Seo
-      title="Politique de Confidentialité - Plany.tn"
+      title="Politique de confidentialité – Location voiture Tunisie | Plany.tn"
       description={description}
       canonical="https://plany.tn/privacy"
+      keywords={keywords}
     />
     <Helmet>
       <meta charSet="utf-8" />

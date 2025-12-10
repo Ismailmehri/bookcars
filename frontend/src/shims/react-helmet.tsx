@@ -1,5 +1,7 @@
 import React, { ReactElement, ReactNode, useEffect } from 'react'
 
+import { removeExistingHeadElements } from './helmet.utils'
+
 type HelmetChild = ReactElement<{
   children?: ReactNode
 } & { [key: string]: unknown }>
@@ -66,6 +68,8 @@ const Helmet = ({ children }: HelmetProps) => {
         }
         return
       }
+
+      removeExistingHeadElements(type, props)
 
       const element = document.createElement(type)
       setAttributes(element, props)

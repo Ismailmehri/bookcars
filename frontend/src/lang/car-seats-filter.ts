@@ -8,6 +8,7 @@ const strings = new LocalizedStrings({
     FOUR: '4 sièges',
     FIVE: '5 sièges',
     FIVE_PLUS: '5+ sièges',
+    NINE_PLUS: '9+ sièges',
   },
   en: {
     SEATS: 'Seats',
@@ -15,6 +16,7 @@ const strings = new LocalizedStrings({
     FOUR: '4 seats',
     FIVE: '5 seats',
     FIVE_PLUS: '5+ seats',
+    NINE_PLUS: '9+ seats',
   },
   es: {
     SEATS: 'Asientos',
@@ -22,6 +24,7 @@ const strings = new LocalizedStrings({
     FOUR: '4 asientos',
     FIVE: '5 asientos',
     FIVE_PLUS: '5+ asientos',
+    NINE_PLUS: '9+ asientos',
   },
 })
 

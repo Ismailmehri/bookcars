@@ -20,6 +20,7 @@ const CarSeatsFilter = ({
   const fourRef = useRef<HTMLInputElement>(null)
   const fiveRef = useRef<HTMLInputElement>(null)
   const fivePlusRef = useRef<HTMLInputElement>(null)
+  const ninePlusRef = useRef<HTMLInputElement>(null)
   const anyRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -42,6 +43,9 @@ const CarSeatsFilter = ({
       }
       if (fivePlusRef.current) {
         fivePlusRef.current.checked = false
+      }
+      if (ninePlusRef.current) {
+        ninePlusRef.current.checked = false
       }
       if (onChange) {
         onChange(value)
@@ -74,6 +78,9 @@ const CarSeatsFilter = ({
       if (fivePlusRef.current) {
         fivePlusRef.current.checked = false
       }
+      if (ninePlusRef.current) {
+        ninePlusRef.current.checked = false
+      }
       if (onChange) {
         onChange(value)
       }
@@ -104,6 +111,9 @@ const CarSeatsFilter = ({
       }
       if (fivePlusRef.current) {
         fivePlusRef.current.checked = false
+      }
+      if (ninePlusRef.current) {
+        ninePlusRef.current.checked = false
       }
       if (onChange) {
         onChange(value)
@@ -136,6 +146,9 @@ const CarSeatsFilter = ({
       if (fivePlusRef.current) {
         fivePlusRef.current.checked = false
       }
+      if (ninePlusRef.current) {
+        ninePlusRef.current.checked = false
+      }
       if (onChange) {
         onChange(value)
       }
@@ -167,6 +180,9 @@ const CarSeatsFilter = ({
       if (fiveRef.current) {
         fiveRef.current.checked = false
       }
+      if (ninePlusRef.current) {
+        ninePlusRef.current.checked = false
+      }
       if (onChange) {
         onChange(value)
       }
@@ -180,6 +196,40 @@ const CarSeatsFilter = ({
       const event = e
       event.currentTarget = checkbox
       handleCheckFivePlusChange(event)
+    }
+  }
+
+  const handleCheckNinePlusChange = (e: React.ChangeEvent<HTMLInputElement> | React.MouseEvent<HTMLElement>) => {
+    if ('checked' in e.currentTarget && e.currentTarget.checked) {
+      const value = 9
+      if (anyRef.current) {
+        anyRef.current.checked = false
+      }
+      if (twoRef.current) {
+        twoRef.current.checked = false
+      }
+      if (fourRef.current) {
+        fourRef.current.checked = false
+      }
+      if (fiveRef.current) {
+        fiveRef.current.checked = false
+      }
+      if (fivePlusRef.current) {
+        fivePlusRef.current.checked = false
+      }
+      if (onChange) {
+        onChange(value)
+      }
+    }
+  }
+
+  const handleNinePlusClick = (e: React.MouseEvent<HTMLElement>) => {
+    const checkbox = e.currentTarget.previousSibling as HTMLInputElement
+    if (!checkbox.checked) {
+      checkbox.checked = !checkbox.checked
+      const event = e
+      event.currentTarget = checkbox
+      handleCheckNinePlusChange(event)
     }
   }
 
@@ -224,6 +274,16 @@ const CarSeatsFilter = ({
             tabIndex={0}
           >
             {strings.FIVE_PLUS}
+          </span>
+        </div>
+        <div className="filter-element">
+          <input ref={ninePlusRef} type="radio" className="seats-checkbox" onChange={handleCheckNinePlusChange} />
+          <span
+            onClick={handleNinePlusClick}
+            role="button"
+            tabIndex={0}
+          >
+            {strings.NINE_PLUS}
           </span>
         </div>
         <div className="filter-element">

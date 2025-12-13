@@ -211,6 +211,57 @@ export const SMTP_PASS = __env__('BC_SMTP_PASS', true)
 export const SMTP_FROM = __env__('BC_SMTP_FROM', true)
 
 /**
+ * Email provider used for transactional and marketing emails.
+ * Supported values: mailjet, smtp-local, mailtrap.
+ *
+ * @type {string}
+ */
+export const EMAIL_PROVIDER = __env__('EMAIL_PROVIDER', false, 'smtp-local')
+
+/**
+ * Mailjet public API key.
+ *
+ * @type {string}
+ */
+export const MJ_APIKEY_PUBLIC = __env__('MJ_APIKEY_PUBLIC', false, '')
+
+/**
+ * Mailjet private API key.
+ *
+ * @type {string}
+ */
+export const MJ_APIKEY_PRIVATE = __env__('MJ_APIKEY_PRIVATE', false, '')
+
+/**
+ * Marketing sender email.
+ *
+ * @type {string}
+ */
+export const MJ_SENDER_EMAIL = __env__('MJ_SENDER_EMAIL', false, '')
+
+/**
+ * Marketing sender name.
+ *
+ * @type {string}
+ */
+export const MJ_SENDER_NAME = __env__('MJ_SENDER_NAME', false, 'Plany')
+
+/**
+ * Marketing trigger API key used by GitHub Actions.
+ *
+ * @type {string}
+ */
+export const MARKETING_API_KEY = __env__('MARKETING_API_KEY', false, '')
+
+/**
+ * Daily marketing email limit.
+ *
+ * @type {number}
+ */
+const parsedEmailLimit = Number.parseInt(__env__('EMAIL_DAILY_LIMIT', false, '0'), 10)
+export const EMAIL_DAILY_LIMIT = Number.isNaN(parsedEmailLimit) ? 0 : parsedEmailLimit
+
+/**
  * Meta Pixel identifier used for Conversions API calls.
  *
  * @type {string}
@@ -498,6 +549,7 @@ export interface User extends Document {
   language: string
   lastLoginAt?: Date
   enableEmailNotifications?: boolean
+  lastMarketingEmailDate?: Date
   avatar?: string
   bio?: string
   location?: string

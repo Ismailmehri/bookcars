@@ -720,6 +720,7 @@ export interface User {
   active?: boolean
   language?: string
   enableEmailNotifications?: boolean
+  lastMarketingEmailDate?: Date | string | null
   avatar?: string
   bio?: string
   location?: string
@@ -1376,6 +1377,26 @@ export interface AdminStatsResponse {
   averageDurationByAgency: AgencyAverageDurationPoint[];
   viewsOverTime: ViewsTimePoint[];
   topModels: TopModelStat[];
+}
+
+export interface EmailStatsSnapshot {
+  date: string;
+  sent: number;
+  opens: number;
+  clicks: number;
+}
+
+export interface EmailStats {
+  totalSent: number;
+  totalOpens: number;
+  totalClicks: number;
+  last24hSent: number;
+  dailyLimit: number;
+}
+
+export interface EmailStatsResponse {
+  stats: EmailStats;
+  history: EmailStatsSnapshot[];
 }
 
 export interface SuppliersStat {

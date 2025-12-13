@@ -118,6 +118,12 @@ The frontend pushes booking events to Google Tag Manager. Configure the followin
 
 Meta Pixel can be managed directly inside your GTM workspace. The application only needs the GTM container ID to emit the required dataLayer events.
 
+## Marketing email automation
+
+- Daily marketing campaigns are triggered by the GitHub Actions workflow `.github/workflows/send-marketing-emails.yml`, which calls the secured `/api/marketing/trigger` endpoint using the `MARKETING_API_KEY` secret.
+- Choose the outbound provider with `EMAIL_PROVIDER` (`mailjet` in production, `smtp-local`/`mailtrap` in development) and configure `MARKETING_ENDPOINT` + `MARKETING_API_KEY` secrets for Actions.
+- Recipients are de-duplicated with the `lastMarketingEmailDate` flag; clear this field when preparing a new campaign to re-target past customers.
+
 ## License
 
 BookCars is [MIT licensed](https://github.com/aelassas/bookcars/blob/main/LICENSE).

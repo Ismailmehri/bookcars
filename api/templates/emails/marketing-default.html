@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plany - Offres exclusives</title>
+    <style>
+      :root {
+        --plany-green: #1bbf6b;
+        --plany-blue: #004b8d;
+      }
+      body {
+        margin: 0;
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        background-color: #f5f8fb;
+        color: #1f2d3d;
+      }
+      .wrapper {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      .card {
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 75, 141, 0.12);
+        overflow: hidden;
+        border: 1px solid rgba(0, 75, 141, 0.08);
+      }
+      .header {
+        background: linear-gradient(135deg, var(--plany-green), var(--plany-blue));
+        color: #ffffff;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .logo {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        background: #ffffff;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        color: var(--plany-blue);
+      }
+      .hero {
+        padding: 24px;
+      }
+      .hero img {
+        width: 100%;
+        border-radius: 12px;
+        object-fit: cover;
+        border: 1px solid rgba(0, 75, 141, 0.12);
+      }
+      .hero .caption {
+        font-size: 14px;
+        color: #3f4a5a;
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .content {
+        padding: 0 24px 24px;
+      }
+      h1 {
+        color: var(--plany-blue);
+        margin: 0 0 12px;
+        font-size: 24px;
+        line-height: 1.2;
+      }
+      p {
+        margin: 0 0 12px;
+        line-height: 1.6;
+      }
+      .cta {
+        margin: 24px 0 16px;
+      }
+      .cta a {
+        display: inline-block;
+        padding: 14px 22px;
+        background: var(--plany-green);
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 12px;
+        font-weight: 700;
+        box-shadow: 0 6px 18px rgba(27, 191, 107, 0.32);
+      }
+      .cta a:hover {
+        background: #17a65d;
+      }
+      .footer {
+        padding: 16px 24px 24px;
+        font-size: 13px;
+        color: #5f6b7a;
+      }
+      .stats {
+        background: #f0f6ff;
+        border-radius: 12px;
+        padding: 16px;
+        display: grid;
+        gap: 8px;
+        border: 1px solid rgba(0, 75, 141, 0.08);
+      }
+      @media (max-width: 600px) {
+        .header, .hero, .content, .footer { padding: 16px; }
+        h1 { font-size: 20px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="card">
+        <div class="header">
+          <div class="logo">P</div>
+          <div>
+            <div style="font-size:14px;opacity:0.9">Plany</div>
+            <div style="font-size:18px;font-weight:700">Votre prochaine route commence ici</div>
+          </div>
+        </div>
+        <div class="hero">
+          <img src="https://placehold.co/640x320?text=Plany+Cars" alt="Offres spéciales Plany" />
+          <div class="caption">Nos modèles sont personnalisés avec le logo Plany pour une expérience mémorable.</div>
+        </div>
+        <div class="content">
+          <h1>Bonjour {{var:prenom}},</h1>
+          <p>
+            Nous espérons que votre dernière location avec Plany vous a plu. Découvrez nos nouvelles offres :
+            louez une {{var:voiture}} à partir de {{var:prix}} TND/jour.
+          </p>
+          <p>
+            Les disponibilités sont limitées. Réservez dès maintenant votre prochain trajet et profitez de tarifs exclusifs.
+          </p>
+          <div class="cta">
+            <a href="{{var:lien}}" target="_blank" rel="noopener">Réserver</a>
+          </div>
+          <div class="stats">
+            <div><strong>Inclus :</strong> assurance, assistance 24/7 et livraison en agence partenaire.</div>
+            <div><strong>Personnalisation :</strong> votre voiture est marquée du logo Plany sur chaque visuel.</div>
+          </div>
+        </div>
+        <div class="footer">
+          Vous recevez cet e‑mail car vous avez validé votre adresse et accepté de recevoir nos communications marketing.
+          Si vous ne souhaitez plus recevoir ces e‑mails, mettez à jour vos préférences dans votre espace client.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

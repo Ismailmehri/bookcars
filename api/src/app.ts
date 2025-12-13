@@ -23,6 +23,8 @@ import commissionRoutes from './routes/commissionRoutes'
 import statsRoutes from './routes/statsRoutes'
 import insightRoutes from './routes/insightRoutes'
 import metaEventsRoute from './routes/metaEventsRoute'
+import emailRoutes from './routes/emailRoutes'
+import marketingRoutes from './routes/marketingRoutes'
 
 import * as helper from './common/helper'
 import { setClientId } from './middlewares/setClientId'
@@ -73,6 +75,8 @@ app.use('/', commissionRoutes)
 app.use('/', statsRoutes)
 app.use('/', insightRoutes)
 app.use('/', metaEventsRoute)
+app.use('/', emailRoutes)
+app.use('/', marketingRoutes)
 
 i18n.locale = env.DEFAULT_LANGUAGE
 

@@ -1,0 +1,16 @@
+name: Envoi marketing quotidien
+
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+jobs:
+  call-marketing-service:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Appel du service marketing
+        run: |
+          curl -X POST \
+               -H "x-api-key: ${{ secrets.MARKETING_API_KEY }}" \
+               ${{ secrets.MARKETING_ENDPOINT }}

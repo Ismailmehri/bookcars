@@ -1,0 +1,8 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    "semi": ["error", "never"],
+    "curly": ["error", "all"],
+    "react/function-component-definition": ["error", { "namedComponents": "arrow-function" }]
+  }
+}
